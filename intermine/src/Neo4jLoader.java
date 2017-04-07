@@ -140,131 +140,137 @@ public class Neo4jLoader {
                 int nodeCount = 0;
                 Iterator<List<Object>> rows = service.getRowListIterator(nodeQuery);
                 while (rows.hasNext() && (maxRows==0 || nodeCount<maxRows)) {
-
+			
                     nodeCount++;
 
-                    Object[] row = rows.next().toArray();
-                    int i = 0;
-                    String id = row[i++].toString(); // all IM objects have an id, which we'll use to key nodes
-                    if (verbose) System.out.print(simpleName+":"+id);
-
-                    // MERGE this node
-                    HashMap<String,String> attrMap = new HashMap<String,String>();
-                    for (String attr : attrNames) {
-                        attrMap.put(attr, escapeForNeo4j(row[i++].toString()));
+                    // wrap this puppy in a try block since IM can crash on bad JSON at times
+                    try {
+			
+			Object[] row = rows.next().toArray();
+			int i = 0;
+			String id = row[i++].toString(); // all IM objects have an id, which we'll use to key nodes
+			if (verbose) System.out.print(simpleName+":"+id);
+			
+			// MERGE this node
+			HashMap<String,String> attrMap = new HashMap<String,String>();
+			for (String attr : attrNames) {
+			    attrMap.put(attr, escapeForNeo4j(row[i++].toString()));
+			}
+			String merge = "MERGE (n:"+simpleName+" {id:"+id+"})";
+			try (Session session = driver.session()) {  // low cost
+			    try (Transaction tx = session.beginTransaction()) {
+				tx.run(merge);
+				tx.success();
+			    }
+			}
+			
+			// SET this nodes attributes
+			if (attrMap.size()>0) {
+			    String match = "MATCH (n:"+simpleName+" {id:"+id+"}) SET ";
+			    int terms = 0;
+			    for (String attr : attrMap.keySet()) {
+				String val = attrMap.get(attr);
+				if (!val.equals("null")) {
+				    terms++;
+				    if (terms>1) match += ",";
+				    match += "n."+attr+"=\""+val+"\"";
+				}
+			    }
+			    if (terms>0) {
+				try (Session session = driver.session()) {  // low cost
+				    try (Transaction tx = session.beginTransaction()) {
+					tx.run(match);
+					tx.success();
+				    }
+				}
+			    }
+			}
+			
+			// MERGE this node's references only with id
+			if (refMap.size()>0) {
+			    refQuery.clearView();
+			    refQuery.clearConstraints();
+			    refQuery.clearOuterJoinStatus();
+			    refQuery.addView(simpleName+".id");
+			    for (String refName : refMap.keySet()) {
+				String refClass = refMap.get(refName);
+				refQuery.addView(simpleName+"."+refName+".id");
+				refQuery.setOuterJoinStatus(simpleName+"."+refName, OuterJoinStatus.OUTER);
+			    }
+			    refQuery.addConstraint(new PathConstraintAttribute(simpleName+".id", ConstraintOp.EQUALS, id));
+			    Iterator<List<Object>> rs = service.getRowListIterator(refQuery);
+			    while (rs.hasNext()) {
+				Object[] r = rs.next().toArray();
+				int j = 0;
+				String idn = r[j++].toString(); // node id
+				for (String refName : refMap.keySet()) {
+				    String refClass = refMap.get(refName);
+				    String idr = r[j++].toString(); // ref id
+				    if (!idr.equals("null")) {
+					merge = "MERGE (n:"+refClass+" {id:"+idr+"})";
+					try (Session session = driver.session()) {
+					    try (Transaction tx = session.beginTransaction()) {
+						tx.run(merge);
+						tx.success();
+					    }
+					}
+					String match = "MATCH (n:"+simpleName+" {id:"+idn+"}),(r:"+refClass+" {id:"+idr+"}) MERGE (n)-[:"+refName+"]->(r)";
+					try (Session session = driver.session()) {
+					    try (Transaction tx = session.beginTransaction()) {
+						tx.run(match);
+						tx.success();
+					    }
+					}
+					if (verbose) System.out.print(".");
+				    }
+				}
+			    }
+			}
+			
+			// MERGE this node's collections only with id, one at a time
+			if (collMap.size()>0) {
+			    for (String collName : collMap.keySet()) {
+				String collClass = collMap.get(collName);
+				collQuery.clearView();
+				collQuery.clearConstraints();
+				collQuery.addView(simpleName+".id");
+				collQuery.addView(simpleName+"."+collName+".id");
+				collQuery.addConstraint(new PathConstraintAttribute(simpleName+".id", ConstraintOp.EQUALS, id));
+				Iterator<List<Object>> rs = service.getRowListIterator(collQuery);
+				int collCount = 0;
+				while (rs.hasNext() && (maxRows==0 || collCount<maxRows)) {
+				    collCount++;
+				    Object[] r = rs.next().toArray();
+				    String idn = r[0].toString(); // node id
+				    String idc = r[1].toString(); // collection id
+				    merge = "MERGE (n:"+collClass+" {id:"+idc+"})";
+				    try (Session session = driver.session()) {
+					try (Transaction tx = session.beginTransaction()) {
+					    tx.run(merge);
+					    tx.success();
+					}
+				    }
+				    String match = "MATCH (n:"+simpleName+" {id:"+idn+"}),(c:"+collClass+" {id:"+idc+"}) MERGE (n)-[:"+collName+"]->(c)";
+				    try (Session session = driver.session()) {
+					try (Transaction tx = session.beginTransaction()) {
+					    tx.run(match);
+					    tx.success();
+					}
+				    }
+				    if (verbose) System.out.print(".");
+				}
+			    }
+			}
+			if (verbose) System.out.println("");
+		    } catch (Exception ex) {
+                        // don't stop, just inform
+                        System.err.println(ex);
                     }
-                    String merge = "MERGE (n:"+simpleName+" {id:"+id+"})";
-                    try (Session session = driver.session()) {  // low cost
-                        try (Transaction tx = session.beginTransaction()) {
-                            tx.run(merge);
-                            tx.success();
-                        }
-                    }
-
-                    // SET this nodes attributes
-                    if (attrMap.size()>0) {
-                        String match = "MATCH (n:"+simpleName+" {id:"+id+"}) SET ";
-                        int terms = 0;
-                        for (String attr : attrMap.keySet()) {
-                            String val = attrMap.get(attr);
-                            if (!val.equals("null")) {
-                                terms++;
-                                if (terms>1) match += ",";
-                                match += "n."+attr+"=\""+val+"\"";
-                            }
-                        }
-                        if (terms>0) {
-                            try (Session session = driver.session()) {  // low cost
-                                try (Transaction tx = session.beginTransaction()) {
-                                    tx.run(match);
-                                    tx.success();
-                                }
-                            }
-                        }
-                    }
-                            
-                    // MERGE this node's references only with id
-                    if (refMap.size()>0) {
-                        refQuery.clearView();
-                        refQuery.clearConstraints();
-                        refQuery.clearOuterJoinStatus();
-                        refQuery.addView(simpleName+".id");
-                        for (String refName : refMap.keySet()) {
-                            String refClass = refMap.get(refName);
-                            refQuery.addView(simpleName+"."+refName+".id");
-                            refQuery.setOuterJoinStatus(simpleName+"."+refName, OuterJoinStatus.OUTER);
-                        }
-                        refQuery.addConstraint(new PathConstraintAttribute(simpleName+".id", ConstraintOp.EQUALS, id));
-                        Iterator<List<Object>> rs = service.getRowListIterator(refQuery);
-                        while (rs.hasNext()) {
-                            Object[] r = rs.next().toArray();
-                            int j = 0;
-                            String idn = r[j++].toString(); // node id
-                            for (String refName : refMap.keySet()) {
-                                String refClass = refMap.get(refName);
-                                String idr = r[j++].toString(); // ref id
-                                if (!idr.equals("null")) {
-                                    merge = "MERGE (n:"+refClass+" {id:"+idr+"})";
-                                    try (Session session = driver.session()) {
-                                        try (Transaction tx = session.beginTransaction()) {
-                                            tx.run(merge);
-                                            tx.success();
-                                        }
-                                    }
-                                    String match = "MATCH (n:"+simpleName+" {id:"+idn+"}),(r:"+refClass+" {id:"+idr+"}) MERGE (n)-[:"+refName+"]->(r)";
-                                    try (Session session = driver.session()) {
-                                        try (Transaction tx = session.beginTransaction()) {
-                                            tx.run(match);
-                                            tx.success();
-                                        }
-                                    }
-                                    if (verbose) System.out.print(".");
-                                }
-                            }
-                        }
-                    }
-
-                    // MERGE this node's collections only with id, one at a time
-                    if (collMap.size()>0) {
-                        for (String collName : collMap.keySet()) {
-                            String collClass = collMap.get(collName);
-                            collQuery.clearView();
-                            collQuery.clearConstraints();
-                            collQuery.addView(simpleName+".id");
-                            collQuery.addView(simpleName+"."+collName+".id");
-                            collQuery.addConstraint(new PathConstraintAttribute(simpleName+".id", ConstraintOp.EQUALS, id));
-                            Iterator<List<Object>> rs = service.getRowListIterator(collQuery);
-                            int collCount = 0;
-                            while (rs.hasNext() && (maxRows==0 || collCount<maxRows)) {
-                                collCount++;
-                                Object[] r = rs.next().toArray();
-                                String idn = r[0].toString(); // node id
-                                String idc = r[1].toString(); // collection id
-                                merge = "MERGE (n:"+collClass+" {id:"+idc+"})";
-                                try (Session session = driver.session()) {
-                                    try (Transaction tx = session.beginTransaction()) {
-                                        tx.run(merge);
-                                        tx.success();
-                                    }
-                                }
-                                String match = "MATCH (n:"+simpleName+" {id:"+idn+"}),(c:"+collClass+" {id:"+idc+"}) MERGE (n)-[:"+collName+"]->(c)";
-                                try (Session session = driver.session()) {
-                                    try (Transaction tx = session.beginTransaction()) {
-                                        tx.run(match);
-                                        tx.success();
-                                    }
-                                }
-                                if (verbose) System.out.print(".");
-                            }
-                        }
-                    }
-
-                    if (verbose) System.out.println("");
                 }
 
             }
         }
-            
+        
         // Close connections
         driver.close();
 
