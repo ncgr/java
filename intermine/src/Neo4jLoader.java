@@ -47,7 +47,7 @@ public class Neo4jLoader {
      */
     public static void main(String[] args) throws IOException {
 
-        // load parameters from neo4jloader.properties
+        // Load parameters from neo4jloader.properties
         Properties props = new Properties();
         props.load(new FileInputStream("neo4jloader.properties"));
         String intermineServiceUrl = props.getProperty("intermine.service.url");
@@ -69,12 +69,27 @@ public class Neo4jLoader {
         // Neo4j setup
         Driver driver = GraphDatabase.driver(neo4jUrl, AuthTokens.basic(neo4jUser, neo4jPassword));
 
-        // loop over IM model
+        // Get the entire model's class descriptors
         Set<ClassDescriptor> classDescriptors = model.getClassDescriptors();
+        
+        // Loop over IM model to create Neo4j indexes on mine ID to hopefully speed up matches and merges as we load.
+        // NOTE: this could end up being counter-productive, but an index on a simple ID seems worth trying!
+        // NOTE: this will wind up creating types that may not have any data in the particular mine. That seems OK, and it lets you know they're in the model but not populated.
         for (ClassDescriptor cd : classDescriptors) {
-
             String simpleName = cd.getSimpleName();
-            
+            if (!ignoredClasses.contains(simpleName)) {
+                try (Session session = driver.session()) {
+                    try (Transaction tx = session.beginTransaction()) {
+                        tx.run("CREATE INDEX ON :"+simpleName+"(id)");
+                        tx.success();
+                    }
+                }
+            }
+        }
+
+        // Loop over IM model and load the node, properties and relations with their corresponding shell nodes (containing only id)
+        for (ClassDescriptor cd : classDescriptors) {
+            String simpleName = cd.getSimpleName();
             if (!ignoredClasses.contains(simpleName)) {
 
                 Set<String> superclassNames = new HashSet<String>();
@@ -114,26 +129,18 @@ public class Neo4jLoader {
                     }
                 }
                 if (collMap.size()>0) System.out.println("Collections:"+collMap.keySet());
+
             
-                // query nodes of this type
+                // Query nodes of this type
                 nodeQuery.clearView();
                 nodeQuery.addView(simpleName+".id"); // every object has an IM id
                 for (String attr : attrNames) {
                     nodeQuery.addView(simpleName+"."+attr);
                 }
-                Iterator<List<Object>> rows = service.getRowListIterator(nodeQuery);
                 int nodeCount = 0;
+                Iterator<List<Object>> rows = service.getRowListIterator(nodeQuery);
                 while (rows.hasNext() && (maxRows==0 || nodeCount<maxRows)) {
 
-                    if (nodeCount==0) {
-                        // create an index on this node type's id since we'll be matching those like crazy
-                        try (Session session = driver.session()) {
-                            try (Transaction tx = session.beginTransaction()) {
-                                tx.run("CREATE INDEX ON :"+simpleName+"(id)");
-                                tx.success();
-                            }
-                        }
-                    }
                     nodeCount++;
 
                     Object[] row = rows.next().toArray();
@@ -258,7 +265,7 @@ public class Neo4jLoader {
             }
         }
             
-        // close connections
+        // Close connections
         driver.close();
 
     }
@@ -289,4 +296,3 @@ public class Neo4jLoader {
 
 
 }
-
