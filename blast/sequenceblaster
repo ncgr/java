@@ -1,0 +1,11 @@
+#rm /tmp/blastutils_*.xml
+#rm /tmp/query*.fasta
+#rm /tmp/subject*.fasta
+
+java -Djavax.xml.accessExternalDTD=all -cp classes:lib/biojava-aa-prop-4.2.0.jar:lib/biojava-alignment-4.2.0.jar:lib/biojava-core-4.2.0.jar:lib/biojava-forester-4.2.0.jar:lib/biojava-genome-4.2.0.jar:lib/biojava-jcolorbrewer-4.2.0.jar:lib/biojava-modfinder-4.2.0.jar:lib/biojava-ontology-4.2.0.jar:lib/biojava-phylo-4.2.0.jar:lib/biojava-protein-comparison-tool-4.2.0.jar:lib/biojava-protein-disorder-4.2.0.jar:lib/biojava-sequencing-4.2.0.jar:lib/biojava-structure-gui-4.2.0.jar:lib/biojava-structure-4.2.0.jar:lib/biojava-survival-4.2.0.jar:lib/biojava-ws-4-4-4-4.2.0.jar:lib/slf4j-api.jar:lib/slf4j-nop.jar:lib/forester.jar org.ncgr.blast.SequenceBlaster $1 $2 $3 $4 $5 $6 $7 $8 $9
+
+seqlogo -M -a -c -n -k 1 -w 20 -h 4 -F PNG -t "Motifs within $2 of top scorer" -f /tmp/alignment.fasta -o /tmp/alignment
+
+rm /tmp/blastutils_*.xml
+rm /tmp/query*.fasta
+rm /tmp/subject*.fasta

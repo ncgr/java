@@ -1,0 +1,1 @@
+meme -dna -maxsize 1000000 -minw 8 -maxw 21 -mod zoops -bfile Phvul.5.0kb.upstream.markov.4.txt -nmotifs 10 $1

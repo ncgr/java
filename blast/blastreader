@@ -1,0 +1,2 @@
+java -Djavax.xml.accessExternalDTD=all -cp classes:lib/biojava4-core-4.1.0.jar:lib/slf4j-nop.jar org.ncgr.blast.BlastReader $1
+

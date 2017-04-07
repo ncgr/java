@@ -1,0 +1,1 @@
+seqlogo -M -a -c -n -k 1 -w 20 -h 4 -F PNG -f /tmp/alignment.fasta -o /tmp/alignment 

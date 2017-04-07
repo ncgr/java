@@ -1,0 +1,3 @@
+
+java -Djavax.xml.accessExternalDTD=all -cp classes:lib/biojava-aa-prop-4.2.0.jar:lib/biojava-alignment-4.2.0.jar:lib/biojava-core-4.2.0.jar:lib/biojava-forester-4.2.0.jar:lib/biojava-genome-4.2.0.jar:lib/biojava-jcolorbrewer-4.2.0.jar:lib/biojava-modfinder-4.2.0.jar:lib/biojava-ontology-4.2.0.jar:lib/biojava-phylo-4.2.0.jar:lib/biojava-protein-comparison-tool-4.2.0.jar:lib/biojava-protein-disorder-4.2.0.jar:lib/biojava-sequencing-4.2.0.jar:lib/biojava-structure-gui-4.2.0.jar:lib/biojava-structure-4.2.0.jar:lib/biojava-survival-4.2.0.jar:lib/biojava-ws-4-4-4-4.2.0.jar:lib/slf4j-api.jar:lib/slf4j-nop.jar:lib/forester.jar org.ncgr.blast.MotifVariationSharers $1 $2 $3 $4 $5 $6 $7 $8 $9
+

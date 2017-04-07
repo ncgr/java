@@ -1,0 +1,1 @@
+~/ncbi-blast-2.5.0+/bin/blastn -task blastn-short -outfmt 6 -query $1 -subject $2 -word_size $3 -perc_identity 100 -ungapped -strand plus

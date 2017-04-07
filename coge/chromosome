@@ -1,0 +1,1 @@
+java -cp classes:lib/resty.jar:../../coge/classes Chromosome $1 $2

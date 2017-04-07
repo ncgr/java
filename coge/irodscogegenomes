@@ -1,0 +1,2 @@
+java -cp classes:../../coge/classes:lib/resty.jar:lib/slf4j-api.jar:lib/slf4j-nop.jar:lib/jargon-core.jar IRODSCoGeGenomes \
+/iplant/home/shared/Legume_Federation/Cicer_arietinum "Cicer arietinum (chickpea)" LegumeFederation
