@@ -19,6 +19,8 @@
     <property name="intermine-pathquery" value="lib/intermine-pathquery.jar"/>
 
     <property name="neo4j-java-driver" value="lib/neo4j-java-driver-1.2.0.jar"/>
+
+    <mkdir dir="classes"/>
   </target>
 
   <target name="about">
