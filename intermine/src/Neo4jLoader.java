@@ -34,7 +34,7 @@ import org.neo4j.driver.v1.Transaction;
 import static org.neo4j.driver.v1.Values.parameters;
 
 /**
- * Query an InterMine model, and load it and its data into a Neo4j database, along with all the relations and collections.
+ * Query an InterMine model, and load it and its data into a Neo4j database, along with the relationships derived from relations and collections.
  * Connection and other properties are given in neo4jloader.properties.
  * 
  * @author Sam Hokin
@@ -65,12 +65,17 @@ public class Neo4jLoader {
         PathQuery nodeQuery = new PathQuery(model);
         PathQuery refQuery = new PathQuery(model);
         PathQuery collQuery = new PathQuery(model);
+        PathQuery attrQuery = new PathQuery(model);
         
         // Neo4j setup
         Driver driver = GraphDatabase.driver(neo4jUrl, AuthTokens.basic(neo4jUser, neo4jPassword));
 
-        // Get the entire model's class descriptors
+        // Get the entire model's class descriptors and store them in a map so we can grab them by class name if we want
         Set<ClassDescriptor> classDescriptors = model.getClassDescriptors();
+        Map<String,ClassDescriptor> classDescriptorMap = new HashMap<String,ClassDescriptor>();
+        for (ClassDescriptor cd : classDescriptors) {
+            classDescriptorMap.put(cd.getSimpleName(), cd);
+        }
         
         // Loop over IM model to create Neo4j indexes on mine ID to hopefully speed up matches and merges as we load.
         // NOTE: this could end up being counter-productive, but an index on a simple ID seems worth trying!
@@ -87,11 +92,12 @@ public class Neo4jLoader {
             }
         }
 
-        // Loop over IM model and load the node, properties and relations with their corresponding shell nodes (containing only id)
+        // Loop over IM model and load the node, properties and relations with their corresponding reference and collections nodes (containing only id so far)
         for (ClassDescriptor cd : classDescriptors) {
             String simpleName = cd.getSimpleName();
             if (!ignoredClasses.contains(simpleName)) {
 
+                // superclass is simply displayed for info purposes
                 Set<String> superclassNames = new HashSet<String>();
                 for (ClassDescriptor superclassDescriptor : cd.getAllSuperDescriptors()) {
                     String superclassName = superclassDescriptor.getSimpleName();
@@ -100,14 +106,16 @@ public class Neo4jLoader {
                 System.out.println("--------------------------------------------------------");
                 System.out.println(simpleName+":"+superclassNames);
                 
+                // get all the attributes, except id, which is automatic
                 Set<AttributeDescriptor> attrDescriptors = cd.getAllAttributeDescriptors();
                 Set<String> attrNames = new HashSet<String>();
                 for (AttributeDescriptor attrDescriptor : attrDescriptors) {
-                    String attr = attrDescriptor.getName();
-                    if (!attr.equals("id")) attrNames.add(attr);
+                    String attrName = attrDescriptor.getName();
+                    if (!attrName.equals("id")) attrNames.add(attrName);
                 }
                 if (attrNames.size()>0) System.out.println("Attributes:"+attrNames);
 
+                // get all the references, except ignored classes
                 Set<ReferenceDescriptor> refDescriptors = cd.getAllReferenceDescriptors();
                 HashMap<String,String> refMap = new HashMap<String,String>();
                 for (ReferenceDescriptor refDescriptor : refDescriptors) {
@@ -119,6 +127,7 @@ public class Neo4jLoader {
                 }
                 if (refMap.size()>0) System.out.println("References:"+refMap.keySet());
 
+                // get all the collections, except ignored classes
                 Set<CollectionDescriptor> collDescriptors = cd.getAllCollectionDescriptors();
                 HashMap<String,String> collMap = new HashMap<String,String>();
                 for (CollectionDescriptor collDescriptor : collDescriptors) {
@@ -129,13 +138,12 @@ public class Neo4jLoader {
                     }
                 }
                 if (collMap.size()>0) System.out.println("Collections:"+collMap.keySet());
-
             
-                // Query nodes of this type
+                // query nodes and attributes of this type
                 nodeQuery.clearView();
                 nodeQuery.addView(simpleName+".id"); // every object has an IM id
-                for (String attr : attrNames) {
-                    nodeQuery.addView(simpleName+"."+attr);
+                for (String attrName : attrNames) {
+                    nodeQuery.addView(simpleName+"."+attrName);
                 }
                 int nodeCount = 0;
                 Iterator<List<Object>> rows = service.getRowListIterator(nodeQuery);
@@ -153,8 +161,8 @@ public class Neo4jLoader {
 			
 			// MERGE this node
 			HashMap<String,String> attrMap = new HashMap<String,String>();
-			for (String attr : attrNames) {
-			    attrMap.put(attr, escapeForNeo4j(row[i++].toString()));
+			for (String attrName : attrNames) {
+			    attrMap.put(attrName, escapeForNeo4j(row[i++].toString()));
 			}
 			String merge = "MERGE (n:"+simpleName+" {id:"+id+"})";
 			try (Session session = driver.session()) {  // low cost
@@ -168,12 +176,12 @@ public class Neo4jLoader {
 			if (attrMap.size()>0) {
 			    String match = "MATCH (n:"+simpleName+" {id:"+id+"}) SET ";
 			    int terms = 0;
-			    for (String attr : attrMap.keySet()) {
-				String val = attrMap.get(attr);
+			    for (String attrName : attrMap.keySet()) {
+				String val = attrMap.get(attrName);
 				if (!val.equals("null")) {
 				    terms++;
 				    if (terms>1) match += ",";
-				    match += "n."+attr+"=\""+val+"\"";
+				    match += "n."+attrName+"=\""+val+"\"";
 				}
 			    }
 			    if (terms>0) {
@@ -186,8 +194,10 @@ public class Neo4jLoader {
 			    }
 			}
 			
-			// MERGE this node's references only with id
+			// MERGE this node's references only with id for now
 			if (refMap.size()>0) {
+                            // store id, class in a map for further use
+                            HashMap<String,String> refIdClassMap = new HashMap<String,String>();
 			    refQuery.clearView();
 			    refQuery.clearConstraints();
 			    refQuery.clearOuterJoinStatus();
@@ -207,6 +217,8 @@ public class Neo4jLoader {
 				    String refClass = refMap.get(refName);
 				    String idr = r[j++].toString(); // ref id
 				    if (!idr.equals("null")) {
+                                        refIdClassMap.put(idr, refClass);
+                                        // merge this ref node
 					merge = "MERGE (n:"+refClass+" {id:"+idr+"})";
 					try (Session session = driver.session()) {
 					    try (Transaction tx = session.beginTransaction()) {
@@ -214,6 +226,7 @@ public class Neo4jLoader {
 						tx.success();
 					    }
 					}
+                                        // merge this node-->ref relationship
 					String match = "MATCH (n:"+simpleName+" {id:"+idn+"}),(r:"+refClass+" {id:"+idr+"}) MERGE (n)-[:"+refName+"]->(r)";
 					try (Session session = driver.session()) {
 					    try (Transaction tx = session.beginTransaction()) {
@@ -221,14 +234,22 @@ public class Neo4jLoader {
 						tx.success();
 					    }
 					}
-					if (verbose) System.out.print(".");
+					if (verbose) System.out.print("r");
 				    }
 				}
 			    }
+                            // populate this node's references' attributes
+                            for (String imId : refIdClassMap.keySet()) {
+                                String className = refIdClassMap.get(imId);
+                                populateIdClassAttributes(service, driver, attrQuery, classDescriptorMap, imId, className);
+                                if (versbose) System.out.print(".");
+                            }
 			}
 			
 			// MERGE this node's collections only with id, one at a time
 			if (collMap.size()>0) {
+                            // store id, class in a map for further use
+                            Map<String,String> collIdClassMap = new HashMap<String,String>();
 			    for (String collName : collMap.keySet()) {
 				String collClass = collMap.get(collName);
 				collQuery.clearView();
@@ -243,6 +264,8 @@ public class Neo4jLoader {
 				    Object[] r = rs.next().toArray();
 				    String idn = r[0].toString(); // node id
 				    String idc = r[1].toString(); // collection id
+                                    collIdClassMap.put(idc, collClass);  // for later use
+                                    // merge this collections node
 				    merge = "MERGE (n:"+collClass+" {id:"+idc+"})";
 				    try (Session session = driver.session()) {
 					try (Transaction tx = session.beginTransaction()) {
@@ -250,6 +273,7 @@ public class Neo4jLoader {
 					    tx.success();
 					}
 				    }
+                                    // merge this node-->collections relationship
 				    String match = "MATCH (n:"+simpleName+" {id:"+idn+"}),(c:"+collClass+" {id:"+idc+"}) MERGE (n)-[:"+collName+"]->(c)";
 				    try (Session session = driver.session()) {
 					try (Transaction tx = session.beginTransaction()) {
@@ -257,9 +281,15 @@ public class Neo4jLoader {
 					    tx.success();
 					}
 				    }
-				    if (verbose) System.out.print(".");
+				    if (verbose) System.out.print("c");
 				}
 			    }
+                            // populate this node's collections' attributes
+                            for (String imId : collIdClassMap.keySet()) {
+                                String className = collIdClassMap.get(imId);
+                                populateIdClassAttributes(service, driver, attrQuery, classDescriptorMap, imId, className);
+                                if (verbose) System.out.print(".");
+                            }
 			}
 			if (verbose) System.out.println("");
 		    } catch (Exception ex) {
@@ -274,6 +304,60 @@ public class Neo4jLoader {
         // Close connections
         driver.close();
 
+    }
+
+    /**
+     * Populate the node attributes for a given IM class and ID
+     * @param service the InterMine QueryService
+     * @param driver the Neo4j driver
+     * @param attrQuery a PathQuery for querying attributes
+     * @param classDescriptorMap a map keying ClassDescriptor by simple class name
+     * @param id the InterMine ID used to query the node
+     * @param className the simple class name of the node
+     */
+    static void populateIdClassAttributes(QueryService service, Driver driver, PathQuery attrQuery, Map<String,ClassDescriptor> classDescriptorMap, String id, String className) {
+        ClassDescriptor cd = classDescriptorMap.get(className);
+        Set<AttributeDescriptor> attrDescriptors = cd.getAllAttributeDescriptors();
+        if (attrDescriptors.size()>1) {
+            attrQuery.clearView();
+            attrQuery.clearConstraints();
+            attrQuery.clearOuterJoinStatus();
+            for (AttributeDescriptor attrDescriptor : attrDescriptors) {
+                String attrName = attrDescriptor.getName();
+                attrQuery.addView(className+"."+attrName);
+            }
+            attrQuery.addConstraint(new PathConstraintAttribute(className+".id", ConstraintOp.EQUALS, id));
+            Iterator<List<Object>> rows = service.getRowListIterator(attrQuery);
+            while (rows.hasNext()) {
+                // wrap this puppy in a try block since IM can crash on bad JSON at times
+                try {
+                    Object[] row = rows.next().toArray();
+                    // SET this nodes attributes
+                    String match = "MATCH (n:"+className+" {id:"+id+"}) SET ";
+                    int i = 0;
+                    int terms = 0;
+                    for (AttributeDescriptor attrDescriptor : attrDescriptors) {
+                        String attrName = attrDescriptor.getName();
+                        String val = escapeForNeo4j(row[i++].toString());
+                        if (!val.equals("null")) {
+                            if (terms>0) match += ",";
+                            match += "n."+attrName+"=\""+val+"\"";
+                            terms++;
+                        }
+                    }
+                    if (terms>0) {
+                        try (Session session = driver.session()) {
+                            try (Transaction tx = session.beginTransaction()) {
+                                tx.run(match);
+                                tx.success();
+                            }
+                        }
+                    }
+                } catch (Exception ex) {
+                    System.err.println(ex);
+                }
+            }
+        }
     }
 
     /**
