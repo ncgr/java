@@ -1,3 +1,5 @@
+package org.ncgr.intermine.neo4j;
+
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.PrintStream;
@@ -155,134 +157,129 @@ public class Neo4jLoader {
                 Iterator<List<Object>> rows = service.getRowListIterator(nodeQuery);
                 while (rows.hasNext() && (maxRows==0 || nodeCount<maxRows)) {
                     nodeCount++;
-                    // wrap this puppy in a try block since IM can crash on bad JSON at times
-                    try {
 			
-			Object[] row = rows.next().toArray();
-			int id = Integer.parseInt(row[0].toString());
-			if (verbose) System.out.print(simpleName+":"+id+":");
+                    Object[] row = rows.next().toArray();
+                    int id = Integer.parseInt(row[0].toString());
+                    if (verbose) System.out.print(simpleName+":"+id+":");
 			
-			// MERGE this node by its id
-                        String nodeClass = simpleName;
-                        if (replacedClasses.containsKey(simpleName)) nodeClass = replacedClasses.get(simpleName);
-			String merge = "MERGE (n:"+nodeClass+" {id:"+id+"})";
-			try (Session session = driver.session()) {
-			    try (Transaction tx = session.beginTransaction()) {
-				tx.run(merge);
-				tx.success();
-			    }
-			}
-			
-			// SET this nodes attributes if not already stored
-                        if (!nodesWithAttributesStored.contains(id)) {
-                            populateIdClassAttributes(service, driver, attrQuery, id, nodeClass, thisDescriptor);
-                            nodesWithAttributesStored.add(id);
-			}
-			
-			// MERGE this node's references by id
-			if (refDescriptors.size()>0) {
-                            // store id, descriptor in a map for further use
-                            HashMap<Integer,ReferenceDescriptor> refIdDescriptorMap = new HashMap<Integer,ReferenceDescriptor>();
-			    refQuery.clearView();
-			    refQuery.clearConstraints();
-			    refQuery.clearOuterJoinStatus();
-			    refQuery.addView(simpleName+".id");
-			    for (String refName : refDescriptors.keySet()) {
-				refQuery.addView(simpleName+"."+refName+".id");
-				refQuery.setOuterJoinStatus(simpleName+"."+refName, OuterJoinStatus.OUTER);
-			    }
-			    refQuery.addConstraint(new PathConstraintAttribute(simpleName+".id", ConstraintOp.EQUALS, String.valueOf(id)));
-			    Iterator<List<Object>> rs = service.getRowListIterator(refQuery);
-			    while (rs.hasNext()) {
-				Object[] r = rs.next().toArray();
-				int j = 0;
-				int idn = Integer.parseInt(r[j++].toString()); // node id
-				for (String refName : refDescriptors.keySet()) {
-                                    ReferenceDescriptor rd = refDescriptors.get(refName);
-                                    String refClass = rd.getReferencedClassDescriptor().getSimpleName();
-                                    if (replacedClasses.containsKey(refClass)) refClass = replacedClasses.get(refClass);
-				    String idrString = r[j++].toString(); // ref id
-				    if (!idrString.equals("null")) {
-                                        int idr = Integer.parseInt(idrString);
-                                        refIdDescriptorMap.put(idr, rd);
-                                        // merge this reference node
-                                        merge = "MERGE (n:"+refClass+" {id:"+idr+"})";
-					try (Session session = driver.session()) {
-					    try (Transaction tx = session.beginTransaction()) {
-						tx.run(merge);
-						tx.success();
-					    }
-					}
-                                        // set this reference node's attributes
-                                        if (!nodesWithAttributesStored.contains(idr)) {
-                                            populateIdClassAttributes(service, driver, attrQuery, idr, refClass, rd.getReferencedClassDescriptor());
-                                            nodesWithAttributesStored.add(idr);
-                                        }
-                                        // merge this node-->ref relationship
-					String match = "MATCH (n:"+nodeClass+" {id:"+idn+"}),(r:"+refClass+" {id:"+idr+"}) MERGE (n)-[:"+refName+"]->(r)";
-					try (Session session = driver.session()) {
-					    try (Transaction tx = session.beginTransaction()) {
-						tx.run(match);
-						tx.success();
-					    }
-					}
-					if (verbose) System.out.print("r");
-				    }
-				}
-			    }
-			}
-			
-			// MERGE this node's collections only with id, one at a time
-			if (collDescriptors.size()>0) {
-                            // store id, class in a map for further use
-			    for (String collName : collDescriptors.keySet()) {
-                                CollectionDescriptor cd = collDescriptors.get(collName);
-                                String collClass = cd.getReferencedClassDescriptor().getSimpleName();
-                                if (replacedClasses.containsKey(collClass)) collClass = replacedClasses.get(collClass);
-				collQuery.clearView();
-				collQuery.clearConstraints();
-				collQuery.addView(simpleName+".id");
-				collQuery.addView(simpleName+"."+collName+".id");
-				collQuery.addConstraint(new PathConstraintAttribute(simpleName+".id", ConstraintOp.EQUALS, String.valueOf(id)));
-				Iterator<List<Object>> rs = service.getRowListIterator(collQuery);
-				int collCount = 0;
-				while (rs.hasNext() && (maxRows==0 || collCount<maxRows)) {
-				    collCount++;
-				    Object[] r = rs.next().toArray();
-				    int idn = Integer.parseInt(r[0].toString());      // node id
-				    int idc = Integer.parseInt(r[1].toString());      // collection id
-                                    // merge this collections node
-				    merge = "MERGE (n:"+collClass+" {id:"+idc+"})";
-				    try (Session session = driver.session()) {
-					try (Transaction tx = session.beginTransaction()) {
-					    tx.run(merge);
-					    tx.success();
-					}
-				    }
-                                    // set this collection node's attributes
-                                    if (!nodesWithAttributesStored.contains(idc)) {
-                                        populateIdClassAttributes(service, driver, attrQuery, idc, collClass, cd.getReferencedClassDescriptor());
-                                        nodesWithAttributesStored.add(idc);
-                                    }
-                                    // merge this node-->collections relationship
-				    String match = "MATCH (n:"+nodeClass+" {id:"+idn+"}),(c:"+collClass+" {id:"+idc+"}) MERGE (n)-[:"+collName+"]->(c)";
-				    try (Session session = driver.session()) {
-					try (Transaction tx = session.beginTransaction()) {
-					    tx.run(match);
-					    tx.success();
-					}
-				    }
-				    if (verbose) System.out.print("c");
-				}
-			    }
-			}
-			if (verbose) System.out.println("");
-		    } catch (Exception ex) {
-                        // don't stop, just inform
-                        System.err.println(ex);
+                    // MERGE this node by its id
+                    String nodeClass = simpleName;
+                    if (replacedClasses.containsKey(simpleName)) nodeClass = replacedClasses.get(simpleName);
+                    String merge = "MERGE (n:"+nodeClass+" {id:"+id+"})";
+                    try (Session session = driver.session()) {
+                        try (Transaction tx = session.beginTransaction()) {
+                            tx.run(merge);
+                            tx.success();
+                        }
                     }
+			
+                    // SET this nodes attributes if not already stored
+                    if (!nodesWithAttributesStored.contains(id)) {
+                        populateIdClassAttributes(service, driver, attrQuery, id, nodeClass, thisDescriptor);
+                        nodesWithAttributesStored.add(id);
+                    }
+			
+                    // MERGE this node's references by id
+                    if (refDescriptors.size()>0) {
+                        // store id, descriptor in a map for further use
+                        HashMap<Integer,ReferenceDescriptor> refIdDescriptorMap = new HashMap<Integer,ReferenceDescriptor>();
+                        refQuery.clearView();
+                        refQuery.clearConstraints();
+                        refQuery.clearOuterJoinStatus();
+                        refQuery.addView(simpleName+".id");
+                        for (String refName : refDescriptors.keySet()) {
+                            refQuery.addView(simpleName+"."+refName+".id");
+                            refQuery.setOuterJoinStatus(simpleName+"."+refName, OuterJoinStatus.OUTER);
+                        }
+                        refQuery.addConstraint(new PathConstraintAttribute(simpleName+".id", ConstraintOp.EQUALS, String.valueOf(id)));
+                        Iterator<List<Object>> rs = service.getRowListIterator(refQuery);
+                        while (rs.hasNext()) {
+                            Object[] r = rs.next().toArray();
+                            int j = 0;
+                            int idn = Integer.parseInt(r[j++].toString()); // node id
+                            for (String refName : refDescriptors.keySet()) {
+                                ReferenceDescriptor rd = refDescriptors.get(refName);
+                                String refClass = rd.getReferencedClassDescriptor().getSimpleName();
+                                if (replacedClasses.containsKey(refClass)) refClass = replacedClasses.get(refClass);
+                                String idrString = r[j++].toString(); // ref id
+                                if (!idrString.equals("null")) {
+                                    int idr = Integer.parseInt(idrString);
+                                    refIdDescriptorMap.put(idr, rd);
+                                    // merge this reference node
+                                    merge = "MERGE (n:"+refClass+" {id:"+idr+"})";
+                                    try (Session session = driver.session()) {
+                                        try (Transaction tx = session.beginTransaction()) {
+                                            tx.run(merge);
+                                            tx.success();
+                                        }
+                                    }
+                                    // set this reference node's attributes
+                                    if (!nodesWithAttributesStored.contains(idr)) {
+                                        populateIdClassAttributes(service, driver, attrQuery, idr, refClass, rd.getReferencedClassDescriptor());
+                                        nodesWithAttributesStored.add(idr);
+                                    }
+                                    // merge this node-->ref relationship
+                                    String match = "MATCH (n:"+nodeClass+" {id:"+idn+"}),(r:"+refClass+" {id:"+idr+"}) MERGE (n)-[:"+refName+"]->(r)";
+                                    try (Session session = driver.session()) {
+                                        try (Transaction tx = session.beginTransaction()) {
+                                            tx.run(match);
+                                            tx.success();
+                                        }
+                                    }
+                                    if (verbose) System.out.print("r");
+                                }
+                            }
+                        }
+                    }
+			
+                    // MERGE this node's collections only with id, one at a time
+                    if (collDescriptors.size()>0) {
+                        // store id, class in a map for further use
+                        for (String collName : collDescriptors.keySet()) {
+                            CollectionDescriptor cd = collDescriptors.get(collName);
+                            String collClass = cd.getReferencedClassDescriptor().getSimpleName();
+                            if (replacedClasses.containsKey(collClass)) collClass = replacedClasses.get(collClass);
+                            collQuery.clearView();
+                            collQuery.clearConstraints();
+                            collQuery.addView(simpleName+".id");
+                            collQuery.addView(simpleName+"."+collName+".id");
+                            collQuery.addConstraint(new PathConstraintAttribute(simpleName+".id", ConstraintOp.EQUALS, String.valueOf(id)));
+                            Iterator<List<Object>> rs = service.getRowListIterator(collQuery);
+                            int collCount = 0;
+                            while (rs.hasNext() && (maxRows==0 || collCount<maxRows)) {
+                                collCount++;
+                                Object[] r = rs.next().toArray();
+                                int idn = Integer.parseInt(r[0].toString());      // node id
+                                int idc = Integer.parseInt(r[1].toString());      // collection id
+                                // merge this collections node
+                                merge = "MERGE (n:"+collClass+" {id:"+idc+"})";
+                                try (Session session = driver.session()) {
+                                    try (Transaction tx = session.beginTransaction()) {
+                                        tx.run(merge);
+                                        tx.success();
+                                    }
+                                }
+                                // set this collection node's attributes
+                                if (!nodesWithAttributesStored.contains(idc)) {
+                                    populateIdClassAttributes(service, driver, attrQuery, idc, collClass, cd.getReferencedClassDescriptor());
+                                    nodesWithAttributesStored.add(idc);
+                                }
+                                // merge this node-->collections relationship
+                                String match = "MATCH (n:"+nodeClass+" {id:"+idn+"}),(c:"+collClass+" {id:"+idc+"}) MERGE (n)-[:"+collName+"]->(c)";
+                                try (Session session = driver.session()) {
+                                    try (Transaction tx = session.beginTransaction()) {
+                                        tx.run(match);
+                                        tx.success();
+                                    }
+                                }
+                                if (verbose) System.out.print("c");
+                            }
+                        }
+                    }
+                    
+                    if (verbose) System.out.println("");
+                    
                 }
-
             }
         }
         
@@ -314,39 +311,34 @@ public class Neo4jLoader {
             attrQuery.addConstraint(new PathConstraintAttribute(className+".id", ConstraintOp.EQUALS, String.valueOf(id)));
             Iterator<List<Object>> rows = service.getRowListIterator(attrQuery);
             while (rows.hasNext()) {
-                // wrap this puppy in a try block since IM can crash on bad JSON at times
-                try {
-                    Object[] row = rows.next().toArray();
-                    // SET this nodes attributes
-                    String match = "MATCH (n:"+nodeName+" {id:"+id+"}) SET ";
-                    int i = 0;
-                    int terms = 0;
-                    for (AttributeDescriptor ad : attrDescriptors) {
-                        String attrName = ad.getName();
-                        String attrType = ad.getType();
-                        if (!attrName.equals("id")) {
-                            String val = escapeForNeo4j(row[i++].toString());
-                            if (!val.equals("null")) {
-                                terms++;
-                                if (terms>1) match += ",";
-                                if (attrType.equals("java.lang.String") || attrType.equals("org.intermine.objectstore.query.ClobAccess")) {
-                                    match += "n."+attrName+"=\""+val+"\"";
-                                } else {
-                                    match += "n."+attrName+"="+val;
-                                }
+                Object[] row = rows.next().toArray();
+                // SET this nodes attributes
+                String match = "MATCH (n:"+nodeName+" {id:"+id+"}) SET ";
+                int i = 0;
+                int terms = 0;
+                for (AttributeDescriptor ad : attrDescriptors) {
+                    String attrName = ad.getName();
+                    String attrType = ad.getType();
+                    if (!attrName.equals("id")) {
+                        String val = escapeForNeo4j(row[i++].toString());
+                        if (!val.equals("null")) {
+                            terms++;
+                            if (terms>1) match += ",";
+                            if (attrType.equals("java.lang.String") || attrType.equals("org.intermine.objectstore.query.ClobAccess")) {
+                                match += "n."+attrName+"=\""+val+"\"";
+                            } else {
+                                match += "n."+attrName+"="+val;
                             }
                         }
                     }
-                    if (terms>0) {
-                        try (Session session = driver.session()) {
-                            try (Transaction tx = session.beginTransaction()) {
-                                tx.run(match);
-                                tx.success();
-                            }
+                }
+                if (terms>0) {
+                    try (Session session = driver.session()) {
+                        try (Transaction tx = session.beginTransaction()) {
+                            tx.run(match);
+                            tx.success();
                         }
                     }
-                } catch (Exception ex) {
-                    System.err.println(ex);
                 }
             }
         }

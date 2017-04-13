@@ -1,3 +1,5 @@
+package org.ncgr.intermine;
+
 import java.io.IOException;
 import java.io.PrintStream;
 import java.util.Iterator;
@@ -11,8 +13,8 @@ import org.intermine.webservice.client.core.ServiceFactory;
 import org.intermine.webservice.client.services.QueryService;
 
 /**
- * Print out a multi-FASTA corresponding to all genes.
- * Enter the Intermine service URL as a parameter.
+ * Print out the FASTA for a gene with the given symbol.
+ * Usage: FastaQueryClient serviceURL geneSymbol
  *
  * @author Sam Hokin
  */
@@ -25,32 +27,33 @@ public class FastaQueryClient {
      */
     public static void main(String[] args) throws IOException {
 
-        if (args.length!=1) {
-            System.out.println("Usage: FastaQueryClient <intermine service URL>");
+        if (args.length!=2) {
+            System.out.println("Usage: FastaQueryClient <intermine service URL> <gene symbol>");
             System.exit(0);
         }
-        
         String intermineServiceUrl = args[0];
+        String geneSymbol = args[1];
     
         ServiceFactory factory = new ServiceFactory(intermineServiceUrl);
         Model model = factory.getModel();
         PathQuery query = new PathQuery(model);
 
         // Select the output columns:
-        query.addViews("Gene.primaryIdentifier", "Gene.secondaryIdentifier");
+        query.addViews("Gene.primaryIdentifier", "Gene.secondaryIdentifier", "Gene.symbol", "Gene.sequence.residues");
 
-        // Add orderby
-        query.addOrderBy("Gene.primaryIdentifier", OrderDirection.ASC);
-
-        // Filter the results with the following constraints:
-        query.addConstraint(Constraints.eq("Gene.symbol", args[0]));
+        // Constrain to our chosen symbol
+        query.addConstraint(Constraints.eq("Gene.symbol", geneSymbol));
 
         QueryService service = factory.getQueryService();
         Iterator<List<Object>> rows = service.getRowListIterator(query);
         while (rows.hasNext()) {
             Object[] row = rows.next().toArray();
-            System.out.println(">"+row[0].toString());
-            System.out.println(row[1].toString());
+            String primaryIdentifier = row[0].toString();
+            String secondaryIdentifier = row[1].toString();
+            String symbol = row[2].toString();
+            String residues = row[3].toString();
+            System.out.println(">"+primaryIdentifier+"|"+secondaryIdentifier+"|"+symbol);
+            System.out.println(residues);
         }
 
     }
