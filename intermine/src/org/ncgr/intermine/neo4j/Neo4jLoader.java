@@ -72,6 +72,8 @@ public class Neo4jLoader {
         }
         List<String> ignoredReferences = new ArrayList<String>();
         if (props.getProperty("ignored.references")!=null) ignoredReferences = Arrays.asList(props.getProperty("ignored.references").split(","));
+        List<String> ignoredCollections = new ArrayList<String>();
+        if (props.getProperty("ignored.collections")!=null) ignoredCollections = Arrays.asList(props.getProperty("ignored.collections").split(","));
 
         List<String> specialPluralPairs = new ArrayList<String>();
         if (props.getProperty("special.plurals")!=null) specialPluralPairs = Arrays.asList(props.getProperty("special.plurals").split(","));
@@ -142,7 +144,8 @@ public class Neo4jLoader {
                 for (CollectionDescriptor cd : thisDescriptor.getAllCollectionDescriptors()) {
                     String collName = cd.getName();
                     String collClass = cd.getReferencedClassDescriptor().getSimpleName();
-                    if (!ignoredClasses.contains(collClass)) collDescriptors.put(collName, cd);
+                    String nodeDotCollName = nodeClass+"."+collName;
+                    if (!ignoredClasses.contains(collClass) && !ignoredCollections.contains(nodeDotCollName)) collDescriptors.put(collName, cd);
                 }
                 if (collDescriptors.size()>0) System.out.println("Collections:"+collDescriptors.keySet());
             
