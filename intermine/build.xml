@@ -3,12 +3,15 @@
 
   <target name="init">
     <tstamp/>
+
     <property name="antlr" value="lib/antlr-2.7.6-caching.jar"/>
+
     <property name="commons-codec" value="lib/commons-codec-1.9.jar"/>
     <property name="commons-lang" value="lib/commons-lang-2.6.jar"/>
     <property name="commons-httpclient" value="lib/commons-httpclient-3.0.jar"/>
     <property name="commons-io" value="lib/commons-io-1.2.jar"/>
     <property name="commons-logging" value="lib/commons-logging-1.1.1.jar"/>
+
     <property name="json" value="lib/json20110106.jar"/>
     <property name="stax-api" value="lib/stax-api-1.0.jar"/>
     <property name="stax-ri" value="lib/stax-ri-1.0.jar"/>
@@ -19,6 +22,10 @@
     <property name="intermine-pathquery" value="lib/intermine-pathquery.jar"/>
 
     <property name="neo4j-java-driver" value="lib/neo4j-java-driver-1.2.0.jar"/>
+
+    <property name="servlet-api" value="/usr/share/java/servlet-api-3.1.jar"/>
+
+    <property name="jar" value="ncgr-intermine.jar"/>
 
     <mkdir dir="classes"/>
   </target>
@@ -34,7 +41,8 @@
 	   classpath="classes
                       :${intermine-model}:${intermine-client}:${intermine-pathquery}
                       :${neo4j-java-driver}
-                      :${commons-codec}:${commons-lang}:${commons-httpclient}:${commons-io}:${commons-logging}:${json}:${stax-api}:${stax-ri}:${log4j}"
+                      :${commons-codec}:${commons-lang}:${commons-httpclient}:${commons-io}:${commons-logging}:${json}:${stax-api}:${stax-ri}:${log4j}
+                      :${servlet-api}"
            deprecation="true"
            includeantruntime="false"
 	   destdir="classes">
@@ -44,6 +52,7 @@
 
   <target name="jar" depends="classes">
     <jar destfile="${jar}" basedir="classes"/>
+    <copy file="${jar}" todir="webapps/ROOT/WEB-INF/lib"/> 
   </target>
 
   <target name="clean">

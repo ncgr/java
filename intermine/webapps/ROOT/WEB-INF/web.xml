@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+
+<web-app>
+
+  <display-name>NCGR Neo4j PathQuery Endpoint Development</display-name>
+  <description>
+    This is a middleware app to query Neo4j and/or InterMine from a posted PathQuery.
+  </description>
+
+  <context-param>
+    <param-name>intermine.service.url</param-name>
+    <param-value>http://localhost/beanmine/service</param-value>
+    <description>the query service URL for the mine of interest</description>
+  </context-param>
+  <context-param>
+    <param-name>neo4j.bolt.url</param-name>
+    <param-value>bolt://localhost:7687</param-value>
+    <description>the Neo4j Bolt URL</description>
+  </context-param>
+  <context-param>
+    <param-name>neo4j.bolt.user</param-name>
+    <param-value>neo4j</param-value>
+    <description>the Neo4j username</description>
+  </context-param>
+  <context-param>
+    <param-name>neo4j.bolt.password</param-name>
+    <param-value>Phavu16Glyma</param-value>
+    <description>the Neo4j password</description>
+  </context-param>
+
+  <servlet>
+    <servlet-name>PathQuery</servlet-name>
+    <description>
+      This servlet mimics the web service function of InterMine.
+    </description>
+    <servlet-class>org.ncgr.intermine.neo4j.PathQueryServlet</servlet-class>
+    <load-on-startup>5</load-on-startup>
+  </servlet>
+
+  <servlet-mapping>
+    <servlet-name>PathQuery</servlet-name>
+    <url-pattern>/service</url-pattern>
+  </servlet-mapping>
+
+  <session-config>
+    <session-timeout>30</session-timeout>
+  </session-config>
+
+
+</web-app>
