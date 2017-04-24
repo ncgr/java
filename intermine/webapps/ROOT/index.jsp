@@ -3,6 +3,7 @@
     
     <head>
         <title>NCGR Neo4j PathQuery Endpoint Development</title>
+        <link rel="stylesheet" type="text/css" href="stylesheet.css" title="Style"/>
     </head>
 
     <body>
@@ -15,18 +16,19 @@
         </p>
 
         <p>
-            The syntax is identical to that used by InterMine. Simply aim your HTTP request at <b><%=request.getRequestURI()%>service</b> instead.
+            The syntax is identical to that used by InterMine. Simply aim your HTTP request at <b><%=request.getRequestURI()%></b> instead of, say, /beanmine/.
         </p>
 
-        <form action="service" method="POST">
-            <div style="text-align:center">
-                <p>
-                    For your convenience, here's a place where you can paste XML and test this out:
-                </p>
-                <textarea style="width:600px; height:200px; border:2px solid red;" name="query"></textarea>
-                <br/>
-                <input type="submit" value="SEND"/>
-            </div>
+        <form action="service/query/results" method="POST">
+            <input type="hidden" name="format" value="tab"/>
+            <p>
+                For your convenience, here's a place where you can paste XML and test this out, or submit the fairly generic query provided:
+            </p>
+            <textarea style="width:700px; height:200px;" name="query"><query name="" model="genomic" view="Gene.primaryIdentifier Gene.goAnnotation.ontologyTerm.identifier Gene.goAnnotation.ontologyTerm.name" longDescription="" sortOrder="Gene.goAnnotation.ontologyTerm.name asc">
+    <constraint path="Gene.goAnnotation.ontologyTerm.identifier" op="=" value="GO:0022891"/>
+</query></textarea>
+            <br/>
+            <input type="submit" value="SEND"/>
         </form>
 
     </body>

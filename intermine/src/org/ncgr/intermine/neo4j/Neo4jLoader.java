@@ -60,28 +60,38 @@ public class Neo4jLoader {
         String neo4jPassword = props.getProperty("neo4j.password");
         boolean verbose = Boolean.parseBoolean(props.getProperty("verbose"));
         int maxRows = Integer.parseInt(props.getProperty("max.rows"));
+
+        // classes to ignore, usually superclasses or maybe just classes you don't want
         List<String> ignoredClasses = new ArrayList<String>();
         if (props.getProperty("ignored.classes")!=null) ignoredClasses = Arrays.asList(props.getProperty("ignored.classes").split(","));
-        List<String> replacedClassPairs = new ArrayList<String>();
-        if (props.getProperty("replaced.classes")!=null) replacedClassPairs = Arrays.asList(props.getProperty("replaced.classes").split(","));
-        Map<String,String> replacedClasses = new HashMap<String,String>();
-        for (String rcp : replacedClassPairs) {
-            String[] pair = rcp.split("\\.");
-            replacedClasses.put(pair[0], pair[1]);
-            System.out.println("Will replace "+pair[0]+" with "+pair[1]+" during node MERGEs.");
-        }
+        
+        // references to ignore, typically reverse-reference
         List<String> ignoredReferences = new ArrayList<String>();
         if (props.getProperty("ignored.references")!=null) ignoredReferences = Arrays.asList(props.getProperty("ignored.references").split(","));
+
+        // collections to ignore, typically reverse-reference
         List<String> ignoredCollections = new ArrayList<String>();
         if (props.getProperty("ignored.collections")!=null) ignoredCollections = Arrays.asList(props.getProperty("ignored.collections").split(","));
 
-        List<String> specialPluralPairs = new ArrayList<String>();
-        if (props.getProperty("special.plurals")!=null) specialPluralPairs = Arrays.asList(props.getProperty("special.plurals").split(","));
-        Map<String,String> pluralSingulars = new HashMap<String,String>();
-        for (String spp : specialPluralPairs) {
-            String[] pair = spp.split("\\.");
-            pluralSingulars.put(pair[0], pair[1]);
-        }
+        // NOTE: disabled
+        // List<String> replacedClassPairs = new ArrayList<String>();
+        // if (props.getProperty("replaced.classes")!=null) replacedClassPairs = Arrays.asList(props.getProperty("replaced.classes").split(","));
+        // Map<String,String> replacedClasses = new HashMap<String,String>();
+        // for (String rcp : replacedClassPairs) {
+        //     String[] pair = rcp.split("\\.");
+        //     replacedClasses.put(pair[0], pair[1]);
+        //     System.out.println("Will replace "+pair[0]+" with "+pair[1]+" during node MERGEs.");
+        // }
+
+        // NOTE: disabled
+        // special plural pairs that deal with non-standard English plurals, like match -> matches or ontology -> ontologies
+        // List<String> specialPluralPairs = new ArrayList<String>();
+        // if (props.getProperty("special.plurals")!=null) specialPluralPairs = Arrays.asList(props.getProperty("special.plurals").split(","));
+        // Map<String,String> pluralSingulars = new HashMap<String,String>();
+        // for (String spp : specialPluralPairs) {
+        //     String[] pair = spp.split("\\.");
+        //     pluralSingulars.put(pair[0], pair[1]);
+        // }
 
         // InterMine setup
         ServiceFactory factory = new ServiceFactory(intermineServiceUrl);
@@ -106,21 +116,16 @@ public class Neo4jLoader {
         List<Integer> nodesWithAttributesStored = new ArrayList<Integer>();
 
         // Loop over IM model and load the node, properties and relations with their corresponding reference and collections nodes (containing only id so far)
-        for (ClassDescriptor thisDescriptor : classDescriptors) {
-            String nodeClass = thisDescriptor.getSimpleName();
+        for (ClassDescriptor nodeDescriptor : classDescriptors) {
+            String nodeClass = nodeDescriptor.getSimpleName();
             if (!ignoredClasses.contains(nodeClass)) {
 
-                // superclass is simply displayed for info purposes
-                Set<String> superclassNames = new HashSet<String>();
-                for (ClassDescriptor superclassDescriptor : thisDescriptor.getAllSuperDescriptors()) {
-                    String superclassName = superclassDescriptor.getSimpleName();
-                    if (!superclassName.equals(nodeClass)) superclassNames.add(superclassName);
-                }
+                // display the node with labels
                 System.out.println("--------------------------------------------------------");
-                System.out.println(nodeClass+":"+superclassNames);
+                System.out.println(getFullNodeLabel(nodeDescriptor));
                 
                 // display the attributes
-                Set<AttributeDescriptor> attrDescriptors = thisDescriptor.getAllAttributeDescriptors();
+                Set<AttributeDescriptor> attrDescriptors = nodeDescriptor.getAllAttributeDescriptors();
                 if (attrDescriptors.size()>1) {
                     Set<String> attrNames = new HashSet<String>(); // just for output
                     for (AttributeDescriptor ad : attrDescriptors) {
@@ -131,7 +136,7 @@ public class Neo4jLoader {
 
                 // load the references, except ignored classes and ignored references, into a map, and display
                 HashMap<String,ReferenceDescriptor> refDescriptors = new HashMap<String,ReferenceDescriptor>();
-                for (ReferenceDescriptor rd : thisDescriptor.getAllReferenceDescriptors()) {
+                for (ReferenceDescriptor rd : nodeDescriptor.getAllReferenceDescriptors()) {
                     String refName = rd.getName();
                     String refClass = rd.getReferencedClassDescriptor().getSimpleName();
                     String nodeDotRefName = nodeClass+"."+refName;
@@ -141,7 +146,7 @@ public class Neo4jLoader {
 
                 // get the collections, except ignored classes, into a map, and display
                 HashMap<String,CollectionDescriptor> collDescriptors = new HashMap<String,CollectionDescriptor>();
-                for (CollectionDescriptor cd : thisDescriptor.getAllCollectionDescriptors()) {
+                for (CollectionDescriptor cd : nodeDescriptor.getAllCollectionDescriptors()) {
                     String collName = cd.getName();
                     String collClass = cd.getReferencedClassDescriptor().getSimpleName();
                     String nodeDotCollName = nodeClass+"."+collName;
@@ -162,8 +167,7 @@ public class Neo4jLoader {
                     if (verbose) System.out.print(nodeClass+":"+id+":");
 			
                     // MERGE this node by its id
-                    String nodeLabel = nodeClass;
-                    if (replacedClasses.containsKey(nodeClass)) nodeLabel = replacedClasses.get(nodeClass);
+                    String nodeLabel = getFullNodeLabel(nodeDescriptor);
                     String merge = "MERGE (n:"+nodeLabel+" {id:"+id+"})";
                     try (Session session = driver.session()) {
                         try (Transaction tx = session.beginTransaction()) {
@@ -174,24 +178,25 @@ public class Neo4jLoader {
 
                     // SET this nodes attributes if not already stored
                     if (!nodesWithAttributesStored.contains(id)) {
-                        populateIdClassAttributes(service, driver, attrQuery, id, nodeLabel, thisDescriptor);
+                        populateIdClassAttributes(service, driver, attrQuery, id, nodeLabel, nodeDescriptor);
                         nodesWithAttributesStored.add(id);
                     }
 
-                    // CREATE INDEX on this node type
+                    // CREATE INDEX on these individual node types
                     if (nodeCount==1) {
                         try (Session session = driver.session()) {
-                            try (Transaction tx = session.beginTransaction()) {
-                                tx.run("CREATE INDEX ON :"+nodeLabel+"(id)");
-                                tx.success();
+                            List<String> labels = Arrays.asList(nodeLabel.split(":"));
+                            for (String label : labels) {
+                                try (Transaction tx = session.beginTransaction()) {
+                                    tx.run("CREATE INDEX ON :"+label+"(id)");
+                                    tx.success();
+                                }
                             }
                         }
                     }
 
                     // MERGE this node's references by id
                     if (refDescriptors.size()>0) {
-                        // store id, descriptor in a map for further use
-                        HashMap<Integer,ReferenceDescriptor> refIdDescriptorMap = new HashMap<Integer,ReferenceDescriptor>();
                         refQuery.clearView();
                         refQuery.clearConstraints();
                         refQuery.clearOuterJoinStatus();
@@ -207,14 +212,12 @@ public class Neo4jLoader {
                             int j = 0;
                             int idn = Integer.parseInt(r[j++].toString()); // node id
                             for (String refName : refDescriptors.keySet()) {
-                                ReferenceDescriptor rd = refDescriptors.get(refName);
-                                String refClass = rd.getReferencedClassDescriptor().getSimpleName();
-                                String refLabel = refClass;
-                                if (replacedClasses.containsKey(refClass)) refLabel = replacedClasses.get(refClass);
                                 String idrString = r[j++].toString(); // ref id
                                 if (!idrString.equals("null")) {
                                     int idr = Integer.parseInt(idrString);
-                                    refIdDescriptorMap.put(idr, rd);
+                                    ReferenceDescriptor rd = refDescriptors.get(refName);
+                                    ClassDescriptor rcd = rd.getReferencedClassDescriptor();
+                                    String refLabel = getFullNodeLabel(rcd);
                                     // merge this reference node
                                     merge = "MERGE (n:"+refLabel+" {id:"+idr+"})";
                                     try (Session session = driver.session()) {
@@ -225,7 +228,7 @@ public class Neo4jLoader {
                                     }
                                     // set this reference node's attributes
                                     if (!nodesWithAttributesStored.contains(idr)) {
-                                        populateIdClassAttributes(service, driver, attrQuery, idr, refLabel, rd.getReferencedClassDescriptor());
+                                        populateIdClassAttributes(service, driver, attrQuery, idr, refLabel, rcd);
                                         nodesWithAttributesStored.add(idr);
                                     }
                                     // merge this node-->ref relationship
@@ -242,14 +245,13 @@ public class Neo4jLoader {
                         }
                     }
 			
-                    // MERGE this node's collections only with id, one at a time
+                    // MERGE this node's collections by id, one at a time
                     if (collDescriptors.size()>0) {
                         // store id, class in a map for further use
                         for (String collName : collDescriptors.keySet()) {
                             CollectionDescriptor cd = collDescriptors.get(collName);
-                            String collClass = cd.getReferencedClassDescriptor().getSimpleName();
-                            String collLabel = collClass;
-                            if (replacedClasses.containsKey(collClass)) collLabel = replacedClasses.get(collClass);
+                            ClassDescriptor ccd = cd.getReferencedClassDescriptor();
+                            String collLabel = getFullNodeLabel(ccd);
                             collQuery.clearView();
                             collQuery.clearConstraints();
                             collQuery.addView(nodeClass+".id");
@@ -272,17 +274,21 @@ public class Neo4jLoader {
                                 }
                                 // set this collection node's attributes
                                 if (!nodesWithAttributesStored.contains(idc)) {
-                                    populateIdClassAttributes(service, driver, attrQuery, idc, collLabel, cd.getReferencedClassDescriptor());
+                                    populateIdClassAttributes(service, driver, attrQuery, idc, collLabel, ccd);
                                     nodesWithAttributesStored.add(idc);
                                 }
+                                
+                                // NOTE: not singularizing since that will break PathQuery meant for IM
                                 // merge this node-->collections relationship, making collName have singular rather than plural form (so they match with refs)
-                                String collNameSingular = collName;
-                                if (pluralSingulars.containsKey(collName)) {
-                                    collNameSingular = pluralSingulars.get(collName);
-                                } else if (collName.endsWith("s")) {
-                                    collNameSingular = collName.substring(0,collName.length()-1);
-                                }
-                                String match = "MATCH (n:"+nodeLabel+" {id:"+idn+"}),(c:"+collLabel+" {id:"+idc+"}) MERGE (n)-[:"+collNameSingular+"]->(c)";
+                                // String collNameSingular = collName;
+                                // if (pluralSingulars.containsKey(collName)) {
+                                //     collNameSingular = pluralSingulars.get(collName);
+                                // } else if (collName.endsWith("s")) {
+                                //     collNameSingular = collName.substring(0,collName.length()-1);
+                                // }
+                                // String match = "MATCH (n:"+nodeLabel+" {id:"+idn+"}),(c:"+collLabel+" {id:"+idc+"}) MERGE (n)-[:"+collNameSingular+"]->(c)";
+                                
+                                String match = "MATCH (n:"+nodeLabel+" {id:"+idn+"}),(c:"+collLabel+" {id:"+idc+"}) MERGE (n)-[:"+collName+"]->(c)";
                                 try (Session session = driver.session()) {
                                     try (Transaction tx = session.beginTransaction()) {
                                         tx.run(match);
@@ -383,6 +389,24 @@ public class Neo4jLoader {
                 builder.append(c);
         }
         return builder.toString();
+    }
+
+    /**
+     * Form the multiple label for a node, appending its superclass names
+     *
+     * @param nodeDescriptor the ClassDescriptor for the desired node
+     * @return a full node label
+     */
+    static String getFullNodeLabel(ClassDescriptor nodeDescriptor) {
+        String nodeName = nodeDescriptor.getSimpleName();
+        String fullNodeLabel = nodeName;
+        for (ClassDescriptor superclassDescriptor : nodeDescriptor.getAllSuperDescriptors()) {
+            String superclassName = superclassDescriptor.getSimpleName();
+            if (!superclassName.equals(nodeName)) {
+                fullNodeLabel += ":"+superclassName;
+            }
+        }
+        return fullNodeLabel;
     }
 
 }

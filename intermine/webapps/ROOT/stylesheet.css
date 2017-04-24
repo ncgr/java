@@ -1,0 +1,11 @@
+body {
+    font-family: Arial, Helvetica, sans-serif;
+}
+
+textarea {
+    font-family: Courier,monospaced;
+    font-size: 12px;
+    color: black;
+    border:2px solid red;
+    background-color: #fee;
+}
