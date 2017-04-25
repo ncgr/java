@@ -32,8 +32,12 @@ import org.intermine.webservice.client.services.QueryService;
 import org.neo4j.driver.v1.AuthTokens;
 import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.GraphDatabase;
+import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Session;
+import org.neo4j.driver.v1.StatementResult;
 import org.neo4j.driver.v1.Transaction;
+import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.v1.util.Pair;
 
 import static org.neo4j.driver.v1.Values.parameters;
 
@@ -93,8 +97,20 @@ public class Neo4jLoader {
             classDescriptors.put(cd.getSimpleName(), cd);
         }
         
-        // Store the IM IDs of nodes that have had their attributes stored
-        List<Integer> nodesWithAttributesStored = new ArrayList<Integer>();
+        // Store the IM IDs of nodes that have already been stored
+        List<Integer> nodesAlreadyStored = new ArrayList<Integer>();
+        try (Session session = driver.session()) {
+            try (Transaction tx = session.beginTransaction()) {
+                StatementResult result = tx.run("MATCH (n:InterMineID) RETURN n.id");
+                while (result.hasNext()) {
+                    Record record = result.next();
+                    nodesAlreadyStored.add(record.get("n.id").asInt());
+                }
+            }
+        }
+
+        // Store the IM IDs of nodes that have had their attributes stored, which happens within storing another node below
+        List<Integer> nodesWithAttributesStored = new ArrayList<Integer>(nodesAlreadyStored);
 
         // Loop over IM model and load the node, properties and relations with their corresponding reference and collections nodes (with only attributes)
         for (String nodeClass : classDescriptors.keySet()) {
@@ -142,11 +158,15 @@ public class Neo4jLoader {
                 int nodeCount = 0;
                 Iterator<List<Object>> rows = service.getRowListIterator(nodeQuery);
                 while (rows.hasNext() && (maxRows==0 || nodeCount<maxRows)) {
-                    nodeCount++;
 
                     Object[] row = rows.next().toArray();
                     int id = Integer.parseInt(row[0].toString());
+
+                    // abort this node if it's already stored
+                    if (nodesAlreadyStored.contains(id)) continue;
+
                     if (verbose) System.out.print(nodeClass+":"+id+":");
+                    nodeCount++;
 			
                     // MERGE this node by its id
                     String nodeLabel = getFullNodeLabel(nodeDescriptor);
@@ -269,6 +289,14 @@ public class Neo4jLoader {
                                 }
                                 if (verbose) System.out.print("c");
                             }
+                        }
+                    }
+
+                    // MERGE this node's InterMine ID into the InterMine ID nodes for record-keeping
+                    try (Session session = driver.session()) {
+                        try (Transaction tx = session.beginTransaction()) {
+                            tx.run("MERGE (:InterMineID {id:"+id+"})");
+                            tx.success();
                         }
                     }
                     
