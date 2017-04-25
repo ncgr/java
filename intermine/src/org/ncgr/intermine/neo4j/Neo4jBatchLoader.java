@@ -23,7 +23,6 @@ import org.intermine.metadata.ReferenceDescriptor;
 import org.intermine.metadata.Model;
 import org.intermine.pathquery.Constraints;
 import org.intermine.pathquery.OrderDirection;
-import org.intermine.pathquery.OuterJoinStatus;
 import org.intermine.pathquery.PathConstraintAttribute;
 import org.intermine.pathquery.PathQuery;
 import org.intermine.webservice.client.core.ServiceFactory;
@@ -45,7 +44,8 @@ import static org.neo4j.driver.v1.Values.parameters;
  * Query an InterMine model, and load it and its data into a Neo4j database, along with the relationships derived from relations and collections.
  * Connection and other properties are given in neo4jloader.properties.
  *
- * This version attempts to run MERGEs against the Neo4j database in batches, hopefully to speed up processing.
+ * This version attempts to run MERGEs against the Neo4j database in batches, hopefully to speed up processing. It also does NOT store attributes for 
+ * references and collections; it is intended for a full database load so those will come in eventually.
  * 
  * @author Sam Hokin
  */
@@ -113,9 +113,6 @@ public class Neo4jBatchLoader {
             }
         }
 
-        // Store the IM IDs of nodes that have had their attributes stored, which happens within storing another node below
-        List<Integer> nodesWithAttributesStored = new ArrayList<Integer>(nodesAlreadyStored);
-
         // Loop over IM model and load the node, properties and relations with their corresponding reference and collections nodes (with only attributes)
         for (String nodeClass : classDescriptors.keySet()) {
             if (!ignoredClasses.contains(nodeClass)) {
@@ -156,6 +153,13 @@ public class Neo4jBatchLoader {
                 }
                 if (collDescriptors.size()>0) System.out.println("Collections:"+collDescriptors.keySet());
             
+                // timing
+                long imTotal = 0;
+                long neoTotal = 0;
+                long imAttrTotal = 0;
+                long imRefTotal = 0;
+                long imCollTotal = 0;
+
                 // query nodes of this class
                 nodeQuery.clearView();
                 nodeQuery.addView(nodeClass+".id"); // every object has an IM id
@@ -172,7 +176,10 @@ public class Neo4jBatchLoader {
                     if (verbose) System.out.print(nodeClass+":"+id+":");
                     nodeCount++;
 
-                    // stack up the queries for submission in a single tx at end
+                    // timing
+                    long imStart = System.currentTimeMillis();
+
+                    // stack up the Neo4j queries for submission in a single tx at end
                     List<String> queries = new ArrayList<String>();
 			
                     // MERGE this node by its id
@@ -181,108 +188,74 @@ public class Neo4jBatchLoader {
                     queries.add(merge);
 
                     // SET this nodes attributes if not already stored
-                    if (!nodesWithAttributesStored.contains(id)) {
-                        List<String> attrQueries = populateIdClassAttributes(service, driver, attrQuery, id, nodeLabel, nodeDescriptor);
-                        if (attrQueries.size()>0) {
-                            queries.addAll(attrQueries);
-                            nodesWithAttributesStored.add(id);
-                        }
+                    long imAttrStart = System.currentTimeMillis();
+                    List<String> attrQueries = populateIdClassAttributes(service, driver, attrQuery, id, nodeLabel, nodeDescriptor);
+                    imAttrTotal += System.currentTimeMillis() - imAttrStart;
+                    if (attrQueries.size()>0) {
+                        queries.addAll(attrQueries);
                     }
 
-                    // CREATE INDEX on these individual node types
-                    if (nodeCount==1) {
-                        List<String> labels = Arrays.asList(nodeLabel.split(":"));
-                        try (Session session = driver.session()) {
-                            try (Transaction tx = session.beginTransaction()) {
-                                for (String label : labels) {
-                                    tx.run("CREATE INDEX ON :"+label+"(id)");
-                                }
-                                tx.success();
-                                tx.close();
-                            }
-                        }
-                    }
-
-                    // MERGE this node's references by id
-                    if (refDescriptors.size()>0) {
+                    // MERGE this node's references by id, class by class (avoid JOINs!)
+                    for (String refName : refDescriptors.keySet()) {
+                        ReferenceDescriptor rd = refDescriptors.get(refName);
+                        ClassDescriptor rcd = rd.getReferencedClassDescriptor();
+                        String refLabel = getFullNodeLabel(rcd);
                         refQuery.clearView();
                         refQuery.clearConstraints();
-                        refQuery.clearOuterJoinStatus();
                         refQuery.addView(nodeClass+".id");
-                        for (String refName : refDescriptors.keySet()) {
-                            refQuery.addView(nodeClass+"."+refName+".id");
-                            refQuery.setOuterJoinStatus(nodeClass+"."+refName, OuterJoinStatus.OUTER);
-                        }
+                        refQuery.addView(nodeClass+"."+refName+".id");
                         refQuery.addConstraint(new PathConstraintAttribute(nodeClass+".id", ConstraintOp.EQUALS, String.valueOf(id)));
+                        long imRefStart = System.currentTimeMillis();
                         Iterator<List<Object>> rs = service.getRowListIterator(refQuery);
+                        imRefTotal += System.currentTimeMillis() - imRefStart;
                         while (rs.hasNext()) {
                             Object[] r = rs.next().toArray();
-                            int j = 0;
-                            int idn = Integer.parseInt(r[j++].toString()); // node id
-                            for (String refName : refDescriptors.keySet()) {
-                                String idrString = r[j++].toString(); // ref id
-                                if (!idrString.equals("null")) {
-                                    int idr = Integer.parseInt(idrString);
-                                    ReferenceDescriptor rd = refDescriptors.get(refName);
-                                    ClassDescriptor rcd = rd.getReferencedClassDescriptor();
-                                    String refLabel = getFullNodeLabel(rcd);
-                                    // merge this reference node
-                                    merge = "MERGE (n:"+refLabel+" {id:"+idr+"})";
-                                    queries.add(merge);
-                                    // set this reference node's attributes
-                                    if (!nodesWithAttributesStored.contains(idr)) {
-                                        List<String> attrQueries = populateIdClassAttributes(service, driver, attrQuery, idr, refLabel, rcd);
-                                        if (attrQueries.size()>0) {
-                                            queries.addAll(attrQueries);
-                                            nodesWithAttributesStored.add(idr);
-                                        }
-                                    }
-                                    // merge this node-->ref relationship
-                                    String match = "MATCH (n:"+nodeLabel+" {id:"+idn+"}),(r:"+refLabel+" {id:"+idr+"}) MERGE (n)-[:"+refName+"]->(r)";
-                                    queries.add(merge);
-                                    if (verbose) System.out.print("r");
-                                }
+                            int idn = Integer.parseInt(r[0].toString());     // node id
+                            if (r[1]!=null) {                                // refs can be null!
+                                int idr = Integer.parseInt(r[1].toString()); // ref id
+                                // merge this reference node
+                                merge = "MERGE (n:"+refLabel+" {id:"+idr+"})";
+                                queries.add(merge);
+                                // merge this node-->ref relationship
+                                String match = "MATCH (n:"+nodeLabel+" {id:"+idn+"}),(r:"+refLabel+" {id:"+idr+"}) MERGE (n)-[:"+refName+"]->(r)";
+                                queries.add(merge);
+                                if (verbose) System.out.print("r");
                             }
                         }
                     }
 			
-                    // MERGE this node's collections by id, one at a time
-                    if (collDescriptors.size()>0) {
-                        // store id, class in a map for further use
-                        for (String collName : collDescriptors.keySet()) {
-                            CollectionDescriptor cd = collDescriptors.get(collName);
-                            ClassDescriptor ccd = cd.getReferencedClassDescriptor();
-                            String collLabel = getFullNodeLabel(ccd);
-                            collQuery.clearView();
-                            collQuery.clearConstraints();
-                            collQuery.addView(nodeClass+".id");
-                            collQuery.addView(nodeClass+"."+collName+".id");
-                            collQuery.addConstraint(new PathConstraintAttribute(nodeClass+".id", ConstraintOp.EQUALS, String.valueOf(id)));
-                            Iterator<List<Object>> rs = service.getRowListIterator(collQuery);
-                            int collCount = 0;
-                            while (rs.hasNext() && (maxRows==0 || collCount<maxRows)) {
-                                collCount++;
-                                Object[] r = rs.next().toArray();
-                                int idn = Integer.parseInt(r[0].toString());      // node id
-                                int idc = Integer.parseInt(r[1].toString());      // collection id
-                                // merge this collections node
-                                merge = "MERGE (n:"+collLabel+" {id:"+idc+"})";
-                                queries.add(merge);
-                                // set this collection node's attributes
-                                if (!nodesWithAttributesStored.contains(idc)) {
-                                    List<String> attrQueries = populateIdClassAttributes(service, driver, attrQuery, idc, collLabel, ccd);
-                                    if (attrQueries.size()>0) {
-                                        queries.addAll(attrQueries);
-                                        nodesWithAttributesStored.add(idc);
-                                    }
-                                }
-                                
-                                String match = "MATCH (n:"+nodeLabel+" {id:"+idn+"}),(c:"+collLabel+" {id:"+idc+"}) MERGE (n)-[:"+collName+"]->(c)";
-                                queries.add(match);
-                                if (verbose) System.out.print("c");
-                            }
+                    // MERGE this node's collections by id, class by class
+                    for (String collName : collDescriptors.keySet()) {
+                        CollectionDescriptor cd = collDescriptors.get(collName);
+                        ClassDescriptor ccd = cd.getReferencedClassDescriptor();
+                        String collLabel = getFullNodeLabel(ccd);
+                        collQuery.clearView();
+                        collQuery.clearConstraints();
+                        collQuery.addView(nodeClass+".id");
+                        collQuery.addView(nodeClass+"."+collName+".id");
+                        collQuery.addConstraint(new PathConstraintAttribute(nodeClass+".id", ConstraintOp.EQUALS, String.valueOf(id)));
+                        long imCollStart = System.currentTimeMillis();
+                        Iterator<List<Object>> rs = service.getRowListIterator(collQuery);
+                        imCollTotal += System.currentTimeMillis() - imCollStart;
+                        int collCount = 0;
+                        while (rs.hasNext() && (maxRows==0 || collCount<maxRows)) {
+                            collCount++;
+                            Object[] r = rs.next().toArray();
+                            int idn = Integer.parseInt(r[0].toString());      // node id
+                            int idc = Integer.parseInt(r[1].toString());      // collection id
+                            // merge this collections node
+                            merge = "MERGE (n:"+collLabel+" {id:"+idc+"})";
+                            queries.add(merge);
+                            // merge this node-->ref relationship
+                            String match = "MATCH (n:"+nodeLabel+" {id:"+idn+"}),(c:"+collLabel+" {id:"+idc+"}) MERGE (n)-[:"+collName+"]->(c)";
+                            queries.add(match);
+                            if (verbose) System.out.print("c");
                         }
                     }
+
+                    // timing
+                    imTotal += System.currentTimeMillis() - imStart;
+                    long neoStart = System.currentTimeMillis();
 
                     // run the concatenated queries and insert this node's id into InterMineID for bookkeeping
                     try (Session session = driver.session()) {
@@ -295,9 +268,20 @@ public class Neo4jBatchLoader {
                             tx.close();
                         }
                     }
+
+                    // timing
+                    neoTotal += System.currentTimeMillis() - neoStart;
                     
                     if (verbose) System.out.println("");
                     
+                }
+
+                if (verbose) {
+                    System.out.println("IM:"+(double)imTotal/1e3+"s" +
+                                       "\tNeo4j:"+(double)neoTotal/1e3+"s" +
+                                       "\tIMAttr:"+(double)imAttrTotal/1e3+"s" +
+                                       "\tIMRef:"+(double)imRefTotal/1e3+"s" +
+                                       "\tIMColl:"+(double)imCollTotal/1e3+"s");
                 }
             }
         }
@@ -324,7 +308,6 @@ public class Neo4jBatchLoader {
         if (attrDescriptors.size()>1) {
             attrQuery.clearView();
             attrQuery.clearConstraints();
-            attrQuery.clearOuterJoinStatus();
             for (AttributeDescriptor ad : attrDescriptors) {
                 String attrName = ad.getName();
                 if (!attrName.equals("id")) attrQuery.addView(className+"."+attrName);

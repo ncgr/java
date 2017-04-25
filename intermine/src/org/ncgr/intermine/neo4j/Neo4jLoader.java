@@ -23,7 +23,6 @@ import org.intermine.metadata.ReferenceDescriptor;
 import org.intermine.metadata.Model;
 import org.intermine.pathquery.Constraints;
 import org.intermine.pathquery.OrderDirection;
-import org.intermine.pathquery.OuterJoinStatus;
 import org.intermine.pathquery.PathConstraintAttribute;
 import org.intermine.pathquery.PathQuery;
 import org.intermine.webservice.client.core.ServiceFactory;
@@ -106,6 +105,8 @@ public class Neo4jLoader {
                     Record record = result.next();
                     nodesAlreadyStored.add(record.get("n.id").asInt());
                 }
+                tx.success();
+                tx.close();
             }
         }
 
@@ -175,6 +176,7 @@ public class Neo4jLoader {
                         try (Transaction tx = session.beginTransaction()) {
                             tx.run(merge);
                             tx.success();
+                            tx.close();
                         }
                     }
 
@@ -192,111 +194,106 @@ public class Neo4jLoader {
                                 try (Transaction tx = session.beginTransaction()) {
                                     tx.run("CREATE INDEX ON :"+label+"(id)");
                                     tx.success();
+                                    tx.close();
                                 }
                             }
                         }
                     }
 
-                    // MERGE this node's references by id
-                    if (refDescriptors.size()>0) {
+                    // MERGE this node's references by id, class by class
+                    for (String refName : refDescriptors.keySet()) {
+                        ReferenceDescriptor rd = refDescriptors.get(refName);
+                        ClassDescriptor rcd = rd.getReferencedClassDescriptor();
+                        String refLabel = getFullNodeLabel(rcd);
                         refQuery.clearView();
                         refQuery.clearConstraints();
-                        refQuery.clearOuterJoinStatus();
                         refQuery.addView(nodeClass+".id");
-                        for (String refName : refDescriptors.keySet()) {
-                            refQuery.addView(nodeClass+"."+refName+".id");
-                            refQuery.setOuterJoinStatus(nodeClass+"."+refName, OuterJoinStatus.OUTER);
-                        }
+                        refQuery.addView(nodeClass+"."+refName+".id");
                         refQuery.addConstraint(new PathConstraintAttribute(nodeClass+".id", ConstraintOp.EQUALS, String.valueOf(id)));
                         Iterator<List<Object>> rs = service.getRowListIterator(refQuery);
                         while (rs.hasNext()) {
                             Object[] r = rs.next().toArray();
-                            int j = 0;
-                            int idn = Integer.parseInt(r[j++].toString()); // node id
-                            for (String refName : refDescriptors.keySet()) {
-                                String idrString = r[j++].toString(); // ref id
-                                if (!idrString.equals("null")) {
-                                    int idr = Integer.parseInt(idrString);
-                                    ReferenceDescriptor rd = refDescriptors.get(refName);
-                                    ClassDescriptor rcd = rd.getReferencedClassDescriptor();
-                                    String refLabel = getFullNodeLabel(rcd);
-                                    // merge this reference node
-                                    merge = "MERGE (n:"+refLabel+" {id:"+idr+"})";
-                                    try (Session session = driver.session()) {
-                                        try (Transaction tx = session.beginTransaction()) {
-                                            tx.run(merge);
-                                            tx.success();
-                                        }
+                            int idn = Integer.parseInt(r[0].toString());      // node id
+                            if (r[1]!=null) {                                 // refs can be null!
+                                int idr = Integer.parseInt(r[1].toString());  // ref id
+                                // merge this reference node
+                                merge = "MERGE (n:"+refLabel+" {id:"+idr+"})";
+                                try (Session session = driver.session()) {
+                                    try (Transaction tx = session.beginTransaction()) {
+                                        tx.run(merge);
+                                        tx.success();
+                                        tx.close();
                                     }
-                                    // set this reference node's attributes
-                                    if (!nodesWithAttributesStored.contains(idr)) {
-                                        populateIdClassAttributes(service, driver, attrQuery, idr, refLabel, rcd);
-                                        nodesWithAttributesStored.add(idr);
-                                    }
-                                    // merge this node-->ref relationship
-                                    String match = "MATCH (n:"+nodeLabel+" {id:"+idn+"}),(r:"+refLabel+" {id:"+idr+"}) MERGE (n)-[:"+refName+"]->(r)";
-                                    try (Session session = driver.session()) {
-                                        try (Transaction tx = session.beginTransaction()) {
-                                            tx.run(match);
-                                            tx.success();
-                                        }
-                                    }
-                                    if (verbose) System.out.print("r");
                                 }
+                                // set this reference node's attributes
+                                if (!nodesWithAttributesStored.contains(idr)) {
+                                    populateIdClassAttributes(service, driver, attrQuery, idr, refLabel, rcd);
+                                    nodesWithAttributesStored.add(idr);
+                                }
+                                // merge this node-->ref relationship
+                                String match = "MATCH (n:"+nodeLabel+" {id:"+idn+"}),(r:"+refLabel+" {id:"+idr+"}) MERGE (n)-[:"+refName+"]->(r)";
+                                try (Session session = driver.session()) {
+                                    try (Transaction tx = session.beginTransaction()) {
+                                        tx.run(match);
+                                        tx.success();
+                                        tx.close();
+                                    }
+                                }
+                                if (verbose) System.out.print("r");
                             }
                         }
                     }
 			
                     // MERGE this node's collections by id, one at a time
-                    if (collDescriptors.size()>0) {
-                        // store id, class in a map for further use
-                        for (String collName : collDescriptors.keySet()) {
-                            CollectionDescriptor cd = collDescriptors.get(collName);
-                            ClassDescriptor ccd = cd.getReferencedClassDescriptor();
-                            String collLabel = getFullNodeLabel(ccd);
-                            collQuery.clearView();
-                            collQuery.clearConstraints();
-                            collQuery.addView(nodeClass+".id");
-                            collQuery.addView(nodeClass+"."+collName+".id");
-                            collQuery.addConstraint(new PathConstraintAttribute(nodeClass+".id", ConstraintOp.EQUALS, String.valueOf(id)));
-                            Iterator<List<Object>> rs = service.getRowListIterator(collQuery);
-                            int collCount = 0;
-                            while (rs.hasNext() && (maxRows==0 || collCount<maxRows)) {
-                                collCount++;
-                                Object[] r = rs.next().toArray();
-                                int idn = Integer.parseInt(r[0].toString());      // node id
-                                int idc = Integer.parseInt(r[1].toString());      // collection id
-                                // merge this collections node
-                                merge = "MERGE (n:"+collLabel+" {id:"+idc+"})";
-                                try (Session session = driver.session()) {
-                                    try (Transaction tx = session.beginTransaction()) {
-                                        tx.run(merge);
-                                        tx.success();
-                                    }
+                    for (String collName : collDescriptors.keySet()) {
+                        CollectionDescriptor cd = collDescriptors.get(collName);
+                        ClassDescriptor ccd = cd.getReferencedClassDescriptor();
+                        String collLabel = getFullNodeLabel(ccd);
+                        collQuery.clearView();
+                        collQuery.clearConstraints();
+                        collQuery.addView(nodeClass+".id");
+                        collQuery.addView(nodeClass+"."+collName+".id");
+                        collQuery.addConstraint(new PathConstraintAttribute(nodeClass+".id", ConstraintOp.EQUALS, String.valueOf(id)));
+                        Iterator<List<Object>> rs = service.getRowListIterator(collQuery);
+                        int collCount = 0;
+                        while (rs.hasNext() && (maxRows==0 || collCount<maxRows)) {
+                            collCount++;
+                            Object[] r = rs.next().toArray();
+                            int idn = Integer.parseInt(r[0].toString());      // node id
+                            int idc = Integer.parseInt(r[1].toString());      // collection id
+                            // merge this collections node
+                            merge = "MERGE (n:"+collLabel+" {id:"+idc+"})";
+                            try (Session session = driver.session()) {
+                                try (Transaction tx = session.beginTransaction()) {
+                                    tx.run(merge);
+                                    tx.success();
+                                    tx.close();
                                 }
-                                // set this collection node's attributes
-                                if (!nodesWithAttributesStored.contains(idc)) {
-                                    populateIdClassAttributes(service, driver, attrQuery, idc, collLabel, ccd);
-                                    nodesWithAttributesStored.add(idc);
-                                }
-                                
-                                String match = "MATCH (n:"+nodeLabel+" {id:"+idn+"}),(c:"+collLabel+" {id:"+idc+"}) MERGE (n)-[:"+collName+"]->(c)";
-                                try (Session session = driver.session()) {
-                                    try (Transaction tx = session.beginTransaction()) {
-                                        tx.run(match);
-                                        tx.success();
-                                    }
-                                }
-                                if (verbose) System.out.print("c");
                             }
+                            // set this collection node's attributes
+                            if (!nodesWithAttributesStored.contains(idc)) {
+                                populateIdClassAttributes(service, driver, attrQuery, idc, collLabel, ccd);
+                                nodesWithAttributesStored.add(idc);
+                            }
+                            // merge this node-->coll relationship
+                            String match = "MATCH (n:"+nodeLabel+" {id:"+idn+"}),(c:"+collLabel+" {id:"+idc+"}) MERGE (n)-[:"+collName+"]->(c)";
+                            try (Session session = driver.session()) {
+                                try (Transaction tx = session.beginTransaction()) {
+                                    tx.run(match);
+                                    tx.success();
+                                    tx.close();
+                                }
+                            }
+                            if (verbose) System.out.print("c");
                         }
                     }
 
-                    // MERGE this node's InterMine ID into the InterMine ID nodes for record-keeping
+                    // MERGE this node's InterMine ID into the InterMine ID nodes for record-keeping that it's stored
                     try (Session session = driver.session()) {
                         try (Transaction tx = session.beginTransaction()) {
                             tx.run("MERGE (:InterMineID {id:"+id+"})");
                             tx.success();
+                            tx.close();
                         }
                     }
                     
@@ -326,7 +323,6 @@ public class Neo4jLoader {
         if (attrDescriptors.size()>1) {
             attrQuery.clearView();
             attrQuery.clearConstraints();
-            attrQuery.clearOuterJoinStatus();
             for (AttributeDescriptor ad : attrDescriptors) {
                 String attrName = ad.getName();
                 if (!attrName.equals("id")) attrQuery.addView(className+"."+attrName);
@@ -360,6 +356,7 @@ public class Neo4jLoader {
                         try (Transaction tx = session.beginTransaction()) {
                             tx.run(match);
                             tx.success();
+                            tx.close();
                         }
                     }
                 }
