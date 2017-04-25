@@ -69,15 +69,7 @@ public class Neo4jNodeLoader {
         String neo4jPassword = props.getProperty("neo4j.password");
         List<String> ignoredClasses = new ArrayList<String>();
         if (props.getProperty("ignored.classes")!=null) ignoredClasses = Arrays.asList(props.getProperty("ignored.classes").split(","));
-        List<String> replacedClassPairs = new ArrayList<String>();
-        if (props.getProperty("replaced.classes")!=null) replacedClassPairs = Arrays.asList(props.getProperty("replaced.classes").split(","));
-        Map<String,String> replacedClasses = new HashMap<String,String>();
-        for (String rc : replacedClassPairs) {
-            String[] pair = rc.split("\\.");
-            replacedClasses.put(pair[0], pair[1]);
-            System.out.println("Will replace "+pair[0]+" with "+pair[1]+" during node MERGEs.");
-        }
-
+        
         // InterMine setup
         ServiceFactory factory = new ServiceFactory(intermineServiceUrl);
         Model model = factory.getModel();
@@ -164,7 +156,6 @@ public class Neo4jNodeLoader {
                     for (String refName : refDescriptors.keySet()) {
                         ReferenceDescriptor rd = refDescriptors.get(refName);
                         String refClass = rd.getReferencedClassDescriptor().getSimpleName();
-                        if (replacedClasses.containsKey(refClass)) refClass = replacedClasses.get(refClass);
                         String idrString = r[j++].toString(); // ref id
                         if (!idrString.equals("null")) {
                             int idr = Integer.parseInt(idrString);

@@ -54,15 +54,7 @@ public class CSVDumper {
         int maxRows = Integer.parseInt(props.getProperty("max.rows"));
         List<String> ignoredClasses = new ArrayList<String>();
         if (props.getProperty("ignored.classes")!=null) ignoredClasses = Arrays.asList(props.getProperty("ignored.classes").split(","));
-        List<String> replacedClassPairs = new ArrayList<String>();
-        if (props.getProperty("replaced.classes")!=null) replacedClassPairs = Arrays.asList(props.getProperty("replaced.classes").split(","));
-        Map<String,String> replacedClasses = new HashMap<String,String>();
-        for (String rc : replacedClassPairs) {
-            String[] pair = rc.split("\\.");
-            replacedClasses.put(pair[0], pair[1]);
-            System.out.println("Will replace "+pair[0]+" with "+pair[1]+" during node MERGEs.");
-        }
-        
+
         // InterMine setup
         ServiceFactory factory = new ServiceFactory(intermineServiceUrl);
         Model model = factory.getModel();
@@ -82,7 +74,6 @@ public class CSVDumper {
             String nodeClass = thisDescriptor.getSimpleName();
             if (!ignoredClasses.contains(nodeClass)) {
                 String nodeName = nodeClass;
-                if (replacedClasses.containsKey(nodeClass)) nodeName = replacedClasses.get(nodeClass);
 
                 // get this node's attribute descriptors
                 Set<AttributeDescriptor> attrDescriptors = thisDescriptor.getAllAttributeDescriptors();

@@ -9,8 +9,10 @@ import java.util.List;
 import java.util.ArrayList;
 import java.util.Set;
 import java.util.HashSet;
+import java.util.TreeSet;
 import java.util.Map;
 import java.util.HashMap;
+import java.util.TreeMap;
 import java.util.Properties;
 
 import org.intermine.metadata.AttributeDescriptor;
@@ -73,26 +75,6 @@ public class Neo4jLoader {
         List<String> ignoredCollections = new ArrayList<String>();
         if (props.getProperty("ignored.collections")!=null) ignoredCollections = Arrays.asList(props.getProperty("ignored.collections").split(","));
 
-        // NOTE: disabled
-        // List<String> replacedClassPairs = new ArrayList<String>();
-        // if (props.getProperty("replaced.classes")!=null) replacedClassPairs = Arrays.asList(props.getProperty("replaced.classes").split(","));
-        // Map<String,String> replacedClasses = new HashMap<String,String>();
-        // for (String rcp : replacedClassPairs) {
-        //     String[] pair = rcp.split("\\.");
-        //     replacedClasses.put(pair[0], pair[1]);
-        //     System.out.println("Will replace "+pair[0]+" with "+pair[1]+" during node MERGEs.");
-        // }
-
-        // NOTE: disabled
-        // special plural pairs that deal with non-standard English plurals, like match -> matches or ontology -> ontologies
-        // List<String> specialPluralPairs = new ArrayList<String>();
-        // if (props.getProperty("special.plurals")!=null) specialPluralPairs = Arrays.asList(props.getProperty("special.plurals").split(","));
-        // Map<String,String> pluralSingulars = new HashMap<String,String>();
-        // for (String spp : specialPluralPairs) {
-        //     String[] pair = spp.split("\\.");
-        //     pluralSingulars.put(pair[0], pair[1]);
-        // }
-
         // InterMine setup
         ServiceFactory factory = new ServiceFactory(intermineServiceUrl);
         Model model = factory.getModel();
@@ -105,20 +87,20 @@ public class Neo4jLoader {
         // Neo4j setup
         Driver driver = GraphDatabase.driver(neo4jUrl, AuthTokens.basic(neo4jUser, neo4jPassword));
 
-        // Get the entire model's class descriptors and store them in a map so we can grab them by class name if we want
-        Set<ClassDescriptor> classDescriptors = model.getClassDescriptors();
-        Map<String,ClassDescriptor> classDescriptorMap = new HashMap<String,ClassDescriptor>();
-        for (ClassDescriptor cd : classDescriptors) {
-            classDescriptorMap.put(cd.getSimpleName(), cd);
+        // Put the model's class descriptors into a map so we can grab them by class name if we want; alphabetical by class simple name
+        Map<String,ClassDescriptor> classDescriptors = new TreeMap<String,ClassDescriptor>();
+        for (ClassDescriptor cd : model.getClassDescriptors()) {
+            classDescriptors.put(cd.getSimpleName(), cd);
         }
         
         // Store the IM IDs of nodes that have had their attributes stored
         List<Integer> nodesWithAttributesStored = new ArrayList<Integer>();
 
-        // Loop over IM model and load the node, properties and relations with their corresponding reference and collections nodes (containing only id so far)
-        for (ClassDescriptor nodeDescriptor : classDescriptors) {
-            String nodeClass = nodeDescriptor.getSimpleName();
+        // Loop over IM model and load the node, properties and relations with their corresponding reference and collections nodes (with only attributes)
+        for (String nodeClass : classDescriptors.keySet()) {
             if (!ignoredClasses.contains(nodeClass)) {
+
+                ClassDescriptor nodeDescriptor = classDescriptors.get(nodeClass);
 
                 // display the node with labels
                 System.out.println("--------------------------------------------------------");
@@ -277,16 +259,6 @@ public class Neo4jLoader {
                                     populateIdClassAttributes(service, driver, attrQuery, idc, collLabel, ccd);
                                     nodesWithAttributesStored.add(idc);
                                 }
-                                
-                                // NOTE: not singularizing since that will break PathQuery meant for IM
-                                // merge this node-->collections relationship, making collName have singular rather than plural form (so they match with refs)
-                                // String collNameSingular = collName;
-                                // if (pluralSingulars.containsKey(collName)) {
-                                //     collNameSingular = pluralSingulars.get(collName);
-                                // } else if (collName.endsWith("s")) {
-                                //     collNameSingular = collName.substring(0,collName.length()-1);
-                                // }
-                                // String match = "MATCH (n:"+nodeLabel+" {id:"+idn+"}),(c:"+collLabel+" {id:"+idc+"}) MERGE (n)-[:"+collNameSingular+"]->(c)";
                                 
                                 String match = "MATCH (n:"+nodeLabel+" {id:"+idn+"}),(c:"+collLabel+" {id:"+idc+"}) MERGE (n)-[:"+collName+"]->(c)";
                                 try (Session session = driver.session()) {
