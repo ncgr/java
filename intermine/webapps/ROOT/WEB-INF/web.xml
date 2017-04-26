@@ -9,22 +9,22 @@
 
   <context-param>
     <param-name>intermine.root.url</param-name>
-    <param-value>http://localhost/beanmine</param-value>
+    <param-value>https://mines.legumeinfo.org/beanmine</param-value>
     <description>the root URL for the mine of interest, e.g. https://mines.legumeinfo.org/beanmine</description>
   </context-param>
   <context-param>
     <param-name>neo4j.bolt.url</param-name>
-    <param-value>bolt://localhost:7687</param-value>
+    <param-value>bolt://intermine.ncgr.org:7687</param-value>
     <description>the Neo4j Bolt URL, e.g. bolt://localhost:7687</description>
   </context-param>
   <context-param>
     <param-name>neo4j.bolt.user</param-name>
-    <param-value>neo4j</param-value>
+    <param-value>neo4juser</param-value>
     <description>the Neo4j username</description>
   </context-param>
   <context-param>
     <param-name>neo4j.bolt.password</param-name>
-    <param-value>Phavu16Glyma</param-value>
+    <param-value>readonly</param-value>
     <description>the Neo4j password</description>
   </context-param>
 

@@ -68,15 +68,19 @@ public class Neo4jLoader {
 
         // classes to ignore, usually superclasses or maybe just classes you don't want
         List<String> ignoredClasses = new ArrayList<String>();
-        if (props.getProperty("ignored.classes")!=null) ignoredClasses = Arrays.asList(props.getProperty("ignored.classes").split(","));
+        if (props.getProperty("ignored.classes")!=null) ignoredClasses = Arrays.asList(props.getProperty("ignored.classes").trim().split(","));
+
+        // classes to load, overrides loading all classes other than those ignored
+        List<String> loadedClasses = new ArrayList<String>();
+        if (props.getProperty("loaded.classes")!=null && props.getProperty("loaded.classes").trim().length()>0) loadedClasses = Arrays.asList(props.getProperty("loaded.classes").trim().split(","));
         
         // references to ignore, typically reverse-reference
         List<String> ignoredReferences = new ArrayList<String>();
-        if (props.getProperty("ignored.references")!=null) ignoredReferences = Arrays.asList(props.getProperty("ignored.references").split(","));
+        if (props.getProperty("ignored.references")!=null) ignoredReferences = Arrays.asList(props.getProperty("ignored.references").trim().split(","));
 
         // collections to ignore, typically reverse-reference
         List<String> ignoredCollections = new ArrayList<String>();
-        if (props.getProperty("ignored.collections")!=null) ignoredCollections = Arrays.asList(props.getProperty("ignored.collections").split(","));
+        if (props.getProperty("ignored.collections")!=null) ignoredCollections = Arrays.asList(props.getProperty("ignored.collections").trim().split(","));
 
         // InterMine setup
         ServiceFactory factory = new ServiceFactory(intermineServiceUrl);
@@ -90,13 +94,18 @@ public class Neo4jLoader {
         // Neo4j setup
         Driver driver = GraphDatabase.driver(neo4jUrl, AuthTokens.basic(neo4jUser, neo4jPassword));
 
-        // Put the model's class descriptors into a map so we can grab them by class name if we want; alphabetical by class simple name
-        Map<String,ClassDescriptor> classDescriptors = new TreeMap<String,ClassDescriptor>();
+        // Put the desired class descriptors into a map so we can grab them by class name if we want; alphabetical by class simple name
+        Map<String,ClassDescriptor> nodeDescriptors = new TreeMap<String,ClassDescriptor>();
         for (ClassDescriptor cd : model.getClassDescriptors()) {
-            classDescriptors.put(cd.getSimpleName(), cd);
+            String nodeClass = cd.getSimpleName();
+            if (loadedClasses.size()>0 && loadedClasses.contains(nodeClass)) {
+                nodeDescriptors.put(nodeClass, cd);
+            } else if (loadedClasses.size()==0 && !ignoredClasses.contains(nodeClass)) {
+                nodeDescriptors.put(nodeClass, cd);
+            }
         }
         
-        // Store the IM IDs of nodes that have already been stored
+        // Retreive the IM IDs of nodes that have already been fully stored
         List<Integer> nodesAlreadyStored = new ArrayList<Integer>();
         try (Session session = driver.session()) {
             try (Transaction tx = session.beginTransaction()) {
@@ -110,14 +119,24 @@ public class Neo4jLoader {
             }
         }
 
-        // Store the IM IDs of nodes that have had their attributes stored, which happens within storing another node below
-        List<Integer> nodesWithAttributesStored = new ArrayList<Integer>(nodesAlreadyStored);
+        // Retrieve the IM IDs of nodes that have had their attributes stored, which is augmented when storing another node below
+        List<Integer> nodesWithAttributesStored = new ArrayList<Integer>();
+        try (Session session = driver.session()) {
+            try (Transaction tx = session.beginTransaction()) {
+                StatementResult result = tx.run("MATCH (n) RETURN n.id");
+                while (result.hasNext()) {
+                    Record record = result.next();
+                    nodesWithAttributesStored.add(record.get("n.id").asInt());
+                }
+                tx.success();
+                tx.close();
+            }
+        }
 
         // Loop over IM model and load the node, properties and relations with their corresponding reference and collections nodes (with only attributes)
-        for (String nodeClass : classDescriptors.keySet()) {
-            if (!ignoredClasses.contains(nodeClass)) {
+        for (String nodeClass : nodeDescriptors.keySet()) {
 
-                ClassDescriptor nodeDescriptor = classDescriptors.get(nodeClass);
+                ClassDescriptor nodeDescriptor = nodeDescriptors.get(nodeClass);
 
                 // display the node with labels
                 System.out.println("--------------------------------------------------------");
@@ -301,8 +320,7 @@ public class Neo4jLoader {
                     
                 }
             }
-        }
-        
+            
         // Close connections
         driver.close();
 

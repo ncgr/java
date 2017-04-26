@@ -35,8 +35,6 @@ import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.StatementResult;
 import org.neo4j.driver.v1.Transaction;
-import org.neo4j.driver.v1.Value;
-import org.neo4j.driver.v1.util.Pair;
 
 import static org.neo4j.driver.v1.Values.parameters;
 
@@ -99,7 +97,7 @@ public class Neo4jBatchLoader {
             classDescriptors.put(cd.getSimpleName(), cd);
         }
         
-        // Store the IM IDs of nodes that have already been stored
+        // Retrieve the IM IDs of nodes that have already been stored
         List<Integer> nodesAlreadyStored = new ArrayList<Integer>();
         try (Session session = driver.session()) {
             try (Transaction tx = session.beginTransaction()) {
@@ -120,7 +118,7 @@ public class Neo4jBatchLoader {
                 ClassDescriptor nodeDescriptor = classDescriptors.get(nodeClass);
 
                 // display the node with labels
-                System.out.println("--------------------------------------------------------");
+                System.out.println("------------------------------------------------------------------");
                 System.out.println(getFullNodeLabel(nodeDescriptor));
                 
                 // display the attributes
@@ -277,8 +275,8 @@ public class Neo4jBatchLoader {
                 }
 
                 if (verbose) {
-                    System.out.println("IM:"+(double)imTotal/1e3+"s" +
-                                       "\tNeo4j:"+(double)neoTotal/1e3+"s" +
+                    System.out.println("Neo4j:"+(double)neoTotal/1e3+"s" +
+                                       "\tIM:"+(double)imTotal/1e3+"s" +
                                        "\tIMAttr:"+(double)imAttrTotal/1e3+"s" +
                                        "\tIMRef:"+(double)imRefTotal/1e3+"s" +
                                        "\tIMColl:"+(double)imCollTotal/1e3+"s");
