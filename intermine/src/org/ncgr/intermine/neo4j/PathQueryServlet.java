@@ -13,6 +13,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Map;
+import java.util.HashMap;
 import java.util.TreeMap;
 import java.util.Set;
 import java.util.TreeSet;
@@ -27,6 +28,7 @@ import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
 import org.intermine.metadata.Model;
+import org.intermine.metadata.AttributeDescriptor;
 import org.intermine.metadata.ClassDescriptor;
 import org.intermine.metadata.CollectionDescriptor;
 import org.intermine.metadata.ReferenceDescriptor;
@@ -161,7 +163,15 @@ public class PathQueryServlet extends HttpServlet {
         long endTime = System.currentTimeMillis();
 
         // output
-        for (String s : output) writer.println(s);
+        int count = 0;
+        for (String s : output) {
+            count++;
+            if (count<=5) writer.println(s);
+        }
+        if (count>5) {
+            writer.println("");
+            writer.println("+ "+(output.size()-5)+" more records.");
+        }
         writer.println("");
         writer.println("Query time: "+(endTime-startTime)+" ms");
 
@@ -192,7 +202,17 @@ public class PathQueryServlet extends HttpServlet {
             output.add(s);
         }
         endTime = System.currentTimeMillis();
-        for (String s : output) writer.println(s);
+        count = 0;
+        for (String s : output) {
+            count++;
+            if (count<=5) {
+                writer.println(s);
+            }
+        }
+        if (count>5) {
+            writer.println("");
+            writer.println("+ "+(output.size()-5)+" more records.");
+        }
         writer.println("");
         writer.println("Query time: "+(endTime-startTime)+" ms");
 
@@ -205,11 +225,13 @@ public class PathQueryServlet extends HttpServlet {
         writer.println("");
         output.clear();
         
-        Map<String,String> nodes = new TreeMap<String,String>(); // Cypher nodes keyed by letter (a:Gene)
-        Map<String,String> properties = new TreeMap<String,String>(); // Cypher properties (c.name) keyed by full IM path (Gene.goAnnotation.ontologyTerm.name)
-        List<String> orderedProperties = new ArrayList<String>(); // ordered as given in the PathQuery
+        Map<String,String> nodes = new TreeMap<String,String>();          // Cypher nodes keyed by letter (a:Gene)
+        Map<String,String> properties = new TreeMap<String,String>();     // Cypher properties (c.name) keyed by full IM path (Gene.goAnnotation.ontologyTerm.name)
+        List<String> orderedProperties = new ArrayList<String>();         // properties ordered as given in the PathQuery
+        Map<String,String> orderedTypes = new HashMap<String,String>();  // stores field types (java.lang.String, etc.) for each property
         List<String> columnHeaders = pathQuery.getColumnHeaders();
         for (String columnHeader : columnHeaders) {
+            String path = "";
             String[] parts = columnHeader.split(" > ");
             String currentLetter = null;
             String currentNode = null;
@@ -217,11 +239,13 @@ public class PathQueryServlet extends HttpServlet {
             for (int i=0; i<parts.length; i++) {
                 if (i==0) {
                     // root node at start
+                    path = parts[i];
                     currentNode = parts[i];
                     currentNodeDescriptor = model.getClassDescriptorByName(currentNode);
                     currentLetter = nodeLetters.get(0);
                     nodes.put(currentLetter, currentNode);
                 } else if (i<(parts.length-1)) {
+                    path += "."+parts[i];
                     // subnodes in middle; can't get ref or coll descriptor by name since may be from a superclass
                     String className = null;
                     Set<ReferenceDescriptor> refDescriptors = currentNodeDescriptor.getAllReferenceDescriptors();
@@ -256,15 +280,20 @@ public class PathQueryServlet extends HttpServlet {
                             nodes.put(currentLetter, currentNode);
                         }
                     }
+                } else {
+                    // property at end
+                    path += "."+parts[i];
+                    String property = currentLetter+"."+parts[i];
+                    properties.put(path, property);
+                    orderedProperties.add(property);
+                    AttributeDescriptor currentAttributeDescriptor = currentNodeDescriptor.getAttributeDescriptorByName(parts[i], true);
+                    orderedTypes.put(property, currentAttributeDescriptor.getType());
                 }
             }
-            // property at end
-            String path = parts[0];
-            for (int i=1; i<parts.length; i++) path += "."+parts[i];
-            String property = currentLetter+"."+parts[parts.length-1];
-            properties.put(path, property);
-            orderedProperties.add(property);
         }
+
+        System.out.println(orderedProperties);
+        System.out.println(orderedTypes);
 
         // Cypher query: MATCH section
         String cypherQuery = "MATCH ";
@@ -322,14 +351,32 @@ public class PathQueryServlet extends HttpServlet {
                     Record record = result.next();
                     String row = "";
                     for (String property : orderedProperties) {
-                        row += record.get(property).asString()+"\t";
+                        String type = orderedTypes.get(property);
+                        try {
+                            if (type.endsWith("String")) {
+                                row += record.get(property).asString()+"\t";
+                            } else {
+                                row += record.get(property)+"\t";
+                            }
+                        } catch (Exception e) {
+                            row += e.toString();
+                        }
                     }
                     output.add(row);
                 }
             }
         }
         endTime = System.currentTimeMillis();
-        for (String s : output) writer.println(s);
+
+        count = 0;
+        for (String s : output) {
+            count++;
+            if (count<=5) writer.println(s);
+        }
+        if (count>5) {
+            writer.println("");
+            writer.println("+ "+(output.size()-5)+" more records.");
+        }
         writer.println("");
         writer.println("Query time: "+(endTime-startTime)+" ms");
 
