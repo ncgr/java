@@ -23,17 +23,27 @@
             NOTE: the PathQuery&rightarrow;Cypher translation is under <em>very early development</em>. Many PathQueries will fail, especially those with JOINs.
         </p>
 
+        <p>
+            For your convenience, here's a place where you can paste PathQuery XML and test this out, or submit one of the sample queries provided below.
+        </p>
         <form action="service/query/results" method="POST">
             <input type="hidden" name="format" value="tab"/>
-            <p>
-                For your convenience, here's a place where you can paste XML and test this out, or submit the sample query provided:
-            </p>
-            <textarea style="width:700px; height:200px;" name="query"><query name="" model="genomic" view="Gene.id Gene.primaryIdentifier Gene.goAnnotation.ontologyTerm.identifier Gene.goAnnotation.ontologyTerm.name" longDescription="" sortOrder="Gene.id asc">
-    <constraint path="Gene.goAnnotation.ontologyTerm.identifier" op="=" value="GO:0008270"/>
-</query></textarea>
-            <br/>
-            <input type="submit" value="SEND"/>
+            <table>
+                <tr>
+                    <td><textarea name="query"></textarea></td>
+                    <td><input type="submit" value="SEND"/></td>
+                </tr>
+            </table>
         </form>
+
+        <h2>Genes associated with a particular GO term</h2>
+        <textarea class="sample"><query name="" model="genomic" view="Gene.id Gene.primaryIdentifier Gene.goAnnotation.ontologyTerm.identifier Gene.goAnnotation.ontologyTerm.name" longDescription="" sortOrder="Gene.id asc"><constraint path="Gene.goAnnotation.ontologyTerm.identifier" op="=" value="GO:0008270"/></query></textarea>
+
+        <h2>A particular QTL and its associated genetic markers</h2>
+        <textarea class="sample"><query name="" model="genomic" view="QTL.primaryIdentifier QTL.associatedGeneticMarkers.primaryIdentifier" longDescription="" sortOrder="QTL.primaryIdentifier asc"><constraint path="QTL.primaryIdentifier" op="=" value="Seed weight 3-2"/></query></textarea>
+
+        <h2>All gene locations on chromosomes</h2>
+        <textarea class="sample"><query name="" model="genomic" view="Gene.primaryIdentifier Gene.chromosomeLocation.start Gene.chromosomeLocation.end Gene.chromosomeLocation.strand Gene.chromosome.primaryIdentifier " longDescription="" sortOrder="Gene.primaryIdentifier asc"></query></textarea>
 
     </body>
 

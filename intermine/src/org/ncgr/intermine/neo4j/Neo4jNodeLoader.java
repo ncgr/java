@@ -84,20 +84,6 @@ public class Neo4jNodeLoader {
         // Neo4j setup
         Driver driver = GraphDatabase.driver(neo4jUrl, AuthTokens.basic(neo4jUser, neo4jPassword));
 
-        // Get the IM IDs of nodes that have already been stored
-        List<Integer> nodesAlreadyStored = new ArrayList<Integer>();
-        try (Session session = driver.session()) {
-            try (Transaction tx = session.beginTransaction()) {
-                StatementResult result = tx.run("MATCH (n:InterMineID) RETURN n.id");
-                while (result.hasNext()) {
-                    Record record = result.next();
-                    nodesAlreadyStored.add(record.get("n.id").asInt());
-                }
-                tx.success();
-                tx.close();
-            }
-        }
-
         // Get the descriptor for this node
         ClassDescriptor nodeDescriptor = model.getClassDescriptorByName(nodeClass);
         
@@ -241,6 +227,8 @@ public class Neo4jNodeLoader {
                     tx.close();
                 }
             }
+
+            System.out.println("");
 
         }
         

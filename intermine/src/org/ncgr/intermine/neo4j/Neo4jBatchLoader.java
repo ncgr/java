@@ -71,6 +71,10 @@ public class Neo4jBatchLoader {
         List<String> ignoredClasses = new ArrayList<String>();
         if (props.getProperty("ignored.classes")!=null) ignoredClasses = Arrays.asList(props.getProperty("ignored.classes").split(","));
         
+        // classes to load, overrides loading all classes other than those ignored
+        List<String> loadedClasses = new ArrayList<String>();
+        if (props.getProperty("loaded.classes")!=null && props.getProperty("loaded.classes").trim().length()>0) loadedClasses = Arrays.asList(props.getProperty("loaded.classes").trim().split(","));
+
         // references to ignore, typically reverse-reference
         List<String> ignoredReferences = new ArrayList<String>();
         if (props.getProperty("ignored.references")!=null) ignoredReferences = Arrays.asList(props.getProperty("ignored.references").split(","));
@@ -91,11 +95,17 @@ public class Neo4jBatchLoader {
         // Neo4j setup
         Driver driver = GraphDatabase.driver(neo4jUrl, AuthTokens.basic(neo4jUser, neo4jPassword));
 
-        // Put the model's class descriptors into a map so we can grab them by class name if we want; alphabetical by class simple name
-        Map<String,ClassDescriptor> classDescriptors = new TreeMap<String,ClassDescriptor>();
+        // Put the desired class descriptors into a map so we can grab them by class name if we want; alphabetical by class simple name
+        Map<String,ClassDescriptor> nodeDescriptors = new TreeMap<String,ClassDescriptor>();
         for (ClassDescriptor cd : model.getClassDescriptors()) {
-            classDescriptors.put(cd.getSimpleName(), cd);
+            String nodeClass = cd.getSimpleName();
+            if (loadedClasses.size()>0 && loadedClasses.contains(nodeClass)) {
+                nodeDescriptors.put(nodeClass, cd);
+            } else if (loadedClasses.size()==0 && !ignoredClasses.contains(nodeClass)) {
+                nodeDescriptors.put(nodeClass, cd);
+            }
         }
+
         
         // Retrieve the IM IDs of nodes that have already been stored
         List<Integer> nodesAlreadyStored = new ArrayList<Integer>();
@@ -112,10 +122,10 @@ public class Neo4jBatchLoader {
         }
 
         // Loop over IM model and load the node, properties and relations with their corresponding reference and collections nodes (with only attributes)
-        for (String nodeClass : classDescriptors.keySet()) {
+        for (String nodeClass : nodeDescriptors.keySet()) {
             if (!ignoredClasses.contains(nodeClass)) {
 
-                ClassDescriptor nodeDescriptor = classDescriptors.get(nodeClass);
+                ClassDescriptor nodeDescriptor = nodeDescriptors.get(nodeClass);
 
                 // display the node with labels
                 System.out.println("------------------------------------------------------------------");

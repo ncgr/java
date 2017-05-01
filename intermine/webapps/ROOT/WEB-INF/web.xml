@@ -15,7 +15,7 @@
 
   <context-param>
     <param-name>neo4j.bolt.url</param-name>
-    <param-value>bolt://localhost:7687</param-value>
+    <param-value>bolt://intermine.ncgr.org:7687</param-value>
     <description>the Neo4j Bolt URL, e.g. bolt://localhost:7687</description>
   </context-param>
   <context-param>
@@ -35,9 +35,9 @@
     <description>comma-separated list of IM classes that are edges (relationships) in the Neo4j database</description>
   </context-param>
   <context-param>
-    <param-name>neo4j.edge.labels</param-name>
+    <param-name>neo4j.edge.types</param-name>
     <param-value>homologue,linkageGroupPosition,linkageGroupRange,location,ontologyAnnotation,goAnnotation</param-value>
-    <description>the corresponding list of Neo4j relationship labels IN THE SAME ORDER</description>
+    <description>the corresponding list of Neo4j relationship types IN THE SAME ORDER</description>
   </context-param>
 	
 

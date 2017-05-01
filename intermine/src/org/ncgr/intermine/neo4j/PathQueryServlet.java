@@ -59,8 +59,8 @@ public class PathQueryServlet extends HttpServlet {
     static final String CHARSET = "UTF-8";
     static final int MAX_ROWS_SHOWN = 10;
 
-    // IM classes which should be treated as edges: key=IM class, value=Neo4j edge label
-    static Map<String,String> edgeClassLabels = new HashMap<String,String>();
+    // IM classes which should be treated as edges: key=IM class, value=Neo4j edge type
+    static Map<String,String> edgeClassTypes = new HashMap<String,String>();
 
     // support up to 26 nodes in query
     static List<String> nodeLetters = Arrays.asList("a","b","c","d","e","f","g","h","i","j","k","l","m","n","o","p","q","r","s","t","u","v","w","x","y","z");
@@ -96,12 +96,12 @@ public class PathQueryServlet extends HttpServlet {
 
         // load the special classes where an IM class becomes a Neo4j relationship
         String edgeClassList = getServletContext().getInitParameter("intermine.edge.classes");
-        String edgeLabelList = getServletContext().getInitParameter("neo4j.edge.labels");
+        String edgeTypeList = getServletContext().getInitParameter("neo4j.edge.types");
         if (edgeClassList!=null) {
             String[] classes = edgeClassList.split(",");
-            String[] labels = edgeLabelList.split(",");
+            String[] types = edgeTypeList.split(",");
             for (int i=0; i<classes.length; i++) {
-                edgeClassLabels.put(classes[i], labels[i]);
+                edgeClassTypes.put(classes[i], types[i]);
             }
         }
 
@@ -318,9 +318,9 @@ public class PathQueryServlet extends HttpServlet {
                 first = false;
                 cypherQuery += "("+letter+":"+node+")";
                 edge = false;
-            } else if (edgeClassLabels.containsKey(node)) {
+            } else if (edgeClassTypes.containsKey(node)) {
                 // force this one to be an edge, not a node
-                cypherQuery += "-["+letter+":"+edgeClassLabels.get(node)+"]-";
+                cypherQuery += "-["+letter+":"+edgeClassTypes.get(node)+"]-";
                 edge = true;
             } else if (edge) {
                 // have an edge already so follow with a plain node
