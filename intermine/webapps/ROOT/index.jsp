@@ -20,7 +20,7 @@
         </p>
 
         <p>
-            NOTE: the PathQuery&rightarrow;Cypher translation is under development. Many PathQueries will fail!
+            NOTE: the PathQuery&rightarrow;Cypher translation is under <em>very early development</em>. Many PathQueries will fail, especially those with JOINs.
         </p>
 
         <form action="service/query/results" method="POST">

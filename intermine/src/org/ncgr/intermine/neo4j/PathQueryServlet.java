@@ -57,6 +57,10 @@ import static org.neo4j.driver.v1.Values.parameters;
 public class PathQueryServlet extends HttpServlet {
 
     static final String CHARSET = "UTF-8";
+    static final int MAX_ROWS_SHOWN = 10;
+
+    // IM classes which should be treated as edges: key=IM class, value=Neo4j edge label
+    static Map<String,String> edgeClassLabels = new HashMap<String,String>();
 
     // support up to 26 nodes in query
     static List<String> nodeLetters = Arrays.asList("a","b","c","d","e","f","g","h","i","j","k","l","m","n","o","p","q","r","s","t","u","v","w","x","y","z");
@@ -89,6 +93,17 @@ public class PathQueryServlet extends HttpServlet {
         neo4jBoltUrl = getServletContext().getInitParameter("neo4j.bolt.url");
         neo4jBoltUser = getServletContext().getInitParameter("neo4j.bolt.user");
         neo4jBoltPassword = getServletContext().getInitParameter("neo4j.bolt.password");
+
+        // load the special classes where an IM class becomes a Neo4j relationship
+        String edgeClassList = getServletContext().getInitParameter("intermine.edge.classes");
+        String edgeLabelList = getServletContext().getInitParameter("neo4j.edge.labels");
+        if (edgeClassList!=null) {
+            String[] classes = edgeClassList.split(",");
+            String[] labels = edgeLabelList.split(",");
+            for (int i=0; i<classes.length; i++) {
+                edgeClassLabels.put(classes[i], labels[i]);
+            }
+        }
 
         // InterMine setup
         factory = new ServiceFactory(intermineRootUrl+"/service");
@@ -166,11 +181,11 @@ public class PathQueryServlet extends HttpServlet {
         int count = 0;
         for (String s : output) {
             count++;
-            if (count<=5) writer.println(s);
+            if (count<=MAX_ROWS_SHOWN) writer.println(s);
         }
-        if (count>5) {
+        if (count>MAX_ROWS_SHOWN) {
             writer.println("");
-            writer.println("+ "+(output.size()-5)+" more records.");
+            writer.println("+ "+(output.size()-MAX_ROWS_SHOWN)+" more records.");
         }
         writer.println("");
         writer.println("Query time: "+(endTime-startTime)+" ms");
@@ -205,13 +220,13 @@ public class PathQueryServlet extends HttpServlet {
         count = 0;
         for (String s : output) {
             count++;
-            if (count<=5) {
+            if (count<=MAX_ROWS_SHOWN) {
                 writer.println(s);
             }
         }
-        if (count>5) {
+        if (count>MAX_ROWS_SHOWN) {
             writer.println("");
-            writer.println("+ "+(output.size()-5)+" more records.");
+            writer.println("+ "+(output.size()-MAX_ROWS_SHOWN)+" more records.");
         }
         writer.println("");
         writer.println("Query time: "+(endTime-startTime)+" ms");
@@ -228,7 +243,7 @@ public class PathQueryServlet extends HttpServlet {
         Map<String,String> nodes = new TreeMap<String,String>();          // Cypher nodes keyed by letter (a:Gene)
         Map<String,String> properties = new TreeMap<String,String>();     // Cypher properties (c.name) keyed by full IM path (Gene.goAnnotation.ontologyTerm.name)
         List<String> orderedProperties = new ArrayList<String>();         // properties ordered as given in the PathQuery
-        Map<String,String> orderedTypes = new HashMap<String,String>();  // stores field types (java.lang.String, etc.) for each property
+        Map<String,String> orderedTypes = new HashMap<String,String>();   // stores field types (java.lang.String, etc.) for each property
         List<String> columnHeaders = pathQuery.getColumnHeaders();
         for (String columnHeader : columnHeaders) {
             String path = "";
@@ -292,29 +307,42 @@ public class PathQueryServlet extends HttpServlet {
             }
         }
 
-        System.out.println(orderedProperties);
-        System.out.println(orderedTypes);
-
         // Cypher query: MATCH section
         String cypherQuery = "MATCH ";
         boolean first = true;
+        boolean edge = false;
         for (String letter : nodes.keySet()) {
             String node = nodes.get(letter);
             if (first) {
+                // one always starts with a node
                 first = false;
+                cypherQuery += "("+letter+":"+node+")";
+                edge = false;
+            } else if (edgeClassLabels.containsKey(node)) {
+                // force this one to be an edge, not a node
+                cypherQuery += "-["+letter+":"+edgeClassLabels.get(node)+"]-";
+                edge = true;
+            } else if (edge) {
+                // have an edge already so follow with a plain node
+                cypherQuery += "("+letter+":"+node+")";
+                edge = false;
             } else {
+                // need a generic edge in front of this node
                 cypherQuery += "-[]-";
+                cypherQuery += "("+letter+":"+node+")";
+                edge = false;
             }
-            cypherQuery += "("+letter+":"+node+")";
         }
 
-        // Cypher query: WHERE section
-        cypherQuery += " WHERE ";
+        // Cypher query: WHERE section OPTIONAL
         Map<PathConstraint,String> constraints = pathQuery.getConstraints();
-        for (PathConstraint pc : constraints.keySet()) {
-            String pcString = pc.toString();
-            String[] parts = pcString.split(" = ");
-            cypherQuery += properties.get(parts[0])+"=\""+parts[1]+"\"";
+        if (constraints.size()>0) {
+            cypherQuery += " WHERE ";
+            for (PathConstraint pc : constraints.keySet()) {
+                String pcString = pc.toString();
+                String[] parts = pcString.split(" = ");
+                cypherQuery += properties.get(parts[0])+"=\""+parts[1]+"\"";
+            }
         }
 
         // Cypher query: RETURN section
@@ -371,11 +399,11 @@ public class PathQueryServlet extends HttpServlet {
         count = 0;
         for (String s : output) {
             count++;
-            if (count<=5) writer.println(s);
+            if (count<=MAX_ROWS_SHOWN) writer.println(s);
         }
-        if (count>5) {
+        if (count>MAX_ROWS_SHOWN) {
             writer.println("");
-            writer.println("+ "+(output.size()-5)+" more records.");
+            writer.println("+ "+(output.size()-MAX_ROWS_SHOWN)+" more records.");
         }
         writer.println("");
         writer.println("Query time: "+(endTime-startTime)+" ms");
