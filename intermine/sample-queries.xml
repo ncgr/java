@@ -1,0 +1,7 @@
+<query name="" model="genomic" view="QTL.primaryIdentifier QTL.associatedGeneticMarkers.primaryIdentifier QTL.associatedGeneticMarkers.linkageGroupPositions.position QTL.associatedGeneticMarkers.linkageGroupPositions.linkageGroup.primaryIdentifier" longDescription="" sortOrder="QTL.primaryIdentifier asc">
+  <constraint path="QTL.primaryIdentifier" op="=" value="Seed weight 3-2"/>
+</query>
+
+<query name="" model="genomic" view="Gene.primaryIdentifier Gene.exons.primaryIdentifier Gene.goAnnotation.ontologyTerm.identifier Gene.goAnnotation.ontologyTerm.name" longDescription="" sortOrder="Gene.primaryIdentifier asc">
+  <constraint path="Gene.goAnnotation.ontologyTerm.name" op="=" value="photosystem II"/>
+</query>
