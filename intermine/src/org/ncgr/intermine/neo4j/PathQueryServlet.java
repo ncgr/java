@@ -161,17 +161,23 @@ public class PathQueryServlet extends HttpServlet {
         // timing
         long startTime = System.currentTimeMillis();
 
-        // make the IM GET request
-        URLConnection connection = new URL(queryUrl).openConnection();
-        connection.setRequestProperty("Accept-Charset", CHARSET);
-        BufferedReader imReader = new BufferedReader(new InputStreamReader(connection.getInputStream(), CHARSET));
+        try {
+            
+            // make the IM GET request
+            URLConnection connection = new URL(queryUrl).openConnection();
+            connection.setRequestProperty("Accept-Charset", CHARSET);
+            BufferedReader imReader = new BufferedReader(new InputStreamReader(connection.getInputStream(), CHARSET));
+            
+            // set the content type corresponding to what IM returns
+            response.setContentType("text/plain");
+            // spit out the results
+            String line = null;
+            while ((line=imReader.readLine())!=null) {
+                output.add(line);
+            }
 
-        // set the content type corresponding to what IM returns
-        response.setContentType("text/plain");
-        // spit out the results
-        String line = null;
-        while ((line=imReader.readLine())!=null) {
-            output.add(line);
+        } catch (Exception e) {
+            output.add(e.toString());
         }
         
         // timing
@@ -207,15 +213,22 @@ public class PathQueryServlet extends HttpServlet {
         // timing
         startTime = System.currentTimeMillis();
         
-        Iterator<List<Object>> rows = service.getRowListIterator(pathQuery);
-        while (rows.hasNext()) {
-            Object[] row = rows.next().toArray();
-            String s = "";
-            for (int i=0; i<row.length; i++) {
-                s += row[i].toString()+"\t";
+        try {
+            
+            Iterator<List<Object>> rows = service.getRowListIterator(pathQuery);
+            while (rows.hasNext()) {
+                Object[] row = rows.next().toArray();
+                String s = "";
+                for (int i=0; i<row.length; i++) {
+                    s += row[i].toString()+"\t";
+                }
+                output.add(s);
             }
-            output.add(s);
+
+        } catch (Exception e) {
+            output.add(e.toString());
         }
+
         endTime = System.currentTimeMillis();
         count = 0;
         for (String s : output) {
