@@ -36,7 +36,7 @@
   </context-param>
   <context-param>
     <param-name>neo4j.edge.types</param-name>
-    <param-value>homologue,linkageGroupPosition,linkageGroupRange,location,ontologyAnnotation,goAnnotation</param-value>
+    <param-value>homologue,linkageGroupPosition,linkageGroupRange,location,annotation,annotation</param-value>
     <description>the corresponding list of Neo4j relationship types IN THE SAME ORDER</description>
   </context-param>
 	
