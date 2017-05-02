@@ -105,7 +105,6 @@ public class Neo4jBatchLoader {
                 nodeDescriptors.put(nodeClass, cd);
             }
         }
-
         
         // Retrieve the IM IDs of nodes that have already been stored
         List<Integer> nodesAlreadyStored = new ArrayList<Integer>();
@@ -212,7 +211,7 @@ public class Neo4jBatchLoader {
                     String merge = "MERGE (n:"+nodeLabel+" {id:"+id+"})";
                     queries.add(merge);
 
-                    // SET this nodes attributes if not already stored
+                    // SET this node's attributes
                     long imAttrStart = System.currentTimeMillis();
                     List<String> attrQueries = populateIdClassAttributes(service, driver, attrQuery, id, nodeLabel, nodeDescriptor);
                     imAttrTotal += System.currentTimeMillis() - imAttrStart;

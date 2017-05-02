@@ -82,6 +82,9 @@ public class Neo4jLoader {
         List<String> ignoredCollections = new ArrayList<String>();
         if (props.getProperty("ignored.collections")!=null) ignoredCollections = Arrays.asList(props.getProperty("ignored.collections").trim().split(","));
 
+        // list of IM IDs of nodes that have had their attributes stored HERE
+        List<Integer> nodesWithAttributesStored = new ArrayList<Integer>();
+
         // InterMine setup
         ServiceFactory factory = new ServiceFactory(intermineServiceUrl);
         Model model = factory.getModel();
@@ -113,20 +116,6 @@ public class Neo4jLoader {
                 while (result.hasNext()) {
                     Record record = result.next();
                     nodesAlreadyStored.add(record.get("n.id").asInt());
-                }
-                tx.success();
-                tx.close();
-            }
-        }
-
-        // Retrieve the IM IDs of nodes that have had their attributes stored, which is augmented when storing another node below
-        List<Integer> nodesWithAttributesStored = new ArrayList<Integer>();
-        try (Session session = driver.session()) {
-            try (Transaction tx = session.beginTransaction()) {
-                StatementResult result = tx.run("MATCH (n) RETURN n.id");
-                while (result.hasNext()) {
-                    Record record = result.next();
-                    nodesWithAttributesStored.add(record.get("n.id").asInt());
                 }
                 tx.success();
                 tx.close();
@@ -249,32 +238,34 @@ public class Neo4jLoader {
                         while (rs.hasNext()) {
                             Object[] r = rs.next().toArray();
                             int idn = Integer.parseInt(r[0].toString());      // node id
-                            if (r[1]!=null) {                                 // refs can be null!
+                            if (r[1]!=null) {                                 // refs can be null sometimes
                                 int idr = Integer.parseInt(r[1].toString());  // ref id
-                                // merge this reference node
-                                merge = "MERGE (n:"+refLabel+" {id:"+idr+"})";
-                                try (Session session = driver.session()) {
-                                    try (Transaction tx = session.beginTransaction()) {
-                                        tx.run(merge);
-                                        tx.success();
-                                        tx.close();
+                                if (idr!=idn) {                               // no loops
+                                    // merge this reference node
+                                    merge = "MERGE (n:"+refLabel+" {id:"+idr+"})";
+                                    try (Session session = driver.session()) {
+                                        try (Transaction tx = session.beginTransaction()) {
+                                            tx.run(merge);
+                                            tx.success();
+                                            tx.close();
+                                        }
                                     }
-                                }
-                                // set this reference node's attributes
-                                if (!nodesWithAttributesStored.contains(idr)) {
-                                    populateIdClassAttributes(service, driver, attrQuery, idr, refLabel, rcd);
-                                    nodesWithAttributesStored.add(idr);
-                                }
-                                // merge this node-->ref relationship
-                                String match = "MATCH (n:"+nodeLabel+" {id:"+idn+"}),(r:"+refLabel+" {id:"+idr+"}) MERGE (n)-[:"+refName+"]->(r)";
-                                try (Session session = driver.session()) {
-                                    try (Transaction tx = session.beginTransaction()) {
-                                        tx.run(match);
-                                        tx.success();
-                                        tx.close();
+                                    // set this reference node's attributes
+                                    if (!nodesWithAttributesStored.contains(idr)) {
+                                        populateIdClassAttributes(service, driver, attrQuery, idr, refLabel, rcd);
+                                        nodesWithAttributesStored.add(idr);
                                     }
+                                    // merge this node-->ref relationship
+                                    String match = "MATCH (n:"+nodeLabel+" {id:"+idn+"}),(r:"+refLabel+" {id:"+idr+"}) MERGE (n)-[:"+refName+"]->(r)";
+                                    try (Session session = driver.session()) {
+                                        try (Transaction tx = session.beginTransaction()) {
+                                            tx.run(match);
+                                            tx.success();
+                                            tx.close();
+                                        }
+                                    }
+                                    if (verbose) System.out.print("r");
                                 }
-                                if (verbose) System.out.print("r");
                             }
                         }
                     }
@@ -296,27 +287,29 @@ public class Neo4jLoader {
                             Object[] r = rs.next().toArray();
                             int idn = Integer.parseInt(r[0].toString());      // node id
                             int idc = Integer.parseInt(r[1].toString());      // collection id
-                            // merge this collections node
-                            merge = "MERGE (n:"+collLabel+" {id:"+idc+"})";
-                            try (Session session = driver.session()) {
-                                try (Transaction tx = session.beginTransaction()) {
-                                    tx.run(merge);
-                                    tx.success();
-                                    tx.close();
+                            if (idc!=idn) {                                   // no loops
+                                // merge this collections node
+                                merge = "MERGE (n:"+collLabel+" {id:"+idc+"})";
+                                try (Session session = driver.session()) {
+                                    try (Transaction tx = session.beginTransaction()) {
+                                        tx.run(merge);
+                                        tx.success();
+                                        tx.close();
+                                    }
                                 }
-                            }
-                            // set this collection node's attributes
-                            if (!nodesWithAttributesStored.contains(idc)) {
-                                populateIdClassAttributes(service, driver, attrQuery, idc, collLabel, ccd);
-                                nodesWithAttributesStored.add(idc);
-                            }
-                            // merge this node-->coll relationship
-                            String match = "MATCH (n:"+nodeLabel+" {id:"+idn+"}),(c:"+collLabel+" {id:"+idc+"}) MERGE (n)-[:"+collName+"]->(c)";
-                            try (Session session = driver.session()) {
-                                try (Transaction tx = session.beginTransaction()) {
-                                    tx.run(match);
-                                    tx.success();
-                                    tx.close();
+                                // set this collection node's attributes
+                                if (!nodesWithAttributesStored.contains(idc)) {
+                                    populateIdClassAttributes(service, driver, attrQuery, idc, collLabel, ccd);
+                                    nodesWithAttributesStored.add(idc);
+                                }
+                                // merge this node-->coll relationship
+                                String match = "MATCH (n:"+nodeLabel+" {id:"+idn+"}),(c:"+collLabel+" {id:"+idc+"}) MERGE (n)-[:"+collName+"]->(c)";
+                                try (Session session = driver.session()) {
+                                    try (Transaction tx = session.beginTransaction()) {
+                                        tx.run(match);
+                                        tx.success();
+                                        tx.close();
+                                    }
                                 }
                             }
                             if (verbose) System.out.print("c");
@@ -359,7 +352,7 @@ public class Neo4jLoader {
             attrQuery.clearConstraints();
             for (AttributeDescriptor ad : attrDescriptors) {
                 String attrName = ad.getName();
-                if (!attrName.equals("id")) attrQuery.addView(className+"."+attrName);
+                attrQuery.addView(className+"."+attrName);
             }
             attrQuery.addConstraint(new PathConstraintAttribute(className+".id", ConstraintOp.EQUALS, String.valueOf(id)));
             Iterator<List<Object>> rows = service.getRowListIterator(attrQuery);
@@ -372,17 +365,13 @@ public class Neo4jLoader {
                 for (AttributeDescriptor ad : attrDescriptors) {
                     String attrName = ad.getName();
                     String attrType = ad.getType();
-                    if (!attrName.equals("id")) {
-                        String val = escapeForNeo4j(row[i++].toString());
-                        if (!val.equals("null")) {
-                            terms++;
-                            if (terms>1) match += ",";
-                            if (attrType.equals("java.lang.String") || attrType.equals("org.intermine.objectstore.query.ClobAccess")) {
-                                match += "n."+attrName+"=\""+val+"\"";
-                            } else {
-                                match += "n."+attrName+"="+val;
-                            }
-                        }
+                    String val = escapeForNeo4j(row[i++].toString());
+                    terms++;
+                    if (terms>1) match += ",";
+                    if (attrType.equals("java.lang.String") || attrType.equals("org.intermine.objectstore.query.ClobAccess")) {
+                        match += "n."+attrName+"=\""+val+"\"";
+                    } else {
+                        match += "n."+attrName+"="+val;
                     }
                 }
                 if (terms>0) {
