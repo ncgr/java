@@ -145,9 +145,17 @@ public class Neo4jBatchLoader {
                 HashMap<String,ReferenceDescriptor> refDescriptors = new HashMap<String,ReferenceDescriptor>();
                 for (ReferenceDescriptor rd : nodeDescriptor.getAllReferenceDescriptors()) {
                     String refName = rd.getName();
-                    String refClass = rd.getReferencedClassDescriptor().getSimpleName();
-                    String nodeDotRefName = nodeClass+"."+refName;
-                    if (!ignoredClasses.contains(refClass) && !ignoredReferences.contains(nodeDotRefName)) refDescriptors.put(refName, rd);
+                    ClassDescriptor refClassDescriptor = rd.getReferencedClassDescriptor();
+                    String refClass = refClassDescriptor.getSimpleName();
+                    boolean keep = true;
+                    keep = keep && !ignoredClasses.contains(refClass);
+                    keep = keep && !ignoredReferences.contains(nodeClass+"."+refName);
+                    // eliminate ignored superclasses as well
+                    for (ClassDescriptor superclassDescriptor : refClassDescriptor.getAllSuperDescriptors()) {
+                        String superclassName = superclassDescriptor.getSimpleName();
+                        keep = keep && !ignoredReferences.contains(superclassName+"."+refName);
+                    }
+                    if (keep) refDescriptors.put(refName, rd);
                 }
                 if (refDescriptors.size()>0) System.out.println("References:"+refDescriptors.keySet());
 
@@ -155,12 +163,21 @@ public class Neo4jBatchLoader {
                 HashMap<String,CollectionDescriptor> collDescriptors = new HashMap<String,CollectionDescriptor>();
                 for (CollectionDescriptor cd : nodeDescriptor.getAllCollectionDescriptors()) {
                     String collName = cd.getName();
-                    String collClass = cd.getReferencedClassDescriptor().getSimpleName();
-                    String nodeDotCollName = nodeClass+"."+collName;
-                    if (!ignoredClasses.contains(collClass) && !ignoredCollections.contains(nodeDotCollName)) collDescriptors.put(collName, cd);
+                    ClassDescriptor collClassDescriptor = cd.getReferencedClassDescriptor();
+                    String collClass = collClassDescriptor.getSimpleName();
+                    boolean keep = true;
+                    keep = keep && !ignoredClasses.contains(collClass);
+                    keep = keep && !ignoredCollections.contains(nodeClass+"."+collName);
+                    // eliminate ignored superclasses as well
+                    for (ClassDescriptor superclassDescriptor : collClassDescriptor.getAllSuperDescriptors()) {
+                        String superclassName = superclassDescriptor.getSimpleName();
+                        keep = keep && !ignoredCollections.contains(superclassName+"."+collName);
+                    }
+                    if (keep) collDescriptors.put(collName, cd);
                 }
                 if (collDescriptors.size()>0) System.out.println("Collections:"+collDescriptors.keySet());
-            
+
+                
                 // timing
                 long imTotal = 0;
                 long neoTotal = 0;

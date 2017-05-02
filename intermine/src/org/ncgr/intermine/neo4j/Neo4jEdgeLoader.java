@@ -46,6 +46,8 @@ import static org.neo4j.driver.v1.Values.parameters;
  * The relation can be an Intermine reference or collection and the target is a reference.
  *
  * Connection and other properties are given in neo4jloader.properties.
+ *
+ * Only nodes that have been fully loaded (i.e. their InterMine ID is in the InterMineID node) are processed. This prevents partial labels from being created.
  * 
  * @author Sam Hokin
  */
@@ -194,9 +196,9 @@ public class Neo4jEdgeLoader {
             int eid = Integer.parseInt(row[i++].toString()); // edge
             int tid = Integer.parseInt(row[i++].toString()); // target
 
-            // only process edges that haven't been done
-            if (!thingsAlreadyStored.contains(eid)) {
-
+            // only process edges that haven't been done for nodes that are complete on both sides
+            if (thingsAlreadyStored.contains(sid) && thingsAlreadyStored.contains(tid) && !thingsAlreadyStored.contains(eid))  {
+                
                 // MERGE the source and target (one or other may be missing in Neo4j)
                 String merge = "MERGE (s:"+sourceClass+" {id:"+sid+"}) MERGE (t:"+targetClass+" {id:"+tid+"})";
                 try (Session session = driver.session()) {
