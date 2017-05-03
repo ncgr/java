@@ -39,6 +39,9 @@
         <h2>Genes associated with a particular GO term</h2>
         <textarea class="sample"><query name="" model="genomic" view="Gene.id Gene.primaryIdentifier Gene.goAnnotation.ontologyTerm.identifier Gene.goAnnotation.ontologyTerm.name" longDescription="" sortOrder="Gene.id asc"><constraint path="Gene.goAnnotation.ontologyTerm.identifier" op="=" value="GO:0008270"/></query></textarea>
 
+        <h2>Homologues of a given gene (via GeneFamily) CYPHER DOESN'T CURRENTLY WORK</h2>
+        <textarea class="sample"><query name="" model="genomic" view="Gene.primaryIdentifier Gene.geneFamily.primaryIdentifier Gene.geneFamily.genes.primaryIdentifier" longDescription="" sortOrder="Gene.primaryIdentifier asc"><constraint path="Gene.primaryIdentifier" op="=" value="Phvul.008G137900"/></query></textarea>
+
         <h2>A particular QTL and its associated genetic markers</h2>
         <textarea class="sample"><query name="" model="genomic" view="QTL.primaryIdentifier QTL.associatedGeneticMarkers.primaryIdentifier" longDescription="" sortOrder="QTL.primaryIdentifier asc"><constraint path="QTL.primaryIdentifier" op="=" value="Seed weight 3-2"/></query></textarea>
 

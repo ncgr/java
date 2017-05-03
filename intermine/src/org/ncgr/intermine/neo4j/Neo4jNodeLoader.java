@@ -153,27 +153,29 @@ public class Neo4jNodeLoader {
                     int idn = Integer.parseInt(r[0].toString());      // node id
                     if (r[1]!=null) {                                 // refs can be null!
                         int idr = Integer.parseInt(r[1].toString());  // ref id
-                        // merge this reference node
-                        merge = "MERGE (n:"+refLabel+" {id:"+idr+"})";
-                        try (Session session = driver.session()) {
-                            try (Transaction tx = session.beginTransaction()) {
-                                tx.run(merge);
-                                tx.success();
-                                tx.close();
+                        if (idr!=idn) {                               // avoid loops
+                            // merge this reference node
+                            merge = "MERGE (n:"+refLabel+" {id:"+idr+"})";
+                            try (Session session = driver.session()) {
+                                try (Transaction tx = session.beginTransaction()) {
+                                    tx.run(merge);
+                                    tx.success();
+                                    tx.close();
+                                }
                             }
-                        }
-                        // set this reference node's attributes
-                        Neo4jLoader.populateIdClassAttributes(service, driver, refQuery, idr, refLabel, rcd);
-                        // merge this node-->ref relationship
-                        String match = "MATCH (n:"+nodeLabel+" {id:"+idn+"}),(r:"+refLabel+" {id:"+idr+"}) MERGE (n)-[:"+refName+"]->(r)";
-                        try (Session session = driver.session()) {
-                            try (Transaction tx = session.beginTransaction()) {
-                                tx.run(match);
-                                tx.success();
-                                tx.close();
+                            // set this reference node's attributes
+                            Neo4jLoader.populateIdClassAttributes(service, driver, refQuery, idr, refLabel, rcd);
+                            // merge this node-->ref relationship
+                            String match = "MATCH (n:"+nodeLabel+" {id:"+idn+"}),(r:"+refLabel+" {id:"+idr+"}) MERGE (n)-[:"+refName+"]->(r)";
+                            try (Session session = driver.session()) {
+                                try (Transaction tx = session.beginTransaction()) {
+                                    tx.run(match);
+                                    tx.success();
+                                    tx.close();
+                                }
                             }
+                            System.out.print("r");
                         }
-                        System.out.print("r");
                     }
                 }
             }
@@ -195,27 +197,29 @@ public class Neo4jNodeLoader {
                     Object[] r = rs.next().toArray();
                     int idn = Integer.parseInt(r[0].toString());      // node id
                     int idc = Integer.parseInt(r[1].toString());      // collection id
-                    // merge this collections node
-                    merge = "MERGE (n:"+collLabel+" {id:"+idc+"})";
-                    try (Session session = driver.session()) {
-                        try (Transaction tx = session.beginTransaction()) {
-                            tx.run(merge);
-                            tx.success();
-                            tx.close();
+                    if (idc!=idn) {                                   // avoid loops
+                        // merge this collections node
+                        merge = "MERGE (n:"+collLabel+" {id:"+idc+"})";
+                        try (Session session = driver.session()) {
+                            try (Transaction tx = session.beginTransaction()) {
+                                tx.run(merge);
+                                tx.success();
+                                tx.close();
+                            }
                         }
-                    }
-                    // set this collection node's attributes
-                    Neo4jLoader.populateIdClassAttributes(service, driver, attrQuery, idc, collLabel, ccd);
-                    // merge this node-->coll relationship
-                    String match = "MATCH (n:"+nodeLabel+" {id:"+idn+"}),(c:"+collLabel+" {id:"+idc+"}) MERGE (n)-[:"+collName+"]->(c)";
-                    try (Session session = driver.session()) {
-                        try (Transaction tx = session.beginTransaction()) {
-                            tx.run(match);
-                            tx.success();
-                            tx.close();
+                        // set this collection node's attributes
+                        Neo4jLoader.populateIdClassAttributes(service, driver, attrQuery, idc, collLabel, ccd);
+                        // merge this node-->coll relationship
+                        String match = "MATCH (n:"+nodeLabel+" {id:"+idn+"}),(c:"+collLabel+" {id:"+idc+"}) MERGE (n)-[:"+collName+"]->(c)";
+                        try (Session session = driver.session()) {
+                            try (Transaction tx = session.beginTransaction()) {
+                                tx.run(match);
+                                tx.success();
+                                tx.close();
+                            }
                         }
+                        System.out.print("c");
                     }
-                    System.out.print("c");
                 }
             }
 

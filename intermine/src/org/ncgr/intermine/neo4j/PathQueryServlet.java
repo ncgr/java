@@ -151,7 +151,6 @@ public class PathQueryServlet extends HttpServlet {
         String queryUrl = intermineEndpoint+"?query="+encodedQuery;
         if (format!=null) queryUrl += "&format="+format;
         
-        writer.println("");
         writer.println("========== IM web services endpoint ==========");
         writer.println("");
         writer.println(queryUrl);
@@ -193,21 +192,43 @@ public class PathQueryServlet extends HttpServlet {
             writer.println("");
             writer.println("+ "+(output.size()-MAX_ROWS_SHOWN)+" more records.");
         }
+        output.clear();
         writer.println("");
         writer.println("Query time: "+(endTime-startTime)+" ms");
+        writer.println("");
 
         // ------------------------------------
         // ---------- PATH QUERY API ----------
         // ------------------------------------
         
-        writer.println("");
-        writer.println("========== PathQuery API ==========");
-        writer.println("");
-        output.clear();
-        
         // create the PathQuery for Java API request
         PathQuery pathQuery = service.createPathQuery(queryXml);
-        writer.println(pathQuery.toString());
+        
+        writer.println("========== PathQuery API ==========");
+        try {
+            // some diagnostics
+            writer.println("PathQuery:"+pathQuery);
+            writer.println("ConstraintLogic:"+pathQuery.getConstraintLogic());
+            writer.println("Description:"+pathQuery.getDescription());
+            writer.println("JSON:"+pathQuery.getJson());
+            writer.println("RootClass:"+pathQuery.getRootClass());
+            writer.println("SubClasses:"+pathQuery.getSubclasses());
+            writer.println("Title:"+pathQuery.getTitle());
+            writer.println("Valid:"+pathQuery.isValid());
+            writer.println("FixUpForJoinStyle:"+pathQuery.fixUpForJoinStyle());
+            writer.println("ColumnHeaders:"+pathQuery.getColumnHeaders());
+            writer.println("GroupedConstraintLogic:"+pathQuery.getGroupedConstraintLogic());
+            writer.println("View:"+pathQuery.getView());
+            writer.println("VerifyList:"+pathQuery.verifyQuery());
+            writer.println("BagNames:"+pathQuery.getBagNames());
+            writer.println("ConstraintCodes:"+pathQuery.getConstraintCodes());
+            writer.println("ExistingLoops:"+pathQuery.getExistingLoops());
+            writer.println("ConstraintGroups:"+pathQuery.getConstraintGroups());
+            writer.println("OuterJoinGroups:"+pathQuery.getOuterJoinGroups());
+            writer.println("OuterMap:"+pathQuery.getOuterMap());
+        } catch (PathException e) {
+            writer.println(e.toString());
+        }
         writer.println("");
 
         // timing
@@ -241,17 +262,17 @@ public class PathQueryServlet extends HttpServlet {
             writer.println("");
             writer.println("+ "+(output.size()-MAX_ROWS_SHOWN)+" more records.");
         }
+        output.clear();
         writer.println("");
         writer.println("Query time: "+(endTime-startTime)+" ms");
+        writer.println("");
 
         // ----------------------------------------
         // ---------- NEO4J CYPHER QUERY ----------
         // ----------------------------------------
 
-        writer.println("");
         writer.println("========== Neo4j Cypher Query ==========");
         writer.println("");
-        output.clear();
         
         Map<String,String> nodes = new TreeMap<String,String>();          // Cypher nodes keyed by letter (a:Gene)
         Map<String,String> properties = new TreeMap<String,String>();     // Cypher properties (c.name) keyed by full IM path (Gene.goAnnotation.ontologyTerm.name)
@@ -418,6 +439,7 @@ public class PathQueryServlet extends HttpServlet {
             writer.println("");
             writer.println("+ "+(output.size()-MAX_ROWS_SHOWN)+" more records.");
         }
+        output.clear();
         writer.println("");
         writer.println("Query time: "+(endTime-startTime)+" ms");
 

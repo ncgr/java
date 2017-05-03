@@ -196,8 +196,8 @@ public class Neo4jEdgeLoader {
             int eid = Integer.parseInt(row[i++].toString()); // edge
             int tid = Integer.parseInt(row[i++].toString()); // target
 
-            // only process edges that haven't been done for nodes that are complete on both sides
-            if (thingsAlreadyStored.contains(sid) && thingsAlreadyStored.contains(tid) && !thingsAlreadyStored.contains(eid))  {
+            // only process edges that haven't been done for nodes that are fully stored on both sides
+            if (thingsAlreadyStored.contains(sid) && !thingsAlreadyStored.contains(eid) && thingsAlreadyStored.contains(tid))  {
                 
                 // MERGE the source and target (one or other may be missing in Neo4j)
                 String merge = "MERGE (s:"+sourceClass+" {id:"+sid+"}) MERGE (t:"+targetClass+" {id:"+tid+"})";
@@ -208,7 +208,7 @@ public class Neo4jEdgeLoader {
                     }
                 }
                 
-                // SET the source and target attributes (since one or the other may be new)
+                // SET the source and target attributes (just in case, possible a stored node lacks an attribute)
                 Neo4jLoader.populateIdClassAttributes(service, driver, attrQuery, sid, sourceClass, sourceDescriptor);
                 Neo4jLoader.populateIdClassAttributes(service, driver, attrQuery, tid, targetClass, targetDescriptor);
                 
@@ -265,30 +265,6 @@ public class Neo4jEdgeLoader {
         // Close connections
         driver.close();
         
-    }
-
-    /**
-     * Escape special characters for Neo4j cypher queries.
-     */
-    static String escapeForNeo4j(String value) {
-        StringBuilder builder = new StringBuilder();
-        for (char c : value.toCharArray()) {
-            if (c=='\'')
-                builder.append("\\'");
-            else if (c=='\"')
-                builder.append("\\\"");
-            else if (c=='\r')
-                builder.append("\\r");
-            else if (c=='\n')
-                builder.append("\\n");
-            else if (c=='\t')
-                builder.append("\\t");
-            else if (c < 32 || c >= 127)
-                builder.append(String.format("\\u%04x", (int)c));
-            else
-                builder.append(c);
-        }
-        return builder.toString();
     }
 
 }
