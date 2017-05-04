@@ -14,7 +14,7 @@ import java.util.List;
 import java.util.ArrayList;
 import java.util.Map;
 import java.util.HashMap;
-import java.util.TreeMap;
+import java.util.LinkedHashMap;
 import java.util.Set;
 import java.util.TreeSet;
 
@@ -32,6 +32,7 @@ import org.intermine.metadata.AttributeDescriptor;
 import org.intermine.metadata.ClassDescriptor;
 import org.intermine.metadata.CollectionDescriptor;
 import org.intermine.metadata.ReferenceDescriptor;
+import org.intermine.pathquery.Path;
 import org.intermine.pathquery.PathConstraint;
 import org.intermine.pathquery.PathException;
 import org.intermine.pathquery.PathQuery;
@@ -227,7 +228,7 @@ public class PathQueryServlet extends HttpServlet {
             writer.println("OuterJoinGroups:"+pathQuery.getOuterJoinGroups());
             writer.println("OuterMap:"+pathQuery.getOuterMap());
         } catch (PathException e) {
-            writer.println(e.toString());
+            writer.println("diagnostics:"+e);
         }
         writer.println("");
 
@@ -274,70 +275,31 @@ public class PathQueryServlet extends HttpServlet {
         writer.println("========== Neo4j Cypher Query ==========");
         writer.println("");
         
-        Map<String,String> nodes = new TreeMap<String,String>();          // Cypher nodes keyed by letter (a:Gene)
-        Map<String,String> properties = new TreeMap<String,String>();     // Cypher properties (c.name) keyed by full IM path (Gene.goAnnotation.ontologyTerm.name)
-        List<String> orderedProperties = new ArrayList<String>();         // properties ordered as given in the PathQuery
-        Map<String,String> orderedTypes = new HashMap<String,String>();   // stores field types (java.lang.String, etc.) for each property
-        List<String> columnHeaders = pathQuery.getColumnHeaders();
-        for (String columnHeader : columnHeaders) {
-            String path = "";
-            String[] parts = columnHeader.split(" > ");
-            String currentLetter = null;
-            String currentNode = null;
-            ClassDescriptor currentNodeDescriptor = null;
-            for (int i=0; i<parts.length; i++) {
-                if (i==0) {
-                    // root node at start
-                    path = parts[i];
-                    currentNode = parts[i];
-                    currentNodeDescriptor = model.getClassDescriptorByName(currentNode);
-                    currentLetter = nodeLetters.get(0);
-                    nodes.put(currentLetter, currentNode);
-                } else if (i<(parts.length-1)) {
-                    path += "."+parts[i];
-                    // subnodes in middle; can't get ref or coll descriptor by name since may be from a superclass
-                    String className = null;
-                    Set<ReferenceDescriptor> refDescriptors = currentNodeDescriptor.getAllReferenceDescriptors();
-                    for (ReferenceDescriptor rd : refDescriptors) {
-                        if (rd.getName().equals(parts[i])) {
-                            className = rd.getReferencedClassDescriptor().getSimpleName();
-                        }
-                    }
-                    Set<CollectionDescriptor> collDescriptors = currentNodeDescriptor.getAllCollectionDescriptors();
-                    for (CollectionDescriptor cd : collDescriptors) {
-                        if (cd.getName().equals(parts[i])) {
-                            className = cd.getReferencedClassDescriptor().getSimpleName();
-                        }
-                    }
-                    if (className==null) {
-                        writer.println("********** Could not find class for "+currentNode+"."+parts[i]);
-                    } else {
-                        currentNode = className;
-                        currentNodeDescriptor = model.getClassDescriptorByName(currentNode);
-                        if (nodes.containsValue(currentNode)) {
-                            // spin through it, don't know a quicker way
-                            for (String letter : nodes.keySet()) {
-                                if (nodes.get(letter).equals(currentNode)) currentLetter = letter;
-                            }
-                        } else {
-                            // find the next available letter
-                            int j = 1;
-                            while (nodes.containsKey(nodeLetters.get(j))) {
-                                j++;
-                            }
-                            currentLetter = nodeLetters.get(j);
-                            nodes.put(currentLetter, currentNode);
-                        }
-                    }
-                } else {
-                    // property at end
-                    path += "."+parts[i];
-                    String property = currentLetter+"."+parts[i];
-                    properties.put(path, property);
-                    orderedProperties.add(property);
-                    AttributeDescriptor currentAttributeDescriptor = currentNodeDescriptor.getAttributeDescriptorByName(parts[i], true);
-                    orderedTypes.put(property, currentAttributeDescriptor.getType());
+        // pull Neo4j nodes and properties from path query classes and attributes
+        Map<String,String> nodes = new LinkedHashMap<String,String>();          // Cypher nodes keyed by letter (a:Gene)
+        Map<String,String> properties = new LinkedHashMap<String,String>();     // Cypher properties (c.name) keyed by full IM path (Gene.goAnnotation.ontologyTerm.name)
+        Map<String,String> types = new LinkedHashMap<String,String>();          // stores field types (java.lang.String, etc.) for each property
+        int l = -1;
+        String previousClass = "";
+        for (String view : pathQuery.getView()) {
+            try {
+                Map<String,String> subclasses = pathQuery.getSubclasses();      // needed to switch from one class to a subclass (Transcript -> MRNA)
+                for (String superclass : subclasses.keySet()) {
+                    writer.println("WAS:"+view);
+                    view = view.replaceAll(superclass, subclasses.get(superclass));
+                    writer.println("NOW:"+view);
                 }
+                Path path = new Path(model, view);
+                String currentClass = path.getLastClassDescriptor().getSimpleName();
+                if (!currentClass.equals(previousClass)) {
+                    l++;                
+                    nodes.put(nodeLetters.get(l), currentClass);
+                    previousClass = currentClass;
+                }
+                properties.put(view, nodeLetters.get(l)+"."+path.getLastElement());
+                types.put(view, path.getEndType().toString());
+            } catch (Exception e) {
+                writer.println(view+":"+e.toString());
             }
         }
 
@@ -369,35 +331,65 @@ public class PathQueryServlet extends HttpServlet {
         }
 
         // Cypher query: WHERE section OPTIONAL
-        Map<PathConstraint,String> constraints = pathQuery.getConstraints();
-        if (constraints.size()>0) {
-            cypherQuery += " WHERE ";
-            for (PathConstraint pc : constraints.keySet()) {
-                String pcString = pc.toString();
-                String[] parts = pcString.split(" = ");
-                cypherQuery += properties.get(parts[0])+"=\""+parts[1]+"\"";
+        try {
+            Map<PathConstraint,String> constraints = pathQuery.getConstraints();
+            if (constraints.size()>0) {
+                cypherQuery += " WHERE ";
+                for (PathConstraint pc : constraints.keySet()) {
+                    String pcString = pc.toString();
+                    Map<String,String> subclasses = pathQuery.getSubclasses();              // needed to switch from one class to a subclass (Transcript -> MRNA)
+                    for (String superclass : subclasses.keySet()) {
+                        writer.println("WAS:"+pcString);
+                        pcString = pcString.replaceAll(superclass, subclasses.get(superclass));
+                        writer.println("NOW:"+pcString);
+                    }
+                    String[] parts;
+                    parts = pcString.split(" = ");
+                    if (parts.length==2) {
+                        if (types.get(parts[0]).endsWith("String")) {
+                            cypherQuery += properties.get(parts[0])+"=\""+parts[1]+"\"";
+                        } else {
+                            cypherQuery += properties.get(parts[0])+"="+parts[1];
+                        }
+                    }
+                    parts = pcString.split(" > ");
+                    if (parts.length==2) cypherQuery += properties.get(parts[0])+">"+parts[1];
+                    parts = pcString.split(" < ");
+                    if (parts.length==2) cypherQuery += properties.get(parts[0])+"<"+parts[1];
+                }
             }
+        } catch (Exception e) {
+            writer.println("WHERE:"+e);
         }
 
         // Cypher query: RETURN section
-        cypherQuery += " RETURN ";
-        first = true;
-        for (String property : orderedProperties) {
-            if (first) {
-                first = false;
-            } else {
-                cypherQuery += ",";
+        try {
+            cypherQuery += " RETURN ";
+            first = true;
+            for (String view : properties.keySet()) {
+                String property = properties.get(view);
+                if (first) {
+                    first = false;
+                } else {
+                    cypherQuery += ",";
+                }
+                cypherQuery += property;
             }
-            cypherQuery += property;
+        } catch (Exception e) {
+            writer.println("RETURN:"+e);
         }
 
         // Cypher query: ORDER BY section
-        cypherQuery += " ORDER BY ";
-        List<OrderElement> orderElements = pathQuery.getOrderBy();
-        for (OrderElement orderElement : orderElements) {
-            String orderElementString = orderElement.toString();
-            String[] parts = orderElementString.split(" ");
-            cypherQuery += properties.get(parts[0])+" "+parts[1];
+        try {
+            cypherQuery += " ORDER BY ";
+            List<OrderElement> orderElements = pathQuery.getOrderBy();
+            for (OrderElement orderElement : orderElements) {
+                String orderElementString = orderElement.toString();
+                String[] parts = orderElementString.split(" ");
+                cypherQuery += properties.get(parts[0])+" "+parts[1];
+            }
+        } catch (Exception e) {
+            writer.println("ORDER BY:"+e);
         }
 
         // display our Cypher query!
@@ -412,8 +404,9 @@ public class PathQueryServlet extends HttpServlet {
                 while (result.hasNext()) {
                     Record record = result.next();
                     String row = "";
-                    for (String property : orderedProperties) {
-                        String type = orderedTypes.get(property);
+                    for (String view : properties.keySet()) {
+                        String property = properties.get(view);
+                        String type = types.get(view);
                         try {
                             if (type.endsWith("String")) {
                                 row += record.get(property).asString()+"\t";

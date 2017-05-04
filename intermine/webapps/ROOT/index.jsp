@@ -39,7 +39,7 @@
         <h2>Genes associated with a particular GO term</h2>
         <textarea class="sample"><query name="" model="genomic" view="Gene.id Gene.primaryIdentifier Gene.goAnnotation.ontologyTerm.identifier Gene.goAnnotation.ontologyTerm.name" longDescription="" sortOrder="Gene.id asc"><constraint path="Gene.goAnnotation.ontologyTerm.identifier" op="=" value="GO:0008270"/></query></textarea>
 
-        <h2>Homologues of a given gene (via GeneFamily) CYPHER DOESN'T CURRENTLY WORK</h2>
+        <h2>Homologues of a given gene (via GeneFamily)</h2>
         <textarea class="sample"><query name="" model="genomic" view="Gene.primaryIdentifier Gene.geneFamily.primaryIdentifier Gene.geneFamily.genes.primaryIdentifier" longDescription="" sortOrder="Gene.primaryIdentifier asc"><constraint path="Gene.primaryIdentifier" op="=" value="Phvul.008G137900"/></query></textarea>
 
         <h2>A particular QTL and its associated genetic markers</h2>
@@ -47,6 +47,10 @@
 
         <h2>All gene locations on chromosomes</h2>
         <textarea class="sample"><query name="" model="genomic" view="Gene.primaryIdentifier Gene.chromosomeLocation.start Gene.chromosomeLocation.end Gene.chromosomeLocation.strand Gene.chromosome.primaryIdentifier " longDescription="" sortOrder="Gene.primaryIdentifier asc"></query></textarea>
+
+        <h2>Genes with mRNA expression > 10000 NOT CURRENTLY WORKING</h2>
+        <textarea class="sample"><query name="" model="genomic" view="Gene.primaryIdentifier Gene.transcripts.expressionValues.value Gene.transcripts.expressionValues.expressionSample.primaryIdentifier" longDescription="" sortOrder="Gene.primaryIdentifier asc"><constraint path="Gene.transcripts" type="MRNA"/><constraint path="Gene.transcripts.expressionValues.value" op="&gt;" value="10000"/></query></textarea>
+
 
     </body>
 
