@@ -403,6 +403,8 @@ public class Neo4jLoader {
                 builder.append("\\n");
             else if (c=='\t')
                 builder.append("\\t");
+            else if (c=='\\')
+                builder.append(""); //  yank leading slashes
             else if (c < 32 || c >= 127)
                 builder.append(String.format("\\u%04x", (int)c));
             else
