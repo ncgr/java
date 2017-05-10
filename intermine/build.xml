@@ -23,7 +23,7 @@
 
     <property name="neo4j-java-driver" value="lib/neo4j-java-driver-1.2.0.jar"/>
 
-    <property name="servlet-api" value="/usr/share/java/servlet-api-3.1.jar"/>
+    <property name="servlet-api" value="lib/servlet-api-3.1.0.jar"/>
 
     <property name="jar" value="ncgr-intermine.jar"/>
 
