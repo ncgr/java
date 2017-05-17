@@ -9,7 +9,7 @@ Prints the FASTA for the gene with the given symbol. Parameters: IM service URL 
 ```./run org.ncgr.intermine.FastaQueryClient https://apps.araport.org/thalemine/service REV```
 
 ### org.ncgr.intermine.ModelViewer
-Pprints out the full data model from a mine. Parameter: IM service URL.
+Prints out the full data model from a mine. Parameter: IM service URL.
 
 ```./run org.ncgr.intermine.ModelViewer https://apps.araport.org/thalemine/service```
 
