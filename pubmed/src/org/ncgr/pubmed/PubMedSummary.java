@@ -13,6 +13,8 @@ package org.ncgr.pubmed;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 
+import java.net.URLEncoder;
+
 import java.util.HashMap;
 import java.util.Map;
 import java.util.LinkedHashSet;
@@ -88,86 +90,137 @@ public class PubMedSummary {
         boolean exists = doc.getElementsByTagName("ERROR").item(0)==null;
 
         // parse-o-rama
-        if (exists) {
+        if (exists) parse(doc);
+        
+    }
 
-            this.id = Integer.parseInt(doc.getElementsByTagName("Id").item(0).getTextContent());
+    /**
+     * Get a summary of the first match to title (if exists).
+     */
+    public PubMedSummary(String title) throws IOException, UnsupportedEncodingException, ParserConfigurationException, SAXException {
 
-            NodeList items = doc.getElementsByTagName("Item");
-            for (int i=0; i<items.getLength(); i++) {
-                Node item = items.item(i);
-                Node itemName = item.getAttributes().getNamedItem("Name");
-                String itemValue = item.getTextContent();
-                boolean inList = false;
-                // process singletons
-                switch (itemName.getTextContent()) {
-                case "PubDate": pubDate = itemValue; break;
-                case "EPubDate": ePubDate = itemValue; break;
-                case "Source": source = itemValue; break;
-                case "AuthorList":
-                    inList = true;
-                    while (inList) {
-                        Node listItem = items.item(++i);
-                        Node listItemName = listItem.getAttributes().getNamedItem("Name");
-                        String listItemValue = listItem.getTextContent();
-                        if (listItemName.getTextContent().equals("Author")) {
-                            authorList.add(listItemValue);
-                        } else {
-                            i--;
-                            inList = false;
-                        }
+        // "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=pubmed&term=An RNA-Seq based gene expression atlas of the common bean.[Title]"
+
+        // form search URL
+        String url = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=pubmed&term="+URLEncoder.encode(title,"UTF-8")+"[Title]";
+
+        // parse the URL response
+        DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
+        DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
+        Document doc = dBuilder.parse(url);
+        doc.getDocumentElement().normalize(); // recommended
+
+        // if article exists, count>0
+        Node countNode = doc.getElementsByTagName("Count").item(0);
+        int count = Integer.parseInt(countNode.getTextContent());
+        
+        int id = 0;
+        if (count>0) {
+            Node idNode = doc.getElementsByTagName("Id").item(0);
+            id = Integer.parseInt(idNode.getTextContent());
+        }
+
+        if (id>0) {
+            // form summary URL
+            url = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi?db=pubmed&id="+id;
+
+            // parse the URL response
+            dbFactory = DocumentBuilderFactory.newInstance();
+            dBuilder = dbFactory.newDocumentBuilder();
+            doc = dBuilder.parse(url);
+            doc.getDocumentElement().normalize(); // recommended
+
+            // if article doesn't exist, response has ERROR tag
+            boolean exists = doc.getElementsByTagName("ERROR").item(0)==null;
+
+            // parse-o-rama
+            if (exists) parse(doc);
+        }
+
+    }
+
+
+    /**
+     * Parse a document into instance variables.
+     */
+    void parse(Document doc) {
+
+        this.id = Integer.parseInt(doc.getElementsByTagName("Id").item(0).getTextContent());
+
+        NodeList items = doc.getElementsByTagName("Item");
+        for (int i=0; i<items.getLength(); i++) {
+            Node item = items.item(i);
+            Node itemName = item.getAttributes().getNamedItem("Name");
+            String itemValue = item.getTextContent();
+            boolean inList = false;
+            // process singletons
+            switch (itemName.getTextContent()) {
+            case "PubDate": pubDate = itemValue; break;
+            case "EPubDate": ePubDate = itemValue; break;
+            case "Source": source = itemValue; break;
+            case "AuthorList":
+                inList = true;
+                while (inList) {
+                    Node listItem = items.item(++i);
+                    Node listItemName = listItem.getAttributes().getNamedItem("Name");
+                    String listItemValue = listItem.getTextContent();
+                    if (listItemName.getTextContent().equals("Author")) {
+                        authorList.add(listItemValue);
+                    } else {
+                        i--;
+                        inList = false;
                     }
-                    break;
-                case "LastAuthor": lastAuthor = itemValue; break;
-                case "Title": title = itemValue; break;
-                case "Volume": volume = itemValue; break;
-                case "Issue": issue = itemValue; break;
-                case "Pages": pages = itemValue; break;
-                case "LangList":
-                    inList = true;
-                    while (inList) {
-                        Node listItem = items.item(++i);
-                        Node listItemName = listItem.getAttributes().getNamedItem("Name");
-                        String listItemValue = listItem.getTextContent();
-                        if (listItemName.getTextContent().equals("Lang")) {
-                            langList.add(listItemValue);
-                        } else {
-                            i--;
-                            inList = false;
-                        }
-                    }
-                    break;
-                case "NlmUniqueID": nlmUniqueId = itemValue; break;
-                case "ISSN": issn = itemValue; break;
-                case "ESSN": essn = itemValue; break;
-                case "PubTypeList":
-                    inList = true;
-                    while (inList) {
-                        Node listItem = items.item(++i);
-                        Node listItemName = listItem.getAttributes().getNamedItem("Name");
-                        String listItemValue = listItem.getTextContent();
-                        if (listItemName.getTextContent().equals("PubType")) {
-                            pubTypeList.add(listItemValue);
-                        } else {
-                            i--;
-                            inList = false;
-                        }
-                    }
-                    break;
-                case "RecordStatus": recordStatus = itemValue; break;
-                case "PubStatus": pubStatus = itemValue; break;
-                case "ArticleIds": break; // bail on this one for now
-                case "DOI": doi = itemValue; break;
-                case "History": break;    // bail on this one for now
-                case "References": break; // bail on this one for now
-                case "HasAbstract": hasAbstract = (itemValue.equals("1")); break;
-                case "PmcRefCount": pmcRefCount = Integer.parseInt(itemValue); break;
-                case "FullJournalName": fullJournalName = itemValue; break;
-                case "ELocationID": eLocationId = itemValue; break;
-                case "SO": so = itemValue; break;
-                default: break;
                 }
+                break;
+            case "LastAuthor": lastAuthor = itemValue; break;
+            case "Title": title = itemValue; break;
+            case "Volume": volume = itemValue; break;
+            case "Issue": issue = itemValue; break;
+            case "Pages": pages = itemValue; break;
+            case "LangList":
+                inList = true;
+                while (inList) {
+                    Node listItem = items.item(++i);
+                    Node listItemName = listItem.getAttributes().getNamedItem("Name");
+                    String listItemValue = listItem.getTextContent();
+                    if (listItemName.getTextContent().equals("Lang")) {
+                        langList.add(listItemValue);
+                    } else {
+                        i--;
+                        inList = false;
+                    }
+                }
+                break;
+            case "NlmUniqueID": nlmUniqueId = itemValue; break;
+            case "ISSN": issn = itemValue; break;
+            case "ESSN": essn = itemValue; break;
+            case "PubTypeList":
+                inList = true;
+                while (inList) {
+                    Node listItem = items.item(++i);
+                    Node listItemName = listItem.getAttributes().getNamedItem("Name");
+                    String listItemValue = listItem.getTextContent();
+                    if (listItemName.getTextContent().equals("PubType")) {
+                        pubTypeList.add(listItemValue);
+                    } else {
+                        i--;
+                        inList = false;
+                    }
+                }
+                break;
+            case "RecordStatus": recordStatus = itemValue; break;
+            case "PubStatus": pubStatus = itemValue; break;
+            case "ArticleIds": break; // bail on this one for now
+            case "DOI": doi = itemValue; break;
+            case "History": break;    // bail on this one for now
+            case "References": break; // bail on this one for now
+            case "HasAbstract": hasAbstract = (itemValue.equals("1")); break;
+            case "PmcRefCount": pmcRefCount = Integer.parseInt(itemValue); break;
+            case "FullJournalName": fullJournalName = itemValue; break;
+            case "ELocationID": eLocationId = itemValue; break;
+            case "SO": so = itemValue; break;
+            default: break;
             }
-            
         }
 
     }
@@ -178,15 +231,23 @@ public class PubMedSummary {
     public static void main(String[] args) {
         
         if (args.length!=1) {
-            System.err.println("Usage: PubMedSummary <PMID>");
+            System.err.println("Usage: PubMedSummary PMID|Title");
             System.exit(1);
         }
 
         try {
-            int id = Integer.parseInt(args[0]);
-            PubMedSummary pms = new PubMedSummary(id);
+
+            PubMedSummary pms;
+            try {
+                int id = Integer.parseInt(args[0]);
+                pms = new PubMedSummary(id);
+            } catch (Exception e) {
+                String title = args[0];
+                pms = new PubMedSummary(title);
+            }
+            
             if (pms.id==0) {
-                System.err.println("PMID "+id+" does not exist. Exiting.");
+                System.err.println("PMID or title "+args[0]+" not found. Exiting.");
                 System.exit(1);
             }
 
