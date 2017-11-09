@@ -21,9 +21,12 @@
     <property name="intermine-model" value="lib/intermine-model.jar"/>
     <property name="intermine-client" value="lib/intermine-client.jar"/>
     <property name="intermine-pathquery" value="lib/intermine-pathquery.jar"/>
-
+    <property name="intermine-integrate" value="lib/intermine-integrate.jar"/>
+    <property name="intermine-objectstore" value="lib/intermine-objectstore.jar"/>
 
     <property name="servlet-api" value="lib/servlet-api-3.1.0.jar"/>
+
+    <property name="ncgr-pubmed" value="../pubmed/ncgr-pubmed.jar"/>
 
     <property name="jar" value="ncgr-intermine.jar"/>
 
@@ -39,7 +42,8 @@
   <target name="classes" depends="init">
     <javac srcdir="src"
 	   classpath="classes
-                      :${intermine-model}:${intermine-client}:${intermine-pathquery}:${intermine-api}
+                      :${intermine-model}:${intermine-client}:${intermine-pathquery}:${intermine-api}:${intermine-integrate}:${intermine-objectstore}
+                      :${ncgr-pubmed}
                       :${commons-codec}:${commons-lang}:${commons-httpclient}:${commons-io}:${commons-logging}:${json}:${stax-api}:${stax-ri}:${log4j}
                       :${servlet-api}"
            deprecation="true"
@@ -51,7 +55,6 @@
 
   <target name="jar" depends="classes">
     <jar destfile="${jar}" basedir="classes"/>
-    <copy file="${jar}" todir="webapps/ROOT/WEB-INF/lib"/> 
   </target>
 
   <target name="clean">

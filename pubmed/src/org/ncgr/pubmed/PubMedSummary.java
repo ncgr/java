@@ -15,10 +15,10 @@ import java.io.UnsupportedEncodingException;
 
 import java.net.URLEncoder;
 
-import java.util.HashMap;
 import java.util.Map;
-import java.util.LinkedHashSet;
-import java.util.Set;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.LinkedList;
 
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.DocumentBuilder;
@@ -47,28 +47,28 @@ public class PubMedSummary {
     public String pubDate;
     public String ePubDate;
     public String source;
-    public Set<String> authorList = new LinkedHashSet<String>();
     public String lastAuthor;
     public String title;
     public String volume;
     public String issue;
     public String pages;
-    public Set<String> langList = new LinkedHashSet<String>();
     public String nlmUniqueId;
     public String issn;
     public String essn;
-    public Set<String> pubTypeList = new LinkedHashSet<String>();
     public String recordStatus;
     public String pubStatus;
-    public Map<String,String> articleIds = new HashMap<String,String>();
     public String doi;
-    public Map<String,String> history = new HashMap<String,String>();
-    public Map<String,String> references = new HashMap<String,String>();
     public boolean hasAbstract;
     public int pmcRefCount;
     public String fullJournalName;
     public String eLocationId;
     public String so;
+    public List<String> authorList = new LinkedList<String>();
+    public List<String> langList = new LinkedList<String>();
+    public List<String> pubTypeList = new LinkedList<String>();
+    public Map<String,String> articleIds = new LinkedHashMap<String,String>();
+    public Map<String,String> history = new LinkedHashMap<String,String>();
+    public Map<String,String> references = new LinkedHashMap<String,String>();
 
     /**
      * Get a summary of a PMID
@@ -226,7 +226,44 @@ public class PubMedSummary {
     }
 
     /**
-     * Command-line query
+     * Spit out a string representation of the summary.
+     */
+    public String toString() {
+        String out = "";
+        out += "ID:"+id+"\n";
+        out += "PubDate:"+pubDate+"\n";
+        out += "EPubDate:"+ePubDate+"\n";
+        out += "Source:"+source+"\n";
+        for (String author : authorList) {
+            out += "Author:"+author+"\n";
+        }
+        out += "LastAuthor:"+lastAuthor+"\n";
+        out += "Title:"+title+"\n";
+        out += "Volume:"+volume+"\n";
+        out += "Issue:"+issue+"\n";
+        out += "Pages:"+pages+"\n";
+        for (String lang : langList) {
+            out += "Lang:"+lang+"\n";
+        }
+        out += "NlmUniqueID:"+nlmUniqueId+"\n";
+        out += "ISSN:"+issn+"\n";
+        out += "ESSN:"+essn+"\n";
+        for (String pubType : pubTypeList) {
+            out += "PubType:"+pubType+"\n";
+        }
+        out += "RecordStatus:"+recordStatus+"\n";
+        out += "PubStatus:"+pubStatus+"\n";
+        out += "DOI:"+doi+"\n";
+        out += "HasAbstract:"+hasAbstract+"\n";
+        out += "PmcRefCount:"+pmcRefCount+"\n";
+        out += "FullJournalName:"+fullJournalName+"\n";
+        out += "ELocationID:"+eLocationId+"\n";
+        out += "SO:"+so+"\n";
+        return out;
+    }
+
+    /**
+     * Handy command-line query
      */
     public static void main(String[] args) {
         
@@ -247,39 +284,11 @@ public class PubMedSummary {
             }
             
             if (pms.id==0) {
-                System.err.println("PMID or title "+args[0]+" not found. Exiting.");
+                System.err.println("No match found for PMID or title: "+args[0]);
                 System.exit(1);
             }
 
-            System.out.println("ID:"+pms.id);
-            System.out.println("PubDate:"+pms.pubDate);
-            System.out.println("EPubDate:"+pms.ePubDate);
-            System.out.println("Source:"+pms.source);
-            for (String author : pms.authorList) {
-                System.out.println("Author:"+author);
-            }
-            System.out.println("LastAuthor:"+pms.lastAuthor);
-            System.out.println("Title:"+pms.title);
-            System.out.println("Volume:"+pms.volume);
-            System.out.println("Issue:"+pms.issue);
-            System.out.println("Pages:"+pms.pages);
-            for (String lang : pms.langList) {
-                System.out.println("Lang:"+lang);
-            }
-            System.out.println("NlmUniqueID:"+pms.nlmUniqueId);
-            System.out.println("ISSN:"+pms.issn);
-            System.out.println("ESSN:"+pms.essn);
-            for (String pubType : pms.pubTypeList) {
-                System.out.println("PubType:"+pubType);
-            }
-            System.out.println("RecordStatus:"+pms.recordStatus);
-            System.out.println("PubStatus:"+pms.pubStatus);
-            System.out.println("DOI:"+pms.doi);
-            System.out.println("HasAbstract:"+pms.hasAbstract);
-            System.out.println("PmcRefCount:"+pms.pmcRefCount);
-            System.out.println("FullJournalName:"+pms.fullJournalName);
-            System.out.println("ELocationID:"+pms.eLocationId);
-            System.out.println("SO:"+pms.so);
+            System.out.println(pms.toString());
                 
         } catch (Exception ex) {
             System.err.println(ex.toString());
