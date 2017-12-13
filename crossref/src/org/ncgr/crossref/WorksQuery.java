@@ -1,14 +1,19 @@
 package org.ncgr.crossref;
 
 import java.io.InputStreamReader;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.net.URL;
 import java.net.URLEncoder;
+import java.net.MalformedURLException;
 
 import org.json.simple.ItemList;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.JSONValue;
 import org.json.simple.parser.JSONParser;
+import org.json.simple.parser.ParseException;
 
 /**
  * Query the CrossRef REST API for a work and return the closest match - either an exact match to the query or the first result (usually the same).
@@ -17,104 +22,135 @@ public class WorksQuery {
 
     public static String WORKS_URL_ROOT = "https://api.crossref.org/works";
 
-    static String TEST_AUTHOR = "Perez-Vega";
-    static String TEST_TITLE = "Mapping of QTLs for Morpho-Agronomic and Seed Quality Traits in a RIL Population of Common Bean (Phaseolus vulgaris L.)";
+    String queryAuthor;
+    String queryTitle;
+    String queryDOI;
+    URL worksUrl;
 
+    String status;
+    String messageType;
+    String messageVersion;
+    long messageTotalResults;
+    
+    JSONObject item;
+
+    /**
+     * Query an author and title.
+     */
+    public void queryAuthorTitle(String queryAuthor, String queryTitle) throws UnsupportedEncodingException, MalformedURLException, ParseException, IOException {
+        this.queryAuthor = queryAuthor;
+        this.queryTitle = queryTitle;
+        this.worksUrl = new URL(WORKS_URL_ROOT+
+                                "?rows=1" +
+                                "&query.author="+URLEncoder.encode(queryAuthor,"UTF-8") +
+                                "&query.title="+URLEncoder.encode(queryTitle,"UTF-8")
+                                );
+        query();
+    }
+
+    /**
+     * Query a DOI.
+     */
+    public void queryDOI(String queryDOI) throws UnsupportedEncodingException, MalformedURLException, ParseException, IOException {
+        this.queryDOI = queryDOI;
+        this.worksUrl = new URL(WORKS_URL_ROOT+"/"+URLEncoder.encode(queryDOI,"UTF-8"));
+        try {
+            query();
+        } catch (FileNotFoundException e) {
+            status = "DOI NOT FOUND";
+        }
+    }
+
+    /**
+     * Execute query given a populated worksUrl field.
+     */
+    void query() throws ParseException, IOException, FileNotFoundException {
+        InputStreamReader reader = new InputStreamReader(worksUrl.openStream());
+        JSONParser parser = new JSONParser();
+        JSONObject response = (JSONObject) parser.parse(reader);
+        status = (String) response.get("status");
+        messageType = (String) response.get("message-type");
+        messageVersion = (String) response.get("message-version");
+        JSONObject message = (JSONObject) response.get("message");
+        if (messageType.equals("work")) {
+            item = message;
+        } else if (messageType.equals("work-list")) {
+            messageTotalResults = (long)(Long) message.get("total-results");
+            JSONArray items = (JSONArray) message.get("items");
+            item = (JSONObject) items.get(0);
+        } else {
+            System.err.println("Can't process message of type:"+messageType);
+            System.exit(1);
+        }
+    }
+    
     /**
      * Testing, 1, 2, 3.
      */
-    public static void main(String[] args) {
+    public static void main(String[] args) throws UnsupportedEncodingException, MalformedURLException, IOException, ParseException {
 
-        String queryAuthor = TEST_AUTHOR;
-        String queryTitle = TEST_TITLE;
-        if (args.length==2 && args[0].length()>0 && args[1].length()>0) {
-            queryAuthor = args[0];
-            queryTitle = args[1];
-        } else if (args.length!=0) {
-            System.out.println("Usage: WorksQuery [author] [title]");
-            System.out.println("args.length="+args.length);
-            System.exit(0);
+        String queryAuthor = null;
+        String queryTitle = null;
+        String queryDOI = null;
+        
+        // 2 args is author/title query; 1 arg is DOI query
+        if (args.length==2) {
+            if (args[0].length()>0 && args[1].length()>0) {
+                queryAuthor = args[0];
+                queryTitle = args[1];
+            } else if (args[0].length()>0) {
+                queryDOI = args[0];
+            }
+        } else if (args.length==1) {
+            queryDOI = args[0];
+        } else {
+            // defaults for testing
+            queryAuthor = "Perez-Vega";
+            queryTitle = "Mapping of QTLs for Morpho-Agronomic and Seed Quality Traits in a RIL Population of Common Bean (Phaseolus vulgaris L.)";
         }
 
-        try {
+        WorksQuery wq = new WorksQuery();
+        if (queryDOI!=null) {
+            wq.queryDOI(queryDOI);
+        } else if (queryAuthor!=null && queryTitle!=null) {
+            wq.queryAuthorTitle(queryAuthor, queryTitle);
+        } else {
+            System.err.println("Error: neither DOI nor author/title provided.");
+            System.exit(1);
+        }
+
+        System.out.println("status:\t"+wq.getStatus());
+        if (wq.getStatus().equals("ok")) {
+            System.out.println("message-type:\t"+wq.getMessageType());
+            System.out.println("message-version:\t"+wq.getMessageVersion());
+            System.out.println("message.total-results:\t"+wq.getMessageTotalResults());
             
-            URL url = new URL(WORKS_URL_ROOT+
-                              "?query.author="+URLEncoder.encode(queryAuthor,"UTF-8") +
-                              "&query.title="+URLEncoder.encode(queryTitle,"UTF-8")
-                              );
-            InputStreamReader reader = new InputStreamReader(url.openStream());
-            JSONParser parser = new JSONParser();
-
-            JSONObject response = (JSONObject) parser.parse(reader);
-            System.out.println("status:\t"+response.get("status"));
-            System.out.println("message-type:\t"+response.get("message-type"));
-            System.out.println("message-version:\t"+response.get("message-version"));
-
-            JSONObject message = (JSONObject) response.get("message");
-            System.out.println("message.total-results:\t"+message.get("total-results"));
-
-            JSONArray items = (JSONArray) message.get("items");
-            for (Object itemObject : items) {
-
-                try {
-
-                    JSONObject item = (JSONObject) itemObject;
-                    
-                    JSONArray titles = (JSONArray) item.get("title");
-                    String title = stringOrNull(titles.get(0));
-                    System.out.println("");
-                    boolean matched = queryTitle.toLowerCase().equals(title.toLowerCase());
-                    if (matched) System.out.println("******************************* MATCH! *******************************");
-                    System.out.println(title);
-                    
-                    JSONArray authors = (JSONArray) item.get("author");
-                    for (Object authorObject : authors)  {
-                        JSONObject author = (JSONObject) authorObject;
-                        System.out.println(author.get("family")+","+author.get("given"));
-                    }
-                    
-                    String doi = stringOrNull(item.get("DOI"));
-                    System.out.println(doi);
-
-                    String shortContainerTitle = null;
-                    if (item.get("short-container-title")!=null) {
-                        JSONArray shortContainerTitles = (JSONArray) item.get("short-container-title");
-                        shortContainerTitle = stringOrNull(shortContainerTitles.get(0));
-                    }
-                    String containerTitle = null;
-                    if (item.get("container-title")!=null) {
-                        JSONArray containerTitles = (JSONArray) item.get("container-title");
-                        containerTitle = stringOrNull(containerTitles.get(0));
-                    }
-                    if (shortContainerTitle!=null) {
-                        System.out.print(shortContainerTitle+" ");
-                    } else if (containerTitle!=null) {
-                        System.out.print(containerTitle+" ");
-                    }
-                    String volume = stringOrNull(item.get("volume"));
-                    System.out.print(volume+" (");
-                    String issue = stringOrNull(item.get("issue"));
-                    System.out.print(issue+"), ");                    
-                    String page = stringOrNull(item.get("page"));
-                    System.out.println(page);
-                    
-                    String linkUrl = stringOrNull(item.get("URL"));
-                    System.out.println(linkUrl);
-
-                    double score = (double)(Double) item.get("score");
-                    System.out.println("score="+score);
-                    
-                    if (matched) System.out.println("**********************************************************************");
-                    System.out.println("");
-
-                } catch (Exception e2) {
-                    System.out.println(e2);
-                }
-
+            System.out.println("");
+            if (wq.isTitleMatched()) System.out.println("******************************* TITLE MATCH! *******************************");
+            System.out.println(wq.getTitle());
+            
+            for (Object authorObject : wq.getAuthors())  {
+                JSONObject author = (JSONObject) authorObject;
+                System.out.println(author.get("family")+","+author.get("given"));
             }
-
-        } catch (Exception e1) {
-            System.err.println(e1);
+            
+            System.out.println(wq.getDOI());
+            System.out.println(wq.getPublisher());
+            
+            if (wq.getShortContainerTitle()!=null) {
+                System.out.print(wq.getShortContainerTitle()+" ");
+            } else if (wq.getContainerTitle()!=null) {
+                System.out.print(wq.getContainerTitle()+" ");
+            }
+            System.out.print(wq.getVolume()+" [");
+            System.out.print(wq.getIssue()+"], ");                    
+            System.out.print(wq.getPage()+" (");
+            System.out.println(wq.getIssueYear()+")");
+            System.out.println(wq.getLinkUrl());
+            System.out.println("ISSN: print="+wq.getPrintISSN()+" electronic="+wq.getElectronicISSN());
+            System.out.println("score="+wq.getScore());
+            if (wq.isTitleMatched()) System.out.println("****************************************************************************");
+            System.out.println("");
         }
 
     }
@@ -125,6 +161,133 @@ public class WorksQuery {
         } else {
             return (String) o;
         }
+    }
+
+    public String getStatus() {
+        return status;
+    }
+
+    public String getMessageType() {
+        return messageType;
+    }
+
+    public String getMessageVersion() {
+        return messageVersion;
+    }
+
+    public long getMessageTotalResults() {
+        return messageTotalResults;
+    }
+
+    public String getQueryAuthor() {
+        return queryAuthor;
+    }
+
+    public String getQueryTitle() {
+        return queryTitle;
+    }
+
+    public String getTitle() {
+        JSONArray titles = (JSONArray) item.get("title");
+        return stringOrNull(titles.get(0));
+    }
+    
+    public boolean isTitleMatched() {
+        if (queryTitle!=null) {
+            return queryTitle.toLowerCase().equals(getTitle().toLowerCase());
+        } else {
+            return false;
+        }
+    }
+    
+    public JSONArray getAuthors() {
+        return (JSONArray) item.get("author");
+    }
+    
+    public String getDOI() {
+        return stringOrNull(item.get("DOI"));
+    }
+    
+    public String getShortContainerTitle() {
+        if (item.get("short-container-title")!=null) {
+            JSONArray shortContainerTitles = (JSONArray) item.get("short-container-title");
+            return stringOrNull(shortContainerTitles.get(0));
+        } else {
+            return null;
+        }
+    }
+    
+    public String getContainerTitle() {
+        if (item.get("container-title")!=null) {
+            JSONArray containerTitles = (JSONArray) item.get("container-title");
+            return stringOrNull(containerTitles.get(0));
+        } else {
+            return null;
+        }
+    }
+    
+    public String getVolume() {
+        return stringOrNull(item.get("volume"));
+    }
+    
+    public String getIssue() {
+        return stringOrNull(item.get("issue"));
+
+    }
+
+    public String getPage() {
+        return stringOrNull(item.get("page"));
+
+    }
+
+    public String getLinkUrl() {
+        JSONArray links = (JSONArray) item.get("link");
+        JSONObject link = (JSONObject) links.get(0);
+        return stringOrNull(link.get("URL"));
+    }
+
+    public double getScore() {
+        return (double)(Double) item.get("score");
+    }
+
+    public String getPrintISSN() {
+        JSONArray issn = (JSONArray) item.get("ISSN");
+        if (issn.size()>0) {
+            return stringOrNull(issn.get(0));
+        } else {
+            return null;
+        }
+    }
+    public String getElectronicISSN() {
+        JSONArray issn = (JSONArray) item.get("ISSN");
+        if (issn.size()>1) {
+            return stringOrNull(issn.get(1));
+        } else {
+            return null;
+        }
+    }
+
+    public long getIssueYear() {
+        JSONObject issued = (JSONObject) item.get("issued");
+        JSONArray dateParts = (JSONArray) issued.get("date-parts");
+        JSONArray parts = (JSONArray) dateParts.get(0);
+        return (long)(Long) parts.get(0);
+    }
+    public long getIssueMonth() {
+        JSONObject issued = (JSONObject) item.get("issued");
+        JSONArray dateParts = (JSONArray) issued.get("date-parts");
+        JSONArray parts = (JSONArray) dateParts.get(0);
+        return (long)(Long) parts.get(1);
+    }
+    public long getIssueDay() {
+        JSONObject issued = (JSONObject) item.get("issued");
+        JSONArray dateParts = (JSONArray) issued.get("date-parts");
+        JSONArray parts = (JSONArray) dateParts.get(0);
+        return (long)(Long) parts.get(2);
+    }
+
+    public String getPublisher() {
+        return stringOrNull(item.get("publisher"));
     }
 
 }
