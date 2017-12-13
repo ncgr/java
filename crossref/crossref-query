@@ -1,0 +1,2 @@
+curl "https://api.crossref.org/works?query.author=Perez-Vega+Paneda&query.title=Mapping+of+QTLs+for+Morpho-Agronomic+and+Seed+Quality+Traits+in+a+RIL+Population+of+Common+Bean+(Phaseolus+vulgaris+L.)"
+echo ""
