@@ -8,7 +8,6 @@ import java.net.URL;
 import java.net.URLEncoder;
 import java.net.MalformedURLException;
 
-import org.json.simple.ItemList;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.JSONValue;
@@ -136,6 +135,9 @@ public class WorksQuery {
             
             System.out.println(wq.getDOI());
             System.out.println(wq.getPublisher());
+
+            System.out.println(wq.getShortContainerTitle());
+            System.out.println(wq.getContainerTitle());
             
             if (wq.getShortContainerTitle()!=null) {
                 System.out.print(wq.getShortContainerTitle()+" ");
@@ -145,7 +147,7 @@ public class WorksQuery {
             System.out.print(wq.getVolume()+" [");
             System.out.print(wq.getIssue()+"], ");                    
             System.out.print(wq.getPage()+" (");
-            System.out.println(wq.getIssueYear()+")");
+            System.out.println(wq.getIssueMonth()+"/"+wq.getIssueYear()+")");
             System.out.println(wq.getLinkUrl());
             System.out.println("ISSN: print="+wq.getPrintISSN()+" electronic="+wq.getElectronicISSN());
             System.out.println("score="+wq.getScore());
@@ -188,8 +190,12 @@ public class WorksQuery {
     }
 
     public String getTitle() {
-        JSONArray titles = (JSONArray) item.get("title");
-        return stringOrNull(titles.get(0));
+        if (item.get("title")!=null) {
+            JSONArray titles = (JSONArray) item.get("title");
+            return stringOrNull(titles.get(0));
+        } else {
+            return null;
+        }
     }
     
     public boolean isTitleMatched() {
@@ -201,7 +207,12 @@ public class WorksQuery {
     }
     
     public JSONArray getAuthors() {
-        return (JSONArray) item.get("author");
+        if (item.get("author")!=null) {
+            JSONArray authors = (JSONArray) item.get("authors");
+            return (JSONArray) item.get("author");
+        } else {
+            return null;
+        }
     }
     
     public String getDOI() {
@@ -211,7 +222,11 @@ public class WorksQuery {
     public String getShortContainerTitle() {
         if (item.get("short-container-title")!=null) {
             JSONArray shortContainerTitles = (JSONArray) item.get("short-container-title");
-            return stringOrNull(shortContainerTitles.get(0));
+            if (shortContainerTitles.size()>0) {
+                return stringOrNull(shortContainerTitles.get(0));
+            } else {
+                return null;
+            }
         } else {
             return null;
         }
@@ -220,7 +235,11 @@ public class WorksQuery {
     public String getContainerTitle() {
         if (item.get("container-title")!=null) {
             JSONArray containerTitles = (JSONArray) item.get("container-title");
-            return stringOrNull(containerTitles.get(0));
+            if (containerTitles.size()>0) {
+                return stringOrNull(containerTitles.get(0));
+            } else {
+                return null;
+            }
         } else {
             return null;
         }
@@ -241,9 +260,13 @@ public class WorksQuery {
     }
 
     public String getLinkUrl() {
-        JSONArray links = (JSONArray) item.get("link");
-        JSONObject link = (JSONObject) links.get(0);
-        return stringOrNull(link.get("URL"));
+        if (item.get("link")!=null) {
+            JSONArray links = (JSONArray) item.get("link");
+            JSONObject link = (JSONObject) links.get(0);
+            return stringOrNull(link.get("URL"));
+        } else {
+            return null;
+        }
     }
 
     public double getScore() {
@@ -251,39 +274,63 @@ public class WorksQuery {
     }
 
     public String getPrintISSN() {
-        JSONArray issn = (JSONArray) item.get("ISSN");
-        if (issn.size()>0) {
+        if (item.get("ISSN")!=null) {
+            JSONArray issn = (JSONArray) item.get("ISSN");
             return stringOrNull(issn.get(0));
         } else {
             return null;
         }
     }
     public String getElectronicISSN() {
-        JSONArray issn = (JSONArray) item.get("ISSN");
-        if (issn.size()>1) {
-            return stringOrNull(issn.get(1));
+        if (item.get("ISSN")!=null) {
+            JSONArray issn = (JSONArray) item.get("ISSN");
+            if (issn.size()>1) {
+                return stringOrNull(issn.get(1));
+            } else {
+                return null;
+            }
         } else {
             return null;
         }
     }
 
-    public long getIssueYear() {
-        JSONObject issued = (JSONObject) item.get("issued");
-        JSONArray dateParts = (JSONArray) issued.get("date-parts");
-        JSONArray parts = (JSONArray) dateParts.get(0);
-        return (long)(Long) parts.get(0);
+    public int getIssueYear() {
+        if (item.get("issued")!=null) {
+            JSONObject issued = (JSONObject) item.get("issued");
+            JSONArray dateParts = (JSONArray) issued.get("date-parts");
+            JSONArray parts = (JSONArray) dateParts.get(0);
+            return (int)(long)(Long) parts.get(0);
+        } else {
+            return 0;
+        }
     }
-    public long getIssueMonth() {
-        JSONObject issued = (JSONObject) item.get("issued");
-        JSONArray dateParts = (JSONArray) issued.get("date-parts");
-        JSONArray parts = (JSONArray) dateParts.get(0);
-        return (long)(Long) parts.get(1);
+    public int getIssueMonth() {
+        if (item.get("issued")!=null) {
+            JSONObject issued = (JSONObject) item.get("issued");
+            JSONArray dateParts = (JSONArray) issued.get("date-parts");
+            JSONArray parts = (JSONArray) dateParts.get(0);
+            if (parts.size()>1) {
+                return (int)(long)(Long) parts.get(1);
+            } else {
+                return 0;
+            }
+        } else {
+            return 0;
+        }
     }
-    public long getIssueDay() {
-        JSONObject issued = (JSONObject) item.get("issued");
-        JSONArray dateParts = (JSONArray) issued.get("date-parts");
-        JSONArray parts = (JSONArray) dateParts.get(0);
-        return (long)(Long) parts.get(2);
+    public int getIssueDay() {
+        if (item.get("issued")!=null)  {
+            JSONObject issued = (JSONObject) item.get("issued");
+            JSONArray dateParts = (JSONArray) issued.get("date-parts");
+            JSONArray parts = (JSONArray) dateParts.get(0);
+            if (parts.size()>2) {
+                return (int)(long)(Long) parts.get(2);
+            } else {
+                return 0;
+            }
+        } else {
+            return 0;
+        }
     }
 
     public String getPublisher() {
