@@ -57,10 +57,10 @@ public class PubMedPublication {
      */
     void populateFromSummary(DataConverter converter) {
         // mandatory fields
-        publication.setAttribute("pubMedId", String.valueOf(summary.id));
-        publication.setAttribute("year", String.valueOf(getYear(summary.pubDate)));
         publication.setAttribute("title", summary.title);
-        publication.setAttribute("journal", summary.fullJournalName);
+	publication.setAttribute("pubMedId", String.valueOf(summary.id));
+        publication.setAttribute("year", String.valueOf(getYear(summary.pubDate)));
+        publication.setAttribute("journal", summary.source);
         // optional fields
         if (getMonth(summary.pubDate)!=null) publication.setAttribute("month", getMonth(summary.pubDate));
         if (summary.pages!=null && summary.pages.length()>0) publication.setAttribute("pages", summary.pages);
