@@ -15,7 +15,10 @@ import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 
 /**
- * Query the CrossRef REST API for a work and return the closest match - either an exact match to the query or the first result (usually the same).
+ * Class with constructors and methods to query the CrossRef REST API for a work and return the closest match - 
+ * either an exact match to the query or the first result (usually the same).
+ *
+ * @author Sam Hokin
  */
 public class WorksQuery {
 
@@ -24,6 +27,7 @@ public class WorksQuery {
     String queryAuthor;
     String queryTitle;
     String queryDOI;
+    
     URL worksUrl;
 
     String status;
@@ -34,9 +38,9 @@ public class WorksQuery {
     JSONObject item;
 
     /**
-     * Query an author and title.
+     * Construct given an author and title.
      */
-    public void queryAuthorTitle(String queryAuthor, String queryTitle) throws UnsupportedEncodingException, MalformedURLException, ParseException, IOException {
+    public WorksQuery(String queryAuthor, String queryTitle) throws UnsupportedEncodingException, MalformedURLException, ParseException, IOException {
         this.queryAuthor = queryAuthor;
         this.queryTitle = queryTitle;
         this.worksUrl = new URL(WORKS_URL_ROOT+
@@ -48,9 +52,9 @@ public class WorksQuery {
     }
 
     /**
-     * Query a DOI.
+     * Construct given a DOI.
      */
-    public void queryDOI(String queryDOI) throws UnsupportedEncodingException, MalformedURLException, ParseException, IOException {
+    public WorksQuery(String queryDOI) throws UnsupportedEncodingException, MalformedURLException, ParseException, IOException {
         this.queryDOI = queryDOI;
         this.worksUrl = new URL(WORKS_URL_ROOT+"/"+URLEncoder.encode(queryDOI,"UTF-8"));
         try {
@@ -84,7 +88,7 @@ public class WorksQuery {
     }
     
     /**
-     * Testing, 1, 2, 3.
+     * Main class for testing.
      */
     public static void main(String[] args) throws UnsupportedEncodingException, MalformedURLException, IOException, ParseException {
 
@@ -102,17 +106,19 @@ public class WorksQuery {
             }
         } else if (args.length==1) {
             queryDOI = args[0];
-        } else {
-            // defaults for testing
+        }
+        
+        // defaults for testing
+        if (queryDOI==null && queryTitle==null) {
             queryAuthor = "Perez-Vega";
             queryTitle = "Mapping of QTLs for Morpho-Agronomic and Seed Quality Traits in a RIL Population of Common Bean (Phaseolus vulgaris L.)";
         }
 
-        WorksQuery wq = new WorksQuery();
+        WorksQuery wq = null;
         if (queryDOI!=null) {
-            wq.queryDOI(queryDOI);
+            wq = new WorksQuery(queryDOI);
         } else if (queryAuthor!=null && queryTitle!=null) {
-            wq.queryAuthorTitle(queryAuthor, queryTitle);
+            wq = new WorksQuery(queryAuthor, queryTitle);
         } else {
             System.err.println("Error: neither DOI nor author/title provided.");
             System.exit(1);
@@ -153,6 +159,9 @@ public class WorksQuery {
             System.out.println("score="+wq.getScore());
             if (wq.isTitleMatched()) System.out.println("****************************************************************************");
             System.out.println("");
+
+            // DEBUG
+            System.out.println(wq.getReferencesCount());
         }
 
     }
@@ -164,6 +173,20 @@ public class WorksQuery {
             return (String) o;
         }
     }
+
+    public String getQueryAuthor() {
+        return queryAuthor;
+    }
+
+    public String getQueryTitle() {
+        return queryTitle;
+    }
+
+    public String getQueryDOI() {
+        return queryDOI;
+    }
+
+    // getters for main message fields
 
     public String getStatus() {
         return status;
@@ -181,14 +204,34 @@ public class WorksQuery {
         return messageTotalResults;
     }
 
-    public String getQueryAuthor() {
-        return queryAuthor;
+    public JSONObject getItem() {
+        return item;
     }
 
-    public String getQueryTitle() {
-        return queryTitle;
+    // getters for item fields
+
+    public String getPrefix() {
+        return stringOrNull(item.get("prefix"));
     }
 
+    public String getDepositedDateTime() {
+        JSONObject deposited = (JSONObject) item.get("deposited");
+        return stringOrNull(deposited.get("date-time"));
+    }
+
+    public String[] getSubjects() {
+        JSONArray subject = (JSONArray) item.get("subject");
+        String[] subjects = new String[subject.size()];
+        for (int i=0; i<subjects.length; i++) {
+            subjects[i] = (String) subject.get(i);
+        }
+        return subjects;
+    }
+
+    public String getType() {
+        return stringOrNull(item.get("type"));
+    }
+    
     public String getTitle() {
         if (item.get("title")!=null) {
             JSONArray titles = (JSONArray) item.get("title");
@@ -271,6 +314,10 @@ public class WorksQuery {
 
     public double getScore() {
         return (double)(Double) item.get("score");
+    }
+
+    public int getReferencesCount() {
+        return (int)(long)(Long) item.get("references-count");
     }
 
     public String getPrintISSN() {
