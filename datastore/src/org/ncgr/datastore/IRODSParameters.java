@@ -1,4 +1,4 @@
-package org.ncgr.irods;
+package org.ncgr.datastore;
 
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
