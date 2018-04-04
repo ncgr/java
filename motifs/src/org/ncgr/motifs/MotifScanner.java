@@ -16,34 +16,34 @@ import java.util.TreeMap;
  */
 public class MotifScanner {
 
-    static DecimalFormat df = new DecimalFormat("0.0000");
+    // store all the motif matrices
+    List<Matrix> matrices;
 
-    public static void main(String[] args) throws ClassNotFoundException, FileNotFoundException, IOException, SQLException {
+    // a little convenience object
+    Map<Character,Integer> rows = new TreeMap<Character,Integer>();
 
-        // validate arguments
-        if (args.length!=1) {
-            System.err.println("Usage: MotifScanner CGGTCTAGAT");
-            System.exit(1);
-        }
-        String query = args[0];
-
-        // the matrix row values for DNA sequences
-        Map<Character,Integer> rows = new TreeMap<Character,Integer>();
+    public MotifScanner() throws ClassNotFoundException, FileNotFoundException, IOException, SQLException {
+        
+        // initialize the matrix row values for DNA sequences (a convenience)
         rows.put('A', 0);
         rows.put('C', 1);
         rows.put('G', 2);
         rows.put('T', 3);
 
-        // the hit list
-        TreeMap<Double,Matrix> hitMap = new TreeMap<Double,Matrix>();
+        // retrieve all of the matrices in the database
+        matrices = Matrix.getAll();
+    }
 
-        // query all motifs
-        List<Matrix> matrices = Matrix.getAll();
+    /**
+     * Scan the matrices for hits against the given query string, return results in a TreeMap keyed by score.
+     */
+    public TreeMap<Double,Matrix> scan(String query) throws ClassNotFoundException, FileNotFoundException, IOException, SQLException {
+        TreeMap<Double,Matrix> hitMap = new TreeMap<Double,Matrix>();
         for (Matrix matrix : matrices) {
             int id = matrix.getId();
             String name = matrix.getName();
             int len = matrix.getMotifLength();
-            // only look at motifs with exact same length as query
+            // BIG RESTRICTION: only look at motifs with same length as query!
             if (len==query.length()) {
                 // loop over columns
                 int[][] vals = matrix.getData();
@@ -57,32 +57,28 @@ public class MotifScanner {
                     if (colSum[i]>0) querySum += (double)queryVal/(double)colSum[i];
                 }
                 hitMap.put(querySum, matrix);
-                // output
-                System.out.println(String.valueOf(id)+"\t"+name+"\t"+querySum);
-                for (int i=0; i<len; i++) System.out.print("\t"+query.charAt(i));
-                System.out.println("");
-                for (char base : rows.keySet()) {
-                    int row = rows.get(base);
-                    System.out.print(base);
-                    for (int i=0; i<len; i++) {
-                        System.out.print("\t"+vals[i][row]);
-                    }
-                    System.out.println("");
-                }
-                System.out.println("");
             }
         }
-
-        // output the top three winners
-        int count = 0;
-        for (Double querySum : hitMap.descendingKeySet()) {
-            count++;
-            Matrix m = hitMap.get(querySum);
-            System.out.println(m.getId()+"\t"+m.getName()+"\t"+m.getProteins()+"\t"+df.format(querySum)+"/"+query.length());
-            if (count>3) break;
-        }
-
+        return hitMap;
     }
 
+    /**
+     * Command-line utility.
+     */
+    public static void main(String[] args) throws ClassNotFoundException, FileNotFoundException, IOException, SQLException {
+        DecimalFormat df = new DecimalFormat("0.0000");
+        // validate arguments
+        if (args.length!=1) {
+            System.err.println("Usage: MotifScanner CGGTCTAGAT");
+            System.exit(1);
+        }
+        String query = args[0];
+        MotifScanner ms = new MotifScanner();
+        TreeMap<Double,Matrix> hitMap = ms.scan(query);
+        for (Double score : hitMap.keySet()) {
+            Matrix m = hitMap.get(score);
+            System.out.println(m.getId()+"\t"+m.getName()+"\t"+df.format(score)+"/"+query.length());
+        }
+    }
 
 }
