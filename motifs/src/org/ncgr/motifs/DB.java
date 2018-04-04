@@ -1,4 +1,4 @@
-package org.ncgr.meme;
+package org.ncgr.motifs;
 
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;

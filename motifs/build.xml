@@ -1,14 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project name="ncgr-meme" default="classes" basedir=".">
+<project name="ncgr-motifs" default="classes" basedir=".">
 
   <target name="init">
     <tstamp/>
-    <property name="postgresql"            value="lib/postgresql.jar"/>
+    <property name="jar"        value="ncgr-motifs.jar"/>
+    <property name="postgresql" value="lib/postgresql.jar"/>
   </target>
 
   <target name="about">
     <echo>
-      This build.xml file builds NCGR MEME utilities.
+      This build.xml file builds NCGR motif utilities.
     </echo>
   </target>
   
@@ -27,6 +28,10 @@
 	     classpath="classes:${postgresql}">
       <fileset dir="src" />
     </javadoc>
+  </target>
+
+  <target name="jar" depends="classes">
+    <jar destfile="${jar}" basedir="classes"/>
   </target>
 
   <target name="clean">

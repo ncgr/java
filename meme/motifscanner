@@ -1,1 +1,0 @@
-java -cp classes:lib/postgresql.jar org.ncgr.meme.MotifScanner $1
