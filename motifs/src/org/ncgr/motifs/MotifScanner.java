@@ -1,5 +1,7 @@
 package org.ncgr.motifs;
 
+import org.ncgr.db.DB;
+
 import java.io.FileNotFoundException;
 import java.io.IOException;
 
@@ -9,6 +11,7 @@ import java.text.DecimalFormat;
 
 import java.util.List;
 import java.util.Map;
+import java.util.HashMap;
 import java.util.TreeMap;
 
 /**
@@ -22,23 +25,42 @@ public class MotifScanner {
     // a little convenience object
     Map<Character,Integer> rows = new TreeMap<Character,Integer>();
 
+    // a DB object
+    DB db;
+
+    /**
+     * Instantiate using a db.properties file to connect to the database.
+     */
     public MotifScanner() throws ClassNotFoundException, FileNotFoundException, IOException, SQLException {
-        
         // initialize the matrix row values for DNA sequences (a convenience)
         rows.put('A', 0);
         rows.put('C', 1);
         rows.put('G', 2);
         rows.put('T', 3);
-
         // retrieve all of the matrices in the database
-        matrices = Matrix.getAll();
+        db = new DB();
+        matrices = Matrix.getAll(db);
     }
 
     /**
-     * Scan the matrices for hits against the given query string, return results in a TreeMap keyed by score.
+     * Instantiate using input database connection parameters.
      */
-    public TreeMap<Double,Matrix> scan(String query) throws ClassNotFoundException, FileNotFoundException, IOException, SQLException {
-        TreeMap<Double,Matrix> hitMap = new TreeMap<Double,Matrix>();
+    public MotifScanner(String driver, String url, String user, String password) throws ClassNotFoundException, FileNotFoundException, IOException, SQLException {
+        // initialize the matrix row values for DNA sequences (a convenience)
+        rows.put('A', 0);
+        rows.put('C', 1);
+        rows.put('G', 2);
+        rows.put('T', 3);
+        // retrieve all of the matrices in the database
+        db = new DB(driver, url, user, password, "pgsql");
+        matrices = Matrix.getAll(db);
+    }
+
+    /**
+     * Scan the matrices for hits against the given query string, return results in a Map keyed by matrix.
+     */
+    public Map<Matrix,Double> scan(String query) throws ClassNotFoundException, FileNotFoundException, IOException, SQLException {
+        Map<Matrix,Double> hitMap = new HashMap<Matrix,Double>();
         for (Matrix matrix : matrices) {
             int id = matrix.getId();
             String name = matrix.getName();
@@ -46,7 +68,7 @@ public class MotifScanner {
             // BIG RESTRICTION: only look at motifs with same length as query!
             if (len==query.length()) {
                 // loop over columns
-                int[][] vals = matrix.getData();
+                int[][] vals = matrix.getData(db);
                 int[] colSum = new int[len];
                 double querySum = 0.0;
                 for (int i=0; i<len; i++) {
@@ -56,7 +78,7 @@ public class MotifScanner {
                     for (int j=0; j<rows.size(); j++) colSum[i] += vals[i][j];
                     if (colSum[i]>0) querySum += (double)queryVal/(double)colSum[i];
                 }
-                hitMap.put(querySum, matrix);
+                hitMap.put(matrix,querySum);
             }
         }
         return hitMap;
@@ -74,9 +96,9 @@ public class MotifScanner {
         }
         String query = args[0];
         MotifScanner ms = new MotifScanner();
-        TreeMap<Double,Matrix> hitMap = ms.scan(query);
-        for (Double score : hitMap.keySet()) {
-            Matrix m = hitMap.get(score);
+        Map<Matrix,Double> hitMap = ms.scan(query);
+        for (Matrix m : hitMap.keySet()) {
+            double score = hitMap.get(m);
             System.out.println(m.getId()+"\t"+m.getName()+"\t"+df.format(score)+"/"+query.length());
         }
     }

@@ -2,8 +2,7 @@ package org.ncgr.motifs;
 
 import org.ncgr.db.DB;
 
-import java.io.FileNotFoundException;
-import java.io.IOException;
+import org.json.JSONObject;
 
 import java.util.List;
 import java.util.ArrayList;
@@ -18,27 +17,34 @@ import java.sql.SQLException;
  */
 public class Matrix {
 
-    // retrieve these with the getters
+    // MATRIX table values
     int id;
     String collection;
     String baseId;
     int version;
     String name;
 
+    // utility values
+    int motifLength;
+
     /**
-     * Construct from a loaded ResultSet.
+     * Construct from a loaded ResultSet. This DOES NOT SET motifLength.
      */
     public Matrix(ResultSet rs) throws SQLException {
         populate(rs);
     }
 
     /**
-     * Construct from a connected DB instance, given an id.
+     * Construct from a connected DB instance, given an id. This DOES SET motifLength.
      */
     public Matrix(DB db, int id) throws SQLException {
         db.executeQuery("SELECT * FROM matrix WHERE id="+id);
         if (db.rs.next()) {
             populate(db.rs);
+        }
+        db.executeQuery("SELECT max(col) FROM matrix_data WHERE id="+id);
+        if (db.rs.next()) {
+            setMotifLength(db.rs.getInt("max"));
         }
     }
 
@@ -53,9 +59,9 @@ public class Matrix {
         name = rs.getString("name");
     }
 
-    ///////////
-    // getters
-    ///////////
+    /////////////
+    // getters //
+    /////////////
     
     public int getId() {
         return id;
@@ -73,45 +79,24 @@ public class Matrix {
         return name;
     }
 
+    public void setMotifLength(int len) {
+        motifLength = len;
+    }
+    public int getMotifLength() {
+        return motifLength;
+    }
+
     //////////////////////
     // instance methods //
     //////////////////////
 
     /**
-     * Return the length of the motif(s) associated with this instance, by making a DB connection.
-     */
-    public int getMotifLength() throws ClassNotFoundException, FileNotFoundException, IOException, SQLException {
-        DB db = new DB();
-        int len = getMotifLength(db);
-        db.close();
-        return len;
-    }
-    /**
-     * Return the length of the motif(s) associated with this instance, given an instantiated DB object.
-     */
-    public int getMotifLength(DB db) throws SQLException {
-        db.executeQuery("SELECT max(col) FROM matrix_data WHERE id="+id);
-        db.rs.next();
-        return db.rs.getInt("max");
-    }
-
-    /**
-     * Return an array of matrix data associated with this instance, by making a DB connection.
-     */
-    public int[][] getData() throws ClassNotFoundException, FileNotFoundException, IOException, SQLException {
-        DB db = new DB();
-        int[][] matrixData = getData(db);
-        db.close();
-        return matrixData;
-    }
-    /**
      * Return an array of matrix data associated with this instance, given an instantiated DB object.
      */
     public int[][] getData(DB db) throws SQLException {
-        int len = getMotifLength(db);
         // loop over columns
-        int[][] vals = new int[len][4];
-        for (int i=0; i<len; i++) {
+        int[][] vals = new int[motifLength][4];
+        for (int i=0; i<motifLength; i++) {
             int col = i+1;
             // query over rows A, C, G, T
             int rowId = 0;
@@ -125,15 +110,6 @@ public class Matrix {
     }
 
     /**
-     * Return a map of annotation associated with this instance, by making a DB connection.
-     */
-    public Map<String,String> getAnnotation() throws ClassNotFoundException, FileNotFoundException, IOException, SQLException {
-        DB db = new DB();
-        Map<String,String> annotation = getAnnotation(db);
-        db.close();
-        return annotation;
-    }
-    /**
      * Return a map of annotation associated with this instance, given an instantiated DB object.
      */
     public Map<String,String> getAnnotation(DB db) throws SQLException {
@@ -146,15 +122,6 @@ public class Matrix {
     }
 
     /**
-     * Return the protein accession IDs associated with this instance, by making a DB connection. Returns null if none found.
-     */
-    public List<String> getProteins() throws ClassNotFoundException, FileNotFoundException, IOException, SQLException {
-        DB db = new DB();
-        List<String> acc = getProteins(db);
-        db.close();
-        return acc;
-    }
-    /**
      * Return the protein accession IDs associated with this instance, given an instantiated DB object. Returns null if none found.
      */
     public List<String> getProteins(DB db) throws SQLException {
@@ -166,21 +133,40 @@ public class Matrix {
         return acc;
     }
 
+    /**
+     * Return this instance as a JSON object.
+     */
+    public JSONObject getJSON() {
+        JSONObject json = new JSONObject();
+        json.put("id", id);
+        json.put("collection", collection);
+        json.put("baseId", baseId);
+        json.put("version", version);
+        json.put("name", name);
+        json.put("motifLength", motifLength);
+        return json;
+    }
+
     ////////////////////
     // static methods //
     ////////////////////
 
     /**
-     * Return a list of ALL matrix records by querying the database.
+     * Return a list of ALL matrix records by querying the database, given an instantiated DB object.
      */
-    public static List<Matrix> getAll() throws ClassNotFoundException, FileNotFoundException, IOException, SQLException {
+    public static List<Matrix> getAll(DB db) throws SQLException {
         List<Matrix> matrices = new ArrayList<Matrix>();
-        DB db = new DB();
         db.executeQuery("SELECT * FROM matrix ORDER BY id");
         while (db.rs.next()) {
             matrices.add(new Matrix(db.rs));
         }
-        db.close();
+        // query and set motifLength for each matrix
+        for (Matrix m : matrices) {
+            db.executeQuery("SELECT max(col) FROM matrix_data WHERE id="+m.getId());
+            if (db.rs.next()) {
+                m.setMotifLength(db.rs.getInt("max"));
+            }
+        }
         return matrices;
     }
 

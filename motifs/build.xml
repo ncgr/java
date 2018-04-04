@@ -3,9 +3,11 @@
 
   <target name="init">
     <tstamp/>
-    <property name="jar"        value="ncgr-motifs.jar"/>
-    <property name="db"		value="lib/ncgr-db.jar"/>
-    <property name="postgresql" value="lib/postgresql.jar"/>
+    <property name="jar"         value="ncgr-motifs.jar"/>
+    <property name="db"		 value="lib/ncgr-db.jar"/>
+    <property name="postgresql"  value="lib/postgresql.jar"/>
+    <property name="servlet-api" value="lib/servlet-api-3.1.jar"/>
+    <property name="json"        value="lib/JSON.jar"/>
   </target>
 
   <target name="about">
@@ -16,7 +18,7 @@
   
   <target name="classes" depends="init">
     <javac srcdir="src"
-	   classpath="classes:${postgresql}:${db}"
+	   classpath="classes:${postgresql}:${db}:${servlet-api}:${json}"
            deprecation="on"	
            includeantruntime="false"
 	   destdir="classes">
@@ -26,13 +28,14 @@
 
   <target name="javadoc" depends="classes">
     <javadoc destdir="javadoc"
-	     classpath="classes:${postgresql}:${db}">
+	     classpath="classes:${postgresql}:${db}:${servlet-api}:${json}">
       <fileset dir="src" />
     </javadoc>
   </target>
 
   <target name="jar" depends="classes">
     <jar destfile="${jar}" basedir="classes"/>
+    <copy file="${jar}" todir="webapps/ROOT/WEB-INF/lib"/>
   </target>
 
   <target name="clean">
