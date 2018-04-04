@@ -1,22 +1,21 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project name="ncgr-motifs" default="classes" basedir=".">
+<project name="ncgr-db" default="classes" basedir=".">
 
   <target name="init">
     <tstamp/>
-    <property name="jar"        value="ncgr-motifs.jar"/>
-    <property name="db"		value="lib/ncgr-db.jar"/>
+    <property name="jar"        value="ncgr-db.jar"/>
     <property name="postgresql" value="lib/postgresql.jar"/>
   </target>
 
   <target name="about">
     <echo>
-      This build.xml file builds NCGR motif utilities.
+      This build.xml file builds NCGR database utilities.
     </echo>
   </target>
   
   <target name="classes" depends="init">
     <javac srcdir="src"
-	   classpath="classes:${postgresql}:${db}"
+	   classpath="classes:${postgresql}"
            deprecation="on"	
            includeantruntime="false"
 	   destdir="classes">
@@ -26,7 +25,7 @@
 
   <target name="javadoc" depends="classes">
     <javadoc destdir="javadoc"
-	     classpath="classes:${postgresql}:${db}">
+	     classpath="classes:${postgresql}">
       <fileset dir="src" />
     </javadoc>
   </target>

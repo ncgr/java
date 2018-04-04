@@ -1,4 +1,4 @@
-package org.ncgr.motifs;
+package org.ncgr.db;
 
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;

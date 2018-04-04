@@ -1,1 +1,1 @@
-java -cp classes:lib/postgresql.jar org.ncgr.motifs.MotifScanner $1
+java -cp classes:lib/postgresql.jar:lib/ncgr-db.jar org.ncgr.motifs.MotifScanner $1

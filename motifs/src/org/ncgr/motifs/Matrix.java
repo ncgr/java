@@ -1,5 +1,7 @@
 package org.ncgr.motifs;
 
+import org.ncgr.db.DB;
+
 import java.io.FileNotFoundException;
 import java.io.IOException;
 
