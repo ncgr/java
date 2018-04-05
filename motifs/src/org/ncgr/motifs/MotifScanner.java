@@ -60,19 +60,21 @@ public class MotifScanner {
      * Scan the matrices for hits against the given query string, return results in a Map keyed by matrix.
      */
     public Map<Matrix,Double> scan(String query) throws ClassNotFoundException, FileNotFoundException, IOException, SQLException {
+        // stick to upper-case
+        String queryUC = query.toUpperCase();
         Map<Matrix,Double> hitMap = new HashMap<Matrix,Double>();
         for (Matrix matrix : matrices) {
             int id = matrix.getId();
             String name = matrix.getName();
             int len = matrix.getMotifLength();
             // BIG RESTRICTION: only look at motifs with same length as query!
-            if (len==query.length()) {
+            if (len==queryUC.length()) {
                 // loop over columns
                 int[][] vals = matrix.getData(db);
                 int[] colSum = new int[len];
                 double querySum = 0.0;
                 for (int i=0; i<len; i++) {
-                    char queryChar = query.charAt(i);
+                    char queryChar = queryUC.charAt(i);
                     int row = rows.get(queryChar);
                     int queryVal = vals[i][row];
                     for (int j=0; j<rows.size(); j++) colSum[i] += vals[i][j];
