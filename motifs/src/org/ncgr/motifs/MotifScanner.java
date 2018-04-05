@@ -97,10 +97,20 @@ public class MotifScanner {
         String query = args[0];
         MotifScanner ms = new MotifScanner();
         Map<Matrix,Double> hitMap = ms.scan(query);
+        int topId = 0;
+        String topName = "";
+        double topScore = 0.00;
         for (Matrix m : hitMap.keySet()) {
             double score = hitMap.get(m);
             System.out.println(m.getId()+"\t"+m.getName()+"\t"+df.format(score)+"/"+query.length());
+            if (score>topScore) {
+                topId = m.getId();
+                topName = m.getName();
+                topScore = score;
+            }
         }
+        System.out.println("------------------------");
+        System.out.println(topId+"\t"+topName+"\t"+df.format(topScore)+"/"+query.length());
     }
 
 }
