@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<%@ page import="org.ncgr.motifs.*" contentType="text/html; charset=UTF-8" %>
+<%@ page import="org.ncgr.motifs.*" contentType="text/html;charset=UTF-8" %>
 <html>
 
     <head>
