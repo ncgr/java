@@ -59,7 +59,7 @@ public class MotifSearchServlet extends HttpServlet {
         try {
 
             // our input
-            String query = request.getParameter("query");
+            String query = request.getParameter("query").toUpperCase();
 
             // do the motif scan
             MotifScanner ms = new MotifScanner(driver,url,user,password);
