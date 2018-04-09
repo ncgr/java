@@ -8,6 +8,9 @@
     <property name="postgresql"  value="lib/postgresql.jar"/>
     <property name="servlet-api" value="lib/servlet-api-3.1.jar"/>
     <property name="json"        value="lib/JSON.jar"/>
+    <property name="httpcore"    value="lib/httpcore.jar"/>
+    <property name="httpclient"  value="lib/httpclient.jar"/>
+    <property name="fluent-hc"   value="lib/fluent-hc.jar"/>
   </target>
 
   <target name="about">
@@ -18,7 +21,7 @@
   
   <target name="classes" depends="init">
     <javac srcdir="src"
-	   classpath="classes:${postgresql}:${db}:${servlet-api}:${json}"
+	   classpath="classes:${postgresql}:${db}:${servlet-api}:${json}:${httpcore}:${httpclient}:${fluent-hc}"
            deprecation="on"	
            includeantruntime="false"
 	   destdir="classes">
@@ -28,7 +31,7 @@
 
   <target name="javadoc" depends="classes">
     <javadoc destdir="javadoc"
-	     classpath="classes:${postgresql}:${db}:${servlet-api}:${json}">
+	     classpath="classes:${postgresql}:${db}:${servlet-api}:${json}:${httpcore}:${httpclient}:${fluent-hc}">
       <fileset dir="src" />
     </javadoc>
   </target>

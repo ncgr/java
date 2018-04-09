@@ -1,0 +1,3 @@
+#!/bin/sh
+
+java -cp classes:lib/httpcore.jar:lib/httpclient.jar:lib/fluent-hc.jar:lib/JSON.jar:lib/commons-logging.jar org.ncgr.motifs.MotifSearchClient http://intermine.ncgr.org/motifs/motifSearch $1
