@@ -9,14 +9,12 @@
     <property name="commons-cli" value="lib/commons-cli-2.0.jar" />
     <property name="commons-logging" value="lib/commons-logging-1.0.4.jar" />
     <property name="commons-discovery" value="lib/commons-discovery-0.2.jar" />
+    <property name="commons-lang3" value="lib/commons-lang3.jar" />
     <property name="wsdl4j" value="lib/wsdl4j-1.5.1.jar" />
     <property name="activation" value="lib/activation-1_0_2.jar" />
     <property name="mailapi" value="lib/mailapi-1_3_1.jar" />
-   
     <property name="cog-axis" value="lib/cog-axis.jar" />
     <property name="cog-jglobus" value="lib/cog-jglobus.jar" />
-
-    <property name="commons-lang3" value="/usr/share/java/commons-lang3.jar" />
 
     <property name="jar" value="ncgr-opal.jar" />
   </target>
