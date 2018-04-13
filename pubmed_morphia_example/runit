@@ -1,0 +1,3 @@
+#!/bin/sh
+# Run the gradle run task with an input PMID
+./gradlew run -PappArgs="['$1']"
