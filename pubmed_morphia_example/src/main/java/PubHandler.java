@@ -27,12 +27,26 @@ public final class PubHandler {
      */
     public static void main(final String[] args) throws UnknownHostException, IOException, ParserConfigurationException, SAXException {
 
+        // initialize args
+        int pmid = 0;
+        
         // validation
-        if (args.length!=1) {
-            System.out.println("Usage: PubHandler <PMID>");
+        boolean failedValidation = false;
+        if (args.length==1) {
+            try {
+                pmid = Integer.parseInt(args[0]);
+            } catch (NumberFormatException e) {
+                failedValidation = true;
+            }
+        } else {
+            failedValidation = true;
+        }
+        if (failedValidation) {
+            System.err.println("Usage: PubHandler <PMID [int]>");
             System.exit(1);
         }
-        
+
+        // it's all about Morphia
         final Morphia morphia = new Morphia();
     
         // tell Morphia where to find your classes
@@ -42,16 +56,6 @@ public final class PubHandler {
         // create the Datastore connecting to the default port on the local host
         final Datastore datastore = morphia.createDatastore(new MongoClient(), DB_NAME);
         datastore.ensureIndexes();
-
-        // hopefully we have a PMID on the command line
-        int pmid = 0;
-        try {
-            pmid = Integer.parseInt(args[0]);
-        } catch (NumberFormatException e) {
-            System.err.println("Error: non-numeric PMID.");
-            System.err.println("Usage: PubHandler <PMID> where PMID is an integer.");
-            System.exit(1);
-        }
 
         // is it already in the database? if so, get it.
         List<PubMedSummaryObject> pmsoList = datastore.createQuery(PubMedSummaryObject.class).field("_id").equal(new Long((long)pmid)).asList();
