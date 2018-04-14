@@ -27,6 +27,12 @@ public final class PubHandler {
      */
     public static void main(final String[] args) throws UnknownHostException, IOException, ParserConfigurationException, SAXException {
 
+        // validation
+        if (args.length!=1) {
+            System.out.println("Usage: PubHandler <PMID>");
+            System.exit(1);
+        }
+        
         final Morphia morphia = new Morphia();
     
         // tell Morphia where to find your classes
@@ -36,12 +42,6 @@ public final class PubHandler {
         // create the Datastore connecting to the default port on the local host
         final Datastore datastore = morphia.createDatastore(new MongoClient(), DB_NAME);
         datastore.ensureIndexes();
-
-        // validation
-        if (args.length!=1) {
-            System.out.println("Usage: PubHandler <PMID>");
-            System.exit(1);
-        }
 
         // hopefully we have a PMID on the command line
         int pmid = 0;
