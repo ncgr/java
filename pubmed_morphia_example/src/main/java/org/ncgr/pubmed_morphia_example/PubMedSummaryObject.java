@@ -17,8 +17,6 @@ import java.util.HashMap;
 
 /**
  * Encapsulates a PubMed eSummaryResult in an object that gets stored in MongoDB using Morphia.
- *
- * TODO: put authors into their own table with a Reference.
  */
 @Entity("PubMedSummaries")
 @Indexes(@Index(value = "title", fields = @Field("title")))
@@ -48,13 +46,15 @@ public class PubMedSummaryObject {
     private String eLocationId;
     private String so;
 
-    private List<String> authorList;
     private List<String> langList;
     private List<String> pubTypeList;
 
     private Map<String,String> articleIds;
     private Map<String,String> history;
     private Map<String,String> references;
+
+    @Reference
+    private List<AuthorObject> authorList;
 
     /**
      * Default constructor, used by Morphia to instantiate. Somehow. Since there are no setters. Magic.
@@ -66,6 +66,7 @@ public class PubMedSummaryObject {
      * Instantiate from a (hopefully) populated org.ncgr.pubmed.PubMedSummary.
      */
     public PubMedSummaryObject(PubMedSummary pms) {
+        // properties
         this.id = new Long(pms.id);
         this.pubDate = pms.pubDate;
         this.ePubDate = pms.ePubDate;
@@ -86,10 +87,6 @@ public class PubMedSummaryObject {
         this.fullJournalName = pms.fullJournalName;
         this.eLocationId = pms.eLocationId;
         this.so = pms.so;
-        this.authorList = new ArrayList<String>();
-        for (String author : pms.authorList) {
-            this.authorList.add(author);
-        }
         this.langList = new ArrayList<String>();
         for (String lang : pms.langList) {
             this.langList.add(lang);
@@ -113,6 +110,42 @@ public class PubMedSummaryObject {
             String val = pms.references.get(key);
             this.references.put(key, val);
         }
+        // references
+        this.authorList = new ArrayList<AuthorObject>();
+        for (String author : pms.authorList) {
+            AuthorObject authorObject = new AuthorObject(author);
+            this.authorList.add(authorObject);
+        }
+
+    }
+
+    /**
+     * Return the associated list of author objects
+     */
+    public List<AuthorObject> getAuthorList() {
+        return authorList;
+    }
+
+    /**
+     * Add an author object to the author list
+     */
+    public void addAuthorObject(AuthorObject author) {
+        authorList.add(author);
+    }
+
+    /**
+     * Remove an author object from the author list
+     */
+    public void removeAuthorObject(AuthorObject author) {
+        authorList.remove(author);
+    }
+
+    /**
+     * Replace an author object with a new one
+     */
+    public void replaceAuthorObject(AuthorObject oldAuthor, AuthorObject newAuthor) {
+        removeAuthorObject(oldAuthor);
+        addAuthorObject(newAuthor);
     }
 
     /**
@@ -124,8 +157,8 @@ public class PubMedSummaryObject {
         out += "PubDate:"+pubDate+"\n";
         out += "EPubDate:"+ePubDate+"\n";
         out += "Source:"+source+"\n";
-        for (String author : authorList) {
-            out += "Author:"+author+"\n";
+        for (AuthorObject author : authorList) {
+            out += "Author:"+author.getName()+"\n";
         }
         out += "LastAuthor:"+lastAuthor+"\n";
         out += "Title:"+title+"\n";
@@ -149,6 +182,9 @@ public class PubMedSummaryObject {
         out += "FullJournalName:"+fullJournalName+"\n";
         out += "ELocationID:"+eLocationId+"\n";
         out += "SO:"+so+"\n";
+        for (String key : references.keySet()) {
+            out += key+":"+references.get(key)+"\n";
+        }
         return out;
     }
 
