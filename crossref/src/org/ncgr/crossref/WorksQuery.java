@@ -38,16 +38,28 @@ public class WorksQuery {
     JSONObject item;
 
     /**
-     * Construct given an author and title.
+     * Construct given an author and title. Either can be null to query on just the other.
      */
     public WorksQuery(String queryAuthor, String queryTitle) throws UnsupportedEncodingException, MalformedURLException, ParseException, IOException {
         this.queryAuthor = queryAuthor;
         this.queryTitle = queryTitle;
-        this.worksUrl = new URL(WORKS_URL_ROOT+
-                                "?rows=1" +
-                                "&query.author="+URLEncoder.encode(queryAuthor,"UTF-8") +
-                                "&query.title="+URLEncoder.encode(queryTitle,"UTF-8")
-                                );
+        if (queryAuthor!=null && queryTitle!=null) {
+            this.worksUrl = new URL(WORKS_URL_ROOT+
+                                    "?rows=1" +
+                                    "&query.author="+URLEncoder.encode(queryAuthor,"UTF-8") +
+                                    "&query.title="+URLEncoder.encode(queryTitle,"UTF-8")
+                                    );
+        } else if (queryAuthor!=null) {
+            this.worksUrl = new URL(WORKS_URL_ROOT+
+                                    "?rows=1" +
+                                    "&query.author="+URLEncoder.encode(queryAuthor,"UTF-8")
+                                    );
+        } else if (queryTitle!=null) {
+            this.worksUrl = new URL(WORKS_URL_ROOT+
+                                    "?rows=1" +
+                                    "&query.title="+URLEncoder.encode(queryTitle,"UTF-8")
+                                    );
+        }
         query();
     }
 
