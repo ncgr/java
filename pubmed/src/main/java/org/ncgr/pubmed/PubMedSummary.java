@@ -24,6 +24,8 @@ import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.ParserConfigurationException;
 
+import org.apache.commons.text.similarity.LevenshteinDistance;
+
 import org.w3c.dom.Document;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.NodeList;
@@ -41,6 +43,9 @@ import org.xml.sax.SAXException;
 public class PubMedSummary {
     
     public static String CHARSET = "UTF-8";
+
+    // maximum allowable dissimilarity between search title and retreived title
+    public static int MAX_LEVENSHTEIN_DISTANCE = 25;
 
     // eSummaryResult/DocSum fields
     public int id;
@@ -99,9 +104,8 @@ public class PubMedSummary {
      */
     public PubMedSummary(String title) throws IOException, UnsupportedEncodingException, ParserConfigurationException, SAXException {
 
-        // "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=pubmed&term=An RNA-Seq based gene expression atlas of the common bean.[Title]"
-
         // form search URL
+        // "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=pubmed&term=An RNA-Seq based gene expression atlas of the common bean.[Title]"
         String url = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=pubmed&term="+URLEncoder.encode(title,"UTF-8")+"[Title]";
 
         // parse the URL response
@@ -133,8 +137,17 @@ public class PubMedSummary {
             // if article doesn't exist, response has ERROR tag
             boolean exists = doc.getElementsByTagName("ERROR").item(0)==null;
 
-            // parse-o-rama
-            if (exists) parse(doc);
+            // parse-o-rama, then check for title similarity
+            if (exists) {
+                parse(doc);
+                // similar titles?
+                LevenshteinDistance distance = new LevenshteinDistance();
+                int dist = distance.apply(title.toLowerCase(), this.title.toLowerCase());
+                if (dist>MAX_LEVENSHTEIN_DISTANCE) {
+                    // set the PMID=0 to indicate not found, leave rest of fields populated
+                    this.id = 0;
+                }
+            }
         }
 
     }
@@ -267,24 +280,36 @@ public class PubMedSummary {
      */
     public static void main(String[] args) {
         
-        if (args.length!=1) {
+        String input = "";
+        
+        if (args.length==0) {
             System.err.println("Usage: PubMedSummary PMID|Title");
             System.exit(1);
+        } else {
+            // concatenate the args with spaces
+            for (int i=0; i<args.length; i++) {
+                if (i>0) input += " ";
+                input += args[i];
+            }
         }
 
         try {
 
             PubMedSummary pms;
             try {
-                int id = Integer.parseInt(args[0]);
+                int id = Integer.parseInt(input);
+                System.out.println("Search for PMID="+id);
+                System.out.println("");
                 pms = new PubMedSummary(id);
             } catch (Exception e) {
-                String title = args[0];
+                String title = input;
+                System.out.println("Search for title="+title);
+                System.out.println("");
                 pms = new PubMedSummary(title);
             }
             
             if (pms.id==0) {
-                System.err.println("No match found for PMID or title: "+args[0]);
+                System.err.println("No match found for PMID or title:"+input);
                 System.exit(1);
             }
 
