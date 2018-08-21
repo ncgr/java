@@ -137,7 +137,7 @@ public class PubMedSummary {
             // if article doesn't exist, response has ERROR tag
             boolean exists = doc.getElementsByTagName("ERROR").item(0)==null;
 
-            // parse-o-rama, then check for title similarity
+            // parse, then check for title similarity
             if (exists) {
                 parse(doc);
                 // similar titles?
@@ -308,11 +308,7 @@ public class PubMedSummary {
                 pms = new PubMedSummary(title);
             }
             
-            if (pms.id==0) {
-                System.err.println("No match found for PMID or title:"+input);
-                System.exit(1);
-            }
-
+            if (pms.id==0) System.out.println("***** No match found for PMID or title:"+input);
             System.out.println(pms.toString());
                 
         } catch (Exception ex) {

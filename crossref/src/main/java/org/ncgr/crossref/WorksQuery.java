@@ -14,6 +14,8 @@ import org.json.simple.JSONValue;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 
+import org.apache.commons.text.similarity.LevenshteinDistance;
+
 /**
  * Class with constructors and methods to query the CrossRef REST API for a work and return the closest match - 
  * either an exact match to the query or the first result (usually the same).
@@ -23,6 +25,9 @@ import org.json.simple.parser.ParseException;
 public class WorksQuery {
 
     public static String WORKS_URL_ROOT = "https://api.crossref.org/works";
+
+    // maximum allowable dissimilarity between search title and retreived title
+    public static int MAX_LEVENSHTEIN_DISTANCE = 25;
 
     String queryAuthor;
     String queryTitle;
@@ -253,12 +258,13 @@ public class WorksQuery {
         }
     }
     
+    /**
+     * Use Levenshtein distance to determine title similarity
+     */
     public boolean isTitleMatched() {
-        if (queryTitle!=null) {
-            return queryTitle.toLowerCase().equals(getTitle().toLowerCase());
-        } else {
-            return false;
-        }
+        LevenshteinDistance distance = new LevenshteinDistance();
+        int dist = distance.apply(queryTitle.toLowerCase(), getTitle().toLowerCase());
+        return dist<=MAX_LEVENSHTEIN_DISTANCE;
     }
     
     public JSONArray getAuthors() {
