@@ -1,1 +1,0 @@
-java -cp classes:lib/json-simple.jar org.ncgr.crossref.WorksQuery "$1" "$2"
