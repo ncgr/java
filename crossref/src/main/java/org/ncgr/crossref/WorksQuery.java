@@ -27,7 +27,7 @@ public class WorksQuery {
     public static String WORKS_URL_ROOT = "https://api.crossref.org/works";
 
     // maximum allowable dissimilarity between search title and retreived title
-    public static int MAX_LEVENSHTEIN_DISTANCE = 25;
+    public static int MAX_LEVENSHTEIN_DISTANCE = 10;
 
     String queryAuthor;
     String queryTitle;
@@ -109,33 +109,28 @@ public class WorksQuery {
      */
     public static void main(String[] args) throws UnsupportedEncodingException, MalformedURLException, IOException, ParseException {
 
-        String queryAuthor = null;
         String queryTitle = null;
         String queryDOI = null;
         
-        // 2 args is author/title query; 1 arg is DOI query
-        if (args.length==2) {
-            if (args[0].length()>0 && args[1].length()>0) {
-                queryAuthor = args[0];
-                queryTitle = args[1];
-            } else if (args[0].length()>0) {
-                queryDOI = args[0];
-            }
-        } else if (args.length==1) {
-            queryDOI = args[0];
-        }
-        
-        // defaults for testing
-        if (queryDOI==null && queryTitle==null) {
-            queryAuthor = "Perez-Vega";
+        // 1 arg is DOI; >1 args is a title
+	if (args.length==1) {
+	    queryDOI = args[0];
+	} else if (args.length>1) {
+	    queryTitle = "";
+	    for (int i=0; i<args.length; i++) {
+		if (i>0) queryTitle += " ";
+		queryTitle += args[i];
+	    }
+	} else {
+	    // defaults for testing
             queryTitle = "Mapping of QTLs for Morpho-Agronomic and Seed Quality Traits in a RIL Population of Common Bean (Phaseolus vulgaris L.)";
         }
 
         WorksQuery wq = null;
         if (queryDOI!=null) {
             wq = new WorksQuery(queryDOI);
-        } else if (queryAuthor!=null && queryTitle!=null) {
-            wq = new WorksQuery(queryAuthor, queryTitle);
+        } else if (queryTitle!=null) {
+            wq = new WorksQuery(null, queryTitle);
         } else {
             System.err.println("Error: neither DOI nor author/title provided.");
             System.exit(1);
@@ -177,8 +172,6 @@ public class WorksQuery {
             if (wq.isTitleMatched()) System.out.println("****************************************************************************");
             System.out.println("");
 
-            // DEBUG
-            System.out.println(wq.getReferencesCount());
         }
 
     }
