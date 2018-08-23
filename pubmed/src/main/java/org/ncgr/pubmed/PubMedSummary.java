@@ -45,7 +45,7 @@ public class PubMedSummary {
     public static String CHARSET = "UTF-8";
 
     // maximum allowable dissimilarity between search title and retreived title
-    public static int MAX_LEVENSHTEIN_DISTANCE = 25;
+    public static int MAX_LEVENSHTEIN_DISTANCE = 10;
 
     // eSummaryResult/DocSum fields
     public int id;
