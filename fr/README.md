@@ -1,22 +1,22 @@
 # org.ncgr.pangenomics.fr
-This repository contains FRFinder, an NCGR refactor of the original code written at Montana State by Brendan Mumey.
+This repository contains FRFinder, an NCGR refactor of the original frequented regions Java code written at Montana State by Brendan Mumey, as well as other
+classes for working with frequented regions.
      
 ## Building
-The project is set up with dependencies managed with the [Gradle build tool](https://gradle.org/).
-To build the distribution, simply run
+The project is set up with dependencies managed with the [Gradle build tool](https://gradle.org/). To build the distribution, simply run
 ```
 $ ./gradlew assembleDist
 ```
-This will create a distribution tarball `build/distributions/fr.tar`. The default main class is set in build.gradle as `mainClassName = "FRFinderRunner"`.
+This will create a distribution tarball `build/distributions/fr.tar`. The default main class is set in build.gradle as `mainClassName = "Main"`.
 
-# FRFinderRunner
-FRFinderRunner is simply a main class to run FRFinder in the java root.
+# Main
+Main is simply a packageless main class to run the various apps. See the scripts for usage.
 
 # FRFinder
 FRFinder is a Java implementation of the Frequented Regions algorithm presented at the ACM BCB 2017 conference: "Exploring Frequented Regions in Pan-Genoimc Graphs".
 A _Frequented Region_ (FR) is a region in a pan-genome de Bruijn graph that is frequently traversed by a subset of the genome paths in the graph.
-A path that contributes to an FR being frequent is called a _supporting path_.
-The algorithm works by iteratively constructing FRs via hierarchical aglomerative clsutering and then traversing the hierarchy and selecting nodes that qualify as clusters according to the given parameters.
+A path that contributes to an FR being frequent is called a _supporting path_. The algorithm works by iteratively constructing FRs via hierarchical aglomerative
+clustering and then traversing the hierarchy and selecting nodes that qualify as clusters according to the given parameters. These are output as "interesting" FRs, or iFRs.
 
 ## Parameters
 FRFinder has two required parameters: `alpha` and `kappa`.
@@ -40,13 +40,6 @@ A `dot` file representation of a pan-genome De Bruijn graph can be constructed f
 * "SplitMEM: a graphical algorithm for pan-genome analysis with suffix skips"
 * "Efficient Construction of a Compressed de Bruijn Graph for Pan-Genome Analysis"
 
-## Running
-FRFinder can be run by unpacking the distribution tarball `build/distributions/fr.tar` in some place you'd like to run the code. Then, you can run
-```
-$ bin/fr -d <dotFile> -f <faFile> -a <alpha> -k <kappa>
-```
-where `<dotFile>` is the pan-genome de Bruijn graph constructed for the `<faFile>` using, for example, SplitMEM cited above.
-
 ## Output
 FRFinder produces output in several files.  The files are stored in an output directory that is named based on the input .dot and .fasta files used.  The following files types are produced:
 
@@ -63,7 +56,7 @@ FRFinder produces output in several files.  The files are stored in an output di
 `.csfr.txt` : this file indicates for each fasta seqence, the frequency counts of all FRs that occured in the sequence
 
 ## Sample Input
-To test FRFinder, a small input set is provided:
+To test FRFinder, the script `run-test` will run FRFinder against a small E.coli pangenome consisting of three strains.
 
 `sample/ecoli.pan3.dot` : a dot file constructed for a simple ecoli test file (K = 10)
 
