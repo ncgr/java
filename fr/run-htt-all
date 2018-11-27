@@ -5,4 +5,4 @@
 # -m --minsup  [1] the minimum number of genome paths that must meet the other parameters in order for a region to be considered frequent
 # -z --minsize [1] the minimum size (measured in de Bruijn nodes) that an FR that meets the other parameters must be in order to be considered frequent
 
-./gradlew run --args="FRFinder -d sample/HTT.all16.dot -f sample/HTT.all16.fasta -a 0.9 -k 21 -m 8 -z 1"
+./gradlew run --args="FRFinder -d sample/HTT.all16.mem54.dot -f sample/HTT.all16.fasta -a 0.1 -k 12 -m 1 -z 1"
