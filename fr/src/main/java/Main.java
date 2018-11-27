@@ -109,10 +109,6 @@ public class Main {
             options.addOption(kO);
             Option minSO = new Option("m", "minsup", true, "minsup parameter");
             minSO.setRequired(false);
-            options.addOption(minSO);
-            Option minLO = new Option("l", "minlen", true, "minlen parameter");
-            minLO.setRequired(false);
-            options.addOption(minLO);
             Option minZO = new Option("z", "minsize", true, "minsize parameter");
             minZO.setRequired(false);
             options.addOption(minZO);
@@ -137,9 +133,6 @@ public class Main {
             if (cmd.hasOption("minsup")) {
                 frf.setMinSup(Integer.parseInt(cmd.getOptionValue("minsup")));
             }
-            if (cmd.hasOption("minlen")) {
-                frf.setMinLen(Integer.parseInt(cmd.getOptionValue("minlen")));
-            }
             if (cmd.hasOption("minsize")) {
                 frf.setMinSize(Integer.parseInt(cmd.getOptionValue("minsize")));
             }
@@ -158,7 +151,7 @@ public class Main {
             }
 
             try {
-                String paramString = "-a" + frf.getAlpha() + "-kp" + frf.getKappa() + "-sup" + frf.getMinSup() + "-sz" + frf.getMinSize();  // + "-mlen" + minLen;
+                String paramString = "-a" + frf.getAlpha() + "-kp" + frf.getKappa() + "-sup" + frf.getMinSup() + "-sz" + frf.getMinSize();
                 if (frf.getUseRC()) {
                     paramString += "-rc";
                 }

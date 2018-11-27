@@ -30,8 +30,6 @@ public class FRFinder {
     int kappa = 0; // maxInsert parameter
     int minSup = 1;
     int minSize = 1;
-    int minLen;
-    int K; // k-mer size
     boolean useRC = false; // indicates if fasta file was appended with its reverse-complement
 
     /**
@@ -45,10 +43,6 @@ public class FRFinder {
 
         // read the dot file into the Graph object
         g = new Graph(dotFile);
-
-        // update some parameters from the Graph
-        minLen = g.minLen;
-        K = g.K;
 
         // read the FASTA file into the FastaFile object, which depends on g
         f = new FastaFile(fastaFile, g);
@@ -296,9 +290,6 @@ public class FRFinder {
     public void setMinSup(int minSup) {
         this.minSup = minSup;
     }
-    public void setMinLen(int minLen) {
-        this.minLen = minLen;
-    }
     public void setMinSize(int minSize) {
         this.minSize = minSize;
     }
@@ -323,7 +314,7 @@ public class FRFinder {
         return minSup;
     }
     public int getMinLen() {
-        return minLen;
+        return g.minLen;
     }
     public int getMinSize() {
         return minSize;
