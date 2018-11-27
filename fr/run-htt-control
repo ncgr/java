@@ -1,2 +1,0 @@
-#!/bin/sh
-./gradlew run --args="FRFinder -d sample/HTT.control8.dot -f sample/HTT.control8.fasta -a 0.5 -k 3"

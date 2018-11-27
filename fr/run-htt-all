@@ -1,0 +1,8 @@
+#!/bin/sh
+#
+# -a --alpha   the minimum fraction of the nodes in an FR that each subpath must contain
+# -k --kappa   the maximum insertion length (measured in base-pairs) that any supporting path may have
+# -m --minsup  [1] the minimum number of genome paths that must meet the other parameters in order for a region to be considered frequent
+# -z --minsize [1] the minimum size (measured in de Bruijn nodes) that an FR that meets the other parameters must be in order to be considered frequent
+
+./gradlew run --args="FRFinder -d sample/HTT.all16.dot -f sample/HTT.all16.fasta -a 0.9 -k 21 -m 8 -z 1"
