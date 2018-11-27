@@ -109,6 +109,7 @@ public class Main {
             options.addOption(kO);
             Option minSO = new Option("m", "minsup", true, "minsup parameter");
             minSO.setRequired(false);
+            options.addOption(minSO);
             Option minZO = new Option("z", "minsize", true, "minsize parameter");
             minZO.setRequired(false);
             options.addOption(minZO);
