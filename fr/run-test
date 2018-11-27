@@ -1,0 +1,10 @@
+#!/bin/sh
+rm -rf FR-ecoli.pan3.dot-ecoli.pan3.fa
+./gradlew run --args="FRFinder -d sample/ecoli.pan3.dot -f sample/ecoli.pan3.fa -a 0.5 -k 3"
+echo ""
+echo "The following file comparisons should all report as identical:"
+diff -s FR-ecoli.pan3.dot-ecoli.pan3.fa/FR-a0.5-kp3-sup1-sz1.bed         gold-ecoli.pan3.dot-ecoli.pan3.fa/FR-a0.5-kp3-sup1-sz1.bed
+diff -s FR-ecoli.pan3.dot-ecoli.pan3.fa/FR-a0.5-kp3-sup1-sz1.csfr.txt    gold-ecoli.pan3.dot-ecoli.pan3.fa/FR-a0.5-kp3-sup1-sz1.csfr.txt
+diff -s FR-ecoli.pan3.dot-ecoli.pan3.fa/FR-a0.5-kp3-sup1-sz1.dist.txt    gold-ecoli.pan3.dot-ecoli.pan3.fa/FR-a0.5-kp3-sup1-sz1.dist.txt
+diff -s FR-ecoli.pan3.dot-ecoli.pan3.fa/FR-a0.5-kp3-sup1-sz1.frpaths.txt gold-ecoli.pan3.dot-ecoli.pan3.fa/FR-a0.5-kp3-sup1-sz1.frpaths.txt
+diff -s FR-ecoli.pan3.dot-ecoli.pan3.fa/FR-a0.5-kp3-sup1-sz1.frs.txt     gold-ecoli.pan3.dot-ecoli.pan3.fa/FR-a0.5-kp3-sup1-sz1.frs.txt
