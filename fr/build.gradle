@@ -39,6 +39,9 @@ dependencies {
     // https://mvnrepository.com/artifact/com.google.protobuf/protobuf-java-util
     compile group: 'com.google.protobuf', name: 'protobuf-java-util', version: '3.6.1'
 
+    // https://mvnrepository.com/artifact/com.datumbox/libsvm
+    compile group: 'com.datumbox', name: 'libsvm', version: '3.23'
+
 }
 
 // In this section you declare where to find the dependencies of your project

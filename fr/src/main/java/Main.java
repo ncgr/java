@@ -158,7 +158,7 @@ public class Main {
             ClusterNode top;
             ArrayList<ClusterNode> iFRs = new ArrayList<ClusterNode>();
             while ((top = frf.getIFRQ().poll()) != null) {
-                if (top.getAvgLen() >= frf.getMinLen() && top.getSize() >= frf.getMinSize()) {
+                if (top.getAvgLen() >= g.getMinLen() && top.getSize() >= frf.getMinSize()) {
                     iFRs.add(top);
                 }
             }

@@ -20,7 +20,7 @@ clustering and then traversing the hierarchy and selecting nodes that qualify as
 
 ## Parameters
 FRFinder has two required parameters: `alpha` and `kappa`.
-`alpha` is the minimum fraction of the nodes in an FR that each subpath must contain.
+`alpha` is the fraction of a supporting strain's sequence that actually supports the FR; alternatively, `1-alpha` is the fraction of inserted sequence.
 This is referred to as the _penetrance_.
 `kappa` is maximum insertion length (measured in base-pairs) that any supporting path may have.
 This is referred to as the _maximum insertion_.
@@ -53,13 +53,12 @@ FRFinder produces output in several files.  The files are stored in an output di
 
 `.frs.txt` : this file lists the De Bruijn nodes that comprise each FR.
 
-`.csfr.txt` : this file indicates for each fasta seqence, the frequency counts of all FRs that occured in the sequence
+`.csfr.txt` : this file lists, for each fasta seqence, the frequency counts of all FRs that occured in the sequence
 
-## Sample Input
-To test FRFinder, the script `run-test` will run FRFinder against a small E.coli pangenome consisting of three strains.
+## Test Input
+The sample directory contains a small E.coli pangenome consisting of three strains:
 
 `sample/ecoli.pan3.dot` : a dot file constructed for a simple ecoli test file (K = 10)
-
 `sample/ecoli.pan3.fa` : the corresponding fasta sequence file
 
-The script `run-sample` will build the app, run it against these files, and check that it produces the correct output.
+The script `run-test` will build the app, run it against these files, and check that it produces the correct output.

@@ -1,4 +1,10 @@
 #!/bin/sh
+# -a --alpha   the fraction of a supporting strain's sequence that actually supports the FR; alternatively, `1-alpha` is the fraction of inserted sequence
+# -k --kappa   the maximum insertion length (measured in bp) that any supporting path may have
+# -m --minsup  [1] minimum number of genome paths in order for a region to be considered frequent
+# -z --minsize [1] minimum number of de Bruijn nodes that an FR must contain to be considered frequent
+# -r --rc      flag to indicate whether the sequence (e.g. FASTA file) had its reverse complement appended
+
 rm -rf FR-ecoli.pan3.dot-ecoli.pan3.fa
 ./gradlew run --args="FRFinder -d sample/ecoli.pan3.dot -f sample/ecoli.pan3.fa -a 0.5 -k 3"
 echo ""

@@ -24,13 +24,16 @@ public class FRFinder {
 
     PriorityBlockingQueue<ClusterNode> iFRQ;
 
-    // parameters:
     int numClusterNodes = 0;
-    double alpha = 0.7; // epsilon_r parameter
-    int kappa = 0; // maxInsert parameter
-    int minSup = 1;
-    int minSize = 1;
-    boolean useRC = false; // indicates if fasta file was appended with its reverse-complement
+
+    // required parameters, set in constructor
+    double alpha = 0.7;    // penetrance: the fraction of a supporting strain's sequence that actually supports the FR; alternatively, `1-alpha` is the fraction of inserted sequence
+    int kappa = 0;         // maximum insertion: the maximum insertion length (measured in bp) that any supporting path may have
+    boolean useRC = false; // indicates if the sequence (e.g. FASTA file) had its reverse complement appended
+
+    // optional parameters, set with set methods
+    int minSup = 1;        // minimum support: minimum number of genome paths in order for a region to be considered frequent
+    int minSize = 1;       // minimum size: minimum number of de Bruijn nodes that an FR must contain to be considered frequent
 
     /**
      * Construct with a given Graph, FastaFile and parameters
@@ -282,21 +285,7 @@ public class FRFinder {
         }
     }
 
-    // setters
-    public void setMinSup(int minSup) {
-        this.minSup = minSup;
-    }
-    public void setMinSize(int minSize) {
-        this.minSize = minSize;
-    }
-
-    // getters
-    public Graph getGraph() {
-        return g;
-    }
-    public FastaFile getFastaFile() {
-        return f;
-    }
+    // getters for required parameters
     public double getAlpha() {
         return alpha;
     }
@@ -306,14 +295,27 @@ public class FRFinder {
     public boolean getUseRC() {
         return useRC;
     }
+
+    // setters/getters for optional parameters
+    public void setMinSup(int minSup) {
+        this.minSup = minSup;
+    }
+    public void setMinSize(int minSize) {
+        this.minSize = minSize;
+    }
     public int getMinSup() {
         return minSup;
     }
-    public int getMinLen() {
-        return g.minLen;
-    }
     public int getMinSize() {
         return minSize;
+    }
+
+    // getters for instance objects
+    public Graph getGraph() {
+        return g;
+    }
+    public FastaFile getFastaFile() {
+        return f;
     }
     public PriorityBlockingQueue<ClusterNode> getIFRQ() {
         return iFRQ;
