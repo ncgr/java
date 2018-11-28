@@ -1,2 +1,2 @@
 #!/bin/sh
-./gradlew run --args="VGLoader --json sample/ecoli.pan3.json"
+./gradlew run --args="VGLoader --json sample/HTT.all16.msga.json"

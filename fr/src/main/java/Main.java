@@ -1,7 +1,9 @@
 import vg.Vg;
 
 import org.ncgr.pangenomics.fr.ClusterNode;
+import org.ncgr.pangenomics.fr.FastaFile;
 import org.ncgr.pangenomics.fr.FRFinder;
+import org.ncgr.pangenomics.fr.Graph;
 import org.ncgr.pangenomics.fr.PathSegment;
 
 import java.io.Reader;
@@ -124,13 +126,23 @@ public class Main {
                 System.exit(1);
                 return;
             }
+
             // FRFinder values
             String dotFile = cmd.getOptionValue("dot");
             String fastaFile = cmd.getOptionValue("fasta");
             double alpha = Double.parseDouble(cmd.getOptionValue("alpha"));
             int kappa = Integer.parseInt(cmd.getOptionValue("kappa"));
             boolean useRC = cmd.hasOption("rc");
-            FRFinder frf = new FRFinder(dotFile, fastaFile, alpha, kappa, useRC);
+
+            // create a Graph from the dot file
+            Graph g = new Graph();
+            g.readDotFile(dotFile);
+
+            // create a FastaFile from the fasta file and the Graph
+            FastaFile f = new FastaFile(fastaFile, g);
+
+            // create the FRFinder and find FRs
+            FRFinder frf = new FRFinder(g, f, alpha, kappa, useRC);
             if (cmd.hasOption("minsup")) {
                 frf.setMinSup(Integer.parseInt(cmd.getOptionValue("minsup")));
             }

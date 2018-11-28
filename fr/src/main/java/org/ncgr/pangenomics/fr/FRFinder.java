@@ -33,19 +33,15 @@ public class FRFinder {
     boolean useRC = false; // indicates if fasta file was appended with its reverse-complement
 
     /**
-     * Construct with a given dot file and fasta file
+     * Construct with a given Graph, FastaFile and parameters
      */
-    public FRFinder(String dotFile, String fastaFile, double alpha, int kappa, boolean useRC) {
+    public FRFinder(Graph g, FastaFile f, double alpha, int kappa, boolean useRC) {
         // set the instance vars
+        this.g = g;
+        this.f = f;
         this.alpha = alpha;
         this.kappa = kappa;
         this.useRC = useRC;
-
-        // read the dot file into the Graph object
-        g = new Graph(dotFile);
-
-        // read the FASTA file into the FastaFile object, which depends on g
-        f = new FastaFile(fastaFile, g);
     }
 
     /**

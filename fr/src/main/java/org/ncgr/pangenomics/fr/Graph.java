@@ -32,16 +32,18 @@ public class Graph {
     Map<Long,Integer> startToNode;
     Map<Integer,TreeSet<Integer>> nodePaths;
 
-    public Graph(String dotFile) {
-        this.dotFile = dotFile;
-        readDotFile(dotFile);
+    /**
+     * Constructor does nothing; use read methods to populate the graph.
+     */
+    public Graph() {
     }
 
     /**
      * Read a Graph in from a DOT file.
      */
-    void readDotFile(String filename) {
+    public void readDotFile(String filename) {
 
+        this.dotFile = filename;
         System.out.println("Reading dot file: " + filename);
 
         startToNode = new TreeMap<Long,Integer>();
@@ -119,9 +121,8 @@ public class Graph {
             br.close();
 
         } catch (Exception ex) {
-            System.err.println(ex);
             ex.printStackTrace();
-            System.exit(-1);
+            System.exit(1);
         }
 
         System.out.println("K = " + minLen);
