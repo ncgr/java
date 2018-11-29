@@ -195,7 +195,7 @@ public class Main {
                 }
                 frOut.close();
             
-                System.out.println("writing bed file");
+                System.out.println("Writing bed file...");
                 BufferedWriter bedOut = new BufferedWriter(new FileWriter(rd + "FR" + paramString + ".bed"));
                 TreeMap<String,TreeMap<Integer,Integer>> seqFRcount = new TreeMap<String,TreeMap<Integer,Integer>>();
                 TreeMap<String,TreeMap<Integer,LinkedList<String>>> seqIndxFRstr = new TreeMap<String,TreeMap<Integer,LinkedList<String>>>();
@@ -204,7 +204,7 @@ public class Main {
                 for (int fr = 0; fr < iFRs.size(); fr++) {
                     ClusterNode iFR = iFRs.get(fr);
                     if ((fr % 100) == 0) {
-                        System.out.println("writing fr-" + fr);
+                        System.out.println("Writing fr-" + fr);
                     }
                     List<PathSegment> supportingSegments = frf.computeSupport(iFR, true, false);
                     for (PathSegment ps : supportingSegments) {
@@ -245,7 +245,7 @@ public class Main {
                 }
                 bedOut.close();
 
-                System.out.println("writing dist file");
+                System.out.println("Writing dist file...");
                 BufferedWriter distOut = new BufferedWriter(new FileWriter(rd + "FR" + paramString + ".dist.txt"));
                 distOut.write("FR,size,support,avg length\n");
                 for (int fr = 0; fr < iFRs.size(); fr++) {
@@ -255,7 +255,7 @@ public class Main {
                 distOut.close();
 
                 if (frf.getUseRC()) {
-                    System.out.println("writing rc file");
+                    System.out.println("Writing rc file...");
                     BufferedWriter rcOut = new BufferedWriter(new FileWriter(rd + "FR" + paramString + ".rc.txt"));
                     for (int i = 0; i < frf.getFastaFile().getPaths().length / 2; i++) {
                         if (pathTotalSupLen[i + frf.getFastaFile().getPaths().length / 2] > pathTotalSupLen[i]) {
@@ -264,7 +264,7 @@ public class Main {
                     }
                     rcOut.close();
                 }
-                System.out.println("writing frpaths file");
+                System.out.println("Writing frpaths file...");
                 BufferedWriter frPathsOut = new BufferedWriter(new FileWriter(rd + "FR" + paramString + ".frpaths.txt"));
                 for (int i = 0; i < frf.getFastaFile().getPaths().length; i++) {
                     String name = frf.getFastaFile().getSequences().get(i).getLabel();
@@ -281,12 +281,13 @@ public class Main {
                 }
                 frPathsOut.close();
 
-                System.out.println("writing csfr file");
+                System.out.println("Writing csfr file...");
                 BufferedWriter seqFROut = new BufferedWriter(new FileWriter(rd + "FR" + paramString + ".csfr.txt"));
                 for (String seq : seqFRcount.keySet()) {
                     seqFROut.write(seq);
                     for (Integer F : seqFRcount.get(seq).keySet()) {
-                        seqFROut.write("," + F + ":" + seqFRcount.get(seq).get(F));
+                        // list FRs 1-based for apps like libsvm
+                        seqFROut.write("," + (F+1) + ":" + seqFRcount.get(seq).get(F));
                     }
                     seqFROut.write("\n");
                 }
