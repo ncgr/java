@@ -6,4 +6,4 @@
 # -z --minsize [1] minimum number of de Bruijn nodes that an FR must contain to be considered frequent
 # -r --rc      flag to indicate whether the sequence (e.g. FASTA file) had its reverse complement appended
 
-./gradlew run --args="FRFinder -d sample/HTT.short.141.dot -f sample/HTT.short.fasta -a 0.1 -k 2 -m 1 -z 1"
+./gradlew run --args="FRFinder -d HTT/HTT.short.141.dot -f HTT/HTT.short.fasta -a 0.1 -k 2 -m 1 -z 1"
