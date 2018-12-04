@@ -10,9 +10,9 @@ if len(sys.argv) <= 1:
 
 # svm, grid, and gnuplot executable files
 
-svmscale_exe = "/usr/local/bin/svm-scale"
-svmtrain_exe = "/usr/local/bin/svm-train"
-svmpredict_exe = "/usr/local/bin/svm-predict"
+svmscale_exe = "/home/shokin/bin/svm-scale"
+svmtrain_exe = "/home/shokin/bin/svm-train"
+svmpredict_exe = "/home/shokin/bin/svm-predict"
 grid_py = "./grid.py"
 gnuplot_exe = "/usr/bin/gnuplot"
 
