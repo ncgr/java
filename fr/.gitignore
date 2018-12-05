@@ -7,4 +7,5 @@ buildOutputCleanup
 *.lock
 *.log
 *.bin
-FR-ecoli.pan3.dot-ecoli.pan3.fa/
+*.test.*
+*.train.*
