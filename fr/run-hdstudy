@@ -6,13 +6,15 @@
 # -z --minsize [1] minimum number of de Bruijn nodes that an FR must contain to be considered frequent
 # -r --rc      flag to indicate whether the sequence (e.g. FASTA file) had its reverse complement appended
 
-DOT="all.HTT.$1"
-FASTA=all.HTT
+MEM=15
+
+DOT="all.HTT.$MEM"
+FASTA="all.HTT"
 FRDIR="FR-$DOT.dot-$FASTA.fasta"
 
 ALPHA=0.1
 KAPPA=6
-MINSUP=2
+MINSUP=3
 MINSIZE=1
 
 PREFIX="FR-a$ALPHA-kp$KAPPA-sup$MINSUP-sz$MINSIZE"
