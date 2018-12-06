@@ -8,13 +8,13 @@
 
 MEM=15
 
-DOT="all.HTT.$MEM"
-FASTA="all.HTT"
+DOT="HDStudy+1kG.HTT.$MEM"
+FASTA="HDStudy+1kG.HTT"
 FRDIR="FR-$DOT.dot-$FASTA.fasta"
 
 ALPHA=0.1
-KAPPA=6
-MINSUP=3
+KAPPA=120
+MINSUP=2
 MINSIZE=1
 
 PREFIX="FR-a$ALPHA-kp$KAPPA-sup$MINSUP-sz$MINSIZE"
@@ -26,6 +26,7 @@ ARGS="FRFinder -d HDStudy/$DOT.dot -f HDStudy/$FASTA.fasta --alpha $ALPHA --kapp
 
 echo "#################### FRFinder ####################"
 echo "$ARGS"
+echo "$MEM      $ALPHA  $KAPPA  $MINSUP $MINSIZE¨
 echo "#################### libsvm ####################"
 
 touch $FRDIR/$DOT.0.train
@@ -78,20 +79,36 @@ touch $FRDIR/$DOT.0.test
 # testing NEGATIVES (genotype and not affected)
 grep 692015.4_3072889_3249133 $FRDIR/$PREFIX.csfr.txt >> $FRDIR/$DOT.0.test
 grep 714413.4_3073101_3249382 $FRDIR/$PREFIX.csfr.txt >> $FRDIR/$DOT.0.test
-grep RefSeq.HTT               $FRDIR/$PREFIX.csfr.txt >> $FRDIR/$DOT.0.test
+grep HG00119_3071647_3247945  $FRDIR/$PREFIX.csfr.txt >> $FRDIR/$DOT.0.test
+grep HG00120_3071728_3248000  $FRDIR/$PREFIX.csfr.txt >> $FRDIR/$DOT.0.test
+grep HG00121_3071793_3248079  $FRDIR/$PREFIX.csfr.txt >> $FRDIR/$DOT.0.test
+grep HG00122_3071921_3248172  $FRDIR/$PREFIX.csfr.txt >> $FRDIR/$DOT.0.test
+grep HG00123_3071737_3248040  $FRDIR/$PREFIX.csfr.txt >> $FRDIR/$DOT.0.test
 # testing POSITIVES (based on genotype)
 grep 430937.4_3073700_3250060 $FRDIR/$PREFIX.csfr.txt >> $FRDIR/$DOT.0.test
 grep 472802.4_3072881_3249234 $FRDIR/$PREFIX.csfr.txt >> $FRDIR/$DOT.0.test
 grep 611761.4_3073041_3249394 $FRDIR/$PREFIX.csfr.txt >> $FRDIR/$DOT.0.test
+grep 628863.4_3073298_3249649 $FRDIR/$PREFIX.csfr.txt >> $FRDIR/$DOT.0.test
+grep 642913.4_3072882_3249244 $FRDIR/$PREFIX.csfr.txt >> $FRDIR/$DOT.0.test
+grep 690847.4_3072753_3249103 $FRDIR/$PREFIX.csfr.txt >> $FRDIR/$DOT.0.test
+grep 690887.4_3073168_3249548 $FRDIR/$PREFIX.csfr.txt >> $FRDIR/$DOT.0.test
 
 # testing NEGATIVES (genotype and not affected)
 sed s/692015.4_3072889_3249133/-1/ $FRDIR/$DOT.0.test > $FRDIR/$DOT.1.test
 sed s/714413.4_3073101_3249382/-1/ $FRDIR/$DOT.1.test > $FRDIR/$DOT.0.test
-sed s/RefSeq.HTT/-1/               $FRDIR/$DOT.0.test > $FRDIR/$DOT.1.test
+sed s/HG00119_3071647_3247945/-1/  $FRDIR/$DOT.0.test > $FRDIR/$DOT.1.test
+sed s/HG00120_3071728_3248000/-1/  $FRDIR/$DOT.1.test > $FRDIR/$DOT.0.test
+sed s/HG00121_3071793_3248079/-1/  $FRDIR/$DOT.0.test > $FRDIR/$DOT.1.test
+sed s/HG00122_3071921_3248172/-1/  $FRDIR/$DOT.1.test > $FRDIR/$DOT.0.test
+sed s/HG00123_3071737_3248040/-1/  $FRDIR/$DOT.0.test > $FRDIR/$DOT.1.test
 # testing POSITIVES (based on genotype)
 sed s/430937.4_3073700_3250060/+1/ $FRDIR/$DOT.1.test > $FRDIR/$DOT.0.test
 sed s/472802.4_3072881_3249234/+1/ $FRDIR/$DOT.0.test > $FRDIR/$DOT.1.test 
 sed s/611761.4_3073041_3249394/+1/ $FRDIR/$DOT.1.test > $FRDIR/$DOT.0.test 
+sed s/628863.4_3073298_3249649/+1/ $FRDIR/$DOT.0.test > $FRDIR/$DOT.1.test
+sed s/642913.4_3072882_3249244/+1/ $FRDIR/$DOT.1.test > $FRDIR/$DOT.0.test
+sed s/690847.4_3072753_3249103/+1/ $FRDIR/$DOT.0.test > $FRDIR/$DOT.1.test
+sed s/690887.4_3073168_3249548/+1/ $FRDIR/$DOT.1.test > $FRDIR/$DOT.0.test
 
 # replace commas with space and remove temp files
 sed s/,/\ /g $FRDIR/$DOT.0.test > $FRDIR/$DOT.1.test
@@ -103,4 +120,5 @@ mv $FRDIR/$DOT.1.test  $FRDIR/$DOT.test
 tr '\n' '\t' < $DOT.test.predict
 echo ""
 echo "SHOULD be:"
-echo "-1	-1	-1	1	1	1"
+echo "-1	-1	-1	-1	-1	-1	-1	1	1	1	1	1	1	1"
+
