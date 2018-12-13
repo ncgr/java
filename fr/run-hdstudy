@@ -6,40 +6,30 @@
 # -z --minsize [1] minimum number of de Bruijn nodes that an FR must contain to be considered frequent
 # -r --rc      flag to indicate whether the sequence (e.g. FASTA file) had its reverse complement appended
 
-MEM=15
+MEM=30
 
 DOT="HDStudy+1kG.HTT.$MEM"
 FASTA="HDStudy+1kG.HTT"
 FRDIR="FR-$DOT.dot-$FASTA.fasta"
 
 ALPHA=0.1
-KAPPA=120
+KAPPA=66
 MINSUP=2
 MINSIZE=1
 
 PREFIX="FR-a$ALPHA-kp$KAPPA-sup$MINSUP-sz$MINSIZE"
 
-ARGS="FRFinder -d HDStudy/$DOT.dot -f HDStudy/$FASTA.fasta --alpha $ALPHA --kappa $KAPPA --minsup $MINSUP --minsize $MINSIZE"
+ARGS="-d HDStudy/$DOT.dot -f HDStudy/$FASTA.fasta --alpha $ALPHA --kappa $KAPPA --minsup $MINSUP --minsize $MINSIZE"
 
 # run FRFinder
-./gradlew run --args="$ARGS"
-
 echo "#################### FRFinder ####################"
-echo "$ARGS"
-echo "$MEM      $ALPHA  $KAPPA  $MINSUP $MINSIZE¨
+echo "FRFinder $ARGS"
+build/install/fr/bin/fr FRFinder $ARGS
+
 echo "#################### libsvm ####################"
 
 touch $FRDIR/$DOT.0.train
 
-# training CONTROLS
-grep 123133.4_3073556_3249884 $FRDIR/$PREFIX.csfr.txt >> $FRDIR/$DOT.0.train
-grep 240256.4_3072818_3249106 $FRDIR/$PREFIX.csfr.txt >> $FRDIR/$DOT.0.train
-grep 291132.4_3073108_3249408 $FRDIR/$PREFIX.csfr.txt >> $FRDIR/$DOT.0.train
-grep 391824.4_3074017_3250259 $FRDIR/$PREFIX.csfr.txt >> $FRDIR/$DOT.0.train
-grep 412119.4_3072756_3248993 $FRDIR/$PREFIX.csfr.txt >> $FRDIR/$DOT.0.train
-grep 436024.4_3073051_3249386 $FRDIR/$PREFIX.csfr.txt >> $FRDIR/$DOT.0.train
-grep 509678.4_3073448_3249740 $FRDIR/$PREFIX.csfr.txt >> $FRDIR/$DOT.0.train
-grep 585500.4_3073458_3249830 $FRDIR/$PREFIX.csfr.txt >> $FRDIR/$DOT.0.train
 # training CASES
 grep 116386.4_3071526_3247878 $FRDIR/$PREFIX.csfr.txt >> $FRDIR/$DOT.0.train
 grep 131922.4_3073057_3249428 $FRDIR/$PREFIX.csfr.txt >> $FRDIR/$DOT.0.train
@@ -49,16 +39,16 @@ grep 281175.4_3072421_3248800 $FRDIR/$PREFIX.csfr.txt >> $FRDIR/$DOT.0.train
 grep 303296.4_3073189_3249571 $FRDIR/$PREFIX.csfr.txt >> $FRDIR/$DOT.0.train
 grep 314328.4_3073364_3249769 $FRDIR/$PREFIX.csfr.txt >> $FRDIR/$DOT.0.train
 grep 429266.4_3072818_3249168 $FRDIR/$PREFIX.csfr.txt >> $FRDIR/$DOT.0.train
-
 # training CONTROLS
-sed s/123133.4_3073556_3249884/-1/ $FRDIR/$DOT.0.train > $FRDIR/$DOT.1.train
-sed s/240256.4_3072818_3249106/-1/ $FRDIR/$DOT.1.train > $FRDIR/$DOT.0.train
-sed s/291132.4_3073108_3249408/-1/ $FRDIR/$DOT.0.train > $FRDIR/$DOT.1.train
-sed s/391824.4_3074017_3250259/-1/ $FRDIR/$DOT.1.train > $FRDIR/$DOT.0.train
-sed s/412119.4_3072756_3248993/-1/ $FRDIR/$DOT.0.train > $FRDIR/$DOT.1.train
-sed s/436024.4_3073051_3249386/-1/ $FRDIR/$DOT.1.train > $FRDIR/$DOT.0.train
-sed s/509678.4_3073448_3249740/-1/ $FRDIR/$DOT.0.train > $FRDIR/$DOT.1.train
-sed s/585500.4_3073458_3249830/-1/ $FRDIR/$DOT.1.train > $FRDIR/$DOT.0.train
+grep 123133.4_3073556_3249884 $FRDIR/$PREFIX.csfr.txt >> $FRDIR/$DOT.0.train
+grep 240256.4_3072818_3249106 $FRDIR/$PREFIX.csfr.txt >> $FRDIR/$DOT.0.train
+grep 291132.4_3073108_3249408 $FRDIR/$PREFIX.csfr.txt >> $FRDIR/$DOT.0.train
+grep 391824.4_3074017_3250259 $FRDIR/$PREFIX.csfr.txt >> $FRDIR/$DOT.0.train
+grep 412119.4_3072756_3248993 $FRDIR/$PREFIX.csfr.txt >> $FRDIR/$DOT.0.train
+grep 436024.4_3073051_3249386 $FRDIR/$PREFIX.csfr.txt >> $FRDIR/$DOT.0.train
+grep 509678.4_3073448_3249740 $FRDIR/$PREFIX.csfr.txt >> $FRDIR/$DOT.0.train
+grep 585500.4_3073458_3249830 $FRDIR/$PREFIX.csfr.txt >> $FRDIR/$DOT.0.train
+
 # training CASES
 sed s/116386.4_3071526_3247878/+1/ $FRDIR/$DOT.0.train > $FRDIR/$DOT.1.train
 sed s/131922.4_3073057_3249428/+1/ $FRDIR/$DOT.1.train > $FRDIR/$DOT.0.train
@@ -68,6 +58,15 @@ sed s/281175.4_3072421_3248800/+1/ $FRDIR/$DOT.0.train > $FRDIR/$DOT.1.train
 sed s/303296.4_3073189_3249571/+1/ $FRDIR/$DOT.1.train > $FRDIR/$DOT.0.train
 sed s/314328.4_3073364_3249769/+1/ $FRDIR/$DOT.0.train > $FRDIR/$DOT.1.train
 sed s/429266.4_3072818_3249168/+1/ $FRDIR/$DOT.1.train > $FRDIR/$DOT.0.train
+# training CONTROLS
+sed s/123133.4_3073556_3249884/-1/ $FRDIR/$DOT.0.train > $FRDIR/$DOT.1.train
+sed s/240256.4_3072818_3249106/-1/ $FRDIR/$DOT.1.train > $FRDIR/$DOT.0.train
+sed s/291132.4_3073108_3249408/-1/ $FRDIR/$DOT.0.train > $FRDIR/$DOT.1.train
+sed s/391824.4_3074017_3250259/-1/ $FRDIR/$DOT.1.train > $FRDIR/$DOT.0.train
+sed s/412119.4_3072756_3248993/-1/ $FRDIR/$DOT.0.train > $FRDIR/$DOT.1.train
+sed s/436024.4_3073051_3249386/-1/ $FRDIR/$DOT.1.train > $FRDIR/$DOT.0.train
+sed s/509678.4_3073448_3249740/-1/ $FRDIR/$DOT.0.train > $FRDIR/$DOT.1.train
+sed s/585500.4_3073458_3249830/-1/ $FRDIR/$DOT.1.train > $FRDIR/$DOT.0.train
 
 # replace commas with space and remove temp files
 sed s/,/\ /g $FRDIR/$DOT.0.train > $FRDIR/$DOT.1.train
@@ -76,14 +75,7 @@ mv $FRDIR/$DOT.1.train $FRDIR/$DOT.train
 
 
 touch $FRDIR/$DOT.0.test
-# testing NEGATIVES (genotype and not affected)
-grep 692015.4_3072889_3249133 $FRDIR/$PREFIX.csfr.txt >> $FRDIR/$DOT.0.test
-grep 714413.4_3073101_3249382 $FRDIR/$PREFIX.csfr.txt >> $FRDIR/$DOT.0.test
-grep HG00119_3071647_3247945  $FRDIR/$PREFIX.csfr.txt >> $FRDIR/$DOT.0.test
-grep HG00120_3071728_3248000  $FRDIR/$PREFIX.csfr.txt >> $FRDIR/$DOT.0.test
-grep HG00121_3071793_3248079  $FRDIR/$PREFIX.csfr.txt >> $FRDIR/$DOT.0.test
-grep HG00122_3071921_3248172  $FRDIR/$PREFIX.csfr.txt >> $FRDIR/$DOT.0.test
-grep HG00123_3071737_3248040  $FRDIR/$PREFIX.csfr.txt >> $FRDIR/$DOT.0.test
+
 # testing POSITIVES (based on genotype)
 grep 430937.4_3073700_3250060 $FRDIR/$PREFIX.csfr.txt >> $FRDIR/$DOT.0.test
 grep 472802.4_3072881_3249234 $FRDIR/$PREFIX.csfr.txt >> $FRDIR/$DOT.0.test
@@ -92,23 +84,31 @@ grep 628863.4_3073298_3249649 $FRDIR/$PREFIX.csfr.txt >> $FRDIR/$DOT.0.test
 grep 642913.4_3072882_3249244 $FRDIR/$PREFIX.csfr.txt >> $FRDIR/$DOT.0.test
 grep 690847.4_3072753_3249103 $FRDIR/$PREFIX.csfr.txt >> $FRDIR/$DOT.0.test
 grep 690887.4_3073168_3249548 $FRDIR/$PREFIX.csfr.txt >> $FRDIR/$DOT.0.test
-
 # testing NEGATIVES (genotype and not affected)
-sed s/692015.4_3072889_3249133/-1/ $FRDIR/$DOT.0.test > $FRDIR/$DOT.1.test
-sed s/714413.4_3073101_3249382/-1/ $FRDIR/$DOT.1.test > $FRDIR/$DOT.0.test
-sed s/HG00119_3071647_3247945/-1/  $FRDIR/$DOT.0.test > $FRDIR/$DOT.1.test
-sed s/HG00120_3071728_3248000/-1/  $FRDIR/$DOT.1.test > $FRDIR/$DOT.0.test
-sed s/HG00121_3071793_3248079/-1/  $FRDIR/$DOT.0.test > $FRDIR/$DOT.1.test
-sed s/HG00122_3071921_3248172/-1/  $FRDIR/$DOT.1.test > $FRDIR/$DOT.0.test
-sed s/HG00123_3071737_3248040/-1/  $FRDIR/$DOT.0.test > $FRDIR/$DOT.1.test
+grep 692015.4_3072889_3249133 $FRDIR/$PREFIX.csfr.txt >> $FRDIR/$DOT.0.test
+grep 714413.4_3073101_3249382 $FRDIR/$PREFIX.csfr.txt >> $FRDIR/$DOT.0.test
+grep HG00119_3071647_3247945  $FRDIR/$PREFIX.csfr.txt >> $FRDIR/$DOT.0.test
+grep HG00120_3071728_3248000  $FRDIR/$PREFIX.csfr.txt >> $FRDIR/$DOT.0.test
+grep HG00121_3071793_3248079  $FRDIR/$PREFIX.csfr.txt >> $FRDIR/$DOT.0.test
+grep HG00122_3071921_3248172  $FRDIR/$PREFIX.csfr.txt >> $FRDIR/$DOT.0.test
+grep HG00123_3071737_3248040  $FRDIR/$PREFIX.csfr.txt >> $FRDIR/$DOT.0.test
+
 # testing POSITIVES (based on genotype)
-sed s/430937.4_3073700_3250060/+1/ $FRDIR/$DOT.1.test > $FRDIR/$DOT.0.test
-sed s/472802.4_3072881_3249234/+1/ $FRDIR/$DOT.0.test > $FRDIR/$DOT.1.test 
-sed s/611761.4_3073041_3249394/+1/ $FRDIR/$DOT.1.test > $FRDIR/$DOT.0.test 
-sed s/628863.4_3073298_3249649/+1/ $FRDIR/$DOT.0.test > $FRDIR/$DOT.1.test
-sed s/642913.4_3072882_3249244/+1/ $FRDIR/$DOT.1.test > $FRDIR/$DOT.0.test
-sed s/690847.4_3072753_3249103/+1/ $FRDIR/$DOT.0.test > $FRDIR/$DOT.1.test
-sed s/690887.4_3073168_3249548/+1/ $FRDIR/$DOT.1.test > $FRDIR/$DOT.0.test
+sed s/430937.4_3073700_3250060/+1/ $FRDIR/$DOT.0.test > $FRDIR/$DOT.1.test
+sed s/472802.4_3072881_3249234/+1/ $FRDIR/$DOT.1.test > $FRDIR/$DOT.0.test 
+sed s/611761.4_3073041_3249394/+1/ $FRDIR/$DOT.0.test > $FRDIR/$DOT.1.test 
+sed s/628863.4_3073298_3249649/+1/ $FRDIR/$DOT.1.test > $FRDIR/$DOT.0.test
+sed s/642913.4_3072882_3249244/+1/ $FRDIR/$DOT.0.test > $FRDIR/$DOT.1.test
+sed s/690847.4_3072753_3249103/+1/ $FRDIR/$DOT.1.test > $FRDIR/$DOT.0.test
+sed s/690887.4_3073168_3249548/+1/ $FRDIR/$DOT.0.test > $FRDIR/$DOT.1.test
+# testing NEGATIVES (genotype and not affected)
+sed s/692015.4_3072889_3249133/-1/ $FRDIR/$DOT.1.test > $FRDIR/$DOT.0.test
+sed s/714413.4_3073101_3249382/-1/ $FRDIR/$DOT.0.test > $FRDIR/$DOT.1.test
+sed s/HG00119_3071647_3247945/-1/  $FRDIR/$DOT.1.test > $FRDIR/$DOT.0.test
+sed s/HG00120_3071728_3248000/-1/  $FRDIR/$DOT.0.test > $FRDIR/$DOT.1.test
+sed s/HG00121_3071793_3248079/-1/  $FRDIR/$DOT.1.test > $FRDIR/$DOT.0.test
+sed s/HG00122_3071921_3248172/-1/  $FRDIR/$DOT.0.test > $FRDIR/$DOT.1.test
+sed s/HG00123_3071737_3248040/-1/  $FRDIR/$DOT.1.test > $FRDIR/$DOT.0.test
 
 # replace commas with space and remove temp files
 sed s/,/\ /g $FRDIR/$DOT.0.test > $FRDIR/$DOT.1.test
@@ -120,5 +120,4 @@ mv $FRDIR/$DOT.1.test  $FRDIR/$DOT.test
 tr '\n' '\t' < $DOT.test.predict
 echo ""
 echo "SHOULD be:"
-echo "-1	-1	-1	-1	-1	-1	-1	1	1	1	1	1	1	1"
-
+echo "1	1	1	1	1	1	1	-1	-1	-1	-1	-1	-1	-1"

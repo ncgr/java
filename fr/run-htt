@@ -12,7 +12,7 @@ FRDIR="FR-$DOT-$FASTA"
 
 # run FRFinder
 
-./gradlew run --args="FRFinder -d HTT/$DOT -f HTT/$FASTA -a 0.1 -k 2 -m 1 -z 1"
+build/install/fr/bin/fr FRFinder -d HTT/$DOT -f HTT/$FASTA -a 0.1 -k 2 -m 1 -z 1"
 
 # munge the CSFR file so it can be loaded by libsvm
 

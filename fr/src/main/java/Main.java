@@ -93,6 +93,14 @@ public class Main {
         CommandLineParser parser = new DefaultParser();
         HelpFormatter formatter = new HelpFormatter();
         CommandLine cmd;
+
+        if (args.length==0) {
+            System.out.println("Usage:");
+            System.out.println("FRFinder [options]");
+            System.out.println("VGLoader [options]");
+            System.exit(1);
+        }
+            
         
         if (args[0].equals("FRFinder")) {
     
@@ -313,7 +321,7 @@ public class Main {
                 cmd = parser.parse(options, args);
             } catch (ParseException e) {
                 System.out.println(e.getMessage());
-                formatter.printHelp("VgGraphLoader", options);
+                formatter.printHelp("VGLoader", options);
                 System.exit(1);
                 return;
             }
