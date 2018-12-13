@@ -102,7 +102,7 @@ public class SvmPredict {
                 else
                     {
                         v = svm.svm_predict(model,x);
-                        output.writeBytes(v+"\n");
+                        output.writeBytes((int)v+"\t");
                     }
 
                 if(v == target)

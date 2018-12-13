@@ -9,3 +9,7 @@ buildOutputCleanup
 *.bin
 *.test.*
 *.train.*
+*.range
+*.scale
+*.model
+*.predict

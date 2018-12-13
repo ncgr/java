@@ -13,6 +13,11 @@ plugins {
 
     // Apply the application plugin for bundling the results
     id 'application'
+
+}
+
+run {
+    mainClassName = "FRFinder"
 }
 
 dependencies {

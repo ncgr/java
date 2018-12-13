@@ -116,16 +116,50 @@ sed s/,/\ /g $FRDIR/$DOT.0.test > $FRDIR/$DOT.1.test
 rm $FRDIR/$DOT.0.test
 mv $FRDIR/$DOT.1.test  $FRDIR/$DOT.test
 
+# combine train and test data for scaling
+cat $FRDIR/$DOT.train $FRDIR/$DOT.test > $FRDIR/$DOT.both
+
 # run libsvm
-RANGE="$DOT.range"
+RANGE="$FRDIR/$DOT.range"
 TRAIN="$FRDIR/$DOT.train"
-SCALE="$DOT.scale"
+TEST="$FRDIR/$DOT.test"
+BOTH="$FRDIR/$DOT.both"
+MODEL="$FRDIR/$DOT.model"
 
-java -cp build/install/fr/lib/fr.jar SvmScale -s $RANGE $TRAIN > $SCALE
+TRAINSCALE="$TRAIN.scale"
+TESTSCALE="$TEST.scale"
 
-# ./easy.py $FRDIR/$DOT.train $FRDIR/$DOT.test
-# tr '\n' '\t' < $DOT.test.predict
+PREDICT="$TEST.predict"
+GRIDOUT="$TRAIN.grid"
 
+# scale on combined data to get range
+java -cp build/install/fr/lib/fr.jar SvmScale -s $RANGE $BOTH > /dev/null
+
+# apply scale factors to train and test data
+java -cp build/install/fr/lib/fr.jar SvmScale -r $RANGE $TRAIN > $TRAINSCALE
+java -cp build/install/fr/lib/fr.jar SvmScale -r $RANGE $TEST > $TESTSCALE
+
+# run the parameter grid search on the scaled training data
+./grid.py -gnuplot null -out null $TRAINSCALE > $GRIDOUT 
+
+C=`tail -1 $GRIDOUT | awk '{ print $1; }'`
+gamma=`tail -1 $GRIDOUT | awk '{ print $2; }'`
+perc=`tail -1 $GRIDOUT | awk '{ print $3; }'`
+
+echo "parameter grid search:"
+echo "C=$C"
+echo "gamma=$gamma"
+echo "perc=$perc"
+
+# train on the scaled training set with the above parameters to get the model
+java -cp build/install/fr/lib/fr.jar SvmTrain -c $C -g $gamma $TRAINSCALE $MODEL
+
+# now run the predictor on the scaled test data with this model
+java -cp build/install/fr/lib/fr.jar SvmPredict $TESTSCALE $MODEL $PREDICT
+
+# compare to what it should be
+echo "PREDICTION:"
+cat $PREDICT
 echo ""
 echo "SHOULD be:"
 echo "1	1	1	1	1	1	1	-1	-1	-1	-1	-1	-1	-1"

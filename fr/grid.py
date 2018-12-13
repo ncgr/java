@@ -17,7 +17,7 @@ nr_local_worker = 1
 class GridOption:
 	def __init__(self, dataset_pathname, options):
 		dirname = os.path.dirname(__file__)
-		self.svmtrain_pathname = os.path.join(dirname, '../svm-train')
+		self.svmtrain_pathname = '/home/shokin/bin/svm-train'
 		self.gnuplot_pathname = '/usr/bin/gnuplot'
 		self.fold = 5
 		self.c_begin, self.c_end, self.c_step = -5,  15,  2

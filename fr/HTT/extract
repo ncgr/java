@@ -1,7 +1,0 @@
-#!/bin/sh
-fasta-make-index HTT.full.fasta 
-fasta-make-index HTT.test.fasta
-fasta-fetch HTT.full.fasta HTT18 HTT19 HTT20 HTT21 HTT22 HTT23 HTT24 HTT25 HTT40 HTT41 HTT42 HTT43 HTT44 HTT45 HTT46 HTT47 -s fasta
-fasta-fetch HTT.test.fasta test0 test1 test2 test3 test4 test5 test6 test7 test8 test9 -s fasta
-rm HTT.full.fasta.index
-rm HTT.test.fasta.index

@@ -22,12 +22,11 @@ public class SvmTrain {
     int nr_fold;
 
     static svm_print_interface svm_print_null = new svm_print_interface()
-	{
+        {
             public void print(String s) {}
 	};
-
-    static void exitWithHelp()
-    {
+    
+    static void exitWithHelp() {
         System.out.print(
                          "Usage: SvmTrain [options] training_set_file [model_file]\n"
                          +"options:\n"
