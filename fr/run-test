@@ -6,12 +6,19 @@
 # -r --rc      flag to indicate whether the sequence (e.g. FASTA file) had its reverse complement appended
 
 rm -rf FR-ecoli.pan3.dot-ecoli.pan3.fa
-build/install/fr/bin/fr FRFinder -d sample/ecoli.pan3.dot -f sample/ecoli.pan3.fa -a 0.5 -k 3
+
+java -cp build/install/fr/lib/fr.jar:build/install/fr/lib/commons-cli-1.4.jar \
+     org.ncgr.pangenomics.fr.FRFinder -d sample/ecoli.pan3.dot -f sample/ecoli.pan3.fa -a 0.5 -k 3
 
 echo ""
 echo "The following file comparisons should all report as identical:"
+echo "# FR-a0.5-kp3-sup1-sz1.bed"
 diff -s FR-ecoli.pan3.dot-ecoli.pan3.fa/FR-a0.5-kp3-sup1-sz1.bed         gold-ecoli.pan3.dot-ecoli.pan3.fa/FR-a0.5-kp3-sup1-sz1.bed
+echo "# FR-a0.5-kp3-sup1-sz1.csfr.txt"
 diff -s FR-ecoli.pan3.dot-ecoli.pan3.fa/FR-a0.5-kp3-sup1-sz1.csfr.txt    gold-ecoli.pan3.dot-ecoli.pan3.fa/FR-a0.5-kp3-sup1-sz1.csfr.txt
+echo "# FR-a0.5-kp3-sup1-sz1.dist.txt"
 diff -s FR-ecoli.pan3.dot-ecoli.pan3.fa/FR-a0.5-kp3-sup1-sz1.dist.txt    gold-ecoli.pan3.dot-ecoli.pan3.fa/FR-a0.5-kp3-sup1-sz1.dist.txt
+echo "# FR-a0.5-kp3-sup1-sz1.frpaths.txt"
 diff -s FR-ecoli.pan3.dot-ecoli.pan3.fa/FR-a0.5-kp3-sup1-sz1.frpaths.txt gold-ecoli.pan3.dot-ecoli.pan3.fa/FR-a0.5-kp3-sup1-sz1.frpaths.txt
+echo "# FR-a0.5-kp3-sup1-sz1.frs.txt"
 diff -s FR-ecoli.pan3.dot-ecoli.pan3.fa/FR-a0.5-kp3-sup1-sz1.frs.txt     gold-ecoli.pan3.dot-ecoli.pan3.fa/FR-a0.5-kp3-sup1-sz1.frs.txt

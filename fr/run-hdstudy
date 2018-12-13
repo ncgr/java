@@ -24,7 +24,8 @@ ARGS="-d HDStudy/$DOT.dot -f HDStudy/$FASTA.fasta --alpha $ALPHA --kappa $KAPPA 
 # run FRFinder
 echo "#################### FRFinder ####################"
 echo "FRFinder $ARGS"
-build/install/fr/bin/fr FRFinder $ARGS
+java -cp build/install/fr/lib/fr.jar:build/install/fr/lib/commons-cli-1.4.jar \
+     org.ncgr.pangenomics.fr.FRFinder $ARGS
 
 echo "#################### libsvm ####################"
 
@@ -115,9 +116,16 @@ sed s/,/\ /g $FRDIR/$DOT.0.test > $FRDIR/$DOT.1.test
 rm $FRDIR/$DOT.0.test
 mv $FRDIR/$DOT.1.test  $FRDIR/$DOT.test
 
-# run the libsvm script
-./easy.py $FRDIR/$DOT.train $FRDIR/$DOT.test
-tr '\n' '\t' < $DOT.test.predict
+# run libsvm
+RANGE="$DOT.range"
+TRAIN="$FRDIR/$DOT.train"
+SCALE="$DOT.scale"
+
+java -cp build/install/fr/lib/fr.jar SvmScale -s $RANGE $TRAIN > $SCALE
+
+# ./easy.py $FRDIR/$DOT.train $FRDIR/$DOT.test
+# tr '\n' '\t' < $DOT.test.predict
+
 echo ""
 echo "SHOULD be:"
 echo "1	1	1	1	1	1	1	-1	-1	-1	-1	-1	-1	-1"
