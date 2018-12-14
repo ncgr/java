@@ -19,7 +19,7 @@ MINSIZE=1
 
 PREFIX="FR-a$ALPHA-kp$KAPPA-sup$MINSUP-sz$MINSIZE"
 
-ARGS="-d HDStudy/$DOT.dot -f HDStudy/$FASTA.fasta --alpha $ALPHA --kappa $KAPPA --minsup $MINSUP --minsize $MINSIZE"
+ARGS="-1 -d HDStudy/$DOT.dot -f HDStudy/$FASTA.fasta --alpha $ALPHA --kappa $KAPPA --minsup $MINSUP --minsize $MINSIZE"
 
 # run FRFinder
 echo "#################### FRFinder ####################"
@@ -124,20 +124,24 @@ RANGE="$FRDIR/$DOT.range"
 TRAIN="$FRDIR/$DOT.train"
 TEST="$FRDIR/$DOT.test"
 BOTH="$FRDIR/$DOT.both"
-MODEL="$FRDIR/$DOT.model"
 
+MODEL="$TRAIN.model"
 TRAINSCALE="$TRAIN.scale"
 TESTSCALE="$TEST.scale"
 
 PREDICT="$TEST.predict"
 GRIDOUT="$TRAIN.grid"
 
+# blow away the model and predictions from a previous run
+rm -f $MODEL
+rm -f $PREDICT
+
 # scale on combined data to get range
-java -cp build/install/fr/lib/fr.jar SvmScale -s $RANGE $BOTH > /dev/null
+java -cp build/install/fr/lib/fr.jar:build/install/fr/lib/commons-cli-1.4.jar SvmScale -s $RANGE $BOTH > /dev/null
 
 # apply scale factors to train and test data
-java -cp build/install/fr/lib/fr.jar SvmScale -r $RANGE $TRAIN > $TRAINSCALE
-java -cp build/install/fr/lib/fr.jar SvmScale -r $RANGE $TEST > $TESTSCALE
+java -cp build/install/fr/lib/fr.jar:build/install/fr/lib/commons-cli-1.4.jar SvmScale -r $RANGE $TRAIN > $TRAINSCALE
+java -cp build/install/fr/lib/fr.jar:build/install/fr/lib/commons-cli-1.4.jar SvmScale -r $RANGE $TEST > $TESTSCALE
 
 # run the parameter grid search on the scaled training data
 ./grid.py -gnuplot null -out null $TRAINSCALE > $GRIDOUT 
@@ -152,14 +156,16 @@ echo "gamma=$gamma"
 echo "perc=$perc"
 
 # train on the scaled training set with the above parameters to get the model
-java -cp build/install/fr/lib/fr.jar SvmTrain -c $C -g $gamma $TRAINSCALE $MODEL
+echo "java -cp build/install/fr/lib/fr.jar:build/install/fr/lib/commons-cli-1.4.jar SvmTrain -c $C -g $gamma $TRAINSCALE"
+java -cp build/install/fr/lib/fr.jar:build/install/fr/lib/commons-cli-1.4.jar SvmTrain -c $C -g $gamma $TRAINSCALE
 
 # now run the predictor on the scaled test data with this model
+echo "java -cp build/install/fr/lib/fr.jar SvmPredict $TESTSCALE $MODEL $PREDICT"
 java -cp build/install/fr/lib/fr.jar SvmPredict $TESTSCALE $MODEL $PREDICT
 
 # compare to what it should be
-echo "PREDICTION:"
+echo "TESTS:"
+echo "1	1	1	1	1	1	1	-1	-1	-1	-1	-1	-1	-1"
+echo "PREDICTIONS:"
 cat $PREDICT
 echo ""
-echo "SHOULD be:"
-echo "1	1	1	1	1	1	1	-1	-1	-1	-1	-1	-1	-1"

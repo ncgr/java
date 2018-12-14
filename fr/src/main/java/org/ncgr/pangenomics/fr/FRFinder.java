@@ -404,33 +404,44 @@ public class FRFinder {
             System.exit(1);
         }
     
-        // FRFinder input
+        // FRFinder options
         Option dotO = new Option("d", "dot", true, "dot file");
         dotO.setRequired(true);
         options.addOption(dotO);
+        //
         Option faO = new Option("f", "fasta", true, "fasta file");
         faO.setRequired(true);
         options.addOption(faO);
+        //
         Option aO = new Option("a", "alpha", true, "alpha parameter");
         aO.setRequired(true);
         options.addOption(aO);
+        //
         Option kO = new Option("k", "kappa", true, "kappa parameter");
         kO.setRequired(true);
         options.addOption(kO);
+        //
         Option minSO = new Option("m", "minsup", true, "minsup parameter");
         minSO.setRequired(false);
         options.addOption(minSO);
+        //
         Option minZO = new Option("z", "minsize", true, "minsize parameter");
         minZO.setRequired(false);
         options.addOption(minZO);
+        //
         Option rcO = new Option("r", "rc", false, "rc flag");
         rcO.setRequired(false);
         options.addOption(rcO);
+        //
+        Option oneBO = new Option("1", "onebased", false, "flat to start FR IDs at 1");
+        oneBO.setRequired(false);
+        options.addOption(oneBO);
+
         try {
             cmd = parser.parse(options, args);
         } catch (ParseException e) {
             System.out.println(e.getMessage());
-            formatter.printHelp("Main", options);
+            formatter.printHelp("FRFinder", options);
             System.exit(1);
             return;
         }
@@ -441,6 +452,7 @@ public class FRFinder {
         double alpha = Double.parseDouble(cmd.getOptionValue("alpha"));
         int kappa = Integer.parseInt(cmd.getOptionValue("kappa"));
         boolean useRC = cmd.hasOption("rc");
+        boolean oneBased = cmd.hasOption("onebased");
         
         // create a Graph from the dot file
         Graph g = new Graph();
@@ -594,8 +606,13 @@ public class FRFinder {
             for (String seq : seqFRcount.keySet()) {
                 seqFROut.write(seq);
                 for (Integer F : seqFRcount.get(seq).keySet()) {
-                    // list FRs 1-based for apps like libsvm
-                    seqFROut.write("," + (F+1) + ":" + seqFRcount.get(seq).get(F));
+                    if (oneBased) {
+                        // FR IDs start with 1 for apps like libsvm
+                        seqFROut.write("," + (F+1) + ":" + seqFRcount.get(seq).get(F));
+                    } else {
+                        // FR IDs start with 0
+                        seqFROut.write("," + F + ":" + seqFRcount.get(seq).get(F));
+                    }
                 }
                 seqFROut.write("\n");
             }

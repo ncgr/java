@@ -9,34 +9,44 @@ import java.text.DecimalFormat;
 import java.util.Formatter;
 import java.util.StringTokenizer;
 
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.CommandLineParser;
+import org.apache.commons.cli.DefaultParser;
+import org.apache.commons.cli.HelpFormatter;
+import org.apache.commons.cli.Option;
+import org.apache.commons.cli.Options;
+import org.apache.commons.cli.ParseException;
+
 public class SvmScale {
     
-    String line = null;
+    // defaults
     double lower = -1.0;
     double upper = 1.0;
     double y_lower;
     double y_upper;
     boolean y_scaling = false;
+
+    // files
+    String save_filename;
+    String restore_filename;
+    String data_filename;
+
+    // I/O
+    BufferedReader fp;
+    BufferedReader fp_restore;
+
     double[] feature_max;
     double[] feature_min;
     double y_max = -Double.MAX_VALUE;
     double y_min = Double.MAX_VALUE;
-    int max_index;
     long num_nonzeros = 0;
     long new_num_nonzeros = 0;
 
-    static void exitWithHelp() {
-        System.out.print(
-                         "Usage: SvmScale [options] data_filename\n"
-                         +"options:\n"
-                         +"-l lower : x scaling lower limit (default -1)\n"
-                         +"-u upper : x scaling upper limit (default +1)\n"
-                         +"-y y_lower y_upper : y scaling limits (default: no y scaling)\n"
-                         +"-s save_filename : save scaling parameters to save_filename\n"
-                         +"-r restore_filename : restore scaling parameters from restore_filename\n"
-                         );
-        System.exit(1);
-    }
+    // probably bad form that these are global vars
+    String line;
+    int max_index;
+    int index;
+    int i;
 
     BufferedReader rewind(BufferedReader fp, String filename) throws IOException {
         fp.close();
@@ -53,7 +63,7 @@ public class SvmScale {
                 value = y_lower + (y_upper-y_lower) *  (value-y_min) / (y_max-y_min);
             }
         }
-        System.out.print(value + " ");
+        System.out.print((int)value + " ");
     }
 
     void output(int index, double value) {
@@ -78,47 +88,8 @@ public class SvmScale {
         return line;
     }
 
-    void run(String []argv) throws IOException {
-        int i,index;
-        BufferedReader fp = null, fp_restore = null;
-        String save_filename = null;
-        String restore_filename = null;
-        String data_filename = null;
+    void run() throws IOException {
 
-        for (i=0;i<argv.length;i++) {
-            if (argv[i].charAt(0) != '-') break;
-            ++i;
-            switch (argv[i-1].charAt(1)) {
-            case 'l': lower = Double.parseDouble(argv[i]);	break;
-            case 'u': upper = Double.parseDouble(argv[i]);	break;
-            case 'y':
-                y_lower = Double.parseDouble(argv[i]);
-                ++i;
-                y_upper = Double.parseDouble(argv[i]);
-                y_scaling = true;
-                break;
-            case 's': save_filename = argv[i];	break;
-            case 'r': restore_filename = argv[i];	break;
-            default:
-                System.err.println("unknown option");
-                exitWithHelp();
-            }
-        }
-
-        if (!(upper > lower) || (y_scaling && !(y_upper > y_lower))) {
-            System.err.println("inconsistent lower/upper specification");
-            System.exit(1);
-        }
-        if (restore_filename != null && save_filename != null) {
-            System.err.println("cannot use -r and -s simultaneously");
-            System.exit(1);
-        }
-
-        if (argv.length != i+1) {
-            exitWithHelp();
-        }
-
-        data_filename = argv[i];
         try {
             fp = new BufferedReader(new FileReader(data_filename));
         } catch (Exception e) {
@@ -311,9 +282,116 @@ public class SvmScale {
         fp.close();
     }
 
-    public static void main(String argv[]) throws IOException {
+    /**
+     * Command-line version.
+     */
+    public static void main(String[] args) throws IOException {
+
+        if (args.length==0) exitWithHelp();
+
+        Options options = new Options();
+        CommandLineParser parser = new DefaultParser();
+        HelpFormatter formatter = new HelpFormatter();
+        CommandLine cmd;
+
+        Option lowerOption = new Option("l", true, "x scaling lower limit [-1]");
+        lowerOption.setRequired(false);
+        options.addOption(lowerOption);
+
+        Option upperOption = new Option("u", true, "x scaling upper limit [+1]");
+        upperOption.setRequired(false);
+        options.addOption(upperOption);
+
+        Option yScalingOption = new Option("y", true, "y scaling limits y_lower,y_upper [no y scaling]");
+        yScalingOption.setRequired(false);
+        options.addOption(yScalingOption);
+
+        Option saveFileOption = new Option("s", true, "filename to save scaling parameters to");
+        saveFileOption.setRequired(false);
+        options.addOption(saveFileOption);
+
+        Option restoreFileOption = new Option("r", true, "filename to read scaling parameters from");
+        restoreFileOption.setRequired(false);
+        options.addOption(restoreFileOption);
+
+        try {
+            cmd = parser.parse(options, args);
+        } catch (ParseException e) {
+            System.out.println(e.getMessage());
+            formatter.printHelp("SvmScale", options);
+            System.exit(1);
+            return;
+        }
+        
         SvmScale s = new SvmScale();
-        s.run(argv);
+
+        if (cmd.hasOption("l")) {
+            s.lower = Double.parseDouble(cmd.getOptionValue("l"));
+        }
+
+        if (cmd.hasOption("u")) {
+            s.upper = Double.parseDouble(cmd.getOptionValue("u"));
+        }
+
+        if (cmd.hasOption("y")) {
+            String[] parts = cmd.getOptionValue("y").split(",");
+            s.y_lower = Double.parseDouble(parts[0]);
+            s.y_upper = Double.parseDouble(parts[1]);
+            s.y_scaling = true;
+        }
+
+        if (cmd.hasOption("s")) {
+            s.save_filename = cmd.getOptionValue("s");
+        }
+
+        if (cmd.hasOption("r")) {
+            s.restore_filename = cmd.getOptionValue("r");
+        }
+
+        // data file is required and last argument
+        s.data_filename = args[args.length-1];
+
+        // validate
+        s.validate();
+    
+        // and go!
+        s.run();
+        
+    }
+
+    /**
+     * Validate current settings.
+     */
+    void validate() {
+        if (save_filename!=null && restore_filename!=null) {
+            System.err.println("The -s and -r options are exclusive: you may save scaling parameters XOR restore parameters for application to data.");
+            System.exit(1);
+        }
+        if (!(upper>lower)) {
+            System.err.println("You have provided inconsistent lower/upper values.");
+            System.exit(1);
+        }
+        if (y_scaling && !(y_upper>y_lower)) {
+            System.err.println("You have provided inconsistent y_scaling values.");
+            System.exit(1);
+        }
+        if (data_filename==null) {
+            System.err.println("You have not provided a data file to scale.");
+            System.exit(1);
+        }
+    }
+
+    static void exitWithHelp() {
+        System.out.print(
+                         "Usage: SvmScale [options] data_filename\n"
+                         +"options:\n"
+                         +"-l lower : x scaling lower limit (default -1)\n"
+                         +"-u upper : x scaling upper limit (default +1)\n"
+                         +"-y y_lower,y_upper : y scaling limits (default: no y scaling)\n"
+                         +"-s save_filename : file to save scaling parameters to save_filename\n"
+                         +"-r restore_filename : file to restore scaling parameters from\n"
+                         );
+        System.exit(1);
     }
     
 }

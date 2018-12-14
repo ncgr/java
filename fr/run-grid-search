@@ -1,0 +1,26 @@
+#!/bin/sh
+#
+# -log2c range/step of C [-5,15,2]
+# -log2g range/step of gamma [3,-15,-2]
+# -v n-fold cross validation [5]
+
+MEM=30
+
+FASTA="HDStudy+1kG.HTT"
+DOT="HDStudy+1kG.HTT.$MEM"
+
+FRDIR="FR-$DOT.dot-$FASTA.fasta"
+TRAIN="$FRDIR/$DOT.train"
+
+TRAINSCALE="$TRAIN.scale"
+GRIDOUT="$TRAIN.grid"
+
+ARGS="-log2c -5,15,2 -log2g 3,-15,-2 -v 5 $TRAINSCALE"
+
+# run Grid
+echo "#################### Grid ####################"
+java -cp build/install/fr/lib/fr.jar:build/install/fr/lib/commons-cli-1.4.jar \
+     GridSearcher $ARGS
+
+# run the parameter grid search on the scaled training data
+# ./grid.py -gnuplot null -out null $TRAINSCALE > $GRIDOUT 
