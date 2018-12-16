@@ -1,0 +1,16 @@
+#!/bin/sh
+
+MEM=30
+
+DOT="HDStudy+1kG.HTT.$MEM"
+FASTA="HDStudy+1kG.HTT"
+
+FRDIR="FR-$DOT.dot-$FASTA.fasta"
+
+TRAIN="$FRDIR/$DOT.train"
+
+TRAINRANGE="$TRAIN.range"
+TRAINSCALE="$TRAIN.scale"
+
+
+java -cp build/install/fr/lib/fr.jar:build/install/fr/lib/commons-cli-1.4.jar org.ncgr.svm.SvmScaler -s $TRAINRANGE $TRAIN > $TRAINSCALE

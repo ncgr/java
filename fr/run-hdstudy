@@ -27,8 +27,7 @@ echo "FRFinder $ARGS"
 java -cp build/install/fr/lib/fr.jar:build/install/fr/lib/commons-cli-1.4.jar \
      org.ncgr.pangenomics.fr.FRFinder $ARGS
 
-echo "#################### libsvm ####################"
-
+# build the files for the SVM
 touch $FRDIR/$DOT.0.train
 
 # training CASES
@@ -74,7 +73,6 @@ sed s/,/\ /g $FRDIR/$DOT.0.train > $FRDIR/$DOT.1.train
 rm $FRDIR/$DOT.0.train
 mv $FRDIR/$DOT.1.train $FRDIR/$DOT.train
 
-
 touch $FRDIR/$DOT.0.test
 
 # testing POSITIVES (based on genotype)
@@ -119,31 +117,39 @@ mv $FRDIR/$DOT.1.test  $FRDIR/$DOT.test
 # combine train and test data for scaling
 cat $FRDIR/$DOT.train $FRDIR/$DOT.test > $FRDIR/$DOT.both
 
-# run libsvm
+# SVM files
 RANGE="$FRDIR/$DOT.range"
 TRAIN="$FRDIR/$DOT.train"
 TEST="$FRDIR/$DOT.test"
 BOTH="$FRDIR/$DOT.both"
 
-MODEL="$TRAIN.model"
 TRAINSCALE="$TRAIN.scale"
 TESTSCALE="$TEST.scale"
 
-PREDICT="$TEST.predict"
 GRIDOUT="$TRAIN.grid"
+MODEL="$TRAIN.model"
+PREDICT="$TEST.predict"
 
-# blow away the model and predictions from a previous run
+# delete the output from a previous run
+rm -f $GRIDOUT
 rm -f $MODEL
 rm -f $PREDICT
 
 # scale on combined data to get range
-java -cp build/install/fr/lib/fr.jar:build/install/fr/lib/commons-cli-1.4.jar SvmScale -s $RANGE $BOTH > /dev/null
+echo "-------------------------"
+echo "SvmScaler -s $RANGE $BOTH"
+java -cp build/install/fr/lib/fr.jar:build/install/fr/lib/commons-cli-1.4.jar org.ncgr.svm.SvmScaler -s $RANGE $BOTH > /dev/null
 
 # apply scale factors to train and test data
-java -cp build/install/fr/lib/fr.jar:build/install/fr/lib/commons-cli-1.4.jar SvmScale -r $RANGE $TRAIN > $TRAINSCALE
-java -cp build/install/fr/lib/fr.jar:build/install/fr/lib/commons-cli-1.4.jar SvmScale -r $RANGE $TEST > $TESTSCALE
+echo "-------------------------"
+echo "SvmScaler -r $RANGE $TRAIN"
+java -cp build/install/fr/lib/fr.jar:build/install/fr/lib/commons-cli-1.4.jar org.ncgr.svm.SvmScaler -r $RANGE $TRAIN > $TRAINSCALE
+echo "-------------------------"
+echo "SvmScaler -r $RANGE $TEST"
+java -cp build/install/fr/lib/fr.jar:build/install/fr/lib/commons-cli-1.4.jar org.ncgr.svm.SvmScaler -r $RANGE $TEST > $TESTSCALE
 
 # run the parameter grid search on the scaled training data
+echo "-------- grid.py ------------"
 ./grid.py -gnuplot null -out null $TRAINSCALE > $GRIDOUT 
 
 C=`tail -1 $GRIDOUT | awk '{ print $1; }'`
@@ -156,14 +162,17 @@ echo "gamma=$gamma"
 echo "perc=$perc"
 
 # train on the scaled training set with the above parameters to get the model
-echo "java -cp build/install/fr/lib/fr.jar:build/install/fr/lib/commons-cli-1.4.jar SvmTrain -c $C -g $gamma $TRAINSCALE"
-java -cp build/install/fr/lib/fr.jar:build/install/fr/lib/commons-cli-1.4.jar SvmTrain -c $C -g $gamma $TRAINSCALE
+echo "-------------------------"
+echo "SvmTrainer -c $C -g $gamma $TRAINSCALE $MODEL"
+java -cp build/install/fr/lib/fr.jar:build/install/fr/lib/commons-cli-1.4.jar org.ncgr.svm.SvmTrainer -c $C -g $gamma $TRAINSCALE $MODEL
 
 # now run the predictor on the scaled test data with this model
-echo "java -cp build/install/fr/lib/fr.jar SvmPredict $TESTSCALE $MODEL $PREDICT"
-java -cp build/install/fr/lib/fr.jar SvmPredict $TESTSCALE $MODEL $PREDICT
+echo "-------------------------"
+echo "SvmPredictor $TESTSCALE $MODEL $PREDICT"
+java -cp build/install/fr/lib/fr.jar:build/install/fr/lib/commons-cli-1.4.jar org.ncgr.svm.SvmPredictor $TESTSCALE $MODEL $PREDICT
 
 # compare to what it should be
+echo "-------------------------"
 echo "TESTS:"
 echo "1	1	1	1	1	1	1	-1	-1	-1	-1	-1	-1	-1"
 echo "PREDICTIONS:"
