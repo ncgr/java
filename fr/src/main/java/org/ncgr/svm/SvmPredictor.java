@@ -24,7 +24,6 @@ import org.apache.commons.cli.ParseException;
 
 public class SvmPredictor {
 
-    int total;
     int svm_type;
     int nr_class;
     boolean predictProbability;
@@ -35,19 +34,14 @@ public class SvmPredictor {
     DataOutputStream output;
     
     // classification output
-    int correct;
-    double accuracy;
+    public int total;
+    public int correct;
+    public double accuracy;
 
     // regression output
-    double error;
-    double meanSquareError;
-    double squaredCorrCoeff;
-
-    // null output
-    static svm_print_interface svm_print_null = new svm_print_interface() { public void print(String s) {} };
-
-    // stdout
-    static svm_print_interface svm_print_stdout = new svm_print_interface() { public void print(String s) { System.out.print(s); } };
+    public double error;
+    public double meanSquareError;
+    public double squaredCorrCoeff;
 
     // the chosen output
     static svm_print_interface svm_print_string;
@@ -72,7 +66,7 @@ public class SvmPredictor {
                 System.exit(1);
             }
         } else if (svm.svm_check_probability_model(model)!=0) {
-            info("Model supports probability estimates, but disabled in prediction.\n");
+            System.out.println("Model supports probability estimates, but disabled in prediction.");
         }
     }
 
@@ -89,7 +83,7 @@ public class SvmPredictor {
         
         if (predictProbability) {
             if (svm_type == svm_parameter.EPSILON_SVR || svm_type == svm_parameter.NU_SVR) {
-                info("Prob. model for test data: target value = predicted value + z,\nz: Laplace distribution e^(-|z|/sigma)/(2sigma),sigma="+svm.svm_get_svr_probability(model)+"\n");
+                System.out.println("Prob. model for test data: target value = predicted value + z,\nz: Laplace distribution e^(-|z|/sigma)/(2sigma),sigma="+svm.svm_get_svr_probability(model));
             } else {
                 int[] labels=new int[nr_class];
                 svm.svm_get_labels(model,labels);
@@ -180,13 +174,12 @@ public class SvmPredictor {
 
         // set values based on options
         boolean predictProbability = cmd.hasOption("b");
-        boolean quiet = cmd.hasOption("q");
         
         // odd way to toggle printing with a static var
-        if (quiet) {
-            svm_print_string = svm_print_null;
+        if (cmd.hasOption("q")) {
+            SvmUtil.setQuiet();
         } else {
-            svm_print_string = svm_print_stdout;
+            SvmUtil.setLoud();
         }
 
         // files are last three arguments
@@ -202,21 +195,23 @@ public class SvmPredictor {
 
         // output
         if (sp.svm_type==svm_parameter.EPSILON_SVR || sp.svm_type==svm_parameter.NU_SVR) {
-            info("Mean squared error = "+sp.meanSquareError+" (regression)\n");
-            info("Squared correlation coefficient = "+sp.squaredCorrCoeff+" (regression)\n");
+            System.out.println("Mean squared error = "+sp.meanSquareError+" (regression)");
+            System.out.println("Squared correlation coefficient = "+sp.squaredCorrCoeff+" (regression)");
         } else {
-            info("Accuracy = "+sp.accuracy*100+"% ("+sp.correct+"/"+sp.total+") (classification)\n");
+            System.out.println("Accuracy = "+sp.accuracy*100+"% ("+sp.correct+"/"+sp.total+") (classification)");
         }
     }
 
-    static void info(String s) {
-        svm_print_string.print(s);
-    }
-    
+    /**
+     * Silly Python to Java function.
+     */
     static double atof(String s) {
         return Double.valueOf(s).doubleValue();
     }
     
+    /**
+     * Silly Python to Java function.
+     */
     static int atoi(String s) {
         return Integer.parseInt(s);
     }

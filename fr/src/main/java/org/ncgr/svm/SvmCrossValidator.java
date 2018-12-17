@@ -25,58 +25,54 @@ import org.apache.commons.cli.ParseException;
  */
 public class SvmCrossValidator {
     
-    // cross-validation n-fold default value
-    public static int NRFOLD = 5;
-
     svm_parameter param;
     svm_problem prob;
     int nrFold;
 
-    // cross validation output
-    double cvAccuracy = 0.0;
-    double cvMeanSquaredError = 0.0;
-    double cvSquaredCorrCoeff = 0.0;
-    
-    // no output
-    static svm_print_interface svm_print_null = new svm_print_interface() { public void print(String s) {} };
+    // regression results
+    public double totalError = 0.0;
+    public double meanSquaredError = 0.0;
+    public double squaredCorrCoeff = 0.0;
 
+    // classification results
+    public int totalSamples = 0;
+    public int totalCorrect = 0;
+    public double accuracy = 0.0;
+    
     /**
-     * Construct given a populated svm_parameter object.
+     * Construct with default svm_parameter object, default-fold cross-validation and the input file name.
      */
-    SvmCrossValidator(svm_parameter param) {
-        this.param = param;
-        this.nrFold = NRFOLD;
+    public SvmCrossValidator(String inputFilename) throws IOException {
+        this.param = SvmUtil.getDefaultParam();
+        this.nrFold = SvmUtil.NRFOLD;
+        readProblem(inputFilename);
     }
 
     /**
      * Construct given a populated svm_parameter object, n-fold number and an input file name.
      */
-    SvmCrossValidator(svm_parameter param, int nrFold, String inputFilename) throws IOException {
+    public SvmCrossValidator(svm_parameter param, int nrFold, String inputFilename) throws IOException {
         this.param = param;
-
         // validate nrFold
         if (nrFold<2) {
             System.err.println("Error: n-fold cross validation requires n>=2.");
             System.exit(1);
         }
         this.nrFold = nrFold;
-
         // load the problem from the input file
-        this.readProblem(inputFilename);
+        readProblem(inputFilename);
     }
     
     /**
      * Perform the cross validation.
      */
-    void run() throws IOException {
+    public void run() throws IOException {
         double[] target = new double[prob.l];
         double sumv = 0.0, sumy = 0.0, sumvv = 0.0, sumyy = 0.0, sumvy = 0.0;
-        int totalCorrect = 0;
-        double totalError = 0.0;
         // run it
         svm.svm_cross_validation(prob, param, nrFold, target);
-        // generate diagnostic parameters
         if (param.svm_type == svm_parameter.EPSILON_SVR || param.svm_type == svm_parameter.NU_SVR) {
+            // regression results
             for (int i=0; i<prob.l; i++) {
                 double y = prob.y[i];
                 double v = target[i];
@@ -87,31 +83,33 @@ public class SvmCrossValidator {
                 sumyy += y*y;
                 sumvy += v*y;
             }
-            cvMeanSquaredError = totalError/prob.l;
-            cvSquaredCorrCoeff = ((prob.l*sumvy-sumv*sumy)*(prob.l*sumvy-sumv*sumy))/((prob.l*sumvv-sumv*sumv)*(prob.l*sumyy-sumy*sumy));
+            meanSquaredError = totalError/prob.l;
+            squaredCorrCoeff = ((prob.l*sumvy-sumv*sumy)*(prob.l*sumvy-sumv*sumy))/((prob.l*sumvv-sumv*sumv)*(prob.l*sumyy-sumy*sumy));
         } else {
+            // classification results
             for (int i=0; i<prob.l; i++) {
                 if (target[i] == prob.y[i]) {
                     ++totalCorrect;
                 }
             }
-            cvAccuracy = (double)totalCorrect/(double)prob.l;
+            accuracy = (double)totalCorrect/(double)prob.l;
+            totalSamples = prob.l;
         }
     }
 
-    // read in a problem (in svmlight format)
-    void readProblem(String inputFilename) throws IOException {
-        BufferedReader fp = new BufferedReader(new FileReader(inputFilename));
+    /**
+     * Read an svm_problem in from a file in svmlight format.
+     * Sets instance vars prob and param.
+     */
+    public void readProblem(String inputFilename) throws IOException {
         Vector<Double> vy = new Vector<Double>();
         Vector<svm_node[]> vx = new Vector<svm_node[]>();
         int max_index = 0;
 
-        while (true) {
-            String line = fp.readLine();
-            if (line == null) break;
-            
+        BufferedReader fp = new BufferedReader(new FileReader(inputFilename));
+        String line;
+        while ((line=fp.readLine())!=null) {
             StringTokenizer st = new StringTokenizer(line," \t\n\r\f:");
-            
             vy.addElement(atof(st.nextToken()));
             int m = st.countTokens()/2;
             svm_node[] x = new svm_node[m];
@@ -123,35 +121,36 @@ public class SvmCrossValidator {
             if (m>0) max_index = Math.max(max_index, x[m-1].index);
             vx.addElement(x);
         }
+        fp.close();
 
+        // create and populate the svm_problem
         prob = new svm_problem();
         prob.l = vy.size();
         prob.x = new svm_node[prob.l][];
-        for (int i=0;i<prob.l;i++)
+        for (int i=0;i<prob.l;i++) {
             prob.x[i] = vx.elementAt(i);
+        }
         prob.y = new double[prob.l];
-        for (int i=0;i<prob.l;i++)
+        for (int i=0;i<prob.l;i++) {
             prob.y[i] = vy.elementAt(i);
+        }
 
-        if (param.gamma == 0 && max_index > 0)
-            param.gamma = 1.0/max_index;
+        // set param.gamma = 1/N if zero
+        if (param.gamma==0 && max_index>0) param.gamma = 1.0/max_index;
 
+        // validation
         if (param.kernel_type == svm_parameter.PRECOMPUTED) {
             for (int i=0;i<prob.l;i++) {
                 if (prob.x[i][0].index != 0) {
-                    System.err.print("Wrong kernel matrix: first column must be 0:sample_serial_number\n");
+                    System.err.println("Wrong kernel matrix: first column must be 0:sample_serial_number");
                     System.exit(1);
                 }
                 if ((int)prob.x[i][0].value <= 0 || (int)prob.x[i][0].value > max_index) {
-                    System.err.print("Wrong input format: sample_serial_number out of range\n");
+                    System.err.println("Wrong input format: sample_serial_number out of range");
                     System.exit(1);
                 }
             }
         }
-
-        fp.close();
-
-        // check the parameters, bail if a problem
         String errorMsg = svm.svm_check_parameter(prob,param);
         if (errorMsg!=null) {
             System.err.println("ERROR: "+errorMsg);
@@ -163,7 +162,6 @@ public class SvmCrossValidator {
      * Command line version.
      */
     public static void main(String[] args) throws IOException {
-
         Options options = new Options();
         CommandLineParser parser = new DefaultParser();
         HelpFormatter formatter = new HelpFormatter();
@@ -243,25 +241,10 @@ public class SvmCrossValidator {
             return;
         }
 
-        // default param values
-        svm_parameter param = new svm_parameter();
-        param.svm_type = svm_parameter.C_SVC;
-        param.kernel_type = svm_parameter.RBF;
-        param.degree = 3;
-        param.gamma = 0;	// 1/num_features
-        param.coef0 = 0;
-        param.nu = 0.5;
-        param.cache_size = 100;
-        param.C = 1;
-        param.eps = 1e-3;
-        param.p = 0.1;
-        param.shrinking = 1;
-        param.probability = 0;
-        param.nr_weight = 0;
-        param.weight_label = new int[0];
-        param.weight = new double[0];
+        // start with default param values
+        svm_parameter param = SvmUtil.getDefaultParam();
 
-        // set values based on options
+        // update values based on options
         if (cmd.hasOption("s")) {
             param.svm_type = Integer.parseInt(cmd.getOptionValue("s"));
         }
@@ -296,41 +279,38 @@ public class SvmCrossValidator {
             param.probability = Integer.parseInt(cmd.getOptionValue("b"));
         }
 
-        // this is weird, setting a function in svm
-        if (cmd.hasOption("q")) {
-            // no output
-            svm.svm_set_print_string_function(svm_print_null);
-        } else {
-            // default printing to stdout
-            svm.svm_set_print_string_function(null);
-        }
-        
-        int nrFold = SvmCrossValidator.NRFOLD; // default
+        int nrFold = SvmUtil.NRFOLD; // default
         if (cmd.hasOption("v")) {
             nrFold = Integer.parseInt(cmd.getOptionValue("v"));
+        }
+
+        // this is weird, setting a static function in svm
+        if (cmd.hasOption("q")) {
+            SvmUtil.setQuiet();
+        } else {
+            SvmUtil.setLoud();
         }
 
         // get input file from last parameter
         String inputFilename = args[args.length-1];
 
         // instantiate
-        SvmCrossValidator cv = new SvmCrossValidator(param, nrFold, inputFilename);
+        SvmCrossValidator svc = new SvmCrossValidator(param, nrFold, inputFilename);
 
         // run 
-        cv.run();
+        svc.run();
 
         // some final output
-        if (cv.param.svm_type==svm_parameter.EPSILON_SVR || cv.param.svm_type== svm_parameter.NU_SVR) {
+        if (svc.param.svm_type==svm_parameter.EPSILON_SVR || svc.param.svm_type== svm_parameter.NU_SVR) {
             System.out.println("-------------------------------------------");
-            System.out.println("Cross Validation Mean squared error = "+cv.cvMeanSquaredError);
-            System.out.println("Cross Validation Squared correlation coefficient = "+cv.cvSquaredCorrCoeff);
+            System.out.println("Cross Validation Mean squared error = "+svc.meanSquaredError);
+            System.out.println("Cross Validation Squared correlation coefficient = "+svc.squaredCorrCoeff);
             System.out.println("-------------------------------------------");
         } else {
             System.out.println("------------------------------------");
-            System.out.println("Cross Validation Accuracy = "+100.0*cv.cvAccuracy+"%");
+            System.out.println("Cross Validation Accuracy = "+100.0*svc.accuracy+"%");
             System.out.println("------------------------------------");
         }
-
     }
 
     /**

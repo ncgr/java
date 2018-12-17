@@ -148,15 +148,18 @@ echo "-------------------------"
 echo "SvmScaler -r $RANGE $TEST"
 java -cp build/install/fr/lib/fr.jar:build/install/fr/lib/commons-cli-1.4.jar org.ncgr.svm.SvmScaler -r $RANGE $TEST > $TESTSCALE
 
-# run the parameter grid search on the scaled training data
-echo "-------- grid.py ------------"
-./grid.py -gnuplot null -out null $TRAINSCALE > $GRIDOUT 
+# # run the parameter grid search on the scaled training data
+# echo "-------- grid.py ------------"
+# ./grid.py -gnuplot null -out null $TRAINSCALE > $GRIDOUT
 
+# run GridSearcher on scaled training data
+GRIDARGS="-log2c -5,15,2 -log2g 3,-15,-2 -n 5 $TRAINSCALE"
+echo "-------------------------"
+echo "GridSearcher $GRIDARGS"
+java -cp build/install/fr/lib/fr.jar:build/install/fr/lib/commons-cli-1.4.jar org.ncgr.svm.GridSearcher $GRIDARGS > $GRIDOUT
 C=`tail -1 $GRIDOUT | awk '{ print $1; }'`
 gamma=`tail -1 $GRIDOUT | awk '{ print $2; }'`
 perc=`tail -1 $GRIDOUT | awk '{ print $3; }'`
-
-echo "parameter grid search:"
 echo "C=$C"
 echo "gamma=$gamma"
 echo "perc=$perc"
