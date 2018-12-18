@@ -10,16 +10,14 @@ FASTA="HDStudy+1kG.HTT"
 DOT="HDStudy+1kG.HTT.$MEM"
 
 FRDIR="FR-$DOT.dot-$FASTA.fasta"
-TRAIN="$FRDIR/$DOT.train"
 
-TRAINSCALE="$TRAIN.scale"
-GRIDOUT="$TRAIN.grid"
+# SVM files
+BOTH="$FRDIR/$DOT.both"
 
-ARGS="-log2c -5,15,2 -log2g 3,-15,-2 -n 5 $TRAINSCALE"
+BOTHSCALE="$BOTH.scale"
+
+ARGS="-log2c -5,15,2 -log2g 3,-15,-2 -n 5 $BOTHSCALE"
 
 # run Grid
 echo "GridSearcher $ARGS"
 java -cp build/install/fr/lib/fr.jar:build/install/fr/lib/commons-cli-1.4.jar org.ncgr.svm.GridSearcher $ARGS
-
-# run the parameter grid search on the scaled training data
-# ./grid.py -gnuplot null -out null $TRAINSCALE > $GRIDOUT 

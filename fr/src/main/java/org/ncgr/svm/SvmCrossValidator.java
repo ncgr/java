@@ -21,7 +21,7 @@ import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 
 /**
- * Use svm to run a cross-validation of training data
+ * Use svm to run a cross-validation of data.
  */
 public class SvmCrossValidator {
     
@@ -62,7 +62,21 @@ public class SvmCrossValidator {
         // load the problem from the input file
         readProblem(inputFilename);
     }
-    
+
+    /**
+     * Construct given a populated svm_problem, nr-fold number and populated svm_parameter.
+     */
+    public SvmCrossValidator(svm_parameter param, int nrFold, svm_problem prob) throws IOException {
+        // validate nrFold
+        if (nrFold<2) {
+            System.err.println("Error: n-fold cross validation requires n>=2.");
+            System.exit(1);
+        }
+        this.nrFold = nrFold;
+        this.param = param;
+        this.prob = prob;
+    }
+
     /**
      * Perform the cross validation.
      */
@@ -219,7 +233,7 @@ public class SvmCrossValidator {
         weightOption.setRequired(false);
         options.addOption(weightOption);
 
-        Option nfoldOption = new Option("v", true, "n value for n-fold cross-validation mode");
+        Option nfoldOption = new Option("v", true, "k value for k-fold cross-validation");
         nfoldOption.setRequired(false);
         options.addOption(nfoldOption);
 
@@ -302,14 +316,11 @@ public class SvmCrossValidator {
 
         // some final output
         if (svc.param.svm_type==svm_parameter.EPSILON_SVR || svc.param.svm_type== svm_parameter.NU_SVR) {
-            System.out.println("-------------------------------------------");
             System.out.println("Cross Validation Mean squared error = "+svc.meanSquaredError);
             System.out.println("Cross Validation Squared correlation coefficient = "+svc.squaredCorrCoeff);
-            System.out.println("-------------------------------------------");
         } else {
-            System.out.println("------------------------------------");
+            System.out.println("correct/total="+svc.totalCorrect+"/"+svc.totalSamples);
             System.out.println("Cross Validation Accuracy = "+100.0*svc.accuracy+"%");
-            System.out.println("------------------------------------");
         }
     }
 

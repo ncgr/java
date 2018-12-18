@@ -12,6 +12,10 @@ DOT="HDStudy+1kG.HTT.$MEM"
 FASTA="HDStudy+1kG.HTT"
 FRDIR="FR-$DOT.dot-$FASTA.fasta"
 
+TRAIN="$FRDIR/$DOT.train"
+TEST="$FRDIR/$DOT.test"
+BOTH="$FRDIR/$DOT.both"
+
 ALPHA=0.1
 KAPPA=66
 MINSUP=2
@@ -71,7 +75,9 @@ sed s/585500.4_3073458_3249830/-1/ $FRDIR/$DOT.1.train > $FRDIR/$DOT.0.train
 # replace commas with space and remove temp files
 sed s/,/\ /g $FRDIR/$DOT.0.train > $FRDIR/$DOT.1.train
 rm $FRDIR/$DOT.0.train
-mv $FRDIR/$DOT.1.train $FRDIR/$DOT.train
+mv $FRDIR/$DOT.1.train $TRAIN
+
+TRAINVALUES="1\t1\t1\t1\t1\t1\t1\t1\t-1\t-1\t-1\t-1\t-1\t-1\t-1\t-1"
 
 touch $FRDIR/$DOT.0.test
 
@@ -112,16 +118,16 @@ sed s/HG00123_3071737_3248040/-1/  $FRDIR/$DOT.1.test > $FRDIR/$DOT.0.test
 # replace commas with space and remove temp files
 sed s/,/\ /g $FRDIR/$DOT.0.test > $FRDIR/$DOT.1.test
 rm $FRDIR/$DOT.0.test
-mv $FRDIR/$DOT.1.test  $FRDIR/$DOT.test
+mv $FRDIR/$DOT.1.test $TEST
+
+TESTVALUES="1\t1\t1\t1\t1\t1\t1\t-1\t-1\t-1\t-1\t-1\t-1\t-1"
 
 # combine train and test data for scaling
-cat $FRDIR/$DOT.train $FRDIR/$DOT.test > $FRDIR/$DOT.both
+cat $TRAIN $TEST > $BOTH
+
 
 # SVM files
 RANGE="$FRDIR/$DOT.range"
-TRAIN="$FRDIR/$DOT.train"
-TEST="$FRDIR/$DOT.test"
-BOTH="$FRDIR/$DOT.both"
 
 TRAINSCALE="$TRAIN.scale"
 TESTSCALE="$TEST.scale"
@@ -131,6 +137,15 @@ GRIDOUT="$TRAIN.grid"
 MODEL="$TRAIN.model"
 PREDICT="$TEST.predict"
 
+# # Switch-a-Roo
+# cp $TRAIN /tmp/test
+# cp $TEST /tmp/train
+# cp /tmp/test $TEST
+# cp /tmp/train $TRAIN
+# FOOVALUES=$TRAINVALUES
+# TRAINVALUES=$TESTVALUES
+# TESTVALUES=$FOOVALUES
+
 # delete the output from a previous run
 rm -f $GRIDOUT
 rm -f $MODEL
@@ -138,15 +153,15 @@ rm -f $PREDICT
 
 # scale on combined data to get range
 echo "-------------------------"
-echo "SvmScaler -s $RANGE $BOTH"
+echo "SvmScaler -s $RANGE $BOTH > $BOTHSCALE"
 java -cp build/install/fr/lib/fr.jar:build/install/fr/lib/commons-cli-1.4.jar org.ncgr.svm.SvmScaler -s $RANGE $BOTH > $BOTHSCALE
 
-# apply scale factors to train and test data
+# apply scale factors to training and testing data
 echo "-------------------------"
-echo "SvmScaler -r $RANGE $TRAIN"
+echo "SvmScaler -r $RANGE $TRAIN > $TRAINSCALE"
 java -cp build/install/fr/lib/fr.jar:build/install/fr/lib/commons-cli-1.4.jar org.ncgr.svm.SvmScaler -r $RANGE $TRAIN > $TRAINSCALE
 echo "-------------------------"
-echo "SvmScaler -r $RANGE $TEST"
+echo "SvmScaler -r $RANGE $TEST > $TESTSCALE"
 java -cp build/install/fr/lib/fr.jar:build/install/fr/lib/commons-cli-1.4.jar org.ncgr.svm.SvmScaler -r $RANGE $TEST > $TESTSCALE
 
 # # run the parameter grid search on the scaled training data
@@ -154,10 +169,10 @@ java -cp build/install/fr/lib/fr.jar:build/install/fr/lib/commons-cli-1.4.jar or
 # ./grid.py -gnuplot null -out null $TRAINSCALE > $GRIDOUT
 
 # run GridSearcher on scaled training data
-GRIDARGS="-log2c -5,15,2 -log2g 3,-15,-2 -n 5 $TRAINSCALE"
+ARGS="-log2c -5,15,2 -log2g 3,-15,-2 -n 5 $TRAINSCALE"
 echo "-------------------------"
-echo "GridSearcher $GRIDARGS"
-java -cp build/install/fr/lib/fr.jar:build/install/fr/lib/commons-cli-1.4.jar org.ncgr.svm.GridSearcher $GRIDARGS > $GRIDOUT
+echo "GridSearcher $ARGS"
+java -cp build/install/fr/lib/fr.jar:build/install/fr/lib/commons-cli-1.4.jar org.ncgr.svm.GridSearcher $ARGS > $GRIDOUT
 C=`tail -1 $GRIDOUT | awk '{ print $1; }'`
 gamma=`tail -1 $GRIDOUT | awk '{ print $2; }'`
 perc=`tail -1 $GRIDOUT | awk '{ print $3; }'`
@@ -176,9 +191,14 @@ echo "SvmPredictor $TESTSCALE $MODEL $PREDICT"
 java -cp build/install/fr/lib/fr.jar:build/install/fr/lib/commons-cli-1.4.jar org.ncgr.svm.SvmPredictor $TESTSCALE $MODEL $PREDICT
 
 # compare to what it should be
-echo "-------------------------"
 echo "TESTS:"
-echo "1	1	1	1	1	1	1	-1	-1	-1	-1	-1	-1	-1"
+echo $TESTVALUES
 echo "PREDICTIONS:"
 cat $PREDICT
 echo ""
+
+# cross validate on full dataset
+ARGS="-q -v 5 -c $C -g $gamma $BOTHSCALE"
+echo "-------------------------"
+echo "SvmCrossValidator $ARGS"
+java -cp build/install/fr/lib/fr.jar:build/install/fr/lib/commons-cli-1.4.jar org.ncgr.svm.SvmCrossValidator $ARGS

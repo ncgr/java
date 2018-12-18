@@ -7,7 +7,7 @@ import libsvm.*;
  */
 public class SvmUtil {
 
-    // cross-validation n-fold default value
+    // cross-validation k-fold default value
     public static int NRFOLD = 5;
 
     // null output
