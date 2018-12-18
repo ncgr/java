@@ -125,6 +125,7 @@ BOTH="$FRDIR/$DOT.both"
 
 TRAINSCALE="$TRAIN.scale"
 TESTSCALE="$TEST.scale"
+BOTHSCALE="$BOTH.scale"
 
 GRIDOUT="$TRAIN.grid"
 MODEL="$TRAIN.model"
@@ -138,7 +139,7 @@ rm -f $PREDICT
 # scale on combined data to get range
 echo "-------------------------"
 echo "SvmScaler -s $RANGE $BOTH"
-java -cp build/install/fr/lib/fr.jar:build/install/fr/lib/commons-cli-1.4.jar org.ncgr.svm.SvmScaler -s $RANGE $BOTH > /dev/null
+java -cp build/install/fr/lib/fr.jar:build/install/fr/lib/commons-cli-1.4.jar org.ncgr.svm.SvmScaler -s $RANGE $BOTH > $BOTHSCALE
 
 # apply scale factors to train and test data
 echo "-------------------------"

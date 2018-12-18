@@ -1,0 +1,18 @@
+#!/bin/sh
+#
+# -k k value
+
+MEM=30
+
+FASTA="HDStudy+1kG.HTT"
+DOT="HDStudy+1kG.HTT.$MEM"
+
+FRDIR="FR-$DOT.dot-$FASTA.fasta"
+BOTH="$FRDIR/$DOT.both"
+BOTHSCALE="$BOTH.scale"
+
+ARGS="-k 5 $BOTHSCALE"
+
+# run KFoldCrossValidator on the given data and model
+echo "KFoldCrossValidator $ARGS"
+java -cp build/install/fr/lib/fr.jar:build/install/fr/lib/commons-cli-1.4.jar org.ncgr.svm.KFoldCrossValidator $ARGS

@@ -131,6 +131,8 @@ public class SvmPredictor {
             sumvy += v*target;
             ++total;
         }
+        input.close();
+        output.close();
         
         if (svm_type == svm_parameter.EPSILON_SVR || svm_type == svm_parameter.NU_SVR) {
             meanSquareError = error/total;
@@ -138,10 +140,6 @@ public class SvmPredictor {
         } else {
             accuracy = (double)correct/(double)total;
         }
-
-        // close the open files
-        input.close();
-        output.close();
     }
 
     public static void main(String[] args) throws IOException {

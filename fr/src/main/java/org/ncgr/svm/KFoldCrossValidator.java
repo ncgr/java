@@ -24,28 +24,35 @@ import org.apache.commons.cli.ParseException;
  *
  * k-fold cross-validation - from Wikipedia article: Cross-validation (statistics)
  *
- * In k-fold cross-validation, the original sample is randomly partitioned into k equal sized subsamples. Of the k subsamples, a single subsample is retained as the validation data for testing the model,
- * and the remaining k − 1 subsamples are used as training data. The cross-validation process is then repeated k times, with each of the k subsamples used exactly once as the validation data.
- * The k results can then be averaged to produce a single estimation. The advantage of this method over repeated random sub-sampling (see below) is that all observations are used for both training and validation,
- * and each observation is used for validation exactly once. 10-fold cross-validation is commonly used,[9] but in general k remains an unfixed parameter.
+ * In k-fold cross-validation, the original sample is randomly partitioned into k equal sized subsamples. Of the k subsamples, a single subsample is retained
+ * as the validation data for testing the model, and the remaining k−1 subsamples are used as training data. The cross-validation process is then repeated k times,
+ * with each of the k subsamples used exactly once as the validation data. The k results can then be averaged to produce a single estimation. The advantage of this
+ * method over repeated random sub-sampling is that all observations are used for both training and validation, and each observation is used for validation exactly
+ * once. 10-fold cross-validation is commonly used, but in general k remains an unfixed parameter.
  *
- * For example, setting k = 2 results in 2-fold cross-validation. In 2-fold cross-validation, we randomly shuffle the dataset into two sets d0 and d1, so that both sets are equal size (this is usually
- * implemented by shuffling the data array and then splitting it in two). We then train on d0 and validate on d1, followed by training on d1 and validating on d0.
+ * For example, setting k=2 results in 2-fold cross-validation. In 2-fold cross-validation, we randomly shuffle the dataset into two sets d0 and d1, so that both sets
+ * are equal size (this is usually implemented by shuffling the data array and then splitting it in two). We then train on d0 and validate on d1, followed by training
+ * on d1 and validating on d0.
  *
- * When k = n (the number of observations), the k-fold cross-validation is exactly the leave-one-out cross-validation.
+ * When k=n (the number of observations), the k-fold cross-validation is exactly the leave-one-out cross-validation.
  *
- * In stratified k-fold cross-validation, the folds are selected so that the mean response value is approximately equal in all the folds. In the case of binary classification, this means that each fold
- * contains roughly the same proportions of the two types of class labels. 
+ * In stratified k-fold cross-validation, the folds are selected so that the mean response value is approximately equal in all the folds. In the case of binary
+ * classification, this means that each fold contains roughly the same proportions of the two types of class labels. 
  *
  * @author Sam Hokin
  */
 public class KFoldCrossValidator {
 
+    public static int DEFAULT_K = 10;
+
+    int k;
     svm_parameter param;
     svm_problem prob;
 
     // run the search
-    public void run(String datafile) throws IOException {
+    public void run(String modelFilename, String dataFilename) throws IOException {
+        readProblem(dataFilename);
+        System.out.println("Read problem from "+dataFilename);
     }
 
     /**
@@ -63,21 +70,9 @@ public class KFoldCrossValidator {
             System.exit(1);
         }
 
-        // Option log2cOption = new Option("log2c", true, "set range/step of C [-5,15,2]");
-        // log2cOption.setRequired(false);
-        // options.addOption(log2cOption);
-
-        // Option log2gOption = new Option("log2g", true, "set range/step of gamma [3,-15,-2]");
-        // log2gOption.setRequired(false);
-        // options.addOption(log2gOption);
-
-        // Option nOption = new Option("n", true, "n-fold for cross validation [5]");
-        // nOption.setRequired(false);
-        // options.addOption(nOption);
-
-        // Option vOption = new Option("v", false, "toggle verbose output");
-        // vOption.setRequired(false);
-        // options.addOption(vOption);
+        Option kOption = new Option("k", true, "set the k-value [10, or n if n<10]");
+        kOption.setRequired(false);
+        options.addOption(kOption);
 
         try {
             cmd = parser.parse(options, args);
@@ -88,39 +83,23 @@ public class KFoldCrossValidator {
             return;
         }
         
-        // GridSearcher gs = new GridSearcher();
+        KFoldCrossValidator kfcv = new KFoldCrossValidator();
 
-        // if (cmd.hasOption("log2c")) {
-        //     String log2cValues = cmd.getOptionValue("log2c");
-        //     System.out.println("C:["+log2cValues+"]");
-        //     String[] parts = log2cValues.split(",");
-        //     gs.c_begin = Integer.parseInt(parts[0]);
-        //     gs.c_end = Integer.parseInt(parts[1]);
-        //     gs.c_step = Integer.parseInt(parts[2]);
-        // }
+        kfcv.k = DEFAULT_K;
+        if (cmd.hasOption("k")) {
+            kfcv.k = Integer.parseInt(cmd.getOptionValue("k"));
+        }
+        
+        kfcv.param = SvmUtil.getDefaultParam();
 
-        // if (cmd.hasOption("log2g")) {
-        //     String log2gValues = cmd.getOptionValue("log2g");
-        //     System.out.println("gamma:["+log2gValues+"]");
-        //     String[] parts = log2gValues.split(",");
-        //     gs.g_begin = Integer.parseInt(parts[0]);
-        //     gs.g_end = Integer.parseInt(parts[1]);
-        //     gs.g_step = Integer.parseInt(parts[2]);
-        // }
+        // model file is second to last argument
+        String modelFilename = args[args.length-2];
+        
+        // data file is last argument
+        String dataFilename = args[args.length-1];
 
-        // if (cmd.hasOption("n")) {
-        //     gs.fold = Integer.parseInt(cmd.getOptionValue("n"));
-        //     System.out.println("cross-validation:"+gs.fold+"-fold");
-        // }
-
-        // gs.verbose = cmd.hasOption("v");
-
-        // // data file is last argument
-        // String datafile = args[args.length-1];
-        // System.out.println("data:"+datafile);
-
-        // // run the search
-        // gs.run(datafile);
+        // run the process
+        kfcv.run(modelFilename, dataFilename);
 
         // System.out.println("BEST VALUES:");
         // System.out.println("correct/samples="+gs.bestTotalCorrect+"/"+gs.totalSamples);
