@@ -34,8 +34,14 @@ import com.google.protobuf.util.JsonFormat;
 
 public class VGLoader {
 
-    public static void main(String[] args) {
+    String vgFile;
+    String jsonFile;
+    Vg.Graph graph;
 
+    /**
+     * Command line version.
+     */
+    public static void main(String[] args) {
         Options options = new Options();
         CommandLineParser parser = new DefaultParser();
         HelpFormatter formatter = new HelpFormatter();
@@ -57,58 +63,81 @@ public class VGLoader {
             System.exit(1);
             return;
         }
-        
-        // load parameters
-        String vgFile = cmd.getOptionValue("vg");
-        String jsonFile = cmd.getOptionValue("json");
-        
-        if (vgFile!=null) {
-            
+
+        VGLoader vgl = new VGLoader();
+
+        if (cmd.hasOption("v")) {
+            String vgFilename = cmd.getOptionValue("v");
             try {
-                Vg.Graph graph = Vg.Graph.parseFrom(new FileInputStream(vgFile));
-                System.out.println(vgFile + ": Successfully read into a Vg.Graph object.");
+                vgl.loadVGFile(vgFilename);
+                vgl.print();
             } catch (FileNotFoundException e) {
-                System.out.println(vgFile + ": File not found.");
+                System.out.println("File not found: "+vgFilename);
                 System.exit(1);
             } catch (IOException e) {
                 e.printStackTrace();
                 System.exit(1);
             }
-            System.out.println("graph loaded.");
-            
-        } else if (jsonFile!=null) {
-            
-            try {
-                FileInputStream input = new FileInputStream(jsonFile);
-                Reader reader = new InputStreamReader(input);
-                try {
-                    Vg.Graph.Builder graph = Vg.Graph.newBuilder();
-                    JsonFormat.parser().merge(reader, graph);
-                    List<Vg.Node> nodes = graph.getNodeList();
-                    List<Vg.Path> paths = graph.getPathList();
-                    List<Vg.Edge> edges = graph.getEdgeList();
-                    System.out.println("graph loaded: "+nodes.size()+" nodes, "+paths.size()+" paths, "+edges.size()+" edges.");
-                    for (Vg.Node node : nodes) {
-                        System.out.println(">Node "+node.getId());
-                        System.out.println(node.getSequence());
-                    }
-                    for (Vg.Path path : paths) {
-                        System.out.println(path.toString());
-                    }
-                    for (Vg.Edge edge : edges) {
-                        System.out.println("Edge: from "+edge.getFrom()+" to "+edge.getTo()+" overlap "+edge.getOverlap());
-                    }
-                } finally {
-                    reader.close();
-                    input.close();
-                }
-            } catch (IOException e) {
-                e.printStackTrace();
-                System.exit(1);
-            }
-                
         }
-        
+
+        if (cmd.hasOption("j")) {
+            String jsonFilename = cmd.getOptionValue("j");
+            try {
+                vgl.loadJSONFile(jsonFilename);
+                vgl.print();
+            } catch (FileNotFoundException e) {
+                System.out.println("File not found: "+jsonFilename);
+                System.exit(1);
+            } catch (IOException e) {
+                e.printStackTrace();
+                System.exit(1);
+            }
+        }
+    }
+
+    /**
+     * Load the graph from a VG file.
+     */
+    public void loadVGFile(String vgFilename) throws FileNotFoundException, IOException {
+        graph = Vg.Graph.parseFrom(new FileInputStream(vgFilename));
+    }
+            
+    /**
+     * Load the graph from a JSON file.
+     */
+    public void loadJSONFile(String jsonFilename) throws FileNotFoundException, IOException {
+        FileInputStream input = null;
+        Reader reader = null;
+        try {
+            input = new FileInputStream(jsonFilename);
+            reader = new InputStreamReader(input);
+            Vg.Graph.Builder graphBuilder = Vg.Graph.newBuilder();
+            JsonFormat.parser().merge(reader, graphBuilder);
+            graph = graphBuilder.build();
+        } finally {
+            if (reader!=null) reader.close();
+            if (input!=null) input.close();
+        }
+    }
+
+    /**
+     * Output the nodes, edges and paths to stdout.
+     */
+    public void print() {
+        List<Vg.Node> nodes = graph.getNodeList();
+        List<Vg.Path> paths = graph.getPathList();
+        List<Vg.Edge> edges = graph.getEdgeList();
+        System.out.println("Vg.Graph: "+nodes.size()+" nodes, "+paths.size()+" paths, "+edges.size()+" edges.");
+        for (Vg.Node node : nodes) {
+            System.out.println(">Node "+node.getId());
+            System.out.println(node.getSequence());
+        }
+        for (Vg.Path path : paths) {
+            System.out.println(path.toString());
+        }
+        for (Vg.Edge edge : edges) {
+            System.out.println("Edge: from "+edge.getFrom()+" to "+edge.getTo()+" overlap "+edge.getOverlap());
+        }
     }
 
 }

@@ -199,19 +199,6 @@ public class Graph {
         }
     }
 
-    // UNUSED, AT LEAST SO FAR
-    // int findLen(int[] pa) {
-    //     int c = 0;
-    //     for (int i = 0; i < pa.length; i++) {
-    //         if (i == 0) {
-    //             c += length[pa[i]];
-    //         } else {
-    //             c += length[pa[i]] - (K - 1);
-    //         }
-    //     }
-    //     return c;
-    // }
-
     // getters
     public String getDotFile() {
         return dotFile;
