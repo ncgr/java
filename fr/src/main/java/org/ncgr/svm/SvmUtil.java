@@ -8,7 +8,7 @@ import libsvm.*;
 public class SvmUtil {
 
     // cross-validation k-fold default value
-    public static int NRFOLD = 5;
+    public static int NRFOLD = 10;
 
     // null output
     static svm_print_interface svm_print_null = new svm_print_interface() { public void print(String s) {} };
@@ -39,7 +39,7 @@ public class SvmUtil {
     public static void setQuiet() {
         svm.svm_set_print_string_function(svm_print_null);
     }
-    public static void setLoud() {
+    public static void setVerbose() {
         svm.svm_set_print_string_function(svm_print_stdout);
     }
 

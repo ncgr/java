@@ -2,7 +2,7 @@
 
 MEM=30
 
-C=8.0
+C=128.0
 gamma=0.0078125
 
 DOT="HDStudy+1kG.HTT.$MEM"
@@ -15,6 +15,6 @@ BOTH="$FRDIR/$DOT.both"
 BOTHSCALE="$BOTH.scale"
 
 # cross validate on full dataset
-ARGS="-v 10 -c $C -g $gamma $BOTHSCALE"
+ARGS="-k 10 -c $C -g $gamma $BOTHSCALE"
 echo "SvmCrossValidator $ARGS"
 java -cp build/install/fr/lib/fr.jar:build/install/fr/lib/commons-cli-1.4.jar org.ncgr.svm.SvmCrossValidator $ARGS

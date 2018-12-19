@@ -24,6 +24,8 @@ public class FastaFile {
     String filename;
     Graph g;
 
+    boolean verbose = false;
+
     public FastaFile(String filename, Graph g) {
         this.filename = filename;
         this.g = g;
@@ -33,7 +35,7 @@ public class FastaFile {
     // read a FASTA file into local instance objects
     public void readFastaFile(String filename, Graph g) {
 
-        System.out.println("Reading FASTA file: "+filename);
+        if (verbose) System.out.println("Reading FASTA file: "+filename);
         
         sequences = new ArrayList<Sequence>();
 
@@ -132,11 +134,11 @@ public class FastaFile {
 
             }
         } catch (IOException e) {
-            System.out.println("Error when reading " + filename);
+            if (verbose) System.out.println("Error when reading " + filename);
             e.printStackTrace();
         }
 
-        System.out.println("number of paths: " + pathsAL.size());
+        if (verbose) System.out.println("number of paths: " + pathsAL.size());
 
         paths = new int[pathsAL.size()][];
         for (int i = 0; i < pathsAL.size(); i++) {
@@ -150,7 +152,7 @@ public class FastaFile {
         pathsAL.clear();
         pathsAL = null; // can be gc'ed
 
-        System.out.println("finding node paths");
+        if (verbose) System.out.println("finding node paths");
         g.findNodePaths(paths, Nlocs);
 
     }

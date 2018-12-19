@@ -29,6 +29,8 @@ public class Graph {
     int K;
     int minLen = Integer.MAX_VALUE;
 
+    boolean verbose = false;
+
     Map<Long,Integer> startToNode;
     Map<Integer,TreeSet<Integer>> nodePaths;
 
@@ -44,7 +46,7 @@ public class Graph {
     public void readDotFile(String filename) {
 
         this.dotFile = filename;
-        System.out.println("Reading dot file: " + filename);
+        if (verbose) System.out.println("Reading dot file: " + filename);
 
         startToNode = new TreeMap<Long,Integer>();
         maxStart = 0;
@@ -85,7 +87,7 @@ public class Graph {
                             minLen = Math.min(minLen, (int) v);
 
                             if (firstN % 50000 == 0) {
-                                System.out.println("Reading node: " + firstN);
+                                if (verbose) System.out.println("Reading node: " + firstN);
                             }
                         } else if (!labelline) {
                             nodeNeighbors.get(firstN).add((int) v);
@@ -125,10 +127,10 @@ public class Graph {
             System.exit(1);
         }
 
-        System.out.println("K = " + minLen);
+        if (verbose) System.out.println("K = " + minLen);
         K = minLen;
         numNodes = nodeNeighbors.keySet().size();
-        System.out.println("number of nodes: " + numNodes);
+        if (verbose) System.out.println("number of nodes: " + numNodes);
         neighbor = new int[numNodes][];
         for (int i = 0; i < neighbor.length; i++) {
             neighbor[i] = new int[nodeNeighbors.get(i).size()];

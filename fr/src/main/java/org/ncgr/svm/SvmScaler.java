@@ -356,7 +356,6 @@ public class SvmScaler {
             s.restoreFilename = cmd.getOptionValue("r");
         }
 
-
         // data file is required and last argument
         s.dataFilename = args[args.length-1];
 

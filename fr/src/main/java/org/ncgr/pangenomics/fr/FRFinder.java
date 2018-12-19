@@ -46,6 +46,7 @@ public class FRFinder {
     PriorityBlockingQueue<ClusterNode> iFRQ;
 
     int numClusterNodes = 0;
+    boolean verbose = false;
 
     // required parameters, set in constructor
     double alpha = 0.7;    // penetrance: the fraction of a supporting strain's sequence that actually supports the FR; alternatively, `1-alpha` is the fraction of inserted sequence
@@ -123,7 +124,7 @@ public class FRFinder {
      * Find the frequented regions.
      */
     public void findFRs() {
-        System.out.println("Creating node clusters...");
+        if (verbose) System.out.println("Creating node clusters...");
         nodeCluster = new ConcurrentHashMap<Integer,ClusterNode>(g.numNodes);
 
         // create initial node clusters
@@ -167,7 +168,7 @@ public class FRFinder {
         }
         nodePathLocs.clear();
 
-        System.out.println("Computing node support...");
+        if (verbose) System.out.println("Computing node support...");
         for (ClusterNode c : nodeCluster.values()) {
             computeSupport(c, false, false);
         }
@@ -191,7 +192,7 @@ public class FRFinder {
         List<ClusterEdge> edgeM = new ArrayList<ClusterEdge>();
 
         do {
-            System.out.println("# of edges: " + edgeL.size());
+            if (verbose) System.out.println("# of edges: " + edgeL.size());
             edgeL.parallelStream().forEach((E) -> {
                     if (E.fwdSup < 0) {
                         ClusterNode tmpClst = new ClusterNode();
@@ -225,7 +226,7 @@ public class FRFinder {
                     E.v.bestNsup = -1;
                 }
             }
-            System.out.println("matching size: " + edgeM.size());
+            if (verbose) System.out.println("matching size: " + edgeM.size());
             edgeM.parallelStream().forEach((E) -> {
                     ClusterNode newRoot = new ClusterNode();
                     newRoot.node = -(numClusterNodes++);
@@ -283,12 +284,12 @@ public class FRFinder {
 
         iFRQ = new PriorityBlockingQueue<ClusterNode>();
 
-        System.out.println("number of root FRs: " + roots.size());
+        if (verbose) System.out.println("number of root FRs: " + roots.size());
         roots.parallelStream().forEach((root) -> {
                 reportIFRs(root, 0);
             });
 
-        System.out.println("number of iFRs: " + iFRQ.size());
+        if (verbose) System.out.println("number of iFRs: " + iFRQ.size());
     }
 
     void reportIFRs(ClusterNode clust, int parentSup) {
@@ -433,9 +434,13 @@ public class FRFinder {
         rcO.setRequired(false);
         options.addOption(rcO);
         //
-        Option oneBO = new Option("1", "onebased", false, "flat to start FR IDs at 1");
+        Option oneBO = new Option("1", "onebased", false, "start FR IDs at 1 rather than 0");
         oneBO.setRequired(false);
         options.addOption(oneBO);
+        //
+        Option vO = new Option("v", "verbose", false, "verbose output");
+        vO.setRequired(false);
+        options.addOption(vO);
 
         try {
             cmd = parser.parse(options, args);
@@ -454,8 +459,11 @@ public class FRFinder {
         boolean useRC = cmd.hasOption("rc");
         boolean oneBased = cmd.hasOption("onebased");
         
+        boolean verbose = cmd.hasOption("v");
+
         // create a Graph from the dot file
         Graph g = new Graph();
+        g.verbose = verbose;
         g.readDotFile(dotFile);
         
         // create a FastaFile from the fasta file and the Graph
@@ -463,17 +471,20 @@ public class FRFinder {
         
         // create the FRFinder and find FRs
         FRFinder frf = new FRFinder(g, f, alpha, kappa, useRC);
+        frf.verbose = verbose;
         if (cmd.hasOption("minsup")) {
             frf.setMinSup(Integer.parseInt(cmd.getOptionValue("minsup")));
         }
         if (cmd.hasOption("minsize")) {
             frf.setMinSize(Integer.parseInt(cmd.getOptionValue("minsize")));
         }
-        System.out.println("Finding FRs...");
+
+        
+        // find the FRs
         frf.findFRs();
 
         // output results
-        System.out.println("Outputting results...");
+        if (verbose) System.out.println("Outputting results...");
 
         ClusterNode top;
         ArrayList<ClusterNode> iFRs = new ArrayList<ClusterNode>();
@@ -515,7 +526,7 @@ public class FRFinder {
             }
             frOut.close();
             
-            System.out.println("Writing bed file...");
+            if (verbose) System.out.println("Writing bed file...");
             BufferedWriter bedOut = new BufferedWriter(new FileWriter(rd + "FR" + paramString + ".bed"));
             TreeMap<String,TreeMap<Integer,Integer>> seqFRcount = new TreeMap<String,TreeMap<Integer,Integer>>();
             TreeMap<String,TreeMap<Integer,LinkedList<String>>> seqIndxFRstr = new TreeMap<String,TreeMap<Integer,LinkedList<String>>>();
@@ -524,7 +535,7 @@ public class FRFinder {
             for (int fr = 0; fr < iFRs.size(); fr++) {
                 ClusterNode iFR = iFRs.get(fr);
                 if ((fr % 100) == 0) {
-                    System.out.println("Writing fr-" + fr);
+                    if (verbose) System.out.println("Writing fr-" + fr);
                 }
                 List<PathSegment> supportingSegments = frf.computeSupport(iFR, true, false);
                 for (PathSegment ps : supportingSegments) {
@@ -565,7 +576,7 @@ public class FRFinder {
             }
             bedOut.close();
 
-            System.out.println("Writing dist file...");
+            if (verbose) System.out.println("Writing dist file...");
             BufferedWriter distOut = new BufferedWriter(new FileWriter(rd + "FR" + paramString + ".dist.txt"));
             distOut.write("FR,size,support,avg length\n");
             for (int fr = 0; fr < iFRs.size(); fr++) {
@@ -575,7 +586,7 @@ public class FRFinder {
             distOut.close();
 
             if (frf.getUseRC()) {
-                System.out.println("Writing rc file...");
+                if (verbose) System.out.println("Writing rc file...");
                 BufferedWriter rcOut = new BufferedWriter(new FileWriter(rd + "FR" + paramString + ".rc.txt"));
                 for (int i = 0; i < frf.getFastaFile().getPaths().length / 2; i++) {
                     if (pathTotalSupLen[i + frf.getFastaFile().getPaths().length / 2] > pathTotalSupLen[i]) {
@@ -584,7 +595,7 @@ public class FRFinder {
                 }
                 rcOut.close();
             }
-            System.out.println("Writing frpaths file...");
+            if (verbose) System.out.println("Writing frpaths file...");
             BufferedWriter frPathsOut = new BufferedWriter(new FileWriter(rd + "FR" + paramString + ".frpaths.txt"));
             for (int i = 0; i < frf.getFastaFile().getPaths().length; i++) {
                 String name = frf.getFastaFile().getSequences().get(i).getLabel();
@@ -601,7 +612,7 @@ public class FRFinder {
             }
             frPathsOut.close();
 
-            System.out.println("Writing csfr file...");
+            if (verbose) System.out.println("Writing csfr file...");
             BufferedWriter seqFROut = new BufferedWriter(new FileWriter(rd + "FR" + paramString + ".csfr.txt"));
             for (String seq : seqFRcount.keySet()) {
                 seqFROut.write(seq);
@@ -618,7 +629,7 @@ public class FRFinder {
             }
             seqFROut.close();
 
-            System.out.println("done");
+            if (verbose) System.out.println("done");
         } catch (Exception ex) {
             ex.printStackTrace();
             System.exit(-1);

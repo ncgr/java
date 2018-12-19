@@ -35,7 +35,7 @@ public class GridSearcher {
     int g_step = -1;
 
     // cross-validation
-    int nrFold = 5;
+    int nrFold = SvmUtil.NRFOLD;
     svm_parameter param;
     svm_problem prob;
     
@@ -162,7 +162,7 @@ public class GridSearcher {
         log2gOption.setRequired(false);
         options.addOption(log2gOption);
 
-        Option nFoldOption = new Option("n", true, "nr-fold for cross validation [5]");
+        Option nFoldOption = new Option("k", true, "k-fold for cross validation [5]");
         nFoldOption.setRequired(false);
         options.addOption(nFoldOption);
 
@@ -199,8 +199,8 @@ public class GridSearcher {
             gs.g_step = Integer.parseInt(parts[2]);
         }
 
-        if (cmd.hasOption("n")) {
-            gs.nrFold = Integer.parseInt(cmd.getOptionValue("n"));
+        if (cmd.hasOption("k")) {
+            gs.nrFold = Integer.parseInt(cmd.getOptionValue("k"));
             System.out.println("cross-validation:"+gs.nrFold+"-fold");
         }
 

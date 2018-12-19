@@ -21,13 +21,13 @@ import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 
 /**
- * Use svm to run a cross-validation of data.
+ * Use svm to run a stratified k-fold cross-validation of data.
  */
 public class SvmCrossValidator {
     
     svm_parameter param;
     svm_problem prob;
-    int nrFold;
+    int nrFold = SvmUtil.NRFOLD;
 
     // regression results
     public double totalError = 0.0;
@@ -40,11 +40,10 @@ public class SvmCrossValidator {
     public double accuracy = 0.0;
     
     /**
-     * Construct with default svm_parameter object, default-fold cross-validation and the input file name.
+     * Construct with default svm_parameter object, default-fold cross-validation and the given input file name.
      */
     public SvmCrossValidator(String inputFilename) throws IOException {
         this.param = SvmUtil.getDefaultParam();
-        this.nrFold = SvmUtil.NRFOLD;
         readProblem(inputFilename);
     }
 
@@ -233,13 +232,13 @@ public class SvmCrossValidator {
         weightOption.setRequired(false);
         options.addOption(weightOption);
 
-        Option nfoldOption = new Option("v", true, "k value for k-fold cross-validation");
-        nfoldOption.setRequired(false);
-        options.addOption(nfoldOption);
+        Option nrFoldOption = new Option("k", "nrfold", true, "k value for k-fold cross-validation");
+        nrFoldOption.setRequired(false);
+        options.addOption(nrFoldOption);
 
-        Option quietOption = new Option("q", "quiet", false, "quiet mode (no output)");
-        quietOption.setRequired(false);
-        options.addOption(quietOption);
+        Option verboseOption = new Option("v", "verbose", false, "verbose output");
+        verboseOption.setRequired(false);
+        options.addOption(verboseOption);
 
         if (args.length==0) {
             formatter.printHelp("SvmCrossValidator [options]", options);
@@ -294,15 +293,15 @@ public class SvmCrossValidator {
         }
 
         int nrFold = SvmUtil.NRFOLD; // default
-        if (cmd.hasOption("v")) {
-            nrFold = Integer.parseInt(cmd.getOptionValue("v"));
+        if (cmd.hasOption("k")) {
+            nrFold = Integer.parseInt(cmd.getOptionValue("k"));
         }
 
         // this is weird, setting a static function in svm
-        if (cmd.hasOption("q")) {
-            SvmUtil.setQuiet();
+        if (cmd.hasOption("v")) {
+            SvmUtil.setVerbose();
         } else {
-            SvmUtil.setLoud();
+            SvmUtil.setQuiet();
         }
 
         // get input file from last parameter

@@ -26,12 +26,6 @@ public class SvmTrainer {
     svm_problem prob;
     svm_model model;
 
-    // null output
-    static svm_print_interface svm_print_null = new svm_print_interface() { public void print(String s) {} };
-
-    // stdout
-    static svm_print_interface svm_print_stdout = new svm_print_interface() { public void print(String s) { System.out.print(s); } };
-
     /**
      * Instantiate with given param values.
      */
@@ -177,9 +171,9 @@ public class SvmTrainer {
         weightOption.setRequired(false);
         options.addOption(weightOption);
 
-        Option quietOption = new Option("q", "quiet", false, "quiet mode (no output)");
-        quietOption.setRequired(false);
-        options.addOption(quietOption);
+        Option verboseOption = new Option("v", "verbose", false, "verbose output");
+        verboseOption.setRequired(false);
+        options.addOption(verboseOption);
 
         if (args.length==0) {
             formatter.printHelp("SvmTrainer [options] input-file model-file", options);
@@ -248,16 +242,11 @@ public class SvmTrainer {
             param.probability = Integer.parseInt(cmd.getOptionValue("b"));
         }
 
-        // instantiate with this param object
-        SvmTrainer st = new SvmTrainer(param);
-        
-        // weird way to control output from svm
-        if (cmd.hasOption("q")) {
-            // no output
-            svm.svm_set_print_string_function(svm_print_null);
+        // this is weird, setting a static function in svm
+        if (cmd.hasOption("v")) {
+            SvmUtil.setVerbose();
         } else {
-            // default printing to stdout
-            svm.svm_set_print_string_function(svm_print_stdout);
+            SvmUtil.setQuiet();
         }
 
         // get input training data filename from second-to-last parameter
@@ -265,6 +254,9 @@ public class SvmTrainer {
 
         // get output model filename from the last parameter
         String modelFilename = args[args.length-1];
+
+        // instantiate with this param object
+        SvmTrainer st = new SvmTrainer(param);
 
         // load the problem
         st.readProblem(inputFilename);

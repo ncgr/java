@@ -152,9 +152,9 @@ public class SvmPredictor {
         predictProbabilityOption.setRequired(false);
         options.addOption(predictProbabilityOption);
 
-        Option quietOption = new Option("q", "quiet", false, "quiet mode (no output)");
-        quietOption.setRequired(false);
-        options.addOption(quietOption);
+        Option verboseOption = new Option("v", "verbose", false, "verbose output");
+        verboseOption.setRequired(false);
+        options.addOption(verboseOption);
 
         if (args.length==0) {
             formatter.printHelp("SvmPredictor [options]", options);
@@ -174,10 +174,10 @@ public class SvmPredictor {
         boolean predictProbability = cmd.hasOption("b");
         
         // odd way to toggle printing with a static var
-        if (cmd.hasOption("q")) {
-            SvmUtil.setQuiet();
+        if (cmd.hasOption("v")) {
+            SvmUtil.setVerbose();
         } else {
-            SvmUtil.setLoud();
+            SvmUtil.setVerbose();
         }
 
         // files are last three arguments
