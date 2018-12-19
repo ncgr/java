@@ -119,7 +119,7 @@ public class SvmPredictor {
                 output.writeBytes("\n");
             } else {
                 v = svm.svm_predict(model,x);
-                output.writeBytes((int)v+"\t");
+                output.writeBytes((int)v+" ");
             }
 
             if (v == target) ++correct;
