@@ -101,7 +101,7 @@ sed s/,/\ /g $FRDIR/$DOT.0.train > $FRDIR/$DOT.1.train
 rm $FRDIR/$DOT.0.train
 mv $FRDIR/$DOT.1.train $TRAIN
 
-TRAINVALUES="1\t1\t1\t1\t1\t1\t1\t1\t1\t1\t1\t1\t1\t1\t-1\t-1\t-1\t-1\t-1\t-1\t-1\t-1\t-1\t-1\t-1\t-1\t-1\t-1"
+TRAINVALUES="1 1 1 1 1 1 1 1 1 1 1 1 1 1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1"
 
 touch $FRDIR/$DOT.0.test
 
@@ -168,7 +168,7 @@ sed s/,/\ /g $FRDIR/$DOT.0.test > $FRDIR/$DOT.1.test
 rm $FRDIR/$DOT.0.test
 mv $FRDIR/$DOT.1.test $TEST
 
-TESTVALUES="1\t1\t1\t1\t1\t1\t1\t1\t1\t1\t1\t1\t1\t-1\t-1\t-1\t-1\t-1\t-1\t-1\t-1\t-1\t-1\t-1\t-1\t-1"
+TESTVALUES="1 1 1 1 1 1 1 1 1 1 1 1 1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1"
 
 # combine train and test data for scaling
 cat $TRAIN $TEST > $BOTH
