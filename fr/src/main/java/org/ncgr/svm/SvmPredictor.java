@@ -114,12 +114,12 @@ public class SvmPredictor {
                 v = svm.svm_predict_probability(model, x, prob_estimates);
                 output.writeBytes(v+" ");
                 for (int j=0;j<nr_class;j++) {
-                    output.writeBytes(prob_estimates[j]+" ");
+                    output.writeBytes(prob_estimates[j]+"\t");
                 }
                 output.writeBytes("\n");
             } else {
                 v = svm.svm_predict(model,x);
-                output.writeBytes((int)v+" ");
+                output.writeBytes((int)v+"\t");
             }
 
             if (v == target) ++correct;

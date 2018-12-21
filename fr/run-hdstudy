@@ -8,17 +8,17 @@
 
 export JAVA_OPTS="-Xmx800g -XX:+UseParallelGC -Xms2g -XX:SoftRefLRUPolicyMSPerMB=1 -XX:MaxHeapFreeRatio=99"
 
-DATASET=1to5
+DATASET="2to4"
 
-MEM=k30
+MEM=30
 
 ALPHA=0.1
-KAPPA=66
+KAPPA=30
 MINSUP=2
 MINSIZE=1
 
 export PREFIX="FR-a$ALPHA-kp$KAPPA-sup$MINSUP-sz$MINSIZE"
-export DOT="HDStudy+1kG.$DATASET.$MEM"
+export DOT="HDStudy+1kG.$DATASET.k$MEM"
 export FASTA="HDStudy+1kG.$DATASET"
 export FRDIR="FR-$DOT.dot-$FASTA.fasta"
 
@@ -109,3 +109,8 @@ java -cp build/install/fr/lib/fr.jar:build/install/fr/lib/commons-cli-1.4.jar or
 # echo "-------------------------"
 # echo "SvmCrossValidator $ARGS"
 # java -cp build/install/fr/lib/fr.jar:build/install/fr/lib/commons-cli-1.4.jar org.ncgr.svm.SvmCrossValidator $ARGS
+
+# echo "$MEM	$ALPHA	$KAPPA	$MINSUP	$MINSIZE	$C	$gamma"
+# cat $PREDICT
+# echo ""
+
