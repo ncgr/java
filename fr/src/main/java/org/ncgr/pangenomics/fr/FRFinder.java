@@ -286,6 +286,7 @@ public class FRFinder {
 
         if (verbose) System.out.println("number of root FRs: " + roots.size());
         roots.parallelStream().forEach((root) -> {
+		System.out.println("root.node="+root.getNode());
                 reportIFRs(root, 0);
             });
 

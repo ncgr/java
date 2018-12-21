@@ -116,6 +116,9 @@ public class ClusterNode implements Comparable<ClusterNode> {
     }
 
     // setters and getters
+    public int getNode() {
+	return node;
+    }
     public int getAvgLen() {
         return avgLen;
     }
