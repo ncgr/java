@@ -8,11 +8,11 @@
 
 export JAVA_OPTS="-Xmx800g -XX:+UseParallelGC -Xms2g -XX:SoftRefLRUPolicyMSPerMB=1 -XX:MaxHeapFreeRatio=99"
 
-DATASET="2to4"
+DATASET="1to5"
 
-MEM=30
+MEM=60
 
-ALPHA=0.1
+ALPHA=0.2
 KAPPA=30
 MINSUP=2
 MINSIZE=1
@@ -36,8 +36,8 @@ GRIDOUT="$TRAIN.grid"
 MODEL="$TRAIN.model"
 PREDICT="$TEST.predict"
 
-TRAINVALUES="1 1 1 1 1 1 1 1 1 1 1 1 1 1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1"
-TESTVALUES="1 1 1 1 1 1 1 1 1 1 1 1 1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1"
+TRAINVALUES="1	1	1	1	1	1	1	1	1	1	1	1	1	1	-1	-1	-1	-1	-1	-1	-1	-1	-1	-1	-1	-1	-1	-1"
+TESTVALUES="1	1	1	1	1	1	1	1	1	1	1	1	1	-1	-1	-1	-1	-1	-1	-1	-1	-1	-1	-1	-1	-1"
 
 # delete the output from a previous run
 rm -f $TRAIN
@@ -51,66 +51,69 @@ rm -f $GRIDOUT
 rm -f $MODEL
 rm -f $PREDICT
 
-# run FRFinder
+################
+# run FRFinder #
+################
 ARGS="-1 -v -d HDStudy/$DOT.dot -f HDStudy/$FASTA.fasta --alpha $ALPHA --kappa $KAPPA --minsup $MINSUP --minsize $MINSIZE"
 echo "-------------------------"
 echo "FRFinder $ARGS"
 java -cp build/install/fr/lib/fr.jar:build/install/fr/lib/commons-cli-1.4.jar org.ncgr.pangenomics.fr.FRFinder $ARGS
 
-# # build the training and testing files
-# echo "-------------------------"
-# echo "sh build-$DATASET-files"
-# sh build-$DATASET-files
+IFRS=`cat $FRDIR/$PREFIX.frs.txt | wc -l`
 
-# # scale on combined data to get range
-# echo "-------------------------"
-# echo "SvmScaler -s $RANGE $BOTH > $BOTHSCALE"
-# java -cp build/install/fr/lib/fr.jar:build/install/fr/lib/commons-cli-1.4.jar org.ncgr.svm.SvmScaler -s $RANGE $BOTH > $BOTHSCALE
+# build the training and testing files
+echo "-------------------------"
+echo "sh build-$DATASET-files"
+sh build-$DATASET-files
 
-# # apply scale factors to training and testing data
-# echo "-------------------------"
-# echo "SvmScaler -r $RANGE $TRAIN > $TRAINSCALE"
-# java -cp build/install/fr/lib/fr.jar:build/install/fr/lib/commons-cli-1.4.jar org.ncgr.svm.SvmScaler -r $RANGE $TRAIN > $TRAINSCALE
-# echo "-------------------------"
-# echo "SvmScaler -r $RANGE $TEST > $TESTSCALE"
-# java -cp build/install/fr/lib/fr.jar:build/install/fr/lib/commons-cli-1.4.jar org.ncgr.svm.SvmScaler -r $RANGE $TEST > $TESTSCALE
+# scale on combined data to get range
+echo "-------------------------"
+echo "SvmScaler -s $RANGE $BOTH > $BOTHSCALE"
+java -cp build/install/fr/lib/fr.jar:build/install/fr/lib/commons-cli-1.4.jar org.ncgr.svm.SvmScaler -s $RANGE $BOTH > $BOTHSCALE
 
-# # run GridSearcher on scaled training data
-# ARGS="-log2c -5,15,2 -log2g 3,-15,-2 -k 10 $TRAINSCALE"
-# echo "-------------------------"
-# echo "GridSearcher $ARGS"
-# java -cp build/install/fr/lib/fr.jar:build/install/fr/lib/commons-cli-1.4.jar org.ncgr.svm.GridSearcher $ARGS > $GRIDOUT
-# C=`tail -1 $GRIDOUT | awk '{ print $1; }'`
-# gamma=`tail -1 $GRIDOUT | awk '{ print $2; }'`
-# perc=`tail -1 $GRIDOUT | awk '{ print $3; }'`
-# echo "C=$C"
-# echo "gamma=$gamma"
-# echo "perc=$perc"
+# apply scale factors to training and testing data
+echo "-------------------------"
+echo "SvmScaler -r $RANGE $TRAIN > $TRAINSCALE"
+java -cp build/install/fr/lib/fr.jar:build/install/fr/lib/commons-cli-1.4.jar org.ncgr.svm.SvmScaler -r $RANGE $TRAIN > $TRAINSCALE
+echo "-------------------------"
+echo "SvmScaler -r $RANGE $TEST > $TESTSCALE"
+java -cp build/install/fr/lib/fr.jar:build/install/fr/lib/commons-cli-1.4.jar org.ncgr.svm.SvmScaler -r $RANGE $TEST > $TESTSCALE
 
-# # train on the scaled training set with the above parameters to get the model
-# echo "-------------------------"
-# echo "SvmTrainer -c $C -g $gamma $TRAINSCALE $MODEL"
-# java -cp build/install/fr/lib/fr.jar:build/install/fr/lib/commons-cli-1.4.jar org.ncgr.svm.SvmTrainer -c $C -g $gamma $TRAINSCALE $MODEL
+# run GridSearcher on scaled training data
+ARGS="-log2c -5,15,2 -log2g 3,-15,-2 -k 10 $TRAINSCALE"
+echo "-------------------------"
+echo "GridSearcher $ARGS"
+java -cp build/install/fr/lib/fr.jar:build/install/fr/lib/commons-cli-1.4.jar org.ncgr.svm.GridSearcher $ARGS > $GRIDOUT
+C=`tail -1 $GRIDOUT | awk '{ print $1; }'`
+gamma=`tail -1 $GRIDOUT | awk '{ print $2; }'`
+perc=`tail -1 $GRIDOUT | awk '{ print $3; }'`
+echo "C=$C"
+echo "gamma=$gamma"
+echo "perc=$perc"
 
-# # now run the predictor on the scaled test data with this model
-# echo "-------------------------"
-# echo "SvmPredictor $TESTSCALE $MODEL $PREDICT"
-# java -cp build/install/fr/lib/fr.jar:build/install/fr/lib/commons-cli-1.4.jar org.ncgr.svm.SvmPredictor $TESTSCALE $MODEL $PREDICT
+# train on the scaled training set with the above parameters to get the model
+echo "-------------------------"
+echo "SvmTrainer -c $C -g $gamma $TRAINSCALE $MODEL"
+java -cp build/install/fr/lib/fr.jar:build/install/fr/lib/commons-cli-1.4.jar org.ncgr.svm.SvmTrainer -c $C -g $gamma $TRAINSCALE $MODEL
 
-# # compare to what it should be
-# echo "TESTS:"
-# echo $TESTVALUES
-# echo "PREDICTIONS:"
-# cat $PREDICT
-# echo ""
+# now run the predictor on the scaled test data with this model
+echo "-------------------------"
+echo "SvmPredictor $TESTSCALE $MODEL $PREDICT"
+java -cp build/install/fr/lib/fr.jar:build/install/fr/lib/commons-cli-1.4.jar org.ncgr.svm.SvmPredictor $TESTSCALE $MODEL $PREDICT
 
-# # cross validate on full dataset
-# ARGS="-c $C -g $gamma -k 10 $BOTHSCALE"
-# echo "-------------------------"
-# echo "SvmCrossValidator $ARGS"
-# java -cp build/install/fr/lib/fr.jar:build/install/fr/lib/commons-cli-1.4.jar org.ncgr.svm.SvmCrossValidator $ARGS
+# compare to what it should be
+echo "TESTS:"
+echo $TESTVALUES
+echo "PREDICTIONS:"
+cat $PREDICT
+echo ""
 
-# echo "$MEM	$ALPHA	$KAPPA	$MINSUP	$MINSIZE	$C	$gamma"
-# cat $PREDICT
-# echo ""
+# cross validate on full dataset
+ARGS="-c $C -g $gamma -k 10 $BOTHSCALE"
+echo "-------------------------"
+echo "SvmCrossValidator $ARGS"
+java -cp build/install/fr/lib/fr.jar:build/install/fr/lib/commons-cli-1.4.jar org.ncgr.svm.SvmCrossValidator $ARGS
 
+echo "$MEM	$ALPHA	$KAPPA	$MINSUP	$MINSIZE	$IFRS	$C	$gamma"
+cat $PREDICT
+echo ""
