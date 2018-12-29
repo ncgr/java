@@ -17,21 +17,24 @@ public class Graph {
 
     static int BUFSIZE = 10000;
 
+    // made available so directory names can be formed from it
     String dotFile;
     
-    String name;
-    int numNodes;
-    int[][] neighbor;
-    long[] anyNodeStart;
-    long maxStart;
-    int[] length;
-    boolean[] containsN;
-    int K;
     int minLen = Integer.MAX_VALUE;
+    int K;
+    int numNodes;
+    int[] length;
+    int[][] neighbor;
+    
+    long maxStart;
+    long[] anyNodeStart;
 
     boolean verbose = false;
 
+    // used by FastaFile
     Map<Long,Integer> startToNode;
+
+    // used by FRFinder
     Map<Integer,TreeSet<Integer>> nodePaths;
 
     /**
@@ -127,8 +130,8 @@ public class Graph {
             System.exit(1);
         }
 
-        if (verbose) System.out.println("K = " + minLen);
         K = minLen;
+        if (verbose) System.out.println("K="+K);
         numNodes = nodeNeighbors.keySet().size();
         if (verbose) System.out.println("number of nodes: " + numNodes);
         neighbor = new int[numNodes][];
@@ -175,7 +178,7 @@ public class Graph {
      * Find node paths corresponding to FASTA paths.
      */
     public void findNodePaths(int[][] paths, TreeSet<Long> Nlocs) {
-        containsN = new boolean[numNodes];
+        boolean[] containsN = new boolean[numNodes];
         for (int i = 0; i < numNodes; i++) {
             containsN[i] = false;
             Long test = Nlocs.ceiling(anyNodeStart[i]);
@@ -208,6 +211,18 @@ public class Graph {
     }
     public int getK() {
         return K;
+    }
+    public int getNumNodes() {
+        return numNodes;
+    }
+    public int[] getLength() {
+        return length;
+    }
+    public long getMaxStart() {
+        return maxStart;
+    }
+    public long[] getAnyNodeStart() {
+        return anyNodeStart;
     }
     public Map<Long,Integer> getStartToNode() {
         return startToNode;

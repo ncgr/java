@@ -39,6 +39,12 @@ public class VGLoader {
     Vg.Graph graph;
 
     /**
+     * Constructor does nothing - use load methods to read the Vg.Graph in from a file.
+     */
+    public VGLoader() {
+    }
+
+    /**
      * Command line version.
      */
     public static void main(String[] args) {
@@ -96,10 +102,11 @@ public class VGLoader {
     }
 
     /**
-     * Load the graph from a VG file.
+     * Load the graph from a VG file. THIS DOES NOT WORK.
      */
     public void loadVGFile(String vgFilename) throws FileNotFoundException, IOException {
-        graph = Vg.Graph.parseFrom(new FileInputStream(vgFilename));
+        // graph = Vg.Graph.parseFrom(new FileInputStream(vgFilename));
+        System.out.println("VGLoader: Loading VG files is not yet implemented. Sorry!");
     }
             
     /**

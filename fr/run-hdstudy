@@ -1,10 +1,11 @@
 #!/bin/sh
 #
-# -a --alpha   the fraction of a supporting strain's sequence that actually supports the FR; alternatively, `1-alpha` is the fraction of inserted sequence
-# -k --kappa   the maximum insertion length (measured in bp) that any supporting path may have
-# -m --minsup  [1] minimum number of genome paths in order for a region to be considered frequent
-# -z --minsize [1] minimum number of de Bruijn nodes that an FR must contain to be considered frequent
-# -r --rc      flag to indicate whether the sequence (e.g. FASTA file) had its reverse complement appended
+# -1 --onebased flag to number FR IDs from 1 rather than 0
+# -a --alpha    the fraction of a supporting strain's sequence that actually supports the FR; alternatively, `1-alpha` is the fraction of inserted sequence
+# -k --kappa    the maximum insertion length (measured in bp) that any supporting path may have
+# -m --minsup   [1] minimum number of genome paths in order for a region to be considered frequent
+# -z --minsize  [1] minimum number of de Bruijn nodes that an FR must contain to be considered frequent
+# -r --rc       flag to indicate whether the sequence (e.g. FASTA file) had its reverse complement appended
 
 export JAVA_OPTS="-Xmx800g -XX:+UseParallelGC -Xms2g -XX:SoftRefLRUPolicyMSPerMB=1 -XX:MaxHeapFreeRatio=99"
 
