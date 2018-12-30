@@ -1,3 +1,3 @@
 #!/bin/sh
 java -cp build/install/fr/lib/fr.jar:build/install/fr/lib/commons-cli-1.4.jar:build/install/fr/lib/protobuf-java-3.6.1.jar:build/install/fr/lib/protobuf-java-util-3.6.1.jar:build/install/fr/lib/gson-2.7.jar \
-       	org.ncgr.pangenomics.vg.VGLoader --json sample/ecoli.pan3.json
+       	org.ncgr.pangenomics.vg.VGLoader --json sample/ecoli.pan3.vg.json

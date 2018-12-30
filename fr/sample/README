@@ -1,0 +1,3 @@
+Use the -f option on vg to construct a variant graph without breaking up ALT alleles, like so:
+
+$ vg construct -r ecoli.ref.fa -v ecoli.pan3.vcf -f > ecoli.pan3.vg
