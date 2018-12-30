@@ -1,2 +1,2 @@
 #!/bin/sh
-java -cp build/install/fr/lib/fr.jar:build/install/fr/lib/gs-core-1.3.jar GraphStreamFileSource sample/ecoli.pan3.dot
+java -cp build/install/fr/lib/fr.jar:build/install/fr/lib/gs-core-1.3.jar GraphStreamFileSource $1 $2

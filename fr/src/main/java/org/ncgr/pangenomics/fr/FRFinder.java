@@ -1,14 +1,9 @@
 package org.ncgr.pangenomics.fr;
 
-import java.io.Reader;
 import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileNotFoundException;
-import java.io.FileReader;
 import java.io.FileWriter;
-import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.io.IOException;
 
 import java.util.List;
@@ -37,6 +32,8 @@ import org.apache.commons.cli.ParseException;
  */
 public class FRFinder {
 
+    private boolean verbose = false;
+
     Graph g;
     FastaFile f;
     
@@ -46,7 +43,6 @@ public class FRFinder {
     PriorityBlockingQueue<ClusterNode> iFRQ;
 
     int numClusterNodes = 0;
-    boolean verbose = false;
 
     // required parameters, set in constructor
     double alpha = 0.7;    // penetrance: the fraction of a supporting strain's sequence that actually supports the FR; alternatively, `1-alpha` is the fraction of inserted sequence
@@ -57,6 +53,21 @@ public class FRFinder {
     int minSup = 1;        // minimum support: minimum number of genome paths in order for a region to be considered frequent
     int minSize = 1;       // minimum size: minimum number of de Bruijn nodes that an FR must contain to be considered frequent
 
+    static String[] colors = {"122,39,25", "92,227,60", "225,70,233", "100,198,222", "232,176,49", "50,39,85",
+                              "67,101,33", "222,142,186", "92,119,227", "206,225,151", "227,44,118", "229,66,41",
+                              "47,36,24", "225,167,130", "120,132,131", "104,232,178", "158,43,133", "228,228,42", "213,217,213",
+                              "118,64,79", "88,155,219", "226,118,222", "146,197,53", "222,100,89", "224,117,41", "160,96,228",
+                              "137,89,151", "126,209,119", "145,109,70", "91,176,164", "54,81,103", "164,174,137", "172,166,48",
+                              "56,86,143", "210,184,226", "175,123,35", "129,161,88", "158,47,85", "87,231,225", "216,189,112", "49,111,75",
+                              "89,137,168", "209,118,134", "33,63,44", "166,128,142", "53,137,55", "80,76,161", "170,124,221", "57,62,13",
+                              "176,40,40", "94,179,129", "71,176,51", "223,62,170", "78,25,30", "148,69,172", "122,105,31", "56,33,53",
+                              "112,150,40", "239,111,176", "96,55,25", "107,90,87", "164,74,28", "171,198,226", "152,131,176", "166,225,211",
+                              "53,121,117", "220,58,86", "86,18,56", "225,197,171", "139,142,217", "216,151,223", "97,229,117", "225,155,85",
+                              "31,48,58", "160,146,88", "185,71,129", "164,233,55", "234,171,187", "110,97,125", "177,169,175", "177,104,68",
+                              "97,48,122", "237,139,128", "187,96,166", "225,90,127", "97,92,55", "124,35,99", "210,64,194", "154,88,84",
+                              "100,63,100", "140,42,54", "105,132,99", "186,227,103", "224,222,81", "191,140,126", "200,230,182", "166,87,123",
+                              "72,74,58", "212,222,124", "205,52,136"};
+    
     /**
      * Construct with a given Graph, FastaFile and parameters
      */
@@ -125,12 +136,12 @@ public class FRFinder {
      */
     public void findFRs() {
         if (verbose) System.out.println("Creating node clusters...");
-        nodeCluster = new ConcurrentHashMap<Integer,ClusterNode>(g.numNodes);
+        nodeCluster = new ConcurrentHashMap<Integer,ClusterNode>(g.getNumNodes());
 
         // create initial node clusters
-        g.nodePaths.keySet().parallelStream().forEach((N) -> {
-                if (!g.nodePaths.get(N).isEmpty()
-                    && (!useRC || 2*g.nodePaths.get(N).first() < f.paths.length)) { // only start with nodes from non-rc'ed paths
+        f.nodePaths.keySet().parallelStream().forEach((N) -> {
+                if (!f.nodePaths.get(N).isEmpty()
+                    && (!useRC || 2*f.nodePaths.get(N).first() < f.paths.length)) { // only start with nodes from non-rc'ed paths
                     ClusterNode nodeClst = new ClusterNode();
                     nodeClst.parent = nodeClst.left = nodeClst.right = null;
                     nodeClst.node = N;
@@ -176,10 +187,10 @@ public class FRFinder {
         edgeL = new ArrayList<ClusterEdge>();
         Set<ClusterNode> checkNodes = ConcurrentHashMap.newKeySet();
         for (Integer N : nodeCluster.keySet()) {
-            for (int i = 0; i < g.neighbor[N].length; i++) {
-                if (nodeCluster.containsKey(g.neighbor[N][i])) {
+            for (int i = 0; i < g.getNeighbor()[N].length; i++) {
+                if (nodeCluster.containsKey(g.getNeighbor()[N][i])) {
                     ClusterNode u = nodeCluster.get(N);
-                    ClusterNode v = nodeCluster.get(g.neighbor[N][i]);
+                    ClusterNode v = nodeCluster.get(g.getNeighbor()[N][i]);
                     if (!u.neighbors.containsKey(v)) {
                         ClusterEdge e = new ClusterEdge(u, v, -1, 0);
                         edgeL.add(e);
@@ -347,54 +358,8 @@ public class FRFinder {
     /**
      * Command-line utility
      */
-    public static void main(String[] args) {
-        
-        String[] colors = {"122,39,25", "92,227,60", "225,70,233", "100,198,222", "232,176,49", "50,39,85",
-                           "67,101,33", "222,142,186", "92,119,227", "206,225,151", "227,44,118", "229,66,41",
-                           "47,36,24", "225,167,130", "120,132,131", "104,232,178", "158,43,133", "228,228,42", "213,217,213",
-                           "118,64,79", "88,155,219", "226,118,222", "146,197,53", "222,100,89", "224,117,41", "160,96,228",
-                           "137,89,151", "126,209,119", "145,109,70", "91,176,164", "54,81,103", "164,174,137", "172,166,48",
-                           "56,86,143", "210,184,226", "175,123,35", "129,161,88", "158,47,85", "87,231,225", "216,189,112", "49,111,75",
-                           "89,137,168", "209,118,134", "33,63,44", "166,128,142", "53,137,55", "80,76,161", "170,124,221", "57,62,13",
-                           "176,40,40", "94,179,129", "71,176,51", "223,62,170", "78,25,30", "148,69,172", "122,105,31", "56,33,53",
-                           "112,150,40", "239,111,176", "96,55,25", "107,90,87", "164,74,28", "171,198,226", "152,131,176", "166,225,211",
-                           "53,121,117", "220,58,86", "86,18,56", "225,197,171", "139,142,217", "216,151,223", "97,229,117", "225,155,85",
-                           "31,48,58", "160,146,88", "185,71,129", "164,233,55", "234,171,187", "110,97,125", "177,169,175", "177,104,68",
-                           "97,48,122", "237,139,128", "187,96,166", "225,90,127", "97,92,55", "124,35,99", "210,64,194", "154,88,84",
-                           "100,63,100", "140,42,54", "105,132,99", "186,227,103", "224,222,81", "191,140,126", "200,230,182", "166,87,123",
-                           "72,74,58", "212,222,124", "205,52,136"};
-        
-        String[] svgcolors = {"aliceblue", "antiquewhite", "aqua", "aquamarine",
-                              "azure", "beige", "bisque", "black", "blanchedalmond", "blue",
-                              "blueviolet", "brown", "burlywood", "cadetblue", "chartreuse",
-                              "chocolate", "coral", "cornflowerblue", "cornsilk", "crimson",
-                              "cyan", "darkblue", "darkcyan", "darkgoldenrod", "darkgray",
-                              "darkgreen", "darkgrey", "darkkhaki", "darkmagenta", "darkolivegreen",
-                              "darkorange", "darkorchid", "darkred", "darksalmon", "darkseagreen",
-                              "darkslateblue", "darkslategray", "darkslategrey", "darkturquoise", "darkviolet",
-                              "deeppink", "deepskyblue", "dimgray", "dimgrey", "dodgerblue",
-                              "firebrick", "floralwhite", "forestgreen", "fuchsia", "gainsboro",
-                              "ghostwhite", "gold", "goldenrod", "gray", "grey",
-                              "green", "greenyellow", "honeydew", "hotpink", "indianred",
-                              "indigo", "ivory", "khaki", "lavender", "lavenderblush",
-                              "lawngreen", "lemonchiffon", "lightblue", "lightcoral", "lightcyan",
-                              "lightgoldenrodyellow", "lightgray", "lightgreen", "lightgrey", "lightpink",
-                              "lightsalmon", "lightseagreen", "lightskyblue", "lightslategray", "lightslategrey",
-                              "lightsteelblue", "lightyellow", "lime", "limegreen", "linen",
-                              "magenta", "maroon", "mediumaquamarine", "mediumblue", "mediumorchid",
-                              "mediumpurple", "mediumseagreen", "mediumslateblue", "mediumspringgreen", "mediumturquoise",
-                              "mediumvioletred", "midnightblue", "mintcream", "mistyrose", "moccasin",
-                              "navajowhite", "navy", "oldlace", "olive", "olivedrab",
-                              "orange", "orangered", "orchid", "palegoldenrod", "palegreen",
-                              "paleturquoise", "palevioletred", "papayawhip", "peachpuff", "peru",
-                              "pink", "plum", "powderblue", "purple", "red",
-                              "rosybrown", "royalblue", "saddlebrown", "salmon", "sandybrown",
-                              "seagreen", "seashell", "sienna", "silver", "skyblue",
-                              "slateblue", "slategray", "slategrey", "snow", "springgreen",
-                              "steelblue", "tan", "teal", "thistle", "tomato",
-                              "turquoise", "violet", "wheat", "white", "whitesmoke",
-                              "yellow", "yellowgreen"};
-        
+    public static void main(String[] args) throws IOException {
+                
         Options options = new Options();
         CommandLineParser parser = new DefaultParser();
         HelpFormatter formatter = new HelpFormatter();
@@ -464,15 +429,15 @@ public class FRFinder {
 
         // create a Graph from the dot file
         Graph g = new Graph();
-        g.verbose = verbose;
-        g.readDotFile(dotFile);
+        if (verbose) g.setVerbose();
+        g.readSplitMEMDotFile(dotFile);
         
         // create a FastaFile from the fasta file and the Graph
         FastaFile f = new FastaFile(fastaFile, g);
         
         // create the FRFinder and find FRs
         FRFinder frf = new FRFinder(g, f, alpha, kappa, useRC);
-        frf.verbose = verbose;
+        if (verbose) frf.setVerbose();
         if (cmd.hasOption("minsup")) {
             frf.setMinSup(Integer.parseInt(cmd.getOptionValue("minsup")));
         }
@@ -490,7 +455,7 @@ public class FRFinder {
         ClusterNode top;
         ArrayList<ClusterNode> iFRs = new ArrayList<ClusterNode>();
         while ((top = frf.getIFRQ().poll()) != null) {
-            if (top.getAvgLen() >= g.getMinLen() && top.getSize() >= frf.getMinSize()) {
+            if (top.getAvgLen() >= g.getK() && top.getSize() >= frf.getMinSize()) {
                 iFRs.add(top);
             }
         }
@@ -527,7 +492,7 @@ public class FRFinder {
             }
             frOut.close();
             
-            if (verbose) System.out.println("Writing bed file...");
+            if (verbose) System.out.println("Writing bed file.");
             BufferedWriter bedOut = new BufferedWriter(new FileWriter(rd + "FR" + paramString + ".bed"));
             TreeMap<String,TreeMap<Integer,Integer>> seqFRcount = new TreeMap<String,TreeMap<Integer,Integer>>();
             TreeMap<String,TreeMap<Integer,LinkedList<String>>> seqIndxFRstr = new TreeMap<String,TreeMap<Integer,LinkedList<String>>>();
@@ -577,7 +542,7 @@ public class FRFinder {
             }
             bedOut.close();
 
-            if (verbose) System.out.println("Writing dist file...");
+            if (verbose) System.out.println("Writing dist file.");
             BufferedWriter distOut = new BufferedWriter(new FileWriter(rd + "FR" + paramString + ".dist.txt"));
             distOut.write("FR,size,support,avg length\n");
             for (int fr = 0; fr < iFRs.size(); fr++) {
@@ -587,7 +552,7 @@ public class FRFinder {
             distOut.close();
 
             if (frf.getUseRC()) {
-                if (verbose) System.out.println("Writing rc file...");
+                if (verbose) System.out.println("Writing rc file.");
                 BufferedWriter rcOut = new BufferedWriter(new FileWriter(rd + "FR" + paramString + ".rc.txt"));
                 for (int i = 0; i < frf.getFastaFile().getPaths().length / 2; i++) {
                     if (pathTotalSupLen[i + frf.getFastaFile().getPaths().length / 2] > pathTotalSupLen[i]) {
@@ -596,7 +561,7 @@ public class FRFinder {
                 }
                 rcOut.close();
             }
-            if (verbose) System.out.println("Writing frpaths file...");
+            if (verbose) System.out.println("Writing frpaths file.");
             BufferedWriter frPathsOut = new BufferedWriter(new FileWriter(rd + "FR" + paramString + ".frpaths.txt"));
             for (int i = 0; i < frf.getFastaFile().getPaths().length; i++) {
                 String name = frf.getFastaFile().getSequences().get(i).getLabel();
@@ -613,7 +578,7 @@ public class FRFinder {
             }
             frPathsOut.close();
 
-            if (verbose) System.out.println("Writing csfr file...");
+            if (verbose) System.out.println("Writing csfr file.");
             BufferedWriter seqFROut = new BufferedWriter(new FileWriter(rd + "FR" + paramString + ".csfr.txt"));
             for (String seq : seqFRcount.keySet()) {
                 seqFROut.write(seq);
@@ -630,12 +595,50 @@ public class FRFinder {
             }
             seqFROut.close();
 
-            if (verbose) System.out.println("done");
+            if (verbose) System.out.println("Done!");
         } catch (Exception ex) {
             ex.printStackTrace();
             System.exit(-1);
         }
 
     }
+
+    /**
+     * Toggle on verbosity.
+     */
+    public void setVerbose() {
+        verbose = true;
+    }
+
+    // String[] svgcolors = {"aliceblue", "antiquewhite", "aqua", "aquamarine",
+    //                       "azure", "beige", "bisque", "black", "blanchedalmond", "blue",
+    //                       "blueviolet", "brown", "burlywood", "cadetblue", "chartreuse",
+    //                       "chocolate", "coral", "cornflowerblue", "cornsilk", "crimson",
+    //                       "cyan", "darkblue", "darkcyan", "darkgoldenrod", "darkgray",
+    //                       "darkgreen", "darkgrey", "darkkhaki", "darkmagenta", "darkolivegreen",
+    //                       "darkorange", "darkorchid", "darkred", "darksalmon", "darkseagreen",
+    //                       "darkslateblue", "darkslategray", "darkslategrey", "darkturquoise", "darkviolet",
+    //                       "deeppink", "deepskyblue", "dimgray", "dimgrey", "dodgerblue",
+    //                       "firebrick", "floralwhite", "forestgreen", "fuchsia", "gainsboro",
+    //                       "ghostwhite", "gold", "goldenrod", "gray", "grey",
+    //                       "green", "greenyellow", "honeydew", "hotpink", "indianred",
+    //                       "indigo", "ivory", "khaki", "lavender", "lavenderblush",
+    //                       "lawngreen", "lemonchiffon", "lightblue", "lightcoral", "lightcyan",
+    //                       "lightgoldenrodyellow", "lightgray", "lightgreen", "lightgrey", "lightpink",
+    //                       "lightsalmon", "lightseagreen", "lightskyblue", "lightslategray", "lightslategrey",
+    //                       "lightsteelblue", "lightyellow", "lime", "limegreen", "linen",
+    //                       "magenta", "maroon", "mediumaquamarine", "mediumblue", "mediumorchid",
+    //                       "mediumpurple", "mediumseagreen", "mediumslateblue", "mediumspringgreen", "mediumturquoise",
+    //                       "mediumvioletred", "midnightblue", "mintcream", "mistyrose", "moccasin",
+    //                       "navajowhite", "navy", "oldlace", "olive", "olivedrab",
+    //                       "orange", "orangered", "orchid", "palegoldenrod", "palegreen",
+    //                       "paleturquoise", "palevioletred", "papayawhip", "peachpuff", "peru",
+    //                       "pink", "plum", "powderblue", "purple", "red",
+    //                       "rosybrown", "royalblue", "saddlebrown", "salmon", "sandybrown",
+    //                       "seagreen", "seashell", "sienna", "silver", "skyblue",
+    //                       "slateblue", "slategray", "slategrey", "snow", "springgreen",
+    //                       "steelblue", "tan", "teal", "thistle", "tomato",
+    //                       "turquoise", "violet", "wheat", "white", "whitesmoke",
+    //                       "yellow", "yellowgreen"};
 
 }

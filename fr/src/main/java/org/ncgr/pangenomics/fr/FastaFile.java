@@ -19,12 +19,13 @@ import java.util.TreeSet;
  */
 public class FastaFile {
 
+    boolean verbose = false;
+
     List<Sequence> sequences;
     int[][] paths;
     String filename;
     Graph g;
-
-    boolean verbose = false;
+    Map<Integer,TreeSet<Integer>> nodePaths;
 
     public FastaFile(String filename, Graph g) {
         this.filename = filename;
@@ -79,17 +80,17 @@ public class FastaFile {
                     List<Integer> path = new ArrayList<>();
                     seqEnd = seqStart.get(index) + s.length - 1;
                     curStart = seqStart.get(index);
-                    while (curStart > 0 && !g.startToNode.containsKey(curStart)) {
+                    while (curStart > 0 && !g.getStartToNode().containsKey(curStart)) {
                         curStart--;
                     }
-                    path.add(g.startToNode.get(curStart));
+                    path.add(g.getStartToNode().get(curStart));
                     do {
-                        curStart += g.length[g.startToNode.get(curStart)] - (g.K - 1);
-                        if (g.startToNode.containsKey(curStart)) {
-                            path.add(g.startToNode.get(curStart));
+                        curStart += g.getLength()[g.getStartToNode().get(curStart)] - (g.getK() - 1);
+                        if (g.getStartToNode().containsKey(curStart)) {
+                            path.add(g.getStartToNode().get(curStart));
                         }
-                    } while (g.startToNode.containsKey(curStart) && curStart
-                             + g.length[g.startToNode.get(curStart)] - 1 < seqEnd);
+                    } while (g.getStartToNode().containsKey(curStart) && curStart
+                             + g.getLength()[g.getStartToNode().get(curStart)] - 1 < seqEnd);
 
                     pathsAL.add(path);
                     seqStart.put(++index, seqEnd + 2);
@@ -117,17 +118,17 @@ public class FastaFile {
                 List<Integer> path = new ArrayList<>();
                 seqEnd = seqStart.get(index) + s.length - 1;
                 curStart = seqStart.get(index);
-                while (curStart > 0 && !g.startToNode.containsKey(curStart)) {
+                while (curStart > 0 && !g.getStartToNode().containsKey(curStart)) {
                     curStart--;
                 }
-                path.add(g.startToNode.get(curStart));
+                path.add(g.getStartToNode().get(curStart));
                 do {
-                    curStart += g.length[g.startToNode.get(curStart)] - (g.K - 1);
-                    if (g.startToNode.containsKey(curStart)) {
-                        path.add(g.startToNode.get(curStart));
+                    curStart += g.getLength()[g.getStartToNode().get(curStart)] - (g.getK() - 1);
+                    if (g.getStartToNode().containsKey(curStart)) {
+                        path.add(g.getStartToNode().get(curStart));
                     }
-                } while (g.startToNode.containsKey(curStart) && curStart
-                         + g.length[g.startToNode.get(curStart)] - 1 < seqEnd);
+                } while (g.getStartToNode().containsKey(curStart) && curStart
+                         + g.getLength()[g.getStartToNode().get(curStart)] - 1 < seqEnd);
 
                 pathsAL.add(path);
                 seqStart.put(++index, seqEnd + 2);
@@ -153,7 +154,7 @@ public class FastaFile {
         pathsAL = null; // can be gc'ed
 
         if (verbose) System.out.println("finding node paths");
-        g.findNodePaths(paths, Nlocs);
+        nodePaths = g.findNodePaths(paths, Nlocs);
 
     }
 
@@ -164,23 +165,23 @@ public class FastaFile {
         long[] startStop = new long[2];
         long curStart = sequences.get(path).startPos;
 
-        while (curStart > 0 && !g.startToNode.containsKey(curStart)) {
+        while (curStart > 0 && !g.getStartToNode().containsKey(curStart)) {
             curStart--;
         }
 
         int curIndex = 0;
         while (curIndex != start) {
-            curStart += g.length[g.startToNode.get(curStart)] - (g.K - 1);
+            curStart += g.getLength()[g.getStartToNode().get(curStart)] - (g.getK() - 1);
             curIndex++;
         }
         long offset = Math.max(0, sequences.get(path).startPos - curStart);
         startStop[0] = curStart - sequences.get(path).startPos + offset; // assume fasta seq indices start at 0
         while (curIndex != stop) {
-            curStart += g.length[g.startToNode.get(curStart)] - (g.K - 1);
+            curStart += g.getLength()[g.getStartToNode().get(curStart)] - (g.getK() - 1);
             curIndex++;
         }
         long seqLastPos = sequences.get(path).startPos + sequences.get(path).length - 1;
-        startStop[1] = Math.min(seqLastPos, curStart + g.length[g.startToNode.get(curStart)] - 1)
+        startStop[1] = Math.min(seqLastPos, curStart + g.getLength()[g.getStartToNode().get(curStart)] - 1)
             - sequences.get(path).startPos + 1; // last position is excluded in BED format
         return startStop;
     }
@@ -194,6 +195,9 @@ public class FastaFile {
     }
     public String getFilename() {
         return filename;
+    }
+    public Map<Integer,TreeSet<Integer>> getNodePaths() {
+        return nodePaths;
     }
 
 }

@@ -9,7 +9,7 @@
 
 export JAVA_OPTS="-Xmx800g -XX:+UseParallelGC -Xms2g -XX:SoftRefLRUPolicyMSPerMB=1 -XX:MaxHeapFreeRatio=99"
 
-DATASET="1to5"
+DATASET="HTT"
 
 MEM=60
 
@@ -58,7 +58,7 @@ rm -f $PREDICT
 ARGS="-1 -v -d HDStudy/$DOT.dot -f HDStudy/$FASTA.fasta --alpha $ALPHA --kappa $KAPPA --minsup $MINSUP --minsize $MINSIZE"
 echo "-------------------------"
 echo "FRFinder $ARGS"
-java -cp build/install/fr/lib/fr.jar:build/install/fr/lib/commons-cli-1.4.jar org.ncgr.pangenomics.fr.FRFinder $ARGS
+java -cp build/install/fr/lib/fr.jar:build/install/fr/lib/commons-cli-1.4.jar:build/install/fr/lib/graphviz-java-0.8.0.jar org.ncgr.pangenomics.fr.FRFinder $ARGS
 
 IFRS=`cat $FRDIR/$PREFIX.frs.txt | wc -l`
 

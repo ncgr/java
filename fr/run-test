@@ -8,8 +8,8 @@
 
 rm -rf FR-ecoli.pan3.dot-ecoli.pan3.fa
 
-java -cp build/install/fr/lib/fr.jar:build/install/fr/lib/commons-cli-1.4.jar \
-     org.ncgr.pangenomics.fr.FRFinder -d sample/ecoli.pan3.dot -f sample/ecoli.pan3.fa -a 0.5 -k 3
+java -cp build/install/fr/lib/fr.jar:build/install/fr/lib/commons-cli-1.4.jar:build/install/fr/lib/graphviz-java-0.8.0.jar \
+     org.ncgr.pangenomics.fr.FRFinder -v -d sample/ecoli.pan3.dot -f sample/ecoli.pan3.fa -a 0.5 -k 3
 
 echo ""
 echo "The following FIVE file comparisons should all report as identical:"
