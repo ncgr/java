@@ -1,7 +1,11 @@
 package org.ncgr.pangenomics.fr;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.Reader;
 
 import java.util.Collection;
 import java.util.List;
@@ -9,6 +13,10 @@ import java.util.Map;
 import java.util.TreeMap;
 import java.util.Set;
 import java.util.TreeSet;
+
+import vg.Vg;
+
+import com.google.protobuf.util.JsonFormat;
 
 import guru.nidi.graphviz.engine.Format;
 import guru.nidi.graphviz.engine.Graphviz;
@@ -31,6 +39,7 @@ public class Graph {
 
     // made available so directory names can be formed from it
     private String dotFile;
+    private String jsonFile;
     
     // equals minimum length of a node
     private int K;
@@ -58,11 +67,51 @@ public class Graph {
     }
 
     /**
-     * Read a Graph in from a splitMEM-style DOT file.
+     * Read a Graph in from a JSON file using Vg.
+     */
+    public void readJsonFile(String filename) throws FileNotFoundException, IOException {
+        jsonFile = filename;
+        if (verbose) System.out.println("Reading JSON file: "+jsonFile);
+
+        startToNode = new TreeMap<Long,Integer>();
+        maxStart = 0;
+
+        int minLen = Integer.MAX_VALUE;
+
+        TreeMap<Integer,Integer> lengthMap = new TreeMap<>();
+        TreeMap<Integer,Long> anyNodeStartMap = new TreeMap<>();
+
+        // used to make neighbor[][]
+        TreeMap<Integer,Set<Integer>> neighborMap = new TreeMap<>();
+
+        FileInputStream input = null;
+        Reader reader = null;
+        try {
+            input = new FileInputStream(jsonFile);
+            reader = new InputStreamReader(input);
+            Vg.Graph.Builder graphBuilder = Vg.Graph.newBuilder();
+            JsonFormat.parser().merge(reader, graphBuilder);
+            Vg.Graph vgGraph = graphBuilder.build();
+
+
+
+
+
+
+            
+        } finally {
+            if (reader!=null) reader.close();
+            if (input!=null) input.close();
+        }
+    }
+
+
+    /**
+     * Read a Graph in from a splitMEM-style DOT file using guru.nidi.graphviz.mode classes.
      */
     public void readSplitMEMDotFile(String filename) throws IOException {
         this.dotFile = filename;
-        if (verbose) System.out.println("Reading dot file: " + filename);
+        if (verbose) System.out.println("Reading dot file: "+dotFile);
 
         startToNode = new TreeMap<Long,Integer>();
         maxStart = 0;
@@ -177,6 +226,9 @@ public class Graph {
     // getters
     public String getDotFile() {
         return dotFile;
+    }
+    public String getJsonFile() {
+        return jsonFile;
     }
     public int getK() {
         return K;

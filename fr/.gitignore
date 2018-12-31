@@ -14,3 +14,4 @@ buildOutputCleanup
 *.model
 *.predict
 *.png
+*.fai

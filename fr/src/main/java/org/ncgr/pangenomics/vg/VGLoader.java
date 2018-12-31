@@ -34,9 +34,9 @@ import com.google.protobuf.util.JsonFormat;
 
 public class VGLoader {
 
-    String vgFile;
-    String jsonFile;
-    Vg.Graph graph;
+    private String vgFile;
+    private String jsonFile;
+    private Vg.Graph graph;
 
     /**
      * Constructor does nothing - use load methods to read the Vg.Graph in from a file.
@@ -75,7 +75,7 @@ public class VGLoader {
         if (cmd.hasOption("v")) {
             String vgFilename = cmd.getOptionValue("v");
             try {
-                vgl.loadVGFile(vgFilename);
+                vgl.loadVgFile(vgFilename);
                 vgl.print();
             } catch (FileNotFoundException e) {
                 System.out.println("File not found: "+vgFilename);
@@ -89,7 +89,7 @@ public class VGLoader {
         if (cmd.hasOption("j")) {
             String jsonFilename = cmd.getOptionValue("j");
             try {
-                vgl.loadJSONFile(jsonFilename);
+                vgl.loadJsonFile(jsonFilename);
                 vgl.print();
             } catch (FileNotFoundException e) {
                 System.out.println("File not found: "+jsonFilename);
@@ -104,7 +104,7 @@ public class VGLoader {
     /**
      * Load the graph from a VG file. THIS DOES NOT WORK.
      */
-    public void loadVGFile(String vgFilename) throws FileNotFoundException, IOException {
+    public void loadVgFile(String vgFilename) throws FileNotFoundException, IOException {
         // graph = Vg.Graph.parseFrom(new FileInputStream(vgFilename));
         System.out.println("VGLoader: Loading VG files is not yet implemented. Sorry!");
     }
@@ -112,7 +112,7 @@ public class VGLoader {
     /**
      * Load the graph from a JSON file.
      */
-    public void loadJSONFile(String jsonFilename) throws FileNotFoundException, IOException {
+    public void loadJsonFile(String jsonFilename) throws FileNotFoundException, IOException {
         FileInputStream input = null;
         Reader reader = null;
         try {
@@ -145,6 +145,17 @@ public class VGLoader {
         for (Vg.Edge edge : edges) {
             System.out.println("Edge: from "+edge.getFrom()+" to "+edge.getTo()+" overlap "+edge.getOverlap());
         }
+    }
+
+    // getters
+    public String getVgFile() {
+        return vgFile;
+    }
+    public String getJsonFile() {
+        return jsonFile;
+    }
+    public Vg.Graph getVgGraph() {
+        return graph;
     }
 
 }
