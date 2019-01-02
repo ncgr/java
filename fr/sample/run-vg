@@ -1,0 +1,6 @@
+#!/bin/sh
+vg construct -r ecoli.ref.fa -v ecoli.pan3.vcf -f -m 1000 > ecoli.pan3.vg
+vg view -g ecoli.pan3.vg > ecoli.pan3.vg.gfa
+vg view -j ecoli.pan3.vg > ecoli.pan3.vg.json
+vg view -d ecoli.pan3.vg > ecoli.pan3.vg.dot
+dot -Tpdf ecoli.pan3.dot > ecoli.pan3.vg.pdf
