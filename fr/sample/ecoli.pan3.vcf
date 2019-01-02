@@ -2,7 +2,7 @@
 ##reference=file:ecoli.pan3.1.fa
 ##contig=<ID=1,length=1000,species="E.coli">
 ##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">
-#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	1	2	3
+#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	genome1	genome2	genome3
 1	302	v1	TT	GA	.	.	.	GT	1/0	1/0	0/1
 1	306	v2	TTT	ACA	.	.	.	GT	1/0	1/0	0/1
 1	362	v3	CAT	GTC	.	.	.	GT	1/0	0/1	1/0
