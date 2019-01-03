@@ -16,3 +16,4 @@ buildOutputCleanup
 *.png
 *.fai
 *.dotfastaPos.txt
+*.lcp
