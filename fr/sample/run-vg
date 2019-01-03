@@ -1,5 +1,18 @@
 #!/bin/sh
-vg construct -r ecoli.ref.fa -v ecoli.pan3.vcf -f -m 1000 > ecoli.pan3.vg
+
+# vg construct -r ecoli.ref.fa -v ecoli.pan3.vcf -f -m 1000 > ecoli.pan3.vg
+# vg view -g ecoli.pan3.vg > ecoli.pan3.vg.gfa
+# vg view -j ecoli.pan3.vg > ecoli.pan3.vg.json
+# vg view -d ecoli.pan3.vg > ecoli.pan3.vg.dot
+# dot -Tpdf ecoli.pan3.dot > ecoli.pan3.vg.pdf
+
+# build the graph
+vg construct -r ecoli.ref.fa -v ecoli.pan3.vcf.gz -a -f -m 1000 > ecoli.pan3.vg
+# build the GBWT index
+vg index -x ecoli.pan3.xg -G ecoli.pan3.gbwt -v ecoli.pan3.vcf.gz -g ecoli.pan3.gcsa ecoli.pan3.vg
+# extract the threads from the GBWT as vg Paths
+vg index -x ecoli.pan3.xg -G ecoli.pan3.gbwt -v ecoli.pan3.vcf.gz -g ecoli.pan3.gcsa ecoli.pan3.vg
+
 vg view -g ecoli.pan3.vg > ecoli.pan3.vg.gfa
 vg view -j ecoli.pan3.vg > ecoli.pan3.vg.json
 vg view -d ecoli.pan3.vg > ecoli.pan3.vg.dot
