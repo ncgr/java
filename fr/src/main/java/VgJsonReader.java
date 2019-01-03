@@ -62,10 +62,6 @@ public class VgJsonReader {
             neighborMap.put(id, linkSet);
         }
 
-        // for (Vg.Path path : paths) {
-        //     System.out.println(path.toString());
-        // }
-        
         for (Vg.Edge edge : edges) {
             int from = (int) edge.getFrom() - 1;
             int to = (int) edge.getTo() - 1;
@@ -73,6 +69,31 @@ public class VgJsonReader {
             linkSet.add(to);
         }
 
+        // This is what the JSON will have in it for three genomes.
+        // P	_thread_genome1_1_0_0	1+,3+,4+,6+,7+,9+,10+,12+,13+	301M,2M,2M,3M,53M,3M,225M,3M,408M
+        // P	_thread_genome2_1_0_0	1+,3+,4+,6+,7+,8+,10+,11+,13+	301M,2M,2M,3M,53M,3M,225M,3M,408M
+        // P	_thread_genome3_1_0_0	1+,2+,4+,5+,7+,9+,10+,12+,13+	301M,2M,2M,3M,53M,3M,225M,3M,408M
+
+        System.out.println("===================== PATHS ====================");
+        for (Vg.Path path : paths) {
+            String name = path.getName();
+            // let's focus on sample paths, which start with "_thread_"
+            String[] parts = name.split("_");
+            if (parts.length>1 && parts[1].equals("thread")) {
+                String sample = parts[2];
+                int mappingCount = path.getMappingCount();
+                List<Vg.Mapping> mappingList = path.getMappingList();
+                System.out.println("name="+name+"; mappingCount="+mappingCount+"; sample="+sample);
+                for (Vg.Mapping mapping : mappingList) {
+                    long rank = mapping.getRank();
+                    Vg.Position position = mapping.getPosition();
+                    long nodeId = position.getNodeId();
+                    System.out.println("-- rank:"+rank+" node:"+nodeId);
+                }
+            }
+        }
+        System.out.println("================================================");
+        
         // MutableGraph g = Parser.read(new File(args[0]));
         // Collection<MutableNode> nodes = g.nodes();
         // for (MutableNode node : nodes) {
