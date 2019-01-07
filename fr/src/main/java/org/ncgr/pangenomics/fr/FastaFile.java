@@ -19,13 +19,13 @@ import java.util.TreeSet;
  */
 public class FastaFile {
 
-    boolean verbose = false;
+    private boolean verbose = false;
 
-    List<Sequence> sequences;
-    int[][] paths;
-    String filename;
-    Graph g;
-    Map<Integer,TreeSet<Integer>> nodePaths;
+    private List<Sequence> sequences;
+    private int[][] paths;
+    private String filename;
+    private Graph g;
+    private Map<Integer,TreeSet<Integer>> nodePaths;
 
     public FastaFile(String filename, Graph g) {
         this.filename = filename;
@@ -66,19 +66,16 @@ public class FastaFile {
                 if (line.length() > 0 && line.charAt(0) == '>') {
                     seq = buffer.toString();
                     // desc, seq are the next fasta sequence here
-                    Sequence s = new Sequence();
-                    s.label = desc.replace(',', ';');
-                    s.length = seq.length();
-                    s.startPos = seqStart.get(index);
+                    Sequence s = new Sequence(desc.replace(',', ';'), seq.length(), seqStart.get(index));
                     sequences.add(s);
                     for (int k = 0; k < seq.length(); k++) {
                         if (seq.charAt(k) == 'N') {
-                            Nlocs.add(s.startPos + k);
+                            Nlocs.add(s.getStartPos() + k);
                         }
                     }
 
                     List<Integer> path = new ArrayList<>();
-                    seqEnd = seqStart.get(index) + s.length - 1;
+                    seqEnd = seqStart.get(index) + s.getLength() - 1;
                     curStart = seqStart.get(index);
                     while (curStart > 0 && !g.getStartToNode().containsKey(curStart)) {
                         curStart--;
@@ -104,19 +101,16 @@ public class FastaFile {
             if (buffer.length() != 0) {
                 seq = buffer.toString();
                 // desc, seq are the next fasta sequence here
-                Sequence s = new Sequence();
-                s.label = desc.replace(',', ';');
-                s.length = seq.length();
-                s.startPos = seqStart.get(index);
+                Sequence s = new Sequence(desc.replace(',', ';'), seq.length(), seqStart.get(index));
                 sequences.add(s);
                 for (int k = 0; k < seq.length(); k++) {
                     if (seq.charAt(k) == 'N') {
-                        Nlocs.add(s.startPos + k);
+                        Nlocs.add(s.getStartPos() + k);
                     }
                 }
 
                 List<Integer> path = new ArrayList<>();
-                seqEnd = seqStart.get(index) + s.length - 1;
+                seqEnd = seqStart.get(index) + s.getLength() - 1;
                 curStart = seqStart.get(index);
                 while (curStart > 0 && !g.getStartToNode().containsKey(curStart)) {
                     curStart--;
@@ -163,7 +157,7 @@ public class FastaFile {
      */
     public long[] findLoc(int path, int start, int stop) {
         long[] startStop = new long[2];
-        long curStart = sequences.get(path).startPos;
+        long curStart = sequences.get(path).getStartPos();
 
         while (curStart > 0 && !g.getStartToNode().containsKey(curStart)) {
             curStart--;
@@ -174,15 +168,15 @@ public class FastaFile {
             curStart += g.getLength()[g.getStartToNode().get(curStart)] - (g.getK() - 1);
             curIndex++;
         }
-        long offset = Math.max(0, sequences.get(path).startPos - curStart);
-        startStop[0] = curStart - sequences.get(path).startPos + offset; // assume fasta seq indices start at 0
+        long offset = Math.max(0, sequences.get(path).getStartPos() - curStart);
+        startStop[0] = curStart - sequences.get(path).getStartPos() + offset; // assume fasta seq indices start at 0
         while (curIndex != stop) {
             curStart += g.getLength()[g.getStartToNode().get(curStart)] - (g.getK() - 1);
             curIndex++;
         }
-        long seqLastPos = sequences.get(path).startPos + sequences.get(path).length - 1;
+        long seqLastPos = sequences.get(path).getStartPos() + sequences.get(path).getLength() - 1;
         startStop[1] = Math.min(seqLastPos, curStart + g.getLength()[g.getStartToNode().get(curStart)] - 1)
-            - sequences.get(path).startPos + 1; // last position is excluded in BED format
+            - sequences.get(path).getStartPos() + 1; // last position is excluded in BED format
         return startStop;
     }
 

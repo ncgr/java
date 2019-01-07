@@ -7,6 +7,8 @@ import java.io.Reader;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
+import java.util.HashMap;
 import java.util.TreeMap;
 import java.util.Set;
 import java.util.TreeSet;
@@ -25,6 +27,9 @@ public class VgJsonReader {
         TreeMap<Integer,Integer> lengthMap = new TreeMap<>();
         TreeMap<Integer,Long> anyNodeStartMap = new TreeMap<>();
         TreeMap<Long,Integer> startToNode = new TreeMap<>();
+
+        Map<Long,String> sequenceMap = new HashMap<>();
+        Map<String,String> sampleSequenceMap = new HashMap<>();
         
         long maxStart = 0;
 
@@ -54,9 +59,9 @@ public class VgJsonReader {
         for (Vg.Node node : nodes) {
             int id = (int) node.getId() - 1; // vg graphs are 1-based; splitMEM are 0-based
             String sequence = node.getSequence();
+            sequenceMap.put(node.getId(), sequence);
             int length = sequence.length();
             lengthMap.put(id,length);
-            System.out.println("node:"+id+" length="+length);
             // initialize link set for population
             Set<Integer> linkSet = new TreeSet<>();
             neighborMap.put(id, linkSet);
@@ -77,6 +82,7 @@ public class VgJsonReader {
         System.out.println("===================== PATHS ====================");
         for (Vg.Path path : paths) {
             String name = path.getName();
+            String sequence = "";
             // let's focus on sample paths, which start with "_thread_"
             String[] parts = name.split("_");
             if (parts.length>1 && parts[1].equals("thread")) {
@@ -89,8 +95,16 @@ public class VgJsonReader {
                     Vg.Position position = mapping.getPosition();
                     long nodeId = position.getNodeId();
                     System.out.println("-- rank:"+rank+" node:"+nodeId);
+                    sequence += sequenceMap.get(nodeId);
                 }
+                sampleSequenceMap.put(sample, sequence);
             }
+        }
+        System.out.println("================================================");
+
+        for (String sample : sampleSequenceMap.keySet()) {
+            System.out.println(">"+sample);
+            System.out.println(sampleSequenceMap.get(sample));
         }
         System.out.println("================================================");
         
@@ -120,17 +134,15 @@ public class VgJsonReader {
         //     neighborMap.put(id, linkSet);
         // }
 
-        // int numNodes = lengthMap.size();
-        
-        int[] length = new int[numNodes];
-        for (int i : lengthMap.keySet()) {
-            length[i] = lengthMap.get(i);
-        }
-
         // long[] anyNodeStart = new long[numNodes];
         // for (int i : anyNodeStartMap.keySet()) {
         //     anyNodeStart[i] = anyNodeStartMap.get(i);
         // }
+
+        int[] length = new int[numNodes];
+        for (int i : lengthMap.keySet()) {
+            length[i] = lengthMap.get(i);
+        }
 
         int[][] neighbor = new int[numNodes][];
         for (int i : neighborMap.keySet()) {

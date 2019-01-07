@@ -6,9 +6,15 @@ package org.ncgr.pangenomics.fr;
  */
 public class Sequence {
 
-    String label;
-    int length;
-    long startPos;
+    private String label;
+    private int length;
+    private long startPos;
+
+    public Sequence(String label, int length, long startPos) {
+        this.label = label;
+        this.length = length;
+        this.startPos = startPos;
+    }
 
     public String getLabel() {
         return label;

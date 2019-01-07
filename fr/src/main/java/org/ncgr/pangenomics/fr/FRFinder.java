@@ -34,24 +34,26 @@ public class FRFinder {
 
     private boolean verbose = false;
 
-    Graph g;
-    FastaFile f;
+    private Graph g;
+    private FastaFile f;
+
+    private List<Sequence> sequences;
     
-    List<ClusterEdge> edgeL;
-    Map<Integer,ClusterNode> nodeCluster;
+    private List<ClusterEdge> edgeL;
+    private Map<Integer,ClusterNode> nodeCluster;
 
-    PriorityBlockingQueue<ClusterNode> iFRQ;
+    private PriorityBlockingQueue<ClusterNode> iFRQ;
 
-    int numClusterNodes = 0;
+    private int numClusterNodes = 0;
 
     // required parameters, set in constructor
-    double alpha = 0.7;    // penetrance: the fraction of a supporting strain's sequence that actually supports the FR; alternatively, `1-alpha` is the fraction of inserted sequence
-    int kappa = 0;         // maximum insertion: the maximum insertion length (measured in bp) that any supporting path may have
-    boolean useRC = false; // indicates if the sequence (e.g. FASTA file) had its reverse complement appended
+    private double alpha = 0.7;    // penetrance: the fraction of a supporting strain's sequence that actually supports the FR; alternatively, `1-alpha` is the fraction of inserted sequence
+    private int kappa = 0;         // maximum insertion: the maximum insertion length (measured in bp) that any supporting path may have
+    private boolean useRC = false; // indicates if the sequence (e.g. FASTA file) had its reverse complement appended
 
     // optional parameters, set with set methods
-    int minSup = 1;        // minimum support: minimum number of genome paths in order for a region to be considered frequent
-    int minSize = 1;       // minimum size: minimum number of de Bruijn nodes that an FR must contain to be considered frequent
+    private int minSup = 1;        // minimum support: minimum number of genome paths in order for a region to be considered frequent
+    private int minSize = 1;       // minimum size: minimum number of de Bruijn nodes that an FR must contain to be considered frequent
 
     static String[] colors = {"122,39,25", "92,227,60", "225,70,233", "100,198,222", "232,176,49", "50,39,85",
                               "67,101,33", "222,142,186", "92,119,227", "206,225,151", "227,44,118", "229,66,41",
@@ -98,14 +100,14 @@ public class FRFinder {
                 int last = start;
                 while (last + 1 < locs.length
                        && ((locs[last + 1] == locs[last] + 1)
-                           || (kappa > 0 && g.findGap(f.paths[P], locs[last], locs[last + 1]) <= kappa))) {
+                           || (kappa > 0 && g.findGap(f.getPaths()[P], locs[last], locs[last + 1]) <= kappa))) {
                     last++;
                 }
                 if (last - start + 1 >= alpha * clust.size) {
-                    if (!useRC || 2*P < f.paths.length) {
+                    if (!useRC || 2*P < f.getPaths().length) {
                         fSup++;
                     }
-                    if (useRC && 2*P >= f.paths.length) {
+                    if (useRC && 2*P >= f.getPaths().length) {
                         rSup++;
                     }
                     if (createPSList) {
@@ -139,9 +141,9 @@ public class FRFinder {
         nodeCluster = new ConcurrentHashMap<Integer,ClusterNode>(g.getNumNodes());
 
         // create initial node clusters
-        f.nodePaths.keySet().parallelStream().forEach((N) -> {
-                if (!f.nodePaths.get(N).isEmpty()
-                    && (!useRC || 2*f.nodePaths.get(N).first() < f.paths.length)) { // only start with nodes from non-rc'ed paths
+        f.getNodePaths().keySet().parallelStream().forEach((N) -> {
+                // only start with nodes from non-rc'ed paths
+                if (!f.getNodePaths().get(N).isEmpty() && (!useRC || 2*f.getNodePaths().get(N).first()<f.getPaths().length)) { 
                     ClusterNode nodeClst = new ClusterNode();
                     nodeClst.parent = nodeClst.left = nodeClst.right = null;
                     nodeClst.node = N;
@@ -152,9 +154,9 @@ public class FRFinder {
                 }
             });
         Map<Integer,Map<Integer,List<Integer>>> nodePathLocs = new TreeMap<Integer,Map<Integer,List<Integer>>>();
-        for (int p = 0; p < f.paths.length; p++) {
-            for (int i = 0; i < f.paths[p].length; i++) {
-                int n = f.paths[p][i];
+        for (int p = 0; p < f.getPaths().length; p++) {
+            for (int i = 0; i < f.getPaths()[p].length; i++) {
+                int n = f.getPaths()[p][i];
                 if (!nodePathLocs.containsKey(n)) {
                     nodePathLocs.put(n, new TreeMap<Integer,List<Integer>>());
                 }
@@ -344,7 +346,13 @@ public class FRFinder {
         return minSize;
     }
 
-    // getters for instance objects
+    // setters/getters for instance objects
+    public void setSequences(List<Sequence> sequences) {
+        this.sequences = sequences;
+    }
+    public List<Sequence> getSequences() {
+        return sequences;
+    }
     public Graph getGraph() {
         return g;
     }
@@ -434,7 +442,7 @@ public class FRFinder {
         
         // create a FastaFile from the fasta file and the Graph
         FastaFile f = new FastaFile(fastaFile, g);
-        
+
         // create the FRFinder and find FRs
         FRFinder frf = new FRFinder(g, f, alpha, kappa, useRC);
         if (verbose) frf.setVerbose();
@@ -444,7 +452,8 @@ public class FRFinder {
         if (cmd.hasOption("minsize")) {
             frf.setMinSize(Integer.parseInt(cmd.getOptionValue("minsize")));
         }
-
+        // put sequences in local var since could come from a different class
+        frf.setSequences(f.getSequences());
         
         // find the FRs
         frf.findFRs();
@@ -505,7 +514,7 @@ public class FRFinder {
                 }
                 List<PathSegment> supportingSegments = frf.computeSupport(iFR, true, false);
                 for (PathSegment ps : supportingSegments) {
-                    String name = frf.getFastaFile().getSequences().get(ps.getPath()).getLabel();
+                    String name = frf.getSequences().get(ps.getPath()).getLabel();
                     if (!seqFRcount.containsKey(name)) {
                         seqFRcount.put(name, new TreeMap<Integer,Integer>());
                     }
@@ -556,7 +565,7 @@ public class FRFinder {
                 BufferedWriter rcOut = new BufferedWriter(new FileWriter(rd + "FR" + paramString + ".rc.txt"));
                 for (int i = 0; i < frf.getFastaFile().getPaths().length / 2; i++) {
                     if (pathTotalSupLen[i + frf.getFastaFile().getPaths().length / 2] > pathTotalSupLen[i]) {
-                        rcOut.write(frf.getFastaFile().getSequences().get(i).getLabel() + "\n");
+                        rcOut.write(frf.getSequences().get(i).getLabel() + "\n");
                     }
                 }
                 rcOut.close();
@@ -564,7 +573,7 @@ public class FRFinder {
             if (verbose) System.out.println("Writing frpaths file.");
             BufferedWriter frPathsOut = new BufferedWriter(new FileWriter(rd + "FR" + paramString + ".frpaths.txt"));
             for (int i = 0; i < frf.getFastaFile().getPaths().length; i++) {
-                String name = frf.getFastaFile().getSequences().get(i).getLabel();
+                String name = frf.getSequences().get(i).getLabel();
                 if (seqIndxFRstr.containsKey(name)) {
                     frPathsOut.write(name + ",");
                     for (int pos : seqIndxFRstr.get(name).keySet()) {
@@ -594,6 +603,13 @@ public class FRFinder {
                 seqFROut.write("\n");
             }
             seqFROut.close();
+
+            // DEBUG
+            System.out.println("label:length:startPos");
+            for (Sequence s : frf.getSequences()) {
+                System.out.println(s.getLabel()+":"+s.getLength()+":"+s.getStartPos());
+            }
+            
 
             if (verbose) System.out.println("Done!");
         } catch (Exception ex) {
