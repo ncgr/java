@@ -23,26 +23,24 @@ public class FastaFile {
 
     private List<Sequence> sequences;
     private int[][] paths;
-    private String filename;
+    private TreeSet<Long> Nlocs;
     private Graph g;
-    private Map<Integer,TreeSet<Integer>> nodePaths;
+    private String filename;
 
-    public FastaFile(String filename, Graph g) {
-        this.filename = filename;
+    public FastaFile(Graph g) {
         this.g = g;
-        readFastaFile(filename, g);
     }
     
     // read a FASTA file into local instance objects
-    public void readFastaFile(String filename, Graph g) {
-
+    public void readFastaFile(String filename) {
         if (verbose) System.out.println("Reading FASTA file: "+filename);
+        this.filename = filename;
         
         sequences = new ArrayList<Sequence>();
+        Nlocs = new TreeSet<Long>(); // uses TreeSet.ceiling()
 
         Map<Integer,Long> seqStart = new TreeMap<Integer,Long>();
-        List<List<Integer>> pathsAL = new ArrayList<List<Integer>>();
-        TreeSet<Long> Nlocs = new TreeSet<Long>(); // has to be TreeSet to contain the ceiling() method
+        List<List<Integer>> pathsList = new ArrayList<List<Integer>>();
         long curStart = 1;
         int index = 0;
         seqStart.put(0, (long) 1);
@@ -89,7 +87,7 @@ public class FastaFile {
                     } while (g.getStartToNode().containsKey(curStart) && curStart
                              + g.getLength()[g.getStartToNode().get(curStart)] - 1 < seqEnd);
 
-                    pathsAL.add(path);
+                    pathsList.add(path);
                     seqStart.put(++index, seqEnd + 2);
 
                     buffer = new StringBuffer();
@@ -124,7 +122,7 @@ public class FastaFile {
                 } while (g.getStartToNode().containsKey(curStart) && curStart
                          + g.getLength()[g.getStartToNode().get(curStart)] - 1 < seqEnd);
 
-                pathsAL.add(path);
+                pathsList.add(path);
                 seqStart.put(++index, seqEnd + 2);
 
             }
@@ -133,54 +131,19 @@ public class FastaFile {
             e.printStackTrace();
         }
 
-        if (verbose) System.out.println("number of paths: " + pathsAL.size());
+        if (verbose) System.out.println("number of paths: " + pathsList.size());
 
-        paths = new int[pathsAL.size()][];
-        for (int i = 0; i < pathsAL.size(); i++) {
-            List<Integer> path = pathsAL.get(i);
+        paths = new int[pathsList.size()][];
+        for (int i=0; i<pathsList.size(); i++) {
+            List<Integer> path = pathsList.get(i);
             paths[i] = new int[path.size()];
             for (int j = 0; j < path.size(); j++) {
                 paths[i][j] = path.get(j);
             }
         }
-
-        pathsAL.clear();
-        pathsAL = null; // can be gc'ed
-
-        if (verbose) System.out.println("finding node paths");
-        nodePaths = g.findNodePaths(paths, Nlocs);
-
     }
 
-    /**
-     * Find a location in this FASTA
-     */
-    public long[] findLoc(int path, int start, int stop) {
-        long[] startStop = new long[2];
-        long curStart = sequences.get(path).getStartPos();
-
-        while (curStart > 0 && !g.getStartToNode().containsKey(curStart)) {
-            curStart--;
-        }
-
-        int curIndex = 0;
-        while (curIndex != start) {
-            curStart += g.getLength()[g.getStartToNode().get(curStart)] - (g.getK() - 1);
-            curIndex++;
-        }
-        long offset = Math.max(0, sequences.get(path).getStartPos() - curStart);
-        startStop[0] = curStart - sequences.get(path).getStartPos() + offset; // assume fasta seq indices start at 0
-        while (curIndex != stop) {
-            curStart += g.getLength()[g.getStartToNode().get(curStart)] - (g.getK() - 1);
-            curIndex++;
-        }
-        long seqLastPos = sequences.get(path).getStartPos() + sequences.get(path).getLength() - 1;
-        startStop[1] = Math.min(seqLastPos, curStart + g.getLength()[g.getStartToNode().get(curStart)] - 1)
-            - sequences.get(path).getStartPos() + 1; // last position is excluded in BED format
-        return startStop;
-    }
-
-    // getters
+    // getters and setters
     public List<Sequence> getSequences() {
         return sequences;
     }
@@ -190,8 +153,12 @@ public class FastaFile {
     public String getFilename() {
         return filename;
     }
-    public Map<Integer,TreeSet<Integer>> getNodePaths() {
-        return nodePaths;
+    public TreeSet<Long> getNlocs() {
+        return Nlocs;
+    }
+    
+    public void setVerbose() {
+        verbose = true;
     }
 
 }

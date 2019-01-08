@@ -202,7 +202,7 @@ public class Graph {
         for (int i = 0; i < numNodes; i++) {
             containsN[i] = false;
             Long test = Nlocs.ceiling(anyNodeStart[i]);
-            if (test != null && test.longValue() < anyNodeStart[i] + length[i]) {
+            if (test!=null && test.longValue()<anyNodeStart[i]+length[i]) {
                 containsN[i] = true;
             }
         }
@@ -221,6 +221,32 @@ public class Graph {
             }
         }
         return nodePaths;
+    }
+
+    /**
+     * Find a location in a sequence underlying a path
+     */
+    public long[] findLoc(List<Sequence> sequences, int path, int start, int stop) {
+        long[] startStop = new long[2];
+        long curStart = sequences.get(path).getStartPos();
+        while (curStart>0 && !startToNode.containsKey(curStart)) {
+            curStart--;
+        }
+        int curIndex = 0;
+        while (curIndex!=start) {
+            curStart += length[startToNode.get(curStart)] - (K - 1);
+            curIndex++;
+        }
+        long offset = Math.max(0, sequences.get(path).getStartPos() - curStart);
+        startStop[0] = curStart - sequences.get(path).getStartPos() + offset; // assume fasta seq indices start at 0
+        while (curIndex != stop) {
+            curStart += length[startToNode.get(curStart)] - (K - 1);
+            curIndex++;
+        }
+        long seqLastPos = sequences.get(path).getStartPos() + sequences.get(path).getLength() - 1;
+        // last position is excluded in BED format
+        startStop[1] = Math.min(seqLastPos, curStart+length[startToNode.get(curStart)]-1) - sequences.get(path).getStartPos() + 1;
+        return startStop;
     }
 
     // getters

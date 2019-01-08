@@ -86,6 +86,7 @@ public class FRFinder {
      * Compute the support for each frequented region.
      */
     public List<PathSegment> computeSupport(ClusterNode clust, boolean createPSList, boolean findAvgLen) {
+        int[][] paths = f.getPaths();
         if (clust.pathLocs == null) {
             clust.findPathLocs();
         }
@@ -100,21 +101,21 @@ public class FRFinder {
                 int last = start;
                 while (last + 1 < locs.length
                        && ((locs[last + 1] == locs[last] + 1)
-                           || (kappa > 0 && g.findGap(f.getPaths()[P], locs[last], locs[last + 1]) <= kappa))) {
+                           || (kappa > 0 && g.findGap(paths[P], locs[last], locs[last + 1]) <= kappa))) {
                     last++;
                 }
                 if (last - start + 1 >= alpha * clust.size) {
-                    if (!useRC || 2*P < f.getPaths().length) {
+                    if (!useRC || 2*P < paths.length) {
                         fSup++;
                     }
-                    if (useRC && 2*P >= f.getPaths().length) {
+                    if (useRC && 2*P >= paths.length) {
                         rSup++;
                     }
                     if (createPSList) {
                         segList.add(new PathSegment(P, locs[start], locs[last]));
                     }
                     if (findAvgLen) {
-                        long[] startStop = f.findLoc(P, locs[start], locs[last]);
+                        long[] startStop = findLoc(P, locs[start], locs[last]);
                         int len = (int) (startStop[1] - startStop[0]); // last pos is exclusive
                         supLen += len;
                     }
@@ -140,10 +141,14 @@ public class FRFinder {
         if (verbose) System.out.println("Creating node clusters...");
         nodeCluster = new ConcurrentHashMap<Integer,ClusterNode>(g.getNumNodes());
 
+        if (verbose) System.out.println("Finding node paths...");
+        int[][] paths = f.getPaths();
+        Map<Integer,TreeSet<Integer>> nodePaths = g.findNodePaths(paths, f.getNlocs());
+
         // create initial node clusters
-        f.getNodePaths().keySet().parallelStream().forEach((N) -> {
+        nodePaths.keySet().parallelStream().forEach((N) -> {
                 // only start with nodes from non-rc'ed paths
-                if (!f.getNodePaths().get(N).isEmpty() && (!useRC || 2*f.getNodePaths().get(N).first()<f.getPaths().length)) { 
+                if (!nodePaths.get(N).isEmpty() && (!useRC || 2*nodePaths.get(N).first()<paths.length)) { 
                     ClusterNode nodeClst = new ClusterNode();
                     nodeClst.parent = nodeClst.left = nodeClst.right = null;
                     nodeClst.node = N;
@@ -154,9 +159,9 @@ public class FRFinder {
                 }
             });
         Map<Integer,Map<Integer,List<Integer>>> nodePathLocs = new TreeMap<Integer,Map<Integer,List<Integer>>>();
-        for (int p = 0; p < f.getPaths().length; p++) {
-            for (int i = 0; i < f.getPaths()[p].length; i++) {
-                int n = f.getPaths()[p][i];
+        for (int p=0; p<paths.length; p++) {
+            for (int i=0; i<paths[p].length; i++) {
+                int n = paths[p][i];
                 if (!nodePathLocs.containsKey(n)) {
                     nodePathLocs.put(n, new TreeMap<Integer,List<Integer>>());
                 }
@@ -306,6 +311,13 @@ public class FRFinder {
         if (verbose) System.out.println("number of iFRs: " + iFRQ.size());
     }
 
+    /**
+     * Find a location in a sequence underlying a path for the instance graph and sequences
+     */
+    public long[] findLoc(int path, int start, int stop) {
+        return g.findLoc(sequences, path, start, stop);
+    }
+
     void reportIFRs(ClusterNode clust, int parentSup) {
         if ((clust.fwdSup + clust.rcSup) > parentSup
             && (clust.fwdSup + clust.rcSup) >= minSup
@@ -441,17 +453,22 @@ public class FRFinder {
         g.readSplitMEMDotFile(dotFile);
         
         // create a FastaFile from the fasta file and the Graph
-        FastaFile f = new FastaFile(fastaFile, g);
+        FastaFile f = new FastaFile(g);
+        if (verbose) f.setVerbose();
+        f.readFastaFile(fastaFile);
 
         // create the FRFinder and find FRs
         FRFinder frf = new FRFinder(g, f, alpha, kappa, useRC);
         if (verbose) frf.setVerbose();
+        
+        // set optional parameters
         if (cmd.hasOption("minsup")) {
             frf.setMinSup(Integer.parseInt(cmd.getOptionValue("minsup")));
         }
         if (cmd.hasOption("minsize")) {
             frf.setMinSize(Integer.parseInt(cmd.getOptionValue("minsize")));
         }
+        
         // put sequences in local var since could come from a different class
         frf.setSequences(f.getSequences());
         
@@ -522,7 +539,7 @@ public class FRFinder {
                         seqFRcount.get(name).put(fr, 0);
                     }
                     seqFRcount.get(name).put(fr, seqFRcount.get(name).get(fr) + 1);
-                    long[] startStop = frf.getFastaFile().findLoc(ps.getPath(), ps.getStart(), ps.getStop());
+                    long[] startStop = frf.findLoc(ps.getPath(), ps.getStart(), ps.getStop());
                     int frLen = (int) (startStop[1] - startStop[0]); // last position is excluded                                     
                     pathTotalSupLen[ps.getPath()] += frLen;
                     bedOut.write(name // chrom
@@ -603,14 +620,6 @@ public class FRFinder {
                 seqFROut.write("\n");
             }
             seqFROut.close();
-
-            // DEBUG
-            System.out.println("label:length:startPos");
-            for (Sequence s : frf.getSequences()) {
-                System.out.println(s.getLabel()+":"+s.getLength()+":"+s.getStartPos());
-            }
-            
-
             if (verbose) System.out.println("Done!");
         } catch (Exception ex) {
             ex.printStackTrace();
