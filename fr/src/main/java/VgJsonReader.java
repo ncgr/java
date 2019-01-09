@@ -5,13 +5,15 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Reader;
 
-import java.util.Collection;
 import java.util.List;
+import java.util.LinkedList;
 import java.util.Map;
 import java.util.HashMap;
 import java.util.TreeMap;
 import java.util.Set;
 import java.util.TreeSet;
+
+import org.ncgr.pangenomics.fr.Sequence;
 
 import vg.Vg;
 
@@ -24,12 +26,14 @@ public class VgJsonReader {
 
     public static void main(String[] args) throws IOException {
 
-        TreeMap<Integer,Integer> lengthMap = new TreeMap<>();
-        TreeMap<Integer,Long> anyNodeStartMap = new TreeMap<>();
-        TreeMap<Long,Integer> startToNode = new TreeMap<>();
+        Map<Integer,Integer> lengthMap = new TreeMap<>();
+        Map<Integer,Long> anyNodeStartMap = new TreeMap<>();
+        Map<Long,Integer> startToNode = new TreeMap<>();
 
         Map<Long,String> sequenceMap = new HashMap<>();
         Map<String,String> sampleSequenceMap = new HashMap<>();
+        List<Sequence> sequences = new LinkedList<>();
+        Map<String,List<Integer>> samplePaths = new HashMap<>();
         
         long maxStart = 0;
 
@@ -51,13 +55,13 @@ public class VgJsonReader {
             if (input!=null) input.close();
         }
 
-        List<Vg.Node> nodes = graph.getNodeList();
-        List<Vg.Path> paths = graph.getPathList();
-        List<Vg.Edge> edges = graph.getEdgeList();
+        List<Vg.Node> vgNodes = graph.getNodeList();
+        List<Vg.Path> vgPaths = graph.getPathList();
+        List<Vg.Edge> vgEdges = graph.getEdgeList();
 
-        int numNodes = nodes.size();
-        for (Vg.Node node : nodes) {
-            int id = (int) node.getId() - 1; // vg graphs are 1-based; splitMEM are 0-based
+        int numNodes = vgNodes.size();
+        for (Vg.Node node : vgNodes) {
+            int id = (int)(node.getId() - 1); // vg graphs are 1-based; splitMEM are 0-based
             String sequence = node.getSequence();
             sequenceMap.put(node.getId(), sequence);
             int length = sequence.length();
@@ -67,7 +71,7 @@ public class VgJsonReader {
             neighborMap.put(id, linkSet);
         }
 
-        for (Vg.Edge edge : edges) {
+        for (Vg.Edge edge : vgEdges) {
             int from = (int) edge.getFrom() - 1;
             int to = (int) edge.getTo() - 1;
             Set<Integer> linkSet = neighborMap.get(from);
@@ -80,9 +84,9 @@ public class VgJsonReader {
         // P	_thread_genome3_1_0_0	1+,2+,4+,5+,7+,9+,10+,12+,13+	301M,2M,2M,3M,53M,3M,225M,3M,408M
 
         System.out.println("===================== PATHS ====================");
-        for (Vg.Path path : paths) {
+        long totalLength = 0; // we'll pretend we're appending the sequences
+        for (Vg.Path path : vgPaths) {
             String name = path.getName();
-            String sequence = "";
             // let's focus on sample paths, which start with "_thread_"
             String[] parts = name.split("_");
             if (parts.length>1 && parts[1].equals("thread")) {
@@ -90,16 +94,30 @@ public class VgJsonReader {
                 int mappingCount = path.getMappingCount();
                 List<Vg.Mapping> mappingList = path.getMappingList();
                 System.out.println("name="+name+"; mappingCount="+mappingCount+"; sample="+sample);
+                String sequence = "";
+                List<Integer> pathList = new LinkedList<>();
                 for (Vg.Mapping mapping : mappingList) {
                     long rank = mapping.getRank();
                     Vg.Position position = mapping.getPosition();
                     long nodeId = position.getNodeId();
-                    System.out.println("-- rank:"+rank+" node:"+nodeId);
+                    int nodeId0 = (int)(nodeId-1); // vg graphs are 1-based; splitMEM are 0-based
+                    pathList.add(nodeId0); 
+                    long start = (long)(totalLength+sequence.length()); // offset as if we're appending the samples
+                    startToNode.put(start, nodeId0);
+                    if (!anyNodeStartMap.containsKey(nodeId0)) {
+                        anyNodeStartMap.put(nodeId0, start);
+                    }
+                    System.out.println("-- rank:"+rank+" node:"+nodeId0+" start:"+start+" length:"+sequenceMap.get(nodeId).length());
                     sequence += sequenceMap.get(nodeId);
                 }
                 sampleSequenceMap.put(sample, sequence);
+                samplePaths.put(sample, pathList);
+                Sequence s = new Sequence(sample, sequence.length(), totalLength);
+                sequences.add(s);
+                totalLength += sequence.length();
             }
         }
+        System.out.println("totalLength="+totalLength);
         System.out.println("================================================");
 
         for (String sample : sampleSequenceMap.keySet()) {
@@ -107,43 +125,19 @@ public class VgJsonReader {
             System.out.println(sampleSequenceMap.get(sample));
         }
         System.out.println("================================================");
-        
-        // MutableGraph g = Parser.read(new File(args[0]));
-        // Collection<MutableNode> nodes = g.nodes();
-        // for (MutableNode node : nodes) {
-        //     String[] parts = node.get("label").toString().split(":");
-        //     int id = Integer.parseInt(node.name().toString());
-        //     int length = Integer.parseInt(parts[1]);
-        //     lengthMap.put(id,length);
-        //     String[] startStrings = parts[0].split(",");
-        //     long[] starts = new long[startStrings.length];
-        //     for (int i=0; i<startStrings.length; i++) {
-        //         starts[i] = Long.parseLong(startStrings[i]);
-        //         startToNode.put(starts[i], id);
-        //         if (starts[i]>maxStart) maxStart = starts[i];
-        //     }
-        //     anyNodeStartMap.put(id, starts[0]);
-        //     Set<Integer> linkSet = new TreeSet<>();
-        //     List<Link> links = node.links();
-        //     for (Link link : links) {
-        //         String toString = link.to().toString();
-        //         String[] chunks = toString.split(":");
-        //         int to = Integer.parseInt(chunks[0]);
-        //         linkSet.add(to);
-        //     }
-        //     neighborMap.put(id, linkSet);
-        // }
 
-        // long[] anyNodeStart = new long[numNodes];
-        // for (int i : anyNodeStartMap.keySet()) {
-        //     anyNodeStart[i] = anyNodeStartMap.get(i);
-        // }
+        long[] anyNodeStart = new long[numNodes];
+        for (int i : anyNodeStartMap.keySet()) {
+            anyNodeStart[i] = anyNodeStartMap.get(i);
+        }
 
+        // FRFinder style length[]
         int[] length = new int[numNodes];
         for (int i : lengthMap.keySet()) {
             length[i] = lengthMap.get(i);
         }
 
+        // FRFinder style neighbor[][]
         int[][] neighbor = new int[numNodes][];
         for (int i : neighborMap.keySet()) {
             Set<Integer> linkSet = neighborMap.get(i);
@@ -154,18 +148,44 @@ public class VgJsonReader {
             }
         }
 
+        // FRFinder style paths[][]
+        int[][] paths = new int[samplePaths.size()][];
+        int si = 0;
+        for (String sample : samplePaths.keySet()) {
+            List<Integer> pathList = samplePaths.get(sample);
+            paths[si] = new int[pathList.size()];
+            int sj = 0;
+            for (Integer n : pathList) {
+                paths[si][sj++] = n;
+            }
+            si++;
+        }
+
         // output
         System.out.println("numNodes="+numNodes+" maxStart="+maxStart);
         System.out.print("length:");
         for (Integer l : length) System.out.print(" "+l);
         System.out.println("");
+        System.out.println("Sequences:");
+        for (Sequence s : sequences) {
+            System.out.println(s.toString());
+        }
+
+        System.out.println("paths:");
+        for (int i=0; i<paths.length; i++) {
+            for (int j=0; j<paths[i].length; j++) {
+                System.out.print(" "+paths[i][j]);
+            }
+            System.out.println("");
+        }
         
-        // System.out.print("anyNodeStart:");
-        // for (Long s : anyNodeStart) System.out.print(" "+s);
-        // System.out.println("");
-        // System.out.print("startToNode:");
-        // for (Long s : startToNode.keySet()) System.out.print(" "+s+":"+startToNode.get(s));
-        // System.out.println("");
+        System.out.print("anyNodeStart:");
+        for (Long s : anyNodeStart) System.out.print(" "+s);
+        System.out.println("");
+
+        System.out.print("startToNode:");
+        for (Long s : startToNode.keySet()) System.out.print(" "+s+":"+startToNode.get(s));
+        System.out.println("");
 
         System.out.println("neighbor:");
         for (int i=0; i<numNodes; i++) {

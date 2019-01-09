@@ -9,7 +9,9 @@ import java.io.Reader;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.LinkedList;
 import java.util.Map;
+import java.util.HashMap;
 import java.util.TreeMap;
 import java.util.Set;
 import java.util.TreeSet;
@@ -60,6 +62,11 @@ public class Graph {
     // maps a start location to a node
     private Map<Long,Integer> startToNode;
 
+    // these are loaded by FastaFile if FASTA; but here if Vg JSON
+    private List<Sequence> sequences;
+    private int[][] paths;
+    private TreeSet<Long> Nlocs = new TreeSet<>();
+
     /**
      * Constructor does nothing; use read methods to populate the graph.
      */
@@ -67,41 +74,127 @@ public class Graph {
     }
 
     /**
-     * Read a Graph in from a JSON file using Vg.
+     * Read a Graph in from a Vg-generated JSON file.
      */
-    public void readJsonFile(String filename) throws FileNotFoundException, IOException {
+    public void readVgJsonFile(String filename) throws FileNotFoundException, IOException {
         jsonFile = filename;
         if (verbose) System.out.println("Reading JSON file: "+jsonFile);
 
-        startToNode = new TreeMap<Long,Integer>();
         maxStart = 0;
+        startToNode = new TreeMap<Long,Integer>();
+        sequences = new LinkedList<>();
 
-        int minLen = Integer.MAX_VALUE;
+        Map<Integer,Integer> lengthMap = new TreeMap<>();
+        Map<Integer,Long> anyNodeStartMap = new TreeMap<>();
 
-        TreeMap<Integer,Integer> lengthMap = new TreeMap<>();
-        TreeMap<Integer,Long> anyNodeStartMap = new TreeMap<>();
-
-        // used to make neighbor[][]
-        TreeMap<Integer,Set<Integer>> neighborMap = new TreeMap<>();
-
+        Map<Integer,Set<Integer>> neighborMap = new TreeMap<>();
+        Map<Long,String> sequenceMap = new HashMap<>();
+        Map<String,String> sampleSequenceMap = new HashMap<>();
+        Map<String,List<Integer>> samplePaths = new HashMap<>();
+        
         FileInputStream input = null;
         Reader reader = null;
+        Vg.Graph graph;
         try {
-            input = new FileInputStream(jsonFile);
+            input = new FileInputStream(filename);
             reader = new InputStreamReader(input);
             Vg.Graph.Builder graphBuilder = Vg.Graph.newBuilder();
             JsonFormat.parser().merge(reader, graphBuilder);
-            Vg.Graph vgGraph = graphBuilder.build();
-
-
-
-
-
-
-            
+            graph = graphBuilder.build();
         } finally {
             if (reader!=null) reader.close();
             if (input!=null) input.close();
+        }
+
+        List<Vg.Node> vgNodes = graph.getNodeList();
+        List<Vg.Path> vgPaths = graph.getPathList();
+        List<Vg.Edge> vgEdges = graph.getEdgeList();
+
+        int numNodes = vgNodes.size();
+        for (Vg.Node node : vgNodes) {
+            int id = (int)(node.getId() - 1); // vg graphs are 1-based; splitMEM are 0-based
+            String sequence = node.getSequence();
+            sequenceMap.put(node.getId(), sequence);
+            int length = sequence.length();
+            lengthMap.put(id,length);
+            // initialize link set for population
+            Set<Integer> linkSet = new TreeSet<>();
+            neighborMap.put(id, linkSet);
+        }
+
+        for (Vg.Edge edge : vgEdges) {
+            int from = (int) edge.getFrom() - 1;
+            int to = (int) edge.getTo() - 1;
+            Set<Integer> linkSet = neighborMap.get(from);
+            linkSet.add(to);
+        }
+
+        long totalLength = 0; // we'll pretend we're appending the sequences
+        for (Vg.Path path : vgPaths) {
+            String name = path.getName();
+            // let's focus on sample paths, which start with "_thread_"
+            String[] parts = name.split("_");
+            if (parts.length>1 && parts[1].equals("thread")) {
+                String sample = parts[2];
+                int mappingCount = path.getMappingCount();
+                List<Vg.Mapping> mappingList = path.getMappingList();
+                String sequence = "";
+                List<Integer> pathList = new LinkedList<>();
+                for (Vg.Mapping mapping : mappingList) {
+                    long rank = mapping.getRank();
+                    Vg.Position position = mapping.getPosition();
+                    long nodeId = position.getNodeId();
+                    int nodeId0 = (int)(nodeId-1); // vg graphs are 1-based; splitMEM are 0-based
+                    pathList.add(nodeId0); 
+                    long start = (long)(totalLength+sequence.length()); // offset as if we're appending the samples
+                    if (start>maxStart) maxStart = start;
+                    startToNode.put(start, nodeId0);
+                    if (!anyNodeStartMap.containsKey(nodeId0)) {
+                        anyNodeStartMap.put(nodeId0, start);
+                    }
+                    sequence += sequenceMap.get(nodeId);
+                }
+                sampleSequenceMap.put(sample, sequence);
+                samplePaths.put(sample, pathList);
+                Sequence s = new Sequence(sample, sequence.length(), totalLength);
+                sequences.add(s);
+                totalLength += sequence.length();
+            }
+        }
+
+        anyNodeStart = new long[numNodes];
+        for (int i : anyNodeStartMap.keySet()) {
+            anyNodeStart[i] = anyNodeStartMap.get(i);
+        }
+
+        int minLen = Integer.MAX_VALUE;
+        length = new int[numNodes];
+        for (int i : lengthMap.keySet()) {
+            length[i] = lengthMap.get(i);
+            if (length[i]<minLen) minLen = length[i];
+        }
+        K = minLen;
+
+        neighbor = new int[numNodes][];
+        for (int i : neighborMap.keySet()) {
+            Set<Integer> linkSet = neighborMap.get(i);
+            neighbor[i] = new int[linkSet.size()];
+            int j = 0;
+            for (Integer to : linkSet) {
+                neighbor[i][j++] = to;
+            }
+        }
+
+        paths = new int[samplePaths.size()][];
+        int si = 0;
+        for (String sample : samplePaths.keySet()) {
+            List<Integer> pathList = samplePaths.get(sample);
+            paths[si] = new int[pathList.size()];
+            int sj = 0;
+            for (Integer n : pathList) {
+                paths[si][sj++] = n;
+            }
+            si++;
         }
     }
 
@@ -194,7 +287,7 @@ public class Graph {
     }
 
     /**
-     * Find node paths corresponding to FASTA paths.
+     * Find node paths.
      */
     public Map<Integer,TreeSet<Integer>> findNodePaths(int[][] paths, TreeSet<Long> Nlocs) {
         Map<Integer,TreeSet<Integer>> nodePaths;
@@ -250,11 +343,14 @@ public class Graph {
     }
 
     // getters
-    public String getDotFile() {
-        return dotFile;
-    }
-    public String getJsonFile() {
-        return jsonFile;
+    public String getFilename() {
+        if (dotFile!=null) {
+            return dotFile;
+        } else if (jsonFile!=null) {
+            return jsonFile;
+        } else {
+            return null;
+        }
     }
     public int getK() {
         return K;
@@ -276,6 +372,15 @@ public class Graph {
     }
     public int[][] getNeighbor() {
         return neighbor;
+    }
+    public List<Sequence> getSequences() {
+        return sequences;
+    }
+    public int[][] getPaths() {
+        return paths;
+    }
+    public TreeSet<Long> getNlocs() {
+        return Nlocs;
     }
 
     // setters

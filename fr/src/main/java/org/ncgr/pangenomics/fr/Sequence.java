@@ -4,7 +4,7 @@ package org.ncgr.pangenomics.fr;
  *
  * @author bmumey
  */
-public class Sequence {
+public class Sequence implements Comparable {
 
     private String label;
     private int length;
@@ -25,5 +25,13 @@ public class Sequence {
     public long getStartPos() {
         return startPos;
     }
-    
+
+    public int compareTo(Object o) {
+        Sequence that = (Sequence) o;
+        return (int)(this.startPos - that.startPos);
+    }
+
+    public String toString() {
+        return label+": length="+length+"; starts at "+startPos;
+    }
 }

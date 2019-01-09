@@ -19,7 +19,7 @@ public class GraphReader {
         Graph g = new Graph();
         g.readSplitMEMDotFile(dotfile);
 
-        System.out.println("DOT file:"+g.getDotFile());
+        System.out.println("DOT file:"+g.getFilename());
         System.out.println("K="+g.getK());
         System.out.println("numNodes="+g.getNumNodes());
         System.out.println("length:");

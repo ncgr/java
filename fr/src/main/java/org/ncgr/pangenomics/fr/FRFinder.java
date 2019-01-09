@@ -34,17 +34,20 @@ public class FRFinder {
 
     private boolean verbose = false;
 
-    private Graph g;
-    private FastaFile f;
-
-    private List<Sequence> sequences;
-    
     private List<ClusterEdge> edgeL;
     private Map<Integer,ClusterNode> nodeCluster;
-
     private PriorityBlockingQueue<ClusterNode> iFRQ;
+    private int numClusterNodes;
 
-    private int numClusterNodes = 0;
+    // Graph stuff
+    private Graph g;
+    private int numNodes;
+    private int[][] neighbor;
+    
+    // FastaFile stuff
+    private List<Sequence> sequences;
+    private int[][] paths;
+    private TreeSet<Long> Nlocs;
 
     // required parameters, set in constructor
     private double alpha = 0.7;    // penetrance: the fraction of a supporting strain's sequence that actually supports the FR; alternatively, `1-alpha` is the fraction of inserted sequence
@@ -54,21 +57,6 @@ public class FRFinder {
     // optional parameters, set with set methods
     private int minSup = 1;        // minimum support: minimum number of genome paths in order for a region to be considered frequent
     private int minSize = 1;       // minimum size: minimum number of de Bruijn nodes that an FR must contain to be considered frequent
-
-    static String[] colors = {"122,39,25", "92,227,60", "225,70,233", "100,198,222", "232,176,49", "50,39,85",
-                              "67,101,33", "222,142,186", "92,119,227", "206,225,151", "227,44,118", "229,66,41",
-                              "47,36,24", "225,167,130", "120,132,131", "104,232,178", "158,43,133", "228,228,42", "213,217,213",
-                              "118,64,79", "88,155,219", "226,118,222", "146,197,53", "222,100,89", "224,117,41", "160,96,228",
-                              "137,89,151", "126,209,119", "145,109,70", "91,176,164", "54,81,103", "164,174,137", "172,166,48",
-                              "56,86,143", "210,184,226", "175,123,35", "129,161,88", "158,47,85", "87,231,225", "216,189,112", "49,111,75",
-                              "89,137,168", "209,118,134", "33,63,44", "166,128,142", "53,137,55", "80,76,161", "170,124,221", "57,62,13",
-                              "176,40,40", "94,179,129", "71,176,51", "223,62,170", "78,25,30", "148,69,172", "122,105,31", "56,33,53",
-                              "112,150,40", "239,111,176", "96,55,25", "107,90,87", "164,74,28", "171,198,226", "152,131,176", "166,225,211",
-                              "53,121,117", "220,58,86", "86,18,56", "225,197,171", "139,142,217", "216,151,223", "97,229,117", "225,155,85",
-                              "31,48,58", "160,146,88", "185,71,129", "164,233,55", "234,171,187", "110,97,125", "177,169,175", "177,104,68",
-                              "97,48,122", "237,139,128", "187,96,166", "225,90,127", "97,92,55", "124,35,99", "210,64,194", "154,88,84",
-                              "100,63,100", "140,42,54", "105,132,99", "186,227,103", "224,222,81", "191,140,126", "200,230,182", "166,87,123",
-                              "72,74,58", "212,222,124", "205,52,136"};
     
     /**
      * Construct with a given Graph, FastaFile and parameters
@@ -76,7 +64,27 @@ public class FRFinder {
     public FRFinder(Graph g, FastaFile f, double alpha, int kappa, boolean useRC) {
         // set the instance vars
         this.g = g;
-        this.f = f;
+        this.numNodes = g.getNumNodes();
+        this.neighbor = g.getNeighbor();
+        this.sequences = f.getSequences();
+        this.paths = f.getPaths();
+        this.Nlocs = f.getNlocs();
+        this.alpha = alpha;
+        this.kappa = kappa;
+        this.useRC = useRC;
+    }
+
+    /**
+     * Construct with a given Graph and parameters
+     */
+    public FRFinder(Graph g, double alpha, int kappa, boolean useRC) {
+        // set the instance vars
+        this.g = g;
+        this.numNodes = g.getNumNodes();
+        this.neighbor = g.getNeighbor();
+        this.sequences = g.getSequences();
+        this.paths = g.getPaths();
+        this.Nlocs = g.getNlocs();
         this.alpha = alpha;
         this.kappa = kappa;
         this.useRC = useRC;
@@ -86,7 +94,6 @@ public class FRFinder {
      * Compute the support for each frequented region.
      */
     public List<PathSegment> computeSupport(ClusterNode clust, boolean createPSList, boolean findAvgLen) {
-        int[][] paths = f.getPaths();
         if (clust.pathLocs == null) {
             clust.findPathLocs();
         }
@@ -139,11 +146,10 @@ public class FRFinder {
      */
     public void findFRs() {
         if (verbose) System.out.println("Creating node clusters...");
-        nodeCluster = new ConcurrentHashMap<Integer,ClusterNode>(g.getNumNodes());
+        nodeCluster = new ConcurrentHashMap<Integer,ClusterNode>(numNodes);
 
         if (verbose) System.out.println("Finding node paths...");
-        int[][] paths = f.getPaths();
-        Map<Integer,TreeSet<Integer>> nodePaths = g.findNodePaths(paths, f.getNlocs());
+        Map<Integer,TreeSet<Integer>> nodePaths = g.findNodePaths(paths, Nlocs);
 
         // create initial node clusters
         nodePaths.keySet().parallelStream().forEach((N) -> {
@@ -194,10 +200,10 @@ public class FRFinder {
         edgeL = new ArrayList<ClusterEdge>();
         Set<ClusterNode> checkNodes = ConcurrentHashMap.newKeySet();
         for (Integer N : nodeCluster.keySet()) {
-            for (int i = 0; i < g.getNeighbor()[N].length; i++) {
-                if (nodeCluster.containsKey(g.getNeighbor()[N][i])) {
+            for (int i = 0; i < neighbor[N].length; i++) {
+                if (nodeCluster.containsKey(neighbor[N][i])) {
                     ClusterNode u = nodeCluster.get(N);
-                    ClusterNode v = nodeCluster.get(g.getNeighbor()[N][i]);
+                    ClusterNode v = nodeCluster.get(neighbor[N][i]);
                     if (!u.neighbors.containsKey(v)) {
                         ClusterEdge e = new ClusterEdge(u, v, -1, 0);
                         edgeL.add(e);
@@ -365,20 +371,32 @@ public class FRFinder {
     public List<Sequence> getSequences() {
         return sequences;
     }
-    public Graph getGraph() {
-        return g;
-    }
-    public FastaFile getFastaFile() {
-        return f;
-    }
     public PriorityBlockingQueue<ClusterNode> getIFRQ() {
         return iFRQ;
+    }
+    public int[][] getPaths() {
+        return paths;
     }
 
     /**
      * Command-line utility
      */
     public static void main(String[] args) throws IOException {
+
+        String[] colors = {"122,39,25", "92,227,60", "225,70,233", "100,198,222", "232,176,49", "50,39,85",
+                           "67,101,33", "222,142,186", "92,119,227", "206,225,151", "227,44,118", "229,66,41",
+                           "47,36,24", "225,167,130", "120,132,131", "104,232,178", "158,43,133", "228,228,42", "213,217,213",
+                           "118,64,79", "88,155,219", "226,118,222", "146,197,53", "222,100,89", "224,117,41", "160,96,228",
+                           "137,89,151", "126,209,119", "145,109,70", "91,176,164", "54,81,103", "164,174,137", "172,166,48",
+                           "56,86,143", "210,184,226", "175,123,35", "129,161,88", "158,47,85", "87,231,225", "216,189,112", "49,111,75",
+                           "89,137,168", "209,118,134", "33,63,44", "166,128,142", "53,137,55", "80,76,161", "170,124,221", "57,62,13",
+                           "176,40,40", "94,179,129", "71,176,51", "223,62,170", "78,25,30", "148,69,172", "122,105,31", "56,33,53",
+                           "112,150,40", "239,111,176", "96,55,25", "107,90,87", "164,74,28", "171,198,226", "152,131,176", "166,225,211",
+                           "53,121,117", "220,58,86", "86,18,56", "225,197,171", "139,142,217", "216,151,223", "97,229,117", "225,155,85",
+                           "31,48,58", "160,146,88", "185,71,129", "164,233,55", "234,171,187", "110,97,125", "177,169,175", "177,104,68",
+                           "97,48,122", "237,139,128", "187,96,166", "225,90,127", "97,92,55", "124,35,99", "210,64,194", "154,88,84",
+                           "100,63,100", "140,42,54", "105,132,99", "186,227,103", "224,222,81", "191,140,126", "200,230,182", "166,87,123",
+                           "72,74,58", "212,222,124", "205,52,136"};
                 
         Options options = new Options();
         CommandLineParser parser = new DefaultParser();
@@ -392,12 +410,16 @@ public class FRFinder {
         }
     
         // FRFinder options
-        Option dotO = new Option("d", "dot", true, "dot file");
-        dotO.setRequired(true);
+        Option dotO = new Option("d", "dot", true, "splitMEM dot file");
+        dotO.setRequired(false);
         options.addOption(dotO);
         //
+        Option jsonO = new Option("j", "json", true, "vg JSON file");
+        jsonO.setRequired(false);
+        options.addOption(jsonO);
+        //
         Option faO = new Option("f", "fasta", true, "fasta file");
-        faO.setRequired(true);
+        faO.setRequired(false);
         options.addOption(faO);
         //
         Option aO = new Option("a", "alpha", true, "alpha parameter");
@@ -431,8 +453,20 @@ public class FRFinder {
         try {
             cmd = parser.parse(options, args);
         } catch (ParseException e) {
-            System.out.println(e.getMessage());
+            System.err.println(e.getMessage());
             formatter.printHelp("FRFinder", options);
+            System.exit(1);
+            return;
+        }
+
+        // validation
+        if (!cmd.hasOption("dot") && !cmd.hasOption("json")) {
+            System.err.println("You must specify either a splitMEM dot file (-d, --dot) or vg JSON file (-j, --json)");
+            System.exit(1);
+            return;
+        }
+        if (cmd.hasOption("dot") && !cmd.hasOption("fasta")) {
+            System.err.println("If you specify a splitMEM dot file with -d or --dot, you MUST ALSO specify a FASTA file with -f or --fasta");
             System.exit(1);
             return;
         }
@@ -440,25 +474,38 @@ public class FRFinder {
         // FRFinder values
         String dotFile = cmd.getOptionValue("dot");
         String fastaFile = cmd.getOptionValue("fasta");
+        String jsonFile = cmd.getOptionValue("json");
         double alpha = Double.parseDouble(cmd.getOptionValue("alpha"));
         int kappa = Integer.parseInt(cmd.getOptionValue("kappa"));
         boolean useRC = cmd.hasOption("rc");
         boolean oneBased = cmd.hasOption("onebased");
-        
+
         boolean verbose = cmd.hasOption("v");
 
-        // create a Graph from the dot file
+        // create a Graph from the dot or JSON file
         Graph g = new Graph();
         if (verbose) g.setVerbose();
-        g.readSplitMEMDotFile(dotFile);
+        if (dotFile!=null) {
+            g.readSplitMEMDotFile(dotFile);
+        } else if (jsonFile!=null) {
+            g.readVgJsonFile(jsonFile);
+        }
         
-        // create a FastaFile from the fasta file and the Graph
-        FastaFile f = new FastaFile(g);
-        if (verbose) f.setVerbose();
-        f.readFastaFile(fastaFile);
+        // if dot+FASTA input, create a FastaFile from the fasta file and the Graph
+        FastaFile f = null;
+        if (dotFile!=null) {
+            f = new FastaFile(g);
+            if (verbose) f.setVerbose();
+            f.readFastaFile(fastaFile);
+        }
 
         // create the FRFinder and find FRs
-        FRFinder frf = new FRFinder(g, f, alpha, kappa, useRC);
+        FRFinder frf = null;
+        if (dotFile!=null) {
+            frf = new FRFinder(g, f, alpha, kappa, useRC);
+        } else if (jsonFile!=null) {
+            frf = new FRFinder(g, alpha, kappa, useRC);
+        }
         if (verbose) frf.setVerbose();
         
         // set optional parameters
@@ -468,9 +515,6 @@ public class FRFinder {
         if (cmd.hasOption("minsize")) {
             frf.setMinSize(Integer.parseInt(cmd.getOptionValue("minsize")));
         }
-        
-        // put sequences in local var since could come from a different class
-        frf.setSequences(f.getSequences());
         
         // find the FRs
         frf.findFRs();
@@ -491,11 +535,13 @@ public class FRFinder {
             if (frf.getUseRC()) {
                 paramString += "-rc";
             }
-            String[] tmp = frf.getGraph().getDotFile().split("/");
-            String dotName = tmp[tmp.length - 1];
-            tmp = frf.getFastaFile().getFilename().split("/");
-            String fastaName = tmp[tmp.length - 1];
-            String filePrefix = dotName + "-" + fastaName;
+            String[] tmp = g.getFilename().split("/");
+            String filePrefix = tmp[tmp.length - 1];
+            if (f!=null) {
+                tmp = f.getFilename().split("/");
+                String fastaName = tmp[tmp.length - 1];
+                filePrefix += "-" + fastaName;
+            }
             String rd = "FR-" + filePrefix + "/";
             File resultsDir = new File(rd);
             resultsDir.mkdir();
@@ -522,7 +568,7 @@ public class FRFinder {
             BufferedWriter bedOut = new BufferedWriter(new FileWriter(rd + "FR" + paramString + ".bed"));
             TreeMap<String,TreeMap<Integer,Integer>> seqFRcount = new TreeMap<String,TreeMap<Integer,Integer>>();
             TreeMap<String,TreeMap<Integer,LinkedList<String>>> seqIndxFRstr = new TreeMap<String,TreeMap<Integer,LinkedList<String>>>();
-            int[] pathTotalSupLen = new int[frf.getFastaFile().getPaths().length];
+            int[] pathTotalSupLen = new int[frf.getPaths().length];
 
             for (int fr = 0; fr < iFRs.size(); fr++) {
                 ClusterNode iFR = iFRs.get(fr);
@@ -580,8 +626,8 @@ public class FRFinder {
             if (frf.getUseRC()) {
                 if (verbose) System.out.println("Writing rc file.");
                 BufferedWriter rcOut = new BufferedWriter(new FileWriter(rd + "FR" + paramString + ".rc.txt"));
-                for (int i = 0; i < frf.getFastaFile().getPaths().length / 2; i++) {
-                    if (pathTotalSupLen[i + frf.getFastaFile().getPaths().length / 2] > pathTotalSupLen[i]) {
+                for (int i = 0; i < frf.getPaths().length / 2; i++) {
+                    if (pathTotalSupLen[i + frf.getPaths().length / 2] > pathTotalSupLen[i]) {
                         rcOut.write(frf.getSequences().get(i).getLabel() + "\n");
                     }
                 }
@@ -589,7 +635,7 @@ public class FRFinder {
             }
             if (verbose) System.out.println("Writing frpaths file.");
             BufferedWriter frPathsOut = new BufferedWriter(new FileWriter(rd + "FR" + paramString + ".frpaths.txt"));
-            for (int i = 0; i < frf.getFastaFile().getPaths().length; i++) {
+            for (int i = 0; i<frf.getPaths().length; i++) {
                 String name = frf.getSequences().get(i).getLabel();
                 if (seqIndxFRstr.containsKey(name)) {
                     frPathsOut.write(name + ",");
