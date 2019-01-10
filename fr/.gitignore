@@ -4,6 +4,7 @@ HDStudy
 .gradle
 build
 buildOutputCleanup
+mods
 *.lock
 *.log
 *.bin
