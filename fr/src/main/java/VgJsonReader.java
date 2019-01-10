@@ -26,6 +26,8 @@ public class VgJsonReader {
 
     public static void main(String[] args) throws IOException {
 
+        String jsonFile = args[0];
+
         Map<Integer,Integer> lengthMap = new TreeMap<>();
         Map<Integer,Long> anyNodeStartMap = new TreeMap<>();
         Map<Long,Integer> startToNode = new TreeMap<>();
@@ -45,7 +47,8 @@ public class VgJsonReader {
         FileInputStream input = null;
         Reader reader = null;
         try {
-            input = new FileInputStream(args[0]);
+            System.out.println("Reading "+jsonFile+"...");
+            input = new FileInputStream(jsonFile);
             reader = new InputStreamReader(input);
             Vg.Graph.Builder graphBuilder = Vg.Graph.newBuilder();
             JsonFormat.parser().merge(reader, graphBuilder);
@@ -77,11 +80,6 @@ public class VgJsonReader {
             Set<Integer> linkSet = neighborMap.get(from);
             linkSet.add(to);
         }
-
-        // This is what the JSON will have in it for three genomes.
-        // P	_thread_genome1_1_0_0	1+,3+,4+,6+,7+,9+,10+,12+,13+	301M,2M,2M,3M,53M,3M,225M,3M,408M
-        // P	_thread_genome2_1_0_0	1+,3+,4+,6+,7+,8+,10+,11+,13+	301M,2M,2M,3M,53M,3M,225M,3M,408M
-        // P	_thread_genome3_1_0_0	1+,2+,4+,5+,7+,9+,10+,12+,13+	301M,2M,2M,3M,53M,3M,225M,3M,408M
 
         System.out.println("===================== PATHS ====================");
         long totalLength = 0; // we'll pretend we're appending the sequences

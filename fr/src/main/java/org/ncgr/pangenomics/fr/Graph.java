@@ -41,6 +41,7 @@ public class Graph {
 
     // made available so directory names can be formed from it
     private String dotFile;
+    private String fastaFile;
     private String jsonFile;
     
     // equals minimum length of a node
@@ -62,7 +63,7 @@ public class Graph {
     // maps a start location to a node
     private Map<Long,Integer> startToNode;
 
-    // these are loaded by FastaFile if FASTA; but here if Vg JSON
+    // these are loaded by FastaFile if FASTA; from the JSON if Vg JSON
     private List<Sequence> sequences;
     private int[][] paths;
     private TreeSet<Long> Nlocs = new TreeSet<>();
@@ -76,9 +77,8 @@ public class Graph {
     /**
      * Read a Graph in from a Vg-generated JSON file.
      */
-    public void readVgJsonFile(String filename) throws FileNotFoundException, IOException {
-        jsonFile = filename;
-        if (verbose) System.out.println("Reading JSON file: "+jsonFile);
+    public void readVgJsonFile(String jsonFile) throws FileNotFoundException, IOException {
+        this.jsonFile = jsonFile;
 
         maxStart = 0;
         startToNode = new TreeMap<Long,Integer>();
@@ -92,11 +92,13 @@ public class Graph {
         Map<String,String> sampleSequenceMap = new HashMap<>();
         Map<String,List<Integer>> samplePaths = new HashMap<>();
         
+        // read the vg-created JSON into a Vg.Graph
+        Vg.Graph graph;
         FileInputStream input = null;
         Reader reader = null;
-        Vg.Graph graph;
         try {
-            input = new FileInputStream(filename);
+            if (verbose) System.out.println("Reading "+jsonFile+"...");
+            input = new FileInputStream(jsonFile);
             reader = new InputStreamReader(input);
             Vg.Graph.Builder graphBuilder = Vg.Graph.newBuilder();
             JsonFormat.parser().merge(reader, graphBuilder);
@@ -110,7 +112,7 @@ public class Graph {
         List<Vg.Path> vgPaths = graph.getPathList();
         List<Vg.Edge> vgEdges = graph.getEdgeList();
 
-        int numNodes = vgNodes.size();
+        numNodes = vgNodes.size();
         for (Vg.Node node : vgNodes) {
             int id = (int)(node.getId() - 1); // vg graphs are 1-based; splitMEM are 0-based
             String sequence = node.getSequence();
@@ -198,12 +200,12 @@ public class Graph {
         }
     }
 
-
     /**
      * Read a Graph in from a splitMEM-style DOT file using guru.nidi.graphviz.mode classes.
      */
-    public void readSplitMEMDotFile(String filename) throws IOException {
-        this.dotFile = filename;
+    public void readSplitMEMDotFile(String dotFile, String fastaFile) throws IOException {
+        this.dotFile = dotFile;
+        this.fastaFile = fastaFile;
         if (verbose) System.out.println("Reading dot file: "+dotFile);
 
         startToNode = new TreeMap<Long,Integer>();
@@ -217,14 +219,14 @@ public class Graph {
         // used to make neighbor[][]
         TreeMap<Integer,Set<Integer>> neighborMap = new TreeMap<>();
 
-        MutableGraph g = Parser.read(new File(filename));
+        MutableGraph g = Parser.read(new File(dotFile));
         Collection<MutableNode> nodes = g.nodes();
         for (MutableNode node : nodes) {
             String[] parts = node.get("label").toString().split(":");
             int id = Integer.parseInt(node.name().toString());
-            int length = Integer.parseInt(parts[1]);
-            lengthMap.put(id,length);
-            if (length<minLen) minLen = length;
+            int l = Integer.parseInt(parts[1]);
+            lengthMap.put(id,l);
+            if (l<minLen) minLen = l;
             String[] startStrings = parts[0].split(",");
             long[] starts = new long[startStrings.length];
             for (int i=0; i<startStrings.length; i++) {
@@ -267,6 +269,14 @@ public class Graph {
                 neighbor[i][j++] = to;
             }
         }
+
+        // get the FASTA file parameters
+        FastaFile f = new FastaFile(this);
+        if (verbose) f.setVerbose();
+        f.readFastaFile(fastaFile);
+        sequences = f.getSequences();
+        paths = f.getPaths();
+        Nlocs = f.getNlocs();
     }
 
     /**
@@ -320,6 +330,8 @@ public class Graph {
      * Find a location in a sequence underlying a path
      */
     public long[] findLoc(List<Sequence> sequences, int path, int start, int stop) {
+        int Koffset = 1;
+        if (jsonFile!=null) Koffset = 2; // don't have extra char between sequences
         long[] startStop = new long[2];
         long curStart = sequences.get(path).getStartPos();
         while (curStart>0 && !startToNode.containsKey(curStart)) {
@@ -327,13 +339,13 @@ public class Graph {
         }
         int curIndex = 0;
         while (curIndex!=start) {
-            curStart += length[startToNode.get(curStart)] - (K - 1);
+            curStart += length[startToNode.get(curStart)] - (K-Koffset);
             curIndex++;
         }
         long offset = Math.max(0, sequences.get(path).getStartPos() - curStart);
         startStop[0] = curStart - sequences.get(path).getStartPos() + offset; // assume fasta seq indices start at 0
         while (curIndex != stop) {
-            curStart += length[startToNode.get(curStart)] - (K - 1);
+            curStart += length[startToNode.get(curStart)] - (K-Koffset);
             curIndex++;
         }
         long seqLastPos = sequences.get(path).getStartPos() + sequences.get(path).getLength() - 1;
@@ -343,14 +355,14 @@ public class Graph {
     }
 
     // getters
-    public String getFilename() {
-        if (dotFile!=null) {
-            return dotFile;
-        } else if (jsonFile!=null) {
-            return jsonFile;
-        } else {
-            return null;
-        }
+    public String getDotFile() {
+        return dotFile;
+    }
+    public String getFastaFile() {
+        return fastaFile;
+    }
+    public String getJsonFile() {
+        return jsonFile;
     }
     public int getK() {
         return K;

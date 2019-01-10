@@ -59,22 +59,6 @@ public class FRFinder {
     private int minSize = 1;       // minimum size: minimum number of de Bruijn nodes that an FR must contain to be considered frequent
     
     /**
-     * Construct with a given Graph, FastaFile and parameters
-     */
-    public FRFinder(Graph g, FastaFile f, double alpha, int kappa, boolean useRC) {
-        // set the instance vars
-        this.g = g;
-        this.numNodes = g.getNumNodes();
-        this.neighbor = g.getNeighbor();
-        this.sequences = f.getSequences();
-        this.paths = f.getPaths();
-        this.Nlocs = f.getNlocs();
-        this.alpha = alpha;
-        this.kappa = kappa;
-        this.useRC = useRC;
-    }
-
-    /**
      * Construct with a given Graph and parameters
      */
     public FRFinder(Graph g, double alpha, int kappa, boolean useRC) {
@@ -479,33 +463,22 @@ public class FRFinder {
         int kappa = Integer.parseInt(cmd.getOptionValue("kappa"));
         boolean useRC = cmd.hasOption("rc");
         boolean oneBased = cmd.hasOption("onebased");
-
         boolean verbose = cmd.hasOption("v");
 
-        // create a Graph from the dot or JSON file
+        // create a Graph from the dot+FASTA or JSON file
         Graph g = new Graph();
         if (verbose) g.setVerbose();
-        if (dotFile!=null) {
-            g.readSplitMEMDotFile(dotFile);
+        if (dotFile!=null && fastaFile!=null) {
+            g.readSplitMEMDotFile(dotFile, fastaFile);
         } else if (jsonFile!=null) {
             g.readVgJsonFile(jsonFile);
+        } else {
+            System.err.println("ERROR: no dotFile+fastaFile OR jsonFile provided.");
         }
         
-        // if dot+FASTA input, create a FastaFile from the fasta file and the Graph
-        FastaFile f = null;
-        if (dotFile!=null) {
-            f = new FastaFile(g);
-            if (verbose) f.setVerbose();
-            f.readFastaFile(fastaFile);
-        }
-
         // create the FRFinder and find FRs
         FRFinder frf = null;
-        if (dotFile!=null) {
-            frf = new FRFinder(g, f, alpha, kappa, useRC);
-        } else if (jsonFile!=null) {
-            frf = new FRFinder(g, alpha, kappa, useRC);
-        }
+        frf = new FRFinder(g, alpha, kappa, useRC);
         if (verbose) frf.setVerbose();
         
         // set optional parameters
@@ -535,14 +508,19 @@ public class FRFinder {
             if (frf.getUseRC()) {
                 paramString += "-rc";
             }
-            String[] tmp = g.getFilename().split("/");
-            String filePrefix = tmp[tmp.length - 1];
-            if (f!=null) {
-                tmp = f.getFilename().split("/");
-                String fastaName = tmp[tmp.length - 1];
+            String rd = null;
+            if (jsonFile!=null) {
+                String[] tmp = jsonFile.split("/");
+                String filePrefix = tmp[tmp.length - 1];
+                rd = "FR-" + filePrefix + "/";
+            } else if (dotFile!=null && fastaFile!=null) {
+                String[] tmp1 = dotFile.split("/");
+                String filePrefix = tmp1[tmp1.length - 1];
+                String[] tmp2 = fastaFile.split("/");
+                String fastaName = tmp2[tmp2.length - 1];
                 filePrefix += "-" + fastaName;
+                rd = "FR-" + filePrefix + "/";
             }
-            String rd = "FR-" + filePrefix + "/";
             File resultsDir = new File(rd);
             resultsDir.mkdir();
             
