@@ -32,6 +32,6 @@ public class Sequence implements Comparable {
     }
 
     public String toString() {
-        return label+": length="+length+"; starts at "+startPos;
+        return label+":"+startPos+","+length;
     }
 }

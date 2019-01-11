@@ -68,6 +68,9 @@ public class Graph {
     private int[][] paths;
     private TreeSet<Long> Nlocs = new TreeSet<>();
 
+    // handy to have this available
+    private List<String> samples;
+
     /**
      * Constructor does nothing; use read methods to populate the graph.
      */
@@ -84,6 +87,8 @@ public class Graph {
         Map<String,String> sampleSequenceMap = new TreeMap<>(); // keyed and sorted by sample name
 	Map<String,LinkedList<Long>> samplePathMap = new TreeMap<>(); // keyed and sorted by sample name; List must preserve order of insertion
 
+	samples = new LinkedList<>();
+
         // read the vg-created JSON into a Vg.Graph
 	if (verbose) System.out.println("Reading "+jsonFile+"...");
 	Reader reader = new InputStreamReader(new FileInputStream(jsonFile));
@@ -97,8 +102,10 @@ public class Graph {
 
         for (Vg.Node node : vgNodes) {
             sequenceMap.put(node.getId(), node.getSequence());
-        }
-
+	    // DEBUG
+	    System.out.println(node.getId()+":"+node.getSequence());
+	}
+	
         for (Vg.Path path : vgPaths) {
             String name = path.getName();
             // let's focus on sample paths, which start with "_thread_"
@@ -176,6 +183,7 @@ public class Graph {
 	paths = new int[samplePathMap.size()][];
 	int si = 0;
 	for (String sample : samplePathMap.keySet()) {
+	    samples.add(sample);
 	    List<Long> pathList = samplePathMap.get(sample);
 	    paths[si] = new int[pathList.size()];
 	    int sj = 0;
@@ -187,10 +195,10 @@ public class Graph {
 	
 	// Graph.startToNode, Graph.sequences, Graph.maxStart
 	startToNode = new TreeMap<>();  // every start position --> node
-	sequences = new LinkedList<>();    // sample,length,start
+	sequences = new LinkedList<>(); // sample,length,start
 	maxStart = 0;
-	Map<Long,Long> anyNodeStartMap = new TreeMap<>(); // node --> any start position
 	long start = 0;                                   // 0-based start location (?)
+	Map<Long,Long> anyNodeStartMap = new TreeMap<>(); // node --> any start position
 	for (String sample : samplePathMap.keySet()) {
 	    List<Long> pathList = samplePathMap.get(sample);
 	    for (long nodeId : pathList) {
@@ -215,39 +223,7 @@ public class Graph {
 	}
 
 	// print a summary
-	if (verbose) {
-	    System.out.println("numNodes="+numNodes+" maxStart="+maxStart);
-	    System.out.print("length:");
-	    for (Integer l : length) System.out.print(" "+l);
-	    System.out.println("");
-	    System.out.println("Sequences:");
-	    for (Sequence s : sequences) {
-		System.out.println(s.toString());
-	    }
-	    
-	    System.out.println("paths:");
-	    for (int i=0; i<paths.length; i++) {
-		for (int j=0; j<paths[i].length; j++) {
-		    System.out.print(" "+paths[i][j]);
-		}
-		System.out.println("");
-	    }
-	    
-	    System.out.print("anyNodeStart:");
-	    for (Long s : anyNodeStart) System.out.print(" "+s);
-	    System.out.println("");
-	    
-	    System.out.print("startToNode:");
-	    for (Long s : startToNode.keySet()) System.out.print(" "+s+":"+startToNode.get(s));
-	    System.out.println("");
-	    
-	    System.out.println("neighbor:");
-	    for (int i=0; i<numNodes; i++) {
-		System.out.print(i+":");
-		for (int j=0; j<neighbor[i].length; j++) System.out.print(" "+neighbor[i][j]);
-		System.out.println("");
-	    }
-	}
+	if (verbose) printSummary();
     }
 
     /**
@@ -258,15 +234,13 @@ public class Graph {
         this.fastaFile = fastaFile;
         if (verbose) System.out.println("Reading dot file: "+dotFile);
 
-        startToNode = new TreeMap<Long,Integer>();
         maxStart = 0;
+        startToNode = new TreeMap<Long,Integer>();
 
         int minLen = Integer.MAX_VALUE;
 
         TreeMap<Integer,Integer> lengthMap = new TreeMap<>();
         TreeMap<Integer,Long> anyNodeStartMap = new TreeMap<>();
-
-        // used to make neighbor[][]
         TreeMap<Integer,Set<Integer>> neighborMap = new TreeMap<>();
 
         MutableGraph g = Parser.read(new File(dotFile));
@@ -280,7 +254,7 @@ public class Graph {
             String[] startStrings = parts[0].split(",");
             long[] starts = new long[startStrings.length];
             for (int i=0; i<startStrings.length; i++) {
-                starts[i] = Long.parseLong(startStrings[i]);
+                starts[i] = Long.parseLong(startStrings[i]) - 1; // ADDED - 1
                 startToNode.put(starts[i], id);
                 if (starts[i]>maxStart) maxStart = starts[i];
             }
@@ -298,7 +272,6 @@ public class Graph {
 
         numNodes = lengthMap.size();
         K = minLen;
-        if (verbose) System.out.println("numNodes="+numNodes+" K="+K+" maxStart="+maxStart);
         
         length = new int[numNodes];
         for (int i : lengthMap.keySet()) {
@@ -327,6 +300,9 @@ public class Graph {
         sequences = f.getSequences();
         paths = f.getPaths();
         Nlocs = f.getNlocs();
+
+	// print a summary
+	if (verbose) printSummary();
     }
 
     /**
@@ -387,27 +363,39 @@ public class Graph {
         }
         int curIndex = 0;
         while (curIndex!=start) {
+	    checkStartToNode(curStart);
             curStart += length[startToNode.get(curStart)] - (K-1);
             curIndex++;
         }
         long offset = Math.max(0, sequences.get(path).getStartPos() - curStart);
         startStop[0] = curStart - sequences.get(path).getStartPos() + offset; // assume fasta seq indices start at 0
         while (curIndex!=stop) {
-	    if (!startToNode.containsKey(curStart)) {
-		System.err.println("ERROR: startToNode("+curStart+") does not exist.");
-		System.err.print("startToNode keys:");
-		for (long key : startToNode.keySet()) System.err.print(" "+key);
-		System.err.println("");
-		System.exit(1);
-	    }
+	    checkStartToNode(curStart);
             curStart += length[startToNode.get(curStart)] - (K);
             curIndex++;
         }
         long seqLastPos = sequences.get(path).getStartPos() + sequences.get(path).getLength() - 1;
         // last position is excluded in BED format
+	checkStartToNode(curStart);
         startStop[1] = Math.min(seqLastPos, curStart+length[startToNode.get(curStart)]-1) - sequences.get(path).getStartPos() + 1;
         return startStop;
     }
+
+    /**
+     * Check that startToNode actually contains the given key
+     */
+    void checkStartToNode(long curStart) {
+	if (!startToNode.containsKey(curStart)) {
+	    System.err.println("ERROR: startToNode("+curStart+") does not exist.");
+	    System.err.print("Nearby startToNode keys:");
+	    for (long key : startToNode.keySet()) {
+		if (Math.abs(curStart-key)<10) System.err.print(" "+key);
+	    }
+	    System.err.println("");
+	    System.exit(1);
+	}
+    }
+
 
     // getters
     public String getDotFile() {
@@ -459,6 +447,43 @@ public class Graph {
      * Print a summary of this graph's data.
      */
     void printSummary() {
-    }
+	System.out.println("numNodes="+numNodes+" maxStart="+maxStart);
 
+	System.out.print("length:");
+	for (int i=0; i<length.length; i++) {
+	    System.out.print(" "+i+":"+length[i]);
+	}
+	System.out.println("");
+
+	// System.out.println("sequences:");
+	// for (Sequence s : sequences) {
+	//     System.out.println(s.toString());
+	// }
+	
+	System.out.println("paths:");
+	for (int i=0; i<paths.length; i++) {
+	    System.out.print(samples.get(i)+":");
+	    for (int j=0; j<paths[i].length; j++) {
+		System.out.print(" "+paths[i][j]);
+	    }
+	    System.out.println("");
+	}
+	
+	System.out.print("anyNodeStart:");
+	for (int i=0; i<anyNodeStart.length; i++) {
+	    System.out.print(" "+i+":"+anyNodeStart[i]);
+	}
+	System.out.println("");
+	
+	System.out.print("startToNode:");
+	for (Long s : startToNode.keySet()) System.out.print(" "+s+":"+startToNode.get(s));
+	System.out.println("");
+	
+	System.out.println("neighbor:");
+	for (int i=0; i<numNodes; i++) {
+	    System.out.print(i+":");
+	    for (int j=0; j<neighbor[i].length; j++) System.out.print(" "+neighbor[i][j]);
+	    System.out.println("");
+	}
+    }
 }

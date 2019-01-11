@@ -6,7 +6,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 
 import java.util.List;
-import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.Set;
@@ -48,15 +48,15 @@ public class FastaFile {
         int[] length = g.getLength();
         int K = g.getK();
         
-        sequences = new ArrayList<Sequence>();
+        sequences = new LinkedList<Sequence>();
         Nlocs = new TreeSet<Long>(); // uses TreeSet.ceiling()
 
         Map<Integer,Long> seqStart = new TreeMap<Integer,Long>();
-        seqStart.put(0, (long) 1);
+        seqStart.put(0, (long) 0); // was 1
 
-        List<List<Integer>> pathsList = new ArrayList<List<Integer>>();
+        List<List<Integer>> pathsList = new LinkedList<List<Integer>>();
 
-        long curStart = 1;
+        long curStart = 0; // was 1
         int index = 0;
         long seqEnd;
 
@@ -75,35 +75,46 @@ public class FastaFile {
         } else {
             desc = line.substring(1);
         }
-        while ((line = in.readLine()) != null) {
-            if (line.length() > 0 && line.charAt(0) == '>') {
+        while ((line=in.readLine())!=null) {
+            if (line.length()>0 && line.charAt(0)=='>') {
                 seq = buffer.toString();
                 // desc, seq are the next fasta sequence here
-                Sequence s = new Sequence(desc.replace(',', ';'), seq.length(), seqStart.get(index));
+                Sequence s = new Sequence(desc.replace(',',';'), seq.length(), seqStart.get(index));
                 sequences.add(s);
-                for (int k = 0; k < seq.length(); k++) {
+                for (int k=0; k<seq.length(); k++) {
                     if (seq.charAt(k) == 'N') {
                         Nlocs.add(s.getStartPos() + k);
                     }
                 }
 
-                List<Integer> path = new ArrayList<>();
-                seqEnd = seqStart.get(index) + s.getLength() - 1;
+                List<Integer> path = new LinkedList<>();
+                seqEnd = seqStart.get(index) + s.getLength() - 1; // ??
                 curStart = seqStart.get(index);
-                while (curStart > 0 && !startToNode.containsKey(curStart)) {
+                while (curStart>0 && !startToNode.containsKey(curStart)) {
                     curStart--;
                 }
+		// DEBUG
+		if (!startToNode.containsKey(curStart)) {
+		    System.err.println("ERROR: startToNode("+curStart+") does not exist.");
+		    System.err.print("startToNode keys:");
+		    for (long key : startToNode.keySet()) System.err.print(" "+key);
+		    System.err.println("");
+		    System.exit(1);
+		}
+		// DEBUG
+		System.out.println("Adding path="+startToNode.get(curStart));
                 path.add(startToNode.get(curStart));
                 do {
-                    curStart += length[startToNode.get(curStart)] - (K - 1);
+                    curStart += length[startToNode.get(curStart)] - K; // WAS K-1
                     if (startToNode.containsKey(curStart)) {
+			// DEBUG
+			System.out.println("Adding path="+startToNode.get(curStart));
                         path.add(startToNode.get(curStart));
                     }
-                } while (startToNode.containsKey(curStart) && curStart
-                         + length[startToNode.get(curStart)] - 1 < seqEnd);
+                } while (startToNode.containsKey(curStart) && (curStart+length[startToNode.get(curStart)]-1)<seqEnd);
 
                 pathsList.add(path);
-                seqStart.put(++index, seqEnd + 2);
+                seqStart.put(++index, seqEnd+1); // was +2
 
                 buffer = new StringBuffer();
                 desc = line.substring(1);
@@ -111,7 +122,7 @@ public class FastaFile {
                 buffer.append(line.trim().toUpperCase());
             }
         }
-        if (buffer.length() != 0) {
+        if (buffer.length()!=0) {
             seq = buffer.toString();
             // desc, seq are the next fasta sequence here
             Sequence s = new Sequence(desc.replace(',', ';'), seq.length(), seqStart.get(index));
@@ -122,40 +133,34 @@ public class FastaFile {
                 }
             }
 
-            List<Integer> path = new ArrayList<>();
-            seqEnd = seqStart.get(index) + s.getLength() - 1;
+            List<Integer> path = new LinkedList<>();
+            seqEnd = seqStart.get(index) + s.getLength() - 1; // ??
             curStart = seqStart.get(index);
             while (curStart > 0 && !startToNode.containsKey(curStart)) {
                 curStart--;
             }
+	    // DEBUG
+	    System.out.println("Adding path="+startToNode.get(curStart));
             path.add(startToNode.get(curStart));
             do {
-                curStart += length[startToNode.get(curStart)] - (K - 1);
+                curStart += length[startToNode.get(curStart)] - K; // WAS K-1
                 if (startToNode.containsKey(curStart)) {
+		    // DEBUG
+		    System.out.println("Adding path="+startToNode.get(curStart));
                     path.add(startToNode.get(curStart));
                 }
-            } while (startToNode.containsKey(curStart) && curStart
-                     + length[startToNode.get(curStart)] - 1 < seqEnd);
+            } while (startToNode.containsKey(curStart) && (curStart+length[startToNode.get(curStart)]-1)<seqEnd);
 
             pathsList.add(path);
-            seqStart.put(++index, seqEnd + 2);
-
+            seqStart.put(++index, seqEnd+1); // was +2
         }
 
         paths = new int[pathsList.size()][];
         for (int i=0; i<pathsList.size(); i++) {
             List<Integer> path = pathsList.get(i);
             paths[i] = new int[path.size()];
-            for (int j = 0; j < path.size(); j++) {
+            for (int j=0; j<path.size(); j++) {
                 paths[i][j] = path.get(j);
-            }
-        }
-
-        if (verbose) {
-            System.out.println("Number of paths=" + pathsList.size());
-            System.out.println("Sequences:");
-            for (Sequence s : sequences) {
-                System.out.println(s.getLabel()+":"+s.getLength()+" bases; starts at "+s.getStartPos());
             }
         }
     }
