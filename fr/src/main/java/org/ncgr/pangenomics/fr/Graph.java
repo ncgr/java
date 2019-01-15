@@ -10,6 +10,8 @@ import java.util.List;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.Set;
+import java.util.TreeSet;
 
 import vg.Vg;
 
@@ -32,21 +34,20 @@ public class Graph {
     private String fastaFile;
     private String jsonFile;
     
-    // maps nodes to their sequences; ordered by node because why not?
-    private TreeMap<Long,String> sequenceMap; // keyed and ordered by nodeId
+    long minLen = Long.MAX_VALUE;  // minimum sequence length
 
-    // maps each start location on the concatenated sample sequence to its node
-    private TreeMap<Long,Long> startToNode; // keyed and ordered by start location
+    // maps nodes to their DNA sequences
+    TreeMap<Long,String> nodeSequences; // keyed by nodeId, ordered by nodeId for convenience
 
-    // maps a node to one of its start locations on the concatenated sample sequence
-    private TreeMap<Long,Long> nodeToStart; // keyed and ordered by nodeId
-
-    // maps a sample name to its full sequence, ordered by sample name
-    private TreeMap<String,String> sampleSequenceMap; // keyed and ordered by sample name
-
-    // maps a sample to its path through the graph
-    private TreeMap<String,LinkedList<Long>> samplePathMap; // keyed and sorted by sample name; path list must preserve order
+    // maps a nodeId to the set of paths that contain it
+    TreeMap<Long,Set<String>> nodePaths; // keyed and ordered by nodeId
     
+    // provides the list of nodes associated with the given path (typically a subject or strain); ordered by path name for convenience
+    TreeMap<String,LinkedList<Long>> paths; // keyed and sorted by path/subject/strain name; list of nodes must preserve order
+    
+    // maps a path name to its full DNA sequence, ordered by path name
+    TreeMap<String,String> pathSequences; // keyed and ordered by sample name
+
     /**
      * Constructor does nothing; use read methods to populate the graph from files.
      */
@@ -59,12 +60,11 @@ public class Graph {
     public void readVgJsonFile(String jsonFile) throws FileNotFoundException, IOException {
         this.jsonFile = jsonFile;
 
-        // instantiate the instance maps
-        sequenceMap = new TreeMap<>();       // keyed and ordered by nodeId
-        startToNode = new TreeMap<>();       // keyed and ordered by start location
-        nodeToStart = new TreeMap<>();       // keyed and ordered by nodeId
-        sampleSequenceMap = new TreeMap<>(); // keyed and ordered by sample name
-        samplePathMap= new TreeMap<>();      // keyed and ordered by sample name
+        // instantiate the instance objects
+        nodeSequences = new TreeMap<>();   // keyed and ordered by nodeId
+        nodePaths = new TreeMap<>();       // keyed and ordered by nodeId
+        paths = new TreeMap<>();           // keyed and ordered by path name
+        pathSequences = new TreeMap<>();   // keyed and ordered by path name
 
         // read the vg-created JSON into a Vg.Graph
 	if (verbose) System.out.println("Reading "+jsonFile+"...");
@@ -78,61 +78,102 @@ public class Graph {
         List<Vg.Path> vgPaths = graph.getPathList();
         List<Vg.Edge> vgEdges = graph.getEdgeList();
 
-        // populate sequenceMap
+        // populate nodeSequences
         for (Vg.Node node : vgNodes) {
-            sequenceMap.put(node.getId(), node.getSequence());
+            long nodeId = node.getId();
+            String sequence = node.getSequence();
+            nodeSequences.put(nodeId, sequence);
+            if (sequence.length()<minLen) minLen = sequence.length();
 	}
 
-        // populate samplePathMap and sampleSequenceMap
-        for (Vg.Path path : vgPaths) {
-            String name = path.getName();
+        // populate paths and pathSequences
+        for (Vg.Path vgPath : vgPaths) {
+            String name = vgPath.getName();
             // sample paths are assumed to start with "_thread_"
             String[] parts = name.split("_");
             if (parts.length>1 && parts[1].equals("thread")) {
-                // we've got a sample path
-		String sample = parts[2];
-                int allele = Integer.parseInt(parts[4]); // 0 or 1; assume unphased calls, so 0 is essentially reference, so ignore
+                // we've got a subject/strain/whatever path
+		String pathName = parts[2];
+                int allele = Integer.parseInt(parts[4]); // 0 or 1
+                // assume unphased calls, so allele 0 is essentially reference, so only use allele 1
                 if (allele==1) {
-                    List<Vg.Mapping> mappingList = path.getMappingList();
+                    List<Vg.Mapping> vgMappingList = vgPath.getMappingList();
                     // retreive or initialize this sample's sequence (so far)
                     String sequence = null;
-                    if (sampleSequenceMap.containsKey(sample)) {
-                        sequence = sampleSequenceMap.get(sample);
+                    if (pathSequences.containsKey(pathName)) {
+                        sequence = pathSequences.get(pathName);
                     } else {
                         sequence = "";
                     }
-                    // retreive or initialize this sample's path list
-                    LinkedList<Long> pathList = null;
-                    if (samplePathMap.containsKey(sample)) {
-                        pathList = samplePathMap.get(sample);
+                    // retreive or initialize this path's node list
+                    LinkedList<Long> nodeList = null;
+                    if (paths.containsKey(pathName)) {
+                        nodeList = paths.get(pathName);
                     } else {
-                        pathList = new LinkedList<>();
+                        nodeList = new LinkedList<>();
                     }
-                    // run through this particular mapping and append the node id to the path list, and the node sequence to the total-as-of-yet sample sequence
+                    // run through this particular mapping and append each node id to the node list, and the node sequence to the total-as-of-yet path sequence
                     boolean first = true;
-                    for (Vg.Mapping mapping : mappingList) {
-                        if (first && pathList.size()>0) {
+                    for (Vg.Mapping vgMapping : vgMappingList) {
+                        if (first && nodeList.size()>0) {
                             // skip unless very first node
                         } else {
-                            long nodeId = mapping.getPosition().getNodeId();
-                            String nodeSequence = sequenceMap.get(nodeId);
-                            pathList.add(nodeId);
+                            long nodeId = vgMapping.getPosition().getNodeId();
+                            String nodeSequence = nodeSequences.get(nodeId);
+                            nodeList.add(nodeId);
                             sequence += nodeSequence;
                         }
                         first = false;
                     }
-                    // update the maps with the new pathList and sequence
-                    samplePathMap.put(sample, pathList);
-                    sampleSequenceMap.put(sample, sequence);
+                    // update the maps with the new nodeList and sequence
+                    paths.put(pathName, nodeList);
+                    pathSequences.put(pathName, sequence);
                 }
             }
         }
-        
-	// print a verbose summary
-	if (verbose) printSummary();
+
+        // find the node paths
+        findNodePaths();
     }
 
-    // getters
+    /**
+     * Find node paths: the set of paths that run through each node.
+     * NOTE: no support for Nlocs yet!
+     */
+    void findNodePaths() {
+        // init empty paths for each node
+        for (Long nodeId : nodeSequences.keySet()) {
+            nodePaths.put(nodeId, new TreeSet<String>());
+        }
+        // now load the paths
+        for (String pathName : paths.keySet()) {
+            LinkedList<Long> nodeList = paths.get(pathName);
+            for (Long nodeId : nodeList) {
+                nodePaths.get(nodeId).add(pathName);
+            }
+        }
+    }
+
+    // /**
+    //  * Find the gap on a path between a start and stop.
+    //  * NOTE: NOT SURE IF THIS WORKS USING INDEXES RATHER THAN SAMPLE NAMES
+    //  */
+    // public int findGap(List<Long> pathList, long start, long stop) {
+    //     int curStart = 1;
+    //     int curEnd = 1;
+    //     for (long s=start; s<=stop; s++) {
+    //         curEnd = curStart + nodeSequences.get(s).length() - 1;
+    //         curStart += nodeSequences.get(s).length() - (minLen-1);
+    //     }
+    //     int gap = curEnd - nodeSequences.get(start).length() - nodeSequences.get(stop).length();
+    //     if (gap<0) gap = 0;
+    //     // DEBUG
+    //     System.out.println("pathList="+pathList);
+    //     System.out.println(" start="+start+" stop="+stop+" gap="+gap);
+    //     return gap;
+    // }
+    
+    // getters of private vars
     public String getDotFile() {
         return dotFile;
     }
@@ -143,69 +184,9 @@ public class Graph {
         return jsonFile;
     }
 
-    public TreeMap<Long,String> getSequenceMap() {
-        return sequenceMap;
-    }
-    public TreeMap<Long,Long> getStartToNode() {
-        return startToNode;
-    }
-    public TreeMap<Long,Long> getNodeToStart() {
-        return nodeToStart;
-    }
-    public TreeMap<String,String> getSampleSequenceMap() {
-        return sampleSequenceMap;
-    }
-    public TreeMap<String,LinkedList<Long>> getSamplePathMap() {
-        return samplePathMap;
-    }
-
-    // setters
+    // setters of private vars
     public void setVerbose() {
         verbose = true;
-    }
-
-    /**
-     * Print a summary of this graph's data.
-     */
-    void printSummary() {
-        printHeading("NODES");
-        for (long nodeId : sequenceMap.keySet()) {
-            System.out.println(nodeId+":"+sequenceMap.get(nodeId));
-        }
-
-        printHeading("SAMPLE PATHS");
-        for (String sample : samplePathMap.keySet()) {
-            System.out.print(sample+":");
-            List<Long> pathList = samplePathMap.get(sample);
-            for (long nodeId : pathList) {
-                System.out.print(" "+nodeId);
-            }
-            System.out.println("");
-        }
-
-        printHeading("SAMPLE SEQUENCES");
-        for (String sample : sampleSequenceMap.keySet()) {
-            String sequence = sampleSequenceMap.get(sample);
-            int length = sequence.length();
-            String heading = ">"+sample+" ("+length+")";
-            System.out.print(heading);
-            for (int i=heading.length(); i<19; i++) System.out.print(" "); System.out.print(".");
-            for (int n=0; n<10; n++) {
-                for (int i=0; i<9; i++) System.out.print(" "); System.out.print(".");
-            }
-            System.out.println("");
-            System.out.println(sequence);
-            // System.out.println(sample+"("+length+"):"+sequence.substring(0,50)+"..."+sequence.substring(length-50,length));
-        }
-    }
-
-    /**
-     * Print a delineating heading
-     */
-    void printHeading(String heading) {
-        for (int i=0; i<heading.length(); i++) System.out.print("="); System.out.println("");
-        System.out.println(heading);
-        for (int i=0; i<heading.length(); i++) System.out.print("="); System.out.println("");
     }
 
 }

@@ -115,21 +115,4 @@ public class ClusterNode implements Comparable<ClusterNode> {
         }
     }
 
-    // setters and getters
-    public int getNode() {
-	return node;
-    }
-    public int getAvgLen() {
-        return avgLen;
-    }
-    public int getSize() {
-        return size;
-    }
-    public int getFwdSup () {
-        return fwdSup;
-    }
-    public int getRcSup() {
-        return rcSup;
-    }
-
 }
