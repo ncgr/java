@@ -79,15 +79,9 @@ public class FRFinder {
             TreeSet<Long> nodes = new TreeSet<>();
             nodes.add(nodeId);
             Set<String> pathNames = nodePaths.get(nodeId);
-            TreeSet<Subpath> subpaths = new TreeSet<>();
-            for (String pathName : pathNames) {
-                Subpath sp = new Subpath(pathName, g.paths.get(pathName));
-                subpaths.add(sp);
-            }
-            NodeCluster cluster = new NodeCluster(nodes, subpaths, g.nodeSequences, alpha, kappa);
+            NodeCluster cluster = new NodeCluster(nodes, g.paths, g.nodeSequences, alpha, kappa);
             nodeClusters.add(cluster);
         }
-        // if (verbose) printNodeClusters();
 
         // TEST
         // merge a few node clusters into additional node clusters
@@ -95,51 +89,29 @@ public class FRFinder {
         NodeCluster nc2 = nodeClusters.higher(nc1);
         NodeCluster nc3 = nodeClusters.higher(nc2);
         NodeCluster nc4 = nodeClusters.higher(nc3);
+        NodeCluster nc5 = nodeClusters.higher(nc4);
+        NodeCluster nc6 = nodeClusters.higher(nc5);
+        NodeCluster nc7 = nodeClusters.higher(nc6);
+        NodeCluster nc8 = nodeClusters.higher(nc7);
+        NodeCluster nc9 = nodeClusters.higher(nc8);
         NodeCluster nc12 = NodeCluster.merge(nc1, nc2, alpha, kappa);
-        NodeCluster nc23 = NodeCluster.merge(nc2, nc3, alpha, kappa);
-        NodeCluster nc34 = NodeCluster.merge(nc3, nc4, alpha, kappa);
         NodeCluster nc123 = NodeCluster.merge(nc12, nc3, alpha, kappa);
         NodeCluster nc1234 = NodeCluster.merge(nc123, nc4, alpha, kappa);
+        NodeCluster nc12345 = NodeCluster.merge(nc1234, nc5, alpha, kappa);
+        NodeCluster nc123456 = NodeCluster.merge(nc12345, nc6, alpha, kappa);
+        NodeCluster nc1234567 = NodeCluster.merge(nc123456, nc7, alpha, kappa);
+        NodeCluster nc12345678 = NodeCluster.merge(nc1234567, nc8, alpha, kappa);
+        NodeCluster nc123456789 = NodeCluster.merge(nc12345678, nc9, alpha, kappa);
         nodeClusters.add(nc12);
-        nodeClusters.add(nc23);
-        nodeClusters.add(nc34);
         nodeClusters.add(nc123);
         nodeClusters.add(nc1234);
-        printNodeClusters();
+        nodeClusters.add(nc12345);
+        nodeClusters.add(nc123456);
+        nodeClusters.add(nc1234567);
+        nodeClusters.add(nc12345678);
+        nodeClusters.add(nc123456789);
+        if (verbose) printNodeClusters();
         
-        // Map<Long,Map<String,List<Long>>> nodePathLocs = new TreeMap<>(); // temp storage
-        // for (String sample : g.paths.keySet()) {
-        //     List<Long> pathList = g.paths.get(sample);
-        //     for (Long nodeId : pathList) {
-        //         if (!nodePathLocs.containsKey(nodeId)) {
-        //             nodePathLocs.put(nodeId, new TreeMap<>());
-        //         }
-        //         if (!nodePathLocs.get(nodeId).containsKey(sample)) {
-        //             nodePathLocs.get(nodeId).put(sample, new LinkedList<>());
-        //         }
-        //         nodePathLocs.get(nodeId).get(sample).add(nodeId);
-        //     }
-        // }
-        // for (Long nodeId : nodePathLocs.keySet()) {
-        //     for (String sample : nodePathLocs.get(nodeId).keySet()) {
-        //         if (nodeClusters.containsKey(nodeId)) {
-        //             List<Long> pathList = nodePathLocs.get(nodeId).get(sample);
-        //             nodeClusters.get(nodeId).pathLocs.put(sample, pathList);
-        //         }
-        //     }
-        // }
-
-        // if (verbose) System.out.println("Computing node support...");
-        // printHeading("nodeId:cluster.fwdSup");
-        // for (long nodeId : nodeClusters.keySet()) {
-        //     ClusterNode cluster = nodeClusters.get(nodeId);
-        //     cluster.computeSupport(alpha, kappa);
-        //     // DEBUG
-        //     System.out.println(nodeId+":"+cluster.fwdSup);
-        // }
-
-        
-
     }
 
 
