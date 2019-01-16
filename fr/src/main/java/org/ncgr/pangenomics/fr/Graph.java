@@ -69,7 +69,7 @@ public class Graph {
         pathSequences = new TreeMap<>();   // keyed and ordered by path name
 
         // read the vg-created JSON into a Vg.Graph
-	if (verbose) System.out.println("Reading "+jsonFile+"...");
+        if (verbose) System.out.println("Reading "+jsonFile+"...");
 	Reader reader = new InputStreamReader(new FileInputStream(jsonFile));
 	Vg.Graph.Builder graphBuilder = Vg.Graph.newBuilder();
 	JsonFormat.parser().merge(reader, graphBuilder);
@@ -156,12 +156,12 @@ public class Graph {
      */
     void findNodePaths() {
         // init empty paths for each node
-        for (Long nodeId : nodeSequences.keySet()) {
+        for (long nodeId : nodeSequences.keySet()) {
             nodePaths.put(nodeId, new TreeSet<Path>());
         }
         // now load the paths
         for (Path path : paths) {
-            for (Long nodeId : path.nodes) {
+            for (long nodeId : path.nodes) {
                 nodePaths.get(nodeId).add(path);
             }
         }

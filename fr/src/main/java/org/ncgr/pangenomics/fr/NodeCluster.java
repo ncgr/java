@@ -21,7 +21,7 @@ public class NodeCluster implements Comparable<NodeCluster> {
     // the sequences for ALL nodes, keyed by nodeId
     Map<Long,String> nodeSequences;
 
-    // the full paths, keyed and sorted by path name/subject/strain name.
+    // the full paths, keyed and sorted by path name and nodes
     TreeSet<Path> paths;
 
     // the subpaths, identified by their originating path name, that start and end with nodes in this cluster
@@ -85,10 +85,12 @@ public class NodeCluster implements Comparable<NodeCluster> {
     void updateAvgLength() {
         double dAvg = 0.0;
         for (Path subpath : subpaths) {
-            for (Long nodeId : subpath.nodes) {
+            for (long nodeId : subpath.nodes) {
                 String sequence = nodeSequences.get(nodeId);
                 if (sequence==null) {
-                    System.out.println("Sequence is null for node "+nodeId);
+                    // bail, this is an error
+                    System.err.println("ERROR: sequence is null for node "+nodeId);
+                    System.exit(1);
                 } else {
                     dAvg += (double) sequence.length();
                 }
@@ -103,11 +105,11 @@ public class NodeCluster implements Comparable<NodeCluster> {
      */
     void updateSubpaths() {
         TreeSet<Path> newSubpaths = new TreeSet<>();
+        int count = 0;
         for (Path path : paths) {
-            LinkedList<Long> nodeIds = path.nodes;
             long left = 0;
             long right = 0;
-            for (Long nodeId : nodeIds) {
+            for (long nodeId : path.nodes) {
                 if (nodes.contains(nodeId)) {
                     if (left==0) {
                         left = nodeId;
@@ -121,39 +123,64 @@ public class NodeCluster implements Comparable<NodeCluster> {
                 // singleton
                 newNodes.add(left);
             } else if (left!=0 && right!=0) {
+                // load the insertions into a map for the kappa filter
+                List<Long> insertions = new LinkedList<>();
                 // create the subpath from left to right
                 boolean started = false;
                 boolean ended = false;
-                for (long nodeId : nodeIds) {
+                for (long nodeId : path.nodes) {
                     if (nodeId==left) {
+                        // left always matches a cluster node
                         started = true;
                         newNodes.add(nodeId);
                     } else if (nodeId==right) {
+                        // right always matches a cluster node
                         ended = true;
                         newNodes.add(nodeId);
+                        break;
                     } else if (started && !ended) {
                         newNodes.add(nodeId);
+                        if (!nodes.contains(nodeId)) {
+                            // THIS IS WRONG, NEED TO KEEP TRACK OF SEPARATE CONTIGUOUS INSERTIONS
+                            insertions.add(nodeId);
+                        }
                     }
                 }
                 // kappa filter goes here
+                String insertionSequence = "";
+                for (long nodeId : insertions) {
+                    insertionSequence += nodeSequences.get(nodeId);
+                }
+                if (insertionSequence.length()>kappa) {
+                    // DEBUG
+                    System.out.println("["+path.name+"]"+path.nodes.toString().replace(" ","")+
+                                       " left,right="+left+","+right+" "+nodes.toString().replace(" ","")+" insertions:"+insertions.toString().replace(" ","")+
+                                       " insertion length="+insertionSequence.length()+">"+kappa);
+                    continue; // bail, kappa filter failed
+                } else {
+                    // DEBUG
+                    System.out.println("["+path.name+"]"+path.nodes.toString().replace(" ","")+
+                                       " left,right="+left+","+right+" "+nodes.toString().replace(" ","")+" insertions:"+insertions.toString().replace(" ","")+
+                                       " insertion length="+insertionSequence.length()+"<="+kappa);
+                }
             } else {
                 continue; // this subpath is no more
             }
             // alpha filter
-            boolean ok = true;
             int in = 0;
-            for (Long nodeId : nodes) {
+            for (long nodeId : nodes) {
                 if (newNodes.contains(nodeId)) {
                     in++;
                 }
             }
             double frac = (double)in/(double)nodes.size();
-            ok = !(frac<alpha); // (avoid >= on doubles)
-            if (ok) {
-                newSubpaths.add(new Path(path.name, newNodes));
+            if (frac<alpha) {
+                continue; // bail, alpha filter failed
             }
+            // filters passed, add this subpath
+            newSubpaths.add(new Path(path.name, newNodes));
         }
-        // replace the instance subpaths
+        // replace the instance subpaths with the new set
         subpaths = newSubpaths;
     }
 
@@ -183,7 +210,7 @@ public class NodeCluster implements Comparable<NodeCluster> {
      */
     public String toString() {
         String s = "Nodes:";
-        for (Long nodeId : nodes) {
+        for (long nodeId : nodes) {
             s += " "+nodeId;
         }
         s += "\nPaths (avgLength="+avgLength+";fwdSupport="+fwdSupport+")";
@@ -211,7 +238,7 @@ public class NodeCluster implements Comparable<NodeCluster> {
         // for (String pathName : paths.keySet()) {
         //     long left = 0;
         //     long right = 0;
-        //     for (Long nodeId : paths.get(pathName)) {
+        //     for (long nodeId : paths.get(pathName)) {
         //         if (nodes.contains(nodeId)) {
         //             left = nodeId;
         //             break;
@@ -219,7 +246,7 @@ public class NodeCluster implements Comparable<NodeCluster> {
         //     }
         //     Iterator<Long> it = paths.get(pathName).descendingIterator();
         //     while (it.hasNext()) {
-        //         Long nodeId = it.next();
+        //         long nodeId = it.next();
         //         if (nodes.contains(nodeId)) {
         //             right = nodeId;
         //             break;
@@ -228,7 +255,7 @@ public class NodeCluster implements Comparable<NodeCluster> {
         //     System.out.print("path="+pathName+" left="+left+" right="+right+":");
         //     boolean started = false;
         //     boolean ended = false;
-        //     for (Long nodeId : paths.get(pathName)) {
+        //     for (long nodeId : paths.get(pathName)) {
         //         if (nodeId==left) {
         //             started = true;
         //         }

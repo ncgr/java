@@ -75,7 +75,7 @@ public class FRFinder {
 
         // create initial node clusters, each containing only one node and all of its paths
         nodeClusters = new TreeSet<>();
-        for (Long nodeId : nodePaths.keySet()) {
+        for (long nodeId : nodePaths.keySet()) {
             TreeSet<Long> nodes = new TreeSet<>();
             nodes.add(nodeId);
             NodeCluster cluster = new NodeCluster(nodes, g.paths, g.nodeSequences, alpha, kappa);
@@ -109,6 +109,7 @@ public class FRFinder {
         nodeClusters.add(nc1234567);
         nodeClusters.add(nc12345678);
         nodeClusters.add(nc123456789);
+
         if (verbose) printNodeClusters();
         
     }
@@ -327,7 +328,7 @@ public class FRFinder {
      */
     void printNodePaths() {
         printHeading("NODE PATHS");
-        for (Long nodeId : nodePaths.keySet()) {
+        for (long nodeId : nodePaths.keySet()) {
             Set<Path> paths = nodePaths.get(nodeId);
             String asterisk = " ";
             if (paths.size()==g.paths.size()) asterisk="*";

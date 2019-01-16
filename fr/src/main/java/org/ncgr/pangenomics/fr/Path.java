@@ -72,7 +72,6 @@ public class Path implements Comparable<Path> {
      * Compare paths by category, name, size and then node by node comparison.
      */
     public int compareTo(Path that) {
-        if (this.category!=null && that.category!=null && !this.category.equals(that.category)) return this.category.compareTo(that.category);
         if (!this.name.equals(that.name)) return this.name.compareTo(that.name);
         if (this.nodes.size()!=that.nodes.size()) return Integer.compare(this.nodes.size(), that.nodes.size());
         int i = 0;
