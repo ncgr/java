@@ -22,16 +22,16 @@ public class NodeCluster implements Comparable<NodeCluster> {
     Map<Long,String> nodeSequences;
 
     // the full paths, keyed and sorted by path name/subject/strain name.
-    // NOTE: these are totally independent (arbitrary pathnames, size, etc.) so not stored as Subpaths
-    TreeMap<String,LinkedList<Long>> paths;
+    TreeMap<String,Path> paths;
 
     // the subpaths, identified by their originating path name, that start and end with nodes in this cluster
-    TreeSet<Subpath> subpaths;
+    TreeSet<Path> subpaths;
     
     // the forward (or total) support of this cluster
     int fwdSupport;
     
     // the reverse-complement support of this cluster (if enabled)
+    // NOT YET IMPLEMENTED
     int rcSupport;
 
     // the current value of the filter parameters used to update this NodeCluster
@@ -44,7 +44,7 @@ public class NodeCluster implements Comparable<NodeCluster> {
     /**
      * Construct given a set of nodes and full paths and sequences, along with alpha and kappa filter parameters.
      */
-    NodeCluster(TreeSet<Long> nodes, TreeMap<String,LinkedList<Long>> paths, Map<Long,String> nodeSequences, double alpha, int kappa) {
+    NodeCluster(TreeSet<Long> nodes, TreeMap<String,Path> paths, Map<Long,String> nodeSequences, double alpha, int kappa) {
         this.nodes = nodes;
         this.paths = paths;
         this.nodeSequences = nodeSequences;
@@ -59,9 +59,9 @@ public class NodeCluster implements Comparable<NodeCluster> {
      * This should be run any time a new NodeCluster is made.
      */
     void update() {
-        updateSubpaths();
+        updatePaths();
         updateAvgLength();
-        updateSupport();  // must follow updateSubpaths() since some paths may have been dropped
+        updateSupport();  // must follow updatePaths() since some paths may have been dropped
     }
     
     /**
@@ -84,7 +84,7 @@ public class NodeCluster implements Comparable<NodeCluster> {
      */
     void updateAvgLength() {
         double dAvg = 0.0;
-        for (Subpath subpath : subpaths) {
+        for (Path subpath : subpaths) {
             for (Long nodeId : subpath.nodes) {
                 String sequence = nodeSequences.get(nodeId);
                 if (sequence==null) {
@@ -101,10 +101,10 @@ public class NodeCluster implements Comparable<NodeCluster> {
      * Update the subpaths for the current alpha and kappa values.
      * NOTE: NOT FINISHED, NEED TO IMPLEMENT kappa FILTER.
      */
-    void updateSubpaths() {
-        TreeSet<Subpath> newSubpaths = new TreeSet<>();
+    void updatePaths() {
+        TreeSet<Path> newPaths = new TreeSet<>();
         for (String pathName : paths.keySet()) {
-            LinkedList<Long> nodeIds = paths.get(pathName);
+            LinkedList<Long> nodeIds = paths.get(pathName).nodes;
             long left = 0;
             long right = 0;
             for (Long nodeId : nodeIds) {
@@ -150,12 +150,12 @@ public class NodeCluster implements Comparable<NodeCluster> {
             double frac = (double)in/(double)nodes.size();
             ok = !(frac<alpha); // avoid == on doubles
             if (ok) {
-                Subpath s = new Subpath(pathName, newNodes);
-                newSubpaths.add(s);
+                Path s = new Path(pathName, newNodes);
+                newPaths.add(s);
             }
         }
         // replace the instance subpaths
-        subpaths = newSubpaths;
+        subpaths = newPaths;
     }
 
     /**
@@ -187,9 +187,9 @@ public class NodeCluster implements Comparable<NodeCluster> {
         for (Long nodeId : nodes) {
             s += " "+nodeId;
         }
-        s += "\nSubpaths (avgLength="+avgLength+";fwdSupport="+fwdSupport+")";
-        for (Subpath subpath : subpaths) {
-            s += "\n ["+subpath.pathName+"]"+subpath.nodes.toString().replace(" ","").replace("[","").replace("]","");
+        s += "\nPaths (avgLength="+avgLength+";fwdSupport="+fwdSupport+")";
+        for (Path subpath : subpaths) {
+            s += "\n ["+subpath.name+"]"+subpath.nodes.toString().replace(" ","").replace("[","").replace("]","");
         }
         return s;
     }
@@ -200,7 +200,7 @@ public class NodeCluster implements Comparable<NodeCluster> {
     static NodeCluster merge(NodeCluster nc1, NodeCluster nc2, double alpha, int kappa) {
         TreeSet<Long> nodes = new TreeSet<>();
         Map<Long,String> nodeSequences = new TreeMap<>();
-        TreeMap<String,LinkedList<Long>> paths = new TreeMap<>();
+        TreeMap<String,Path> paths = new TreeMap<>();
         nodes.addAll(nc1.nodes);
         nodes.addAll(nc2.nodes);
         nodeSequences.putAll(nc1.nodeSequences);

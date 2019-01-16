@@ -1,9 +1,11 @@
 package org.ncgr.pangenomics.fr;
 
+import java.io.BufferedReader;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
-import java.io.IOException;
+import java.io.FileReader;
 import java.io.InputStreamReader;
+import java.io.IOException;
 import java.io.Reader;
 
 import java.util.List;
@@ -39,14 +41,14 @@ public class Graph {
     // maps nodes to their DNA sequences
     TreeMap<Long,String> nodeSequences; // keyed by nodeId, ordered by nodeId for convenience
 
-    // maps a nodeId to the set of paths that contain it
-    TreeMap<Long,Set<String>> nodePaths; // keyed and ordered by nodeId
+    // maps a nodeId to the set of paths that traverse it
+    TreeMap<Long,Set<Path>> nodePaths; // keyed and ordered by nodeId
     
-    // provides the list of nodes associated with the given path (typically a subject or strain); ordered by path name for convenience
-    TreeMap<String,LinkedList<Long>> paths; // keyed and sorted by path/subject/strain name; list of nodes must preserve order
+    // provides the ordered list of nodes that a path traverses; ordered by path name for convenience
+    TreeMap<String,Path> paths; // keyed and ordered by path/subject/strain name
     
-    // maps a path name to its full DNA sequence, ordered by path name
-    TreeMap<String,String> pathSequences; // keyed and ordered by sample name
+    // maps a Path to its full DNA sequence, ordered by path name
+    TreeMap<String,String> pathSequences; // keyed and ordered by path name
 
     /**
      * Constructor does nothing; use read methods to populate the graph from files.
@@ -63,7 +65,7 @@ public class Graph {
         // instantiate the instance objects
         nodeSequences = new TreeMap<>();   // keyed and ordered by nodeId
         nodePaths = new TreeMap<>();       // keyed and ordered by nodeId
-        paths = new TreeMap<>();           // keyed and ordered by path name
+        paths = new TreeMap<>();           // keyed and ordered by path (name in this case)
         pathSequences = new TreeMap<>();   // keyed and ordered by path name
 
         // read the vg-created JSON into a Vg.Graph
@@ -105,28 +107,33 @@ public class Graph {
                     } else {
                         sequence = "";
                     }
-                    // retreive or initialize this path's node list
-                    LinkedList<Long> nodeList = null;
+                    // retrieve or initialize this path
+                    LinkedList<Long> nodes = null;
                     if (paths.containsKey(pathName)) {
-                        nodeList = paths.get(pathName);
+                        nodes = paths.get(pathName).nodes;
                     } else {
-                        nodeList = new LinkedList<>();
+                        nodes = new LinkedList<>();
                     }
                     // run through this particular mapping and append each node id to the node list, and the node sequence to the total-as-of-yet path sequence
                     boolean first = true;
                     for (Vg.Mapping vgMapping : vgMappingList) {
-                        if (first && nodeList.size()>0) {
+                        if (first && nodes.size()>0) {
                             // skip unless very first node
                         } else {
                             long nodeId = vgMapping.getPosition().getNodeId();
                             String nodeSequence = nodeSequences.get(nodeId);
-                            nodeList.add(nodeId);
+                            nodes.add(nodeId);
                             sequence += nodeSequence;
                         }
                         first = false;
                     }
-                    // update the maps with the new nodeList and sequence
-                    paths.put(pathName, nodeList);
+                    // update the maps with the new nodes and sequence
+                    if (paths.containsKey(pathName)) {
+                        paths.get(pathName).setNodes(nodes);
+                    } else {
+                        Path path = new Path(pathName, nodes);
+                        paths.put(pathName, path);
+                    }
                     pathSequences.put(pathName, sequence);
                 }
             }
@@ -143,13 +150,13 @@ public class Graph {
     void findNodePaths() {
         // init empty paths for each node
         for (Long nodeId : nodeSequences.keySet()) {
-            nodePaths.put(nodeId, new TreeSet<String>());
+            nodePaths.put(nodeId, new TreeSet<Path>());
         }
         // now load the paths
         for (String pathName : paths.keySet()) {
-            LinkedList<Long> nodeList = paths.get(pathName);
-            for (Long nodeId : nodeList) {
-                nodePaths.get(nodeId).add(pathName);
+            Path path = paths.get(pathName);
+            for (Long nodeId : path.nodes) {
+                nodePaths.get(nodeId).add(path);
             }
         }
     }
@@ -172,6 +179,32 @@ public class Graph {
     //     System.out.println(" start="+start+" stop="+stop+" gap="+gap);
     //     return gap;
     // }
+
+    /**
+     * Set path categories from a tab-delimited file. Comment lines start with #.
+     */
+    void setPathCategories(String categoriesFile) throws FileNotFoundException, IOException {
+        BufferedReader reader = new BufferedReader(new FileReader(categoriesFile));
+        String line = null;
+        Map<String,String> categories = new TreeMap<String,String>();
+        while ((line=reader.readLine())!=null) {
+            if (!line.startsWith("#")) {
+                String[] fields = line.split("\t");
+                if (fields.length==2) {
+                    categories.put(fields[0], fields[1]);
+                }
+            }
+        }
+        if (categories.size()==paths.size()) {
+            for (String pathName : paths.keySet()) {
+                Path path = paths.get(pathName);
+                path.setCategory(categories.get(pathName));
+            }
+        } else {
+            System.err.println("ERROR: the categories file "+categoriesFile+" contains "+categories.size()+" category labels while there are "+paths.size()+" paths in the graph.");
+            System.exit(1);
+        }
+    }
     
     // getters of private vars
     public String getDotFile() {

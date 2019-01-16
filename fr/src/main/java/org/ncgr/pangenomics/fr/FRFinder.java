@@ -49,7 +49,7 @@ public class FRFinder {
     private TreeSet<NodeCluster> nodeClusters;
 
     // maps a nodeId to the set of paths that contain it
-    TreeMap<Long,Set<String>> nodePaths; // keyed and ordered by nodeId
+    TreeMap<Long,Set<Path>> nodePaths; // keyed and ordered by nodeId
    
     /**
      * Construct with a populated Graph and required parameters
@@ -64,21 +64,20 @@ public class FRFinder {
      * Find the frequented regions in this Graph.
      */
     public void findFRs() {
-
-        // verbose output
-        if (verbose) printNodes();
+        if (verbose) {
+            // printNodes();
+            // printPaths();
+        }
         
         // initialize nodePaths with those in g
         nodePaths = g.nodePaths;
         // if (verbose) printNodePaths();
 
         // create initial node clusters, each containing only one node and all of its paths
-        if (verbose) System.out.println("Creating initial node clusters...");
         nodeClusters = new TreeSet<>();
         for (Long nodeId : nodePaths.keySet()) {
             TreeSet<Long> nodes = new TreeSet<>();
             nodes.add(nodeId);
-            Set<String> pathNames = nodePaths.get(nodeId);
             NodeCluster cluster = new NodeCluster(nodes, g.paths, g.nodeSequences, alpha, kappa);
             nodeClusters.add(cluster);
         }
@@ -175,6 +174,10 @@ public class FRFinder {
         jsonOption.setRequired(false);
         options.addOption(jsonOption);
         //
+        Option categoriesOption = new Option("c", "categories", true, "tab-delimited file with path->categories");
+        categoriesOption.setRequired(false);
+        options.addOption(categoriesOption);
+        //
         Option alphaOption = new Option("a", "alpha", true, "alpha=penetrance, fraction of a supporting path's sequence that supports the FR (required)");
         alphaOption.setRequired(true);
         options.addOption(alphaOption);
@@ -220,10 +223,13 @@ public class FRFinder {
             return;
         }
         
-        // required parameters
+        // files
         String dotFile = cmd.getOptionValue("dot");
         String fastaFile = cmd.getOptionValue("fasta");
         String jsonFile = cmd.getOptionValue("json");
+        String categoriesFile = cmd.getOptionValue("categories");
+
+        // required parameters
         double alpha = Double.parseDouble(cmd.getOptionValue("alpha"));
         int kappa = Integer.parseInt(cmd.getOptionValue("kappa"));
 
@@ -239,6 +245,11 @@ public class FRFinder {
         } else {
             System.err.println("ERROR: no DOT+FASTA or JSON provided.");
             System.exit(1);
+        }
+
+        // if a categories file is given, append the categories to the path names
+        if (categoriesFile!=null) {
+            g.setPathCategories(categoriesFile);
         }
         
         // instantiate the FRFinder with this Graph and required parameters
@@ -304,7 +315,7 @@ public class FRFinder {
         printHeading("PATHS");
         for (String pathName : g.paths.keySet()) {
             System.out.print(pathName+":");
-            List<Long> nodeList = g.paths.get(pathName);
+            List<Long> nodeList = g.paths.get(pathName).nodes;
             for (long nodeId : nodeList) {
                 System.out.print(" "+nodeId);
             }
@@ -318,12 +329,12 @@ public class FRFinder {
     void printNodePaths() {
         printHeading("NODE PATHS");
         for (Long nodeId : nodePaths.keySet()) {
-            Set<String> pathNames = nodePaths.get(nodeId);
+            Set<Path> paths = nodePaths.get(nodeId);
             String asterisk = " ";
-            if (pathNames.size()==g.paths.size()) asterisk="*";
-            System.out.print(asterisk+nodeId+"("+pathNames.size()+"):");
-            for (String pathName : pathNames) {
-                System.out.print(" "+pathName);
+            if (paths.size()==g.paths.size()) asterisk="*";
+            System.out.print(asterisk+nodeId+"("+paths.size()+"):");
+            for (Path path : paths) {
+                System.out.print(" "+path.name);
             }
             System.out.println("");
         }
