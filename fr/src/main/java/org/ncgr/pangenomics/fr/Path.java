@@ -69,9 +69,10 @@ public class Path implements Comparable<Path> {
     }
 
     /**
-     * Compare paths by name and then size and then node by node comparison.
+     * Compare paths by category, name, size and then node by node comparison.
      */
     public int compareTo(Path that) {
+        if (this.category!=null && that.category!=null && !this.category.equals(that.category)) return this.category.compareTo(that.category);
         if (!this.name.equals(that.name)) return this.name.compareTo(that.name);
         if (this.nodes.size()!=that.nodes.size()) return Integer.compare(this.nodes.size(), that.nodes.size());
         int i = 0;
@@ -80,6 +81,17 @@ public class Path implements Comparable<Path> {
             if (thisNodeId!=thatNodeId) return Long.compare(thisNodeId, thatNodeId);
         }
         return 0;
+    }
+
+    /**
+     * Return the concated name and category of this path
+     */
+    public String getLabel() {
+        if (category==null) {
+            return name;
+        } else {
+            return name+"{"+category+"}";
+        }
     }
 
     // setters

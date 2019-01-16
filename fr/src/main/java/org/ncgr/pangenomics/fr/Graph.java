@@ -44,8 +44,8 @@ public class Graph {
     // maps a nodeId to the set of paths that traverse it
     TreeMap<Long,Set<Path>> nodePaths; // keyed and ordered by nodeId
     
-    // provides the ordered list of nodes that a path traverses; ordered by path name for convenience
-    TreeMap<String,Path> paths; // keyed and ordered by path/subject/strain name
+    // each Path provides the ordered list of nodes that it traverses; ordered by path category/name
+    TreeSet<Path> paths; // ordered by category/name/nodes
     
     // maps a Path to its full DNA sequence, ordered by path name
     TreeMap<String,String> pathSequences; // keyed and ordered by path name
@@ -65,7 +65,7 @@ public class Graph {
         // instantiate the instance objects
         nodeSequences = new TreeMap<>();   // keyed and ordered by nodeId
         nodePaths = new TreeMap<>();       // keyed and ordered by nodeId
-        paths = new TreeMap<>();           // keyed and ordered by path (name in this case)
+        paths = new TreeSet<>();           // ordered by path
         pathSequences = new TreeMap<>();   // keyed and ordered by path name
 
         // read the vg-created JSON into a Vg.Graph
@@ -108,11 +108,11 @@ public class Graph {
                         sequence = "";
                     }
                     // retrieve or initialize this path
-                    LinkedList<Long> nodes = null;
-                    if (paths.containsKey(pathName)) {
-                        nodes = paths.get(pathName).nodes;
-                    } else {
-                        nodes = new LinkedList<>();
+                    LinkedList<Long> nodes = new LinkedList<>();
+                    for (Path path : paths) {
+                        if (path.name.equals(pathName)) {
+                            nodes = path.nodes;
+                        }
                     }
                     // run through this particular mapping and append each node id to the node list, and the node sequence to the total-as-of-yet path sequence
                     boolean first = true;
@@ -127,13 +127,20 @@ public class Graph {
                         }
                         first = false;
                     }
-                    // update the maps with the new nodes and sequence
-                    if (paths.containsKey(pathName)) {
-                        paths.get(pathName).setNodes(nodes);
-                    } else {
-                        Path path = new Path(pathName, nodes);
-                        paths.put(pathName, path);
+                    // update the path with the new nodes and sequence
+                    boolean updated = false;
+                    for (Path path : paths) {
+                        if (path.name.equals(pathName)) {
+                            path.setNodes(nodes);
+                            updated = true;
+                        }
                     }
+                    if (!updated) {
+                        // create this new path
+                        Path path = new Path(pathName, nodes);
+                        paths.add(path);
+                    }
+                    // update/add path sequence
                     pathSequences.put(pathName, sequence);
                 }
             }
@@ -153,8 +160,7 @@ public class Graph {
             nodePaths.put(nodeId, new TreeSet<Path>());
         }
         // now load the paths
-        for (String pathName : paths.keySet()) {
-            Path path = paths.get(pathName);
+        for (Path path : paths) {
             for (Long nodeId : path.nodes) {
                 nodePaths.get(nodeId).add(path);
             }
@@ -196,9 +202,8 @@ public class Graph {
             }
         }
         if (categories.size()==paths.size()) {
-            for (String pathName : paths.keySet()) {
-                Path path = paths.get(pathName);
-                path.setCategory(categories.get(pathName));
+            for (Path path : paths) {
+                path.setCategory(categories.get(path.name));
             }
         } else {
             System.err.println("ERROR: the categories file "+categoriesFile+" contains "+categories.size()+" category labels while there are "+paths.size()+" paths in the graph.");

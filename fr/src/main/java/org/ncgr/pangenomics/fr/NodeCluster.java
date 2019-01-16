@@ -22,7 +22,7 @@ public class NodeCluster implements Comparable<NodeCluster> {
     Map<Long,String> nodeSequences;
 
     // the full paths, keyed and sorted by path name/subject/strain name.
-    TreeMap<String,Path> paths;
+    TreeSet<Path> paths;
 
     // the subpaths, identified by their originating path name, that start and end with nodes in this cluster
     TreeSet<Path> subpaths;
@@ -44,7 +44,7 @@ public class NodeCluster implements Comparable<NodeCluster> {
     /**
      * Construct given a set of nodes and full paths and sequences, along with alpha and kappa filter parameters.
      */
-    NodeCluster(TreeSet<Long> nodes, TreeMap<String,Path> paths, Map<Long,String> nodeSequences, double alpha, int kappa) {
+    NodeCluster(TreeSet<Long> nodes, TreeSet<Path> paths, Map<Long,String> nodeSequences, double alpha, int kappa) {
         this.nodes = nodes;
         this.paths = paths;
         this.nodeSequences = nodeSequences;
@@ -59,9 +59,9 @@ public class NodeCluster implements Comparable<NodeCluster> {
      * This should be run any time a new NodeCluster is made.
      */
     void update() {
-        updatePaths();
+        updateSubpaths();
         updateAvgLength();
-        updateSupport();  // must follow updatePaths() since some paths may have been dropped
+        updateSupport();  // must follow updatesubPaths() since some paths may have been dropped
     }
     
     /**
@@ -98,13 +98,13 @@ public class NodeCluster implements Comparable<NodeCluster> {
     }
 
     /**
-     * Update the subpaths for the current alpha and kappa values.
+     * Update the subpaths from the full genome paths for the current alpha and kappa values.
      * NOTE: NOT FINISHED, NEED TO IMPLEMENT kappa FILTER.
      */
-    void updatePaths() {
-        TreeSet<Path> newPaths = new TreeSet<>();
-        for (String pathName : paths.keySet()) {
-            LinkedList<Long> nodeIds = paths.get(pathName).nodes;
+    void updateSubpaths() {
+        TreeSet<Path> newSubpaths = new TreeSet<>();
+        for (Path path : paths) {
+            LinkedList<Long> nodeIds = path.nodes;
             long left = 0;
             long right = 0;
             for (Long nodeId : nodeIds) {
@@ -148,14 +148,13 @@ public class NodeCluster implements Comparable<NodeCluster> {
                 }
             }
             double frac = (double)in/(double)nodes.size();
-            ok = !(frac<alpha); // avoid == on doubles
+            ok = !(frac<alpha); // (avoid >= on doubles)
             if (ok) {
-                Path s = new Path(pathName, newNodes);
-                newPaths.add(s);
+                newSubpaths.add(new Path(path.name, newNodes));
             }
         }
         // replace the instance subpaths
-        subpaths = newPaths;
+        subpaths = newSubpaths;
     }
 
     /**
@@ -199,14 +198,14 @@ public class NodeCluster implements Comparable<NodeCluster> {
      */
     static NodeCluster merge(NodeCluster nc1, NodeCluster nc2, double alpha, int kappa) {
         TreeSet<Long> nodes = new TreeSet<>();
+        TreeSet<Path> paths = new TreeSet<>();
         Map<Long,String> nodeSequences = new TreeMap<>();
-        TreeMap<String,Path> paths = new TreeMap<>();
         nodes.addAll(nc1.nodes);
         nodes.addAll(nc2.nodes);
         nodeSequences.putAll(nc1.nodeSequences);
         nodeSequences.putAll(nc2.nodeSequences);
-        paths.putAll(nc1.paths);
-        paths.putAll(nc2.paths);
+        paths.addAll(nc1.paths);
+        paths.addAll(nc2.paths);
         // // DEBUG
         // System.out.println("merge: nodes="+nodes);
         // for (String pathName : paths.keySet()) {

@@ -65,13 +65,13 @@ public class FRFinder {
      */
     public void findFRs() {
         if (verbose) {
-            // printNodes();
-            // printPaths();
+            printNodes();
+            printPaths();
         }
         
         // initialize nodePaths with those in g
         nodePaths = g.nodePaths;
-        // if (verbose) printNodePaths();
+        if (verbose) printNodePaths();
 
         // create initial node clusters, each containing only one node and all of its paths
         nodeClusters = new TreeSet<>();
@@ -313,10 +313,9 @@ public class FRFinder {
      */
     void printPaths() {
         printHeading("PATHS");
-        for (String pathName : g.paths.keySet()) {
-            System.out.print(pathName+":");
-            List<Long> nodeList = g.paths.get(pathName).nodes;
-            for (long nodeId : nodeList) {
+        for (Path path : g.paths) {
+            System.out.print(path.getLabel()+":");
+            for (long nodeId : path.nodes) {
                 System.out.print(" "+nodeId);
             }
             System.out.println("");
@@ -343,7 +342,7 @@ public class FRFinder {
     /**
      * Print out the node clusters.
      */
-    void printNodeClusters() {
+        void printNodeClusters() {
         printHeading("NODE CLUSTERS");
         for (NodeCluster nc : nodeClusters) {
             System.out.println(nc.toString());
