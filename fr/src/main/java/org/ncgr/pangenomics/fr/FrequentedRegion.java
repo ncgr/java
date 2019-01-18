@@ -11,41 +11,44 @@ import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Represents a cluster of nodes along with the supporting subpaths.
+ * Represents a cluster of nodes along with the supporting subpaths of the full set of strain/subject/subspecies paths.
  *
  * @author Sam Hokin
  */
-public class NodeCluster implements Comparable<NodeCluster> {
+public class FrequentedRegion implements Comparable<FrequentedRegion> {
+
     // this cluster's nodes
     TreeSet<Long> nodes;
 
     // the sequences for ALL nodes, keyed by nodeId
     Map<Long,String> nodeSequences;
 
-    // the full paths, keyed and sorted by path name and nodes
+    // the full strain/subject/subspecies paths, keyed and sorted by path name and nodes
     TreeSet<Path> paths;
 
-    // the subpaths, identified by their originating path name, that start and end with nodes in this cluster
+    // the "maximal" subpaths, identified by their originating path name, that start and end on nodes in this cluster
     TreeSet<Path> subpaths;
     
-    // the forward (or total) support of this cluster
+    // the forward (or total, if rc not enabled) support of this cluster
     int fwdSupport;
     
     // the reverse-complement support of this cluster (if enabled)
     // NOT YET IMPLEMENTED
     int rcSupport;
 
-    // the current value of the filter parameters used to update this NodeCluster
+    // a subpath must satisfy the requirement that it traverses at least alpha*nodes.size()
     double alpha;
+
+    // a subpath must satisfy the requirement that its contiguous nodes that do NOT belong in this.nodes have total sequence length no larger than kappa
     int kappa;
 
-    // the average length (in bases) of the subpath sequences
+    // the (rounded) average length (in bases) of the subpath sequences
     int avgLength;
 
     /**
      * Construct given a set of nodes and full paths and sequences, along with alpha and kappa filter parameters.
      */
-    NodeCluster(TreeSet<Long> nodes, TreeSet<Path> paths, Map<Long,String> nodeSequences, double alpha, int kappa) {
+    FrequentedRegion(TreeSet<Long> nodes, TreeSet<Path> paths, Map<Long,String> nodeSequences, double alpha, int kappa) {
         this.nodes = nodes;
         this.paths = paths;
         this.nodeSequences = nodeSequences;
@@ -56,8 +59,8 @@ public class NodeCluster implements Comparable<NodeCluster> {
     }
 
     /**
-     * Update this cluster with its existing contents and the current alpha,kappa values.
-     * This should be run any time a new NodeCluster is made.
+     * Update this frequented region with its existing contents and the current alpha,kappa values.
+     * This should be run any time a new FrequentedRegion is made.
      */
     void update() {
         updateSubpaths();
@@ -66,16 +69,16 @@ public class NodeCluster implements Comparable<NodeCluster> {
     }
 
     /**
-     * Equality is simply based on the nodes in the cluster.
+     * Equality is simply based on the nodes in the frequented region.
      */
-    public boolean equals(NodeCluster that) {
+    public boolean equals(FrequentedRegion that) {
         return this.nodes.equals(that.nodes);
     }
     
     /**
      * Compare based on support and then number of nodes and finally the first node.
      */
-    public int compareTo(NodeCluster that) {
+    public int compareTo(FrequentedRegion that) {
         if (this.fwdSupport!=that.fwdSupport) {
             return Integer.compare(this.fwdSupport, that.fwdSupport);
         } else if (this.avgLength!=that.avgLength) {
@@ -88,7 +91,7 @@ public class NodeCluster implements Comparable<NodeCluster> {
     }
 
     /**
-     * Update the current average length this cluster's subpath sequences.
+     * Update the current average length this frequented region's subpath sequences.
      */
     void updateAvgLength() {
         double dAvg = 0.0;
@@ -113,7 +116,7 @@ public class NodeCluster implements Comparable<NodeCluster> {
      */
     void updateSubpaths() {
         // // DEBUG
-        // FRFinder.printHeading("NodeCluster:"+nodes+" alpha="+alpha+" kappa="+kappa);
+        // FRFinder.printHeading("FrequentedRegion:"+nodes+" alpha="+alpha+" kappa="+kappa);
         TreeSet<Path> newSubpaths = new TreeSet<>();
         int count = 0;
         for (Path path : paths) {
@@ -222,7 +225,7 @@ public class NodeCluster implements Comparable<NodeCluster> {
     }
 
     /**
-     * Update the current support of this cluster, which right now is just the size of the subpaths map.
+     * Update the current support of this frequented region, which right now is just the size of the subpaths map.
      */
     void updateSupport() {
         fwdSupport = subpaths.size();
@@ -243,7 +246,7 @@ public class NodeCluster implements Comparable<NodeCluster> {
     }
 
     /**
-     * Return a string summary of this cluster.
+     * Return a string summary of this frequented region.
      */
     public String toString() {
         String s = "avgLength="+avgLength+"\tfwdSupport="+fwdSupport+"\tNodes:";
@@ -260,19 +263,32 @@ public class NodeCluster implements Comparable<NodeCluster> {
             }
             // s += "\n "+subpath.getLabel()+subpath.nodes.toString().replace(" ","").replace("[","").replace("]","");
         }
+        int len = s.length();
+        if (len<10) s += "\t";
+        if (len<20) s += "\t";
+        if (len<30) s += "\t";
+        if (len<40) s += "\t";
+        if (len<50) s += "\t";
+        if (len<60) s += "\t";
+        if (len<70) s += "\t";
+        if (len<80) s += "\t";
+        if (len<90) s += "\t";
+        if (len<100) s += "\t";
         int total = 0;
         for (String category : categoryCount.keySet()) {
-            s += "\t"+category+":"+categoryCount.get(category);
             total += categoryCount.get(category);
         }
         s += "\ttotal="+total;
+        for (String category : categoryCount.keySet()) {
+            s += "\t"+category+":"+categoryCount.get(category);
+        }
         return s;
     }
 
     /**
-     * Merge two NodeClusters and return the result.
+     * Merge two FrequentedRegions and return the result.
      */
-    static NodeCluster merge(NodeCluster nc1, NodeCluster nc2, double alpha, int kappa) {
+    static FrequentedRegion merge(FrequentedRegion nc1, FrequentedRegion nc2, double alpha, int kappa) {
         TreeSet<Long> nodes = new TreeSet<>();
         TreeSet<Path> paths = new TreeSet<>();
         Map<Long,String> nodeSequences = new TreeMap<>();
@@ -315,6 +331,6 @@ public class NodeCluster implements Comparable<NodeCluster> {
         //     }
         //     System.out.println(" "+paths.get(pathName));
         // }
-        return new NodeCluster(nodes, paths, nodeSequences, alpha, kappa);
+        return new FrequentedRegion(nodes, paths, nodeSequences, alpha, kappa);
     }
 }
