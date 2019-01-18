@@ -4,6 +4,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.LinkedList;
 import java.util.Set;
+import java.util.HashSet;
 import java.util.TreeSet;
 import java.util.Map;
 import java.util.TreeMap;
@@ -60,8 +61,15 @@ public class NodeCluster implements Comparable<NodeCluster> {
      */
     void update() {
         updateSubpaths();
-        updateAvgLength();
         updateSupport();  // must follow updatesubPaths() since some paths may have been dropped
+        updateAvgLength();
+    }
+
+    /**
+     * Equality is simply based on the nodes in the cluster.
+     */
+    public boolean equals(NodeCluster that) {
+        return this.nodes.equals(that.nodes);
     }
     
     /**
@@ -70,10 +78,10 @@ public class NodeCluster implements Comparable<NodeCluster> {
     public int compareTo(NodeCluster that) {
         if (this.fwdSupport!=that.fwdSupport) {
             return Integer.compare(this.fwdSupport, that.fwdSupport);
-        } else if (this.nodes.size()!=that.nodes.size()) {
-            return Integer.compare(this.nodes.size(), that.nodes.size());
         } else if (this.avgLength!=that.avgLength) {
             return Integer.compare(this.avgLength, that.avgLength);
+        } else if (this.nodes.size()!=that.nodes.size()) {
+            return Integer.compare(this.nodes.size(), that.nodes.size());
         } else {
             return Long.compare(this.nodes.first(), that.nodes.first());
         }
@@ -104,6 +112,8 @@ public class NodeCluster implements Comparable<NodeCluster> {
      * NOTE: NOT FINISHED, NEED TO IMPLEMENT kappa FILTER.
      */
     void updateSubpaths() {
+        // // DEBUG
+        // FRFinder.printHeading("NodeCluster:"+nodes+" alpha="+alpha+" kappa="+kappa);
         TreeSet<Path> newSubpaths = new TreeSet<>();
         int count = 0;
         for (Path path : paths) {
@@ -113,72 +123,99 @@ public class NodeCluster implements Comparable<NodeCluster> {
                 if (nodes.contains(nodeId)) {
                     if (left==0) {
                         left = nodeId;
-                    } else if (right==0) {
+                    } else {
                         right = nodeId;
                     }
                 }
             }
-            LinkedList<Long> newNodes = new LinkedList<>();
+            LinkedList<Long> subpathNodes = new LinkedList<>();
             if (left!=0 && right==0) {
-                // singleton
-                newNodes.add(left);
+                // singleton, do nothing
+                // subpathNodes.add(left);
             } else if (left!=0 && right!=0) {
-                // load the insertions into a map for the kappa filter
-                List<Long> insertions = new LinkedList<>();
-                // create the subpath from left to right
+                // load the insertions into a set for the kappa filter
+                Set<List<Long>> insertions = new HashSet<>();
+                // scan across the full path from left to right to create the subpath
                 boolean started = false;
                 boolean ended = false;
+                List<Long> currentInsertion = new LinkedList<>();
                 for (long nodeId : path.nodes) {
                     if (nodeId==left) {
                         // left always matches a cluster node
                         started = true;
-                        newNodes.add(nodeId);
+                        subpathNodes.add(nodeId);
                     } else if (nodeId==right) {
                         // right always matches a cluster node
                         ended = true;
-                        newNodes.add(nodeId);
+                        subpathNodes.add(nodeId);
                         break;
                     } else if (started && !ended) {
-                        newNodes.add(nodeId);
-                        if (!nodes.contains(nodeId)) {
-                            // THIS IS WRONG, NEED TO KEEP TRACK OF SEPARATE CONTIGUOUS INSERTIONS
-                            insertions.add(nodeId);
+                        // all path nodes between left and right are in the subpath
+                        subpathNodes.add(nodeId);
+                        if (nodes.contains(nodeId)) {
+                            if (currentInsertion.size()>0) {
+                                // finish off the previous insertion and start another
+                                insertions.add(currentInsertion);
+                                currentInsertion = new LinkedList<>();
+                            }
+                        } else {
+                            // add to the current insertion
+                            currentInsertion.add(nodeId);
                         }
                     }
                 }
+                // hit the last insertion
+                if (currentInsertion.size()>0) {
+                    insertions.add(currentInsertion);
+                }
                 // kappa filter goes here
-                String insertionSequence = "";
-                for (long nodeId : insertions) {
-                    insertionSequence += nodeSequences.get(nodeId);
+                boolean kappaOK = true;
+                for (List<Long> insertion : insertions) {
+                    String insertionSequence = "";
+                    for (long nodeId : insertion) {
+                        insertionSequence += nodeSequences.get(nodeId);
+                    }
+                    if (insertionSequence.length()>kappa) {
+                        kappaOK = false;
+                    }
+                    // // DEBUG
+                    // System.out.println("["+path.name+"]"+subpathNodes.toString().replace(" ","")+
+                    //                    " left,right="+left+","+right+" insertion:"+insertion.toString().replace(" ","")+
+                    //                    " length="+insertionSequence.length());
                 }
-                if (insertionSequence.length()>kappa) {
-                    // DEBUG
-                    System.out.println("["+path.name+"]"+path.nodes.toString().replace(" ","")+
-                                       " left,right="+left+","+right+" "+nodes.toString().replace(" ","")+" insertions:"+insertions.toString().replace(" ","")+
-                                       " insertion length="+insertionSequence.length()+">"+kappa);
+                if (!kappaOK) {
+                    // // DEBUG
+                    // System.out.println("["+path.name+"]"+subpathNodes.toString().replace(" ","")+" REJECTED: one or more insertion sequences > than kappa="+kappa+".");
                     continue; // bail, kappa filter failed
-                } else {
-                    // DEBUG
-                    System.out.println("["+path.name+"]"+path.nodes.toString().replace(" ","")+
-                                       " left,right="+left+","+right+" "+nodes.toString().replace(" ","")+" insertions:"+insertions.toString().replace(" ","")+
-                                       " insertion length="+insertionSequence.length()+"<="+kappa);
                 }
-            } else {
-                continue; // this subpath is no more
+                // // DEBUG
+                // if (insertions.size()>0) {
+                //     System.out.println("["+path.name+"]"+subpathNodes.toString().replace(" ","")+" ACCEPTED: all insertion sequences <= kappa="+kappa+".");
+                // } else {
+                //     System.out.println("["+path.name+"]"+subpathNodes.toString().replace(" ","")+" NO INSERTIONS");
+                // }
             }
             // alpha filter
+            boolean alphaOK = true;
             int in = 0;
             for (long nodeId : nodes) {
-                if (newNodes.contains(nodeId)) {
+                if (subpathNodes.contains(nodeId)) {
                     in++;
                 }
             }
             double frac = (double)in/(double)nodes.size();
-            if (frac<alpha) {
+            alphaOK = frac>=alpha;
+            if (!alphaOK) {
+                // // DEBUG
+                // if (frac>0.0) {
+                //     System.out.println("["+path.name+"]"+subpathNodes.toString().replace(" ","")+" REJECTED: in="+in+", frac="+frac+" < alpha="+alpha);
+                // }
                 continue; // bail, alpha filter failed
             }
+            // // DEBUG
+            // System.out.println("["+path.name+"]"+subpathNodes.toString().replace(" ","")+" in="+in);
             // filters passed, add this subpath
-            newSubpaths.add(new Path(path.name, newNodes));
+            newSubpaths.add(new Path(path.name, path.category, subpathNodes));
         }
         // replace the instance subpaths with the new set
         subpaths = newSubpaths;
@@ -209,14 +246,26 @@ public class NodeCluster implements Comparable<NodeCluster> {
      * Return a string summary of this cluster.
      */
     public String toString() {
-        String s = "Nodes:";
+        String s = "avgLength="+avgLength+"\tfwdSupport="+fwdSupport+"\tNodes:";
         for (long nodeId : nodes) {
             s += " "+nodeId;
         }
-        s += "\nPaths (avgLength="+avgLength+";fwdSupport="+fwdSupport+")";
+        Map<String,Integer> categoryCount = new TreeMap<>();
         for (Path subpath : subpaths) {
-            s += "\n ["+subpath.name+"]"+subpath.nodes.toString().replace(" ","").replace("[","").replace("]","");
+            if (categoryCount.containsKey(subpath.category)) {
+                int count = categoryCount.get(subpath.category);
+                categoryCount.put(subpath.category, count+1);
+            } else {
+                categoryCount.put(subpath.category, 1);
+            }
+            // s += "\n "+subpath.getLabel()+subpath.nodes.toString().replace(" ","").replace("[","").replace("]","");
         }
+        int total = 0;
+        for (String category : categoryCount.keySet()) {
+            s += "\t"+category+":"+categoryCount.get(category);
+            total += categoryCount.get(category);
+        }
+        s += "\ttotal="+total;
         return s;
     }
 

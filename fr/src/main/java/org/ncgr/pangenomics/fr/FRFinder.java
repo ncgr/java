@@ -68,7 +68,7 @@ public class FRFinder {
             printNodes();
             printPaths();
         }
-        
+            
         // initialize nodePaths with those in g
         nodePaths = g.nodePaths;
         if (verbose) printNodePaths();
@@ -82,40 +82,93 @@ public class FRFinder {
             nodeClusters.add(cluster);
         }
 
-        // TEST
-        // merge a few node clusters into additional node clusters
-        NodeCluster nc1 = nodeClusters.first();
-        NodeCluster nc2 = nodeClusters.higher(nc1);
-        NodeCluster nc3 = nodeClusters.higher(nc2);
-        NodeCluster nc4 = nodeClusters.higher(nc3);
-        NodeCluster nc5 = nodeClusters.higher(nc4);
-        NodeCluster nc6 = nodeClusters.higher(nc5);
-        NodeCluster nc7 = nodeClusters.higher(nc6);
-        NodeCluster nc8 = nodeClusters.higher(nc7);
-        NodeCluster nc9 = nodeClusters.higher(nc8);
-        NodeCluster nc12 = NodeCluster.merge(nc1, nc2, alpha, kappa);
-        NodeCluster nc123 = NodeCluster.merge(nc12, nc3, alpha, kappa);
-        NodeCluster nc1234 = NodeCluster.merge(nc123, nc4, alpha, kappa);
-        NodeCluster nc12345 = NodeCluster.merge(nc1234, nc5, alpha, kappa);
-        NodeCluster nc123456 = NodeCluster.merge(nc12345, nc6, alpha, kappa);
-        NodeCluster nc1234567 = NodeCluster.merge(nc123456, nc7, alpha, kappa);
-        NodeCluster nc12345678 = NodeCluster.merge(nc1234567, nc8, alpha, kappa);
-        NodeCluster nc123456789 = NodeCluster.merge(nc12345678, nc9, alpha, kappa);
-        nodeClusters.add(nc12);
-        nodeClusters.add(nc123);
-        nodeClusters.add(nc1234);
-        nodeClusters.add(nc12345);
-        nodeClusters.add(nc123456);
-        nodeClusters.add(nc1234567);
-        nodeClusters.add(nc12345678);
-        nodeClusters.add(nc123456789);
+        // spin through the clusters, dropping the lowest, adding merged pairs if they have non-zero support
+        int round = 0;
+        NodeCluster oldFirst = nodeClusters.first();
+        NodeCluster newFirst = nodeClusters.higher(oldFirst);
+        while (!oldFirst.equals(newFirst)) {
+            round++;
+            oldFirst = nodeClusters.first();
+            Set<NodeCluster> newClusters = new TreeSet<>();
+            for (NodeCluster nc1 : nodeClusters) {
+                NodeCluster nc2 = nodeClusters.higher(nc1);
+                if (nc2!=null) {
+                    NodeCluster merged = NodeCluster.merge(nc1, nc2, alpha, kappa);
+                    if (merged.fwdSupport>0) newClusters.add(merged);
+                }
+            }
+            nodeClusters.addAll(newClusters);
+            // drop the lowest one
+            nodeClusters.remove(nodeClusters.first());
+            // get the new first one
+            newFirst = nodeClusters.first();
+            System.out.println("Round "+round+" num="+nodeClusters.size()+" oldFirst="+oldFirst.nodes+" newFirst="+newFirst.nodes);
+        }
 
+        // // TEST
+        // NodeCluster ncmerge;
+        // boolean first;
+
+        // // here's a boring cluster that contains nodes traversed by ALL paths
+        // ncmerge = null;
+        // first = true;
+        // for (NodeCluster nc : nodeClusters) {
+        //     if (nc.nodes.size()==1) {
+        //         long nodeId = nc.nodes.first();
+        //         if (nodeId==1 ||
+        //             nodeId==4 ||
+        //             nodeId==17 ||
+        //             nodeId==20 ||
+        //             nodeId==23 ||
+        //             nodeId==26 ||
+        //             nodeId==29 ||
+        //             nodeId==33 ||
+        //             nodeId==36 ||
+        //             nodeId==39) {
+        //             if (first) {
+        //                 ncmerge = nc;
+        //                 first = false;
+        //             } else {
+        //                 ncmerge = NodeCluster.merge(ncmerge, nc, alpha, kappa);
+        //             }
+        //         }
+        //     }
+        // }
+        // if (ncmerge.fwdSupport>0) nodeClusters.add(ncmerge);
+
+        // // here's a cluster that contains nodes only traversed by HD afflicted paths plus common nodes on ends
+        // ncmerge = null;
+        // first = true;
+        // for (NodeCluster nc : nodeClusters) {
+        //     if (nc.nodes.size()==1) {
+        //         long nodeId = nc.nodes.first();
+        //         if (
+        //             nodeId==4 ||
+        //             nodeId==5 ||
+        //             nodeId==6 ||
+        //             nodeId==7 ||
+        //             nodeId==9 ||
+        //             nodeId==11 ||
+        //             nodeId==14 ||
+        //             nodeId==15 ||
+        //             nodeId==17
+        //             ) {
+        //             if (first) {
+        //                 ncmerge = nc;
+        //                 first = false;
+        //             } else {
+        //                 ncmerge = NodeCluster.merge(ncmerge, nc, alpha, kappa);
+        //             }
+        //         }
+        //     }
+        // }
+        // if (ncmerge.fwdSupport>0) nodeClusters.add(ncmerge);
+        
         if (verbose) printNodeClusters();
+        printNodeClusters();
         
     }
 
-
-    // getters for parameters
     public double getAlpha() {
         return alpha;
     }
