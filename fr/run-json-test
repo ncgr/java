@@ -7,4 +7,4 @@
 # -r --rc       flag to indicate whether the sequence (e.g. FASTA file) had its reverse complement appended
 
 java -cp build/install/fr/lib/fr.jar:build/install/fr/lib/commons-cli-1.4.jar:build/install/fr/lib/protobuf-java-3.6.1.jar:build/install/fr/lib/protobuf-java-util-3.6.1.jar:build/install/fr/lib/gson-2.7.jar \
-     org.ncgr.pangenomics.fr.FRFinder -j HDStudy/HDStudy.HTT.paths.json -c HDStudy/HDStudy.HTT.categories.tsv --alpha 0.1 --kappa 72 --minsup 1 --minsize 1 
+     org.ncgr.pangenomics.fr.FRFinder -j HDStudy/HDStudy.HTT.paths.json -c HDStudy/HDStudy.categories.tsv --alpha 0.1 --kappa 72 --minsup 1 --minsize 1 
