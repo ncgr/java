@@ -45,12 +45,12 @@ public class FRFinder {
     private int minSize = MINSIZE; // minimum size: minimum number of de Bruijn nodes that an FR must contain to be considered frequent
     private boolean useRC = USERC; // indicates if the sequence (e.g. FASTA file) had its reverse complement appended
 
-    // the ordered collection of all node clusters
+    // the ordered collection of all FRs
     private TreeSet<FrequentedRegion> frequentedRegions;
 
     // maps a nodeId to the set of paths that contain it
     TreeMap<Long,Set<Path>> nodePaths; // keyed and ordered by nodeId
-   
+
     /**
      * Construct with a populated Graph and required parameters
      */
@@ -73,7 +73,7 @@ public class FRFinder {
         nodePaths = g.nodePaths;
         if (verbose) printNodePaths();
 
-        // create initial node clusters, each containing only one node and all of its paths
+        // create initial FRs, each containing only one node and all of its paths
         frequentedRegions = new TreeSet<>();
         for (long nodeId : nodePaths.keySet()) {
             TreeSet<Long> nodes = new TreeSet<>();
@@ -82,91 +82,41 @@ public class FRFinder {
             frequentedRegions.add(cluster);
         }
 
-        // spin through the clusters, adding merged pairs if they have non-zero support, until we reach equilibrium
+        // spin through the FRs, adding merged pairs if they have non-zero support, until we reach equilibrium
         int round = 0;
         FrequentedRegion newLowest = frequentedRegions.first();
         FrequentedRegion oldLowest = frequentedRegions.higher(newLowest);
         while (!oldLowest.equals(newLowest)) {
             round++;
             oldLowest = frequentedRegions.first();
-            Set<FrequentedRegion> newClusters = new TreeSet<>();
+            Set<FrequentedRegion> newFRs = new TreeSet<>();
             for (FrequentedRegion fr1 : frequentedRegions) {
                 FrequentedRegion fr2 = frequentedRegions.higher(fr1);
                 if (fr2!=null) {
                     FrequentedRegion merged = FrequentedRegion.merge(fr1, fr2, alpha, kappa);
-                    if (merged.fwdSupport>0) newClusters.add(merged);
+                    if (merged.fwdSupport>0) newFRs.add(merged);
                 }
             }
-            frequentedRegions.addAll(newClusters);
+            frequentedRegions.addAll(newFRs);
             // drop the lowest one
             frequentedRegions.remove(frequentedRegions.first());
             // get the new lowest one
             newLowest = frequentedRegions.first();
+            // DEBUG
             System.out.println("Round "+round+" num="+frequentedRegions.size()+" oldLowest="+oldLowest.nodes+" newLowest="+newLowest.nodes);
         }
 
-        // // TEST
-        // FrequentedRegion frmerge;
-        // boolean first;
+        // cull out the FRs that have support = # paths (they're very not interesting)
+        Set<FrequentedRegion> removeThese = new TreeSet<>();
+        for (FrequentedRegion fr : frequentedRegions) {
+            if (fr.fwdSupport==g.paths.size()) removeThese.add(fr);
+        }
+        frequentedRegions.removeAll(removeThese);
 
-        // // here's a boring cluster that contains nodes traversed by ALL paths
-        // frmerge = null;
-        // first = true;
-        // for (FrequentedRegion fr : frequentedRegions) {
-        //     if (fr.nodes.size()==1) {
-        //         long nodeId = fr.nodes.first();
-        //         if (nodeId==1 ||
-        //             nodeId==4 ||
-        //             nodeId==17 ||
-        //             nodeId==20 ||
-        //             nodeId==23 ||
-        //             nodeId==26 ||
-        //             nodeId==29 ||
-        //             nodeId==33 ||
-        //             nodeId==36 ||
-        //             nodeId==39) {
-        //             if (first) {
-        //                 frmerge = fr;
-        //                 first = false;
-        //             } else {
-        //                 frmerge = FrequentedRegion.merge(frmerge, fr, alpha, kappa);
-        //             }
-        //         }
-        //     }
-        // }
-        // if (frmerge.fwdSupport>0) frequentedRegions.add(frmerge);
-
-        // // here's a cluster that contains nodes only traversed by HD afflicted paths plus common nodes on ends
-        // frmerge = null;
-        // first = true;
-        // for (FrequentedRegion fr : frequentedRegions) {
-        //     if (fr.nodes.size()==1) {
-        //         long nodeId = fr.nodes.first();
-        //         if (
-        //             nodeId==4 ||
-        //             nodeId==5 ||
-        //             nodeId==6 ||
-        //             nodeId==7 ||
-        //             nodeId==9 ||
-        //             nodeId==11 ||
-        //             nodeId==14 ||
-        //             nodeId==15 ||
-        //             nodeId==17
-        //             ) {
-        //             if (first) {
-        //                 frmerge = fr;
-        //                 first = false;
-        //             } else {
-        //                 frmerge = FrequentedRegion.merge(frmerge, fr, alpha, kappa);
-        //             }
-        //         }
-        //     }
-        // }
-        // if (frmerge.fwdSupport>0) frequentedRegions.add(frmerge);
-        
         if (verbose) printFrequentedRegions();
         printFrequentedRegions();
-        
+
+        printPathFRs();
     }
 
     public double getAlpha() {
@@ -394,12 +344,15 @@ public class FRFinder {
     }
 
     /**
-     * Print out the node clusters.
+     * Print out the FRs.
      */
-        void printFrequentedRegions() {
+    void printFrequentedRegions() {
         printHeading("FREQUENTED REGIONS");
+        int c = 1;
         for (FrequentedRegion fr : frequentedRegions) {
+            System.out.print(c+"\t");
             System.out.println(fr.toString());
+            c++;
         }
     }
 
@@ -422,6 +375,30 @@ public class FRFinder {
             // System.out.println(sequence);
             // trimmed sequence beginning and end
             System.out.println(sequence.substring(0,100)+"........."+sequence.substring(length-101,length));
+        }
+    }
+
+    /**
+     * Print the path names and the FRs that have subpaths belonging to those paths.
+     * This can be used as input to a classification routine.
+     */
+    void printPathFRs() {
+        printHeading("PATH FREQUENTED REGIONS");
+        // columns
+        System.out.print("Path\tCat");
+        int c = 1;
+        for (FrequentedRegion fr : frequentedRegions) {
+            System.out.print("\t"+c);
+            c++;
+        }
+        System.out.println("");
+        // rows
+        for (Path path : g.paths) {
+            System.out.print(path.name+"\t"+path.category);
+            for (FrequentedRegion fr : frequentedRegions) {
+                System.out.print("\t"+fr.countSubpathsOf(path));
+            }
+            System.out.println("");
         }
     }
 }

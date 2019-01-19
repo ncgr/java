@@ -24,6 +24,7 @@ public class FrequentedRegion implements Comparable<FrequentedRegion> {
     Map<Long,String> nodeSequences;
 
     // the full strain/subject/subspecies paths, keyed and sorted by path name and nodes
+    // NOTE: this could alternatively be the originating Graph instance, since it has the paths as well.
     TreeSet<Path> paths;
 
     // the "maximal" subpaths, identified by their originating path name, that start and end on nodes in this cluster
@@ -249,7 +250,7 @@ public class FrequentedRegion implements Comparable<FrequentedRegion> {
      * Return a string summary of this frequented region.
      */
     public String toString() {
-        String s = "avgLength="+avgLength+"\tfwdSupport="+fwdSupport+"\tNodes:";
+        String s = "";
         for (long nodeId : nodes) {
             s += " "+nodeId;
         }
@@ -264,23 +265,10 @@ public class FrequentedRegion implements Comparable<FrequentedRegion> {
             // s += "\n "+subpath.getLabel()+subpath.nodes.toString().replace(" ","").replace("[","").replace("]","");
         }
         int len = s.length();
-        if (len<10) s += "\t";
-        if (len<20) s += "\t";
-        if (len<30) s += "\t";
-        if (len<40) s += "\t";
-        if (len<50) s += "\t";
-        if (len<60) s += "\t";
-        if (len<70) s += "\t";
-        if (len<80) s += "\t";
-        if (len<90) s += "\t";
-        if (len<100) s += "\t";
-        int total = 0;
+        for (int i=8; i<=56; i+=8) if (len<i) s += "\t";
+        s += avgLength+"\t"+fwdSupport;
         for (String category : categoryCount.keySet()) {
-            total += categoryCount.get(category);
-        }
-        s += "\ttotal="+total;
-        for (String category : categoryCount.keySet()) {
-            s += "\t"+category+":"+categoryCount.get(category);
+            s += " "+category+":"+categoryCount.get(category);
         }
         return s;
     }
@@ -333,4 +321,26 @@ public class FrequentedRegion implements Comparable<FrequentedRegion> {
         // }
         return new FrequentedRegion(nodes, paths, nodeSequences, alpha, kappa);
     }
+
+    /**
+     * Return true if this FR contains a subpath which belongs to the given Path.
+     */
+    public boolean containsSubpathOf(Path path) {
+        for (Path sp : subpaths) {
+            if (sp.name.equals(path.name)) return true;
+        }
+        return false;
+    }
+
+    /**
+     * Return a count of subpaths of FR that belong to the given Path.
+     */
+    public int countSubpathsOf(Path path) {
+        int count = 0;
+        for (Path sp : subpaths) {
+            if (sp.name.equals(path.name)) count++;
+        }
+        return count;
+    }
+
 }
