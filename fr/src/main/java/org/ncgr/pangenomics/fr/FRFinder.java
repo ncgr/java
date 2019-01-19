@@ -3,6 +3,7 @@ package org.ncgr.pangenomics.fr;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.LinkedList;
 import java.util.Map;
@@ -74,36 +75,40 @@ public class FRFinder {
         if (verbose) printNodePaths();
 
         // create initial FRs, each containing only one node and all of its paths
-        frequentedRegions = new TreeSet<>();
+        TreeSet<FrequentedRegion> singletons = new TreeSet<>();
         for (long nodeId : nodePaths.keySet()) {
             TreeSet<Long> nodes = new TreeSet<>();
             nodes.add(nodeId);
-            FrequentedRegion cluster = new FrequentedRegion(nodes, g.paths, g.nodeSequences, alpha, kappa);
-            frequentedRegions.add(cluster);
+            singletons.add(new FrequentedRegion(nodes, g.nodeSequences, g.paths, alpha, kappa));
         }
+        frequentedRegions = new TreeSet<>();
+        frequentedRegions.addAll(singletons);
 
-        // spin through the FRs, adding merged pairs if they have non-zero support, until we reach equilibrium
+        // spin through the FRs, merging each with a singleton if it has have non-zero support, until we reach equilibrium
+        // NOTE: this is absurdly slow, for testing purposes only!!!
+        FrequentedRegion newHighest = frequentedRegions.last();
+        FrequentedRegion oldHighest = frequentedRegions.lower(newHighest);
         int round = 0;
-        FrequentedRegion newLowest = frequentedRegions.first();
-        FrequentedRegion oldLowest = frequentedRegions.higher(newLowest);
-        while (!oldLowest.equals(newLowest)) {
+        while (!oldHighest.equals(newHighest)) {
             round++;
-            oldLowest = frequentedRegions.first();
+            oldHighest = frequentedRegions.last();
             Set<FrequentedRegion> newFRs = new TreeSet<>();
             for (FrequentedRegion fr1 : frequentedRegions) {
-                FrequentedRegion fr2 = frequentedRegions.higher(fr1);
-                if (fr2!=null) {
+                for (FrequentedRegion fr2 : singletons) {
                     FrequentedRegion merged = FrequentedRegion.merge(fr1, fr2, alpha, kappa);
                     if (merged.fwdSupport>0) newFRs.add(merged);
                 }
+                // FrequentedRegion fr2 = frequentedRegions.higher(fr1);
+                // if (fr2!=null) {
+                // }
             }
             frequentedRegions.addAll(newFRs);
-            // drop the lowest one
-            frequentedRegions.remove(frequentedRegions.first());
+            // // drop the lowest one
+            // frequentedRegions.remove(frequentedRegions.first());
             // get the new lowest one
-            newLowest = frequentedRegions.first();
+            newHighest = frequentedRegions.last();
             // DEBUG
-            System.out.println("Round "+round+" num="+frequentedRegions.size()+" oldLowest="+oldLowest.nodes+" newLowest="+newLowest.nodes);
+            System.out.println("Round "+round+" num="+frequentedRegions.size()+" oldHighest="+oldHighest.nodes+" newHighest="+newHighest.nodes);
         }
 
         // cull out the FRs that have support = # paths (they're very not interesting)
@@ -113,6 +118,21 @@ public class FRFinder {
         }
         frequentedRegions.removeAll(removeThese);
 
+        // DEBUG
+        // explicitly add some known-to-be-interesting FRs
+        TreeSet<Long> caseNodes = new TreeSet<>();
+        TreeSet<Long> controlNodes = new TreeSet<>();
+        long[] caseNodeIds = {4, 5, 6, 7, 9, 11, 14, 15};
+        long[] controlNodeIds = {4, 8, 10, 12, 13, 16};
+        for (long nodeId : caseNodeIds) {
+            caseNodes.add(nodeId);
+        }
+        for (long nodeId : controlNodeIds) {
+            controlNodes.add(nodeId);
+        }
+        frequentedRegions.add(new FrequentedRegion(caseNodes, g.nodeSequences, g.paths, alpha, kappa));
+        frequentedRegions.add(new FrequentedRegion(controlNodes, g.nodeSequences, g.paths, alpha, kappa));
+        
         if (verbose) printFrequentedRegions();
         printFrequentedRegions();
 

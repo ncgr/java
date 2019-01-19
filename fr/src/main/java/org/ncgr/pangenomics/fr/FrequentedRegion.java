@@ -47,9 +47,9 @@ public class FrequentedRegion implements Comparable<FrequentedRegion> {
     int avgLength;
 
     /**
-     * Construct given a set of nodes and full paths and sequences, along with alpha and kappa filter parameters.
+     * Construct given a set of nodes and node sequences, the full set of genome paths, and alpha and kappa filter parameters.
      */
-    FrequentedRegion(TreeSet<Long> nodes, TreeSet<Path> paths, Map<Long,String> nodeSequences, double alpha, int kappa) {
+    FrequentedRegion(TreeSet<Long> nodes, Map<Long,String> nodeSequences, TreeSet<Path> paths, double alpha, int kappa) {
         this.nodes = nodes;
         this.paths = paths;
         this.nodeSequences = nodeSequences;
@@ -319,7 +319,7 @@ public class FrequentedRegion implements Comparable<FrequentedRegion> {
         //     }
         //     System.out.println(" "+paths.get(pathName));
         // }
-        return new FrequentedRegion(nodes, paths, nodeSequences, alpha, kappa);
+        return new FrequentedRegion(nodes, nodeSequences, paths, alpha, kappa);
     }
 
     /**
