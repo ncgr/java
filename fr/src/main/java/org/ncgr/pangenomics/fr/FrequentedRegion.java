@@ -76,7 +76,7 @@ public class FrequentedRegion implements Comparable<FrequentedRegion> {
     }
 
     /**
-     * Equality is simply based on the nodes in the frequented region.
+     * Equality is simply based on the nodes.
      */
     public boolean equals(FrequentedRegion that) {
         return this.nodes.equals(that.nodes);
@@ -86,13 +86,31 @@ public class FrequentedRegion implements Comparable<FrequentedRegion> {
      * Compare based on total length (support*avgLength), number of nodes and finally the first node's value.
      */
     public int compareTo(FrequentedRegion that) {
-        if (this.totalLength!=that.totalLength) {
-            return Integer.compare(this.totalLength, that.totalLength);
-        } else if (this.nodes.size()!=that.nodes.size()) {
-            return Integer.compare(this.nodes.size(), that.nodes.size());
-        } else {
-            return Long.compare(this.nodes.first(), that.nodes.first());
+        Long thisId = this.nodes.first();
+        Long thatId = that.nodes.first();
+        while (thisId==thatId) {
+            if (this.nodes.higher(thisId)==null || that.nodes.higher(thatId)==null) {
+                return Integer.compare(this.nodes.size(), that.nodes.size());
+            } else {
+                thisId = this.nodes.higher(thisId);
+                thatId = that.nodes.higher(thatId);
+            }
         }
+        return Long.compare(thisId, thatId);
+                
+        // if (this.equals(that)) {
+        //     return 0;
+        // } else if (this.nodes.containsAll(that.nodes)) {
+        //     return 1;
+        // } else if (that.nodes.containsAll(this.nodes)) {
+        //     return -1;
+        // } else {
+        //     return Integer.compare(this.totalLength, that.totalLength);
+        // } else if (this.nodes.size()!=that.nodes.size()) {
+        //     return Integer.compare(this.nodes.size(), that.nodes.size());
+        // } else {
+        //     return Long.compare(this.nodes.first(), that.nodes.first());
+        // }
     }
 
     /**
@@ -263,6 +281,12 @@ public class FrequentedRegion implements Comparable<FrequentedRegion> {
         s += totalLength+"\t"+support;
         for (String label : labelCount.keySet()) {
             s += " "+label+":"+labelCount.get(label);
+        }
+        // HACK
+        if (!labelCount.containsKey("1") && !labelCount.containsKey("2")) {
+            s += "\t\tCONTROL ONLY";
+        } else if (!labelCount.containsKey("3")) {
+            s += "\t\tCASE ONLY";
         }
         return s;
     }

@@ -86,7 +86,7 @@ public class FRFinder {
         
         // build the FRs round by round
         int round = 0;
-        while (round<3) {
+        while (round<2) {
             // a round
             round++;
             Set<FrequentedRegion> newFRs = Collections.synchronizedSet(new TreeSet<>());       // the FRs we're adding after this round
@@ -95,16 +95,17 @@ public class FRFinder {
                         //////////
                         FrequentedRegion merged = FrequentedRegion.merge(fr1, fr2, g, alpha, kappa);
                         if (!frequentedRegions.contains(merged)) {
-                            // add this merged FR if it meets requirements
-                            if (merged.nodes.size()>=minSize && merged.support>=minSup) {
-                                newFRs.add(merged);
-                            }
+                            newFRs.add(merged);
+                            // // add this merged FR if it meets requirements
+                            // if (merged.nodes.size()>=minSize && merged.support>=minSup) {
+                            // }
                         }
                         //////////
                     });
             }
             // append the new accepted FRs to the full set
             frequentedRegions.addAll(newFRs);
+
             // DEBUG
             FrequentedRegion highest = frequentedRegions.last();
             System.out.println("Round "+round+" num="+frequentedRegions.size()+
@@ -127,6 +128,13 @@ public class FRFinder {
             }
             System.out.println("-------------------------------------------------");
         }
+
+        // purge the remaining non-legit FRs (like the original singletons if too small)
+        Set<FrequentedRegion> removes = new TreeSet<>();
+        for (FrequentedRegion fr : frequentedRegions) {
+            if (fr.nodes.size()<minSize || fr.support<minSup) removes.add(fr);
+        }
+        frequentedRegions.removeAll(removes);
             
         // while (round<2) {
         //     round++;
