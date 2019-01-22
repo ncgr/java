@@ -268,53 +268,13 @@ public class FrequentedRegion implements Comparable<FrequentedRegion> {
     }
 
     /**
-     * Merge two FrequentedRegions and return the result.
+     * Merge two FrequentedRegions associated with a Graph, subject to alpha and kappa, and return the result.
      */
-    static FrequentedRegion merge(FrequentedRegion nc1, FrequentedRegion nc2, double alpha, int kappa) {
+    static FrequentedRegion merge(FrequentedRegion fr1, FrequentedRegion fr2, Graph g, double alpha, int kappa) {
         TreeSet<Long> nodes = new TreeSet<>();
-        TreeSet<Path> paths = new TreeSet<>();
-        Map<Long,String> nodeSequences = new TreeMap<>();
-        nodes.addAll(nc1.nodes);
-        nodes.addAll(nc2.nodes);
-        nodeSequences.putAll(nc1.nodeSequences);
-        nodeSequences.putAll(nc2.nodeSequences);
-        paths.addAll(nc1.paths);
-        paths.addAll(nc2.paths);
-
-        // // DEBUG
-        // System.out.println("merge: nodes="+nodes);
-        // for (String pathName : paths.keySet()) {
-        //     long left = 0;
-        //     long right = 0;
-        //     for (long nodeId : paths.get(pathName)) {
-        //         if (nodes.contains(nodeId)) {
-        //             left = nodeId;
-        //             break;
-        //         }
-        //     }
-        //     Iterator<Long> it = paths.get(pathName).descendingIterator();
-        //     while (it.hasNext()) {
-        //         long nodeId = it.next();
-        //         if (nodes.contains(nodeId)) {
-        //             right = nodeId;
-        //             break;
-        //         }
-        //     }
-        //     System.out.print("path="+pathName+" left="+left+" right="+right+":");
-        //     boolean started = false;
-        //     boolean ended = false;
-        //     for (long nodeId : paths.get(pathName)) {
-        //         if (nodeId==left) {
-        //             started = true;
-        //         }
-        //         if (started && !ended) System.out.print(" "+nodeId);
-        //         if (nodeId==right) {
-        //             ended = true;
-        //         }
-        //     }
-        //     System.out.println(" "+paths.get(pathName));
-        // }
-        return new FrequentedRegion(nodes, nodeSequences, paths, alpha, kappa);
+        nodes.addAll(fr1.nodes);
+        nodes.addAll(fr2.nodes);
+        return new FrequentedRegion(nodes, g.nodeSequences, g.paths, alpha, kappa);
     }
 
     /**

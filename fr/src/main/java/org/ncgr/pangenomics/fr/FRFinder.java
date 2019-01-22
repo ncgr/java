@@ -93,7 +93,7 @@ public class FRFinder {
             for (FrequentedRegion fr1 : frequentedRegions) {
                 frequentedRegions.parallelStream().forEach((fr2) -> {
                         //////////
-                        FrequentedRegion merged = FrequentedRegion.merge(fr1, fr2, alpha, kappa);
+                        FrequentedRegion merged = FrequentedRegion.merge(fr1, fr2, g, alpha, kappa);
                         if (!frequentedRegions.contains(merged)) {
                             // add this merged FR if it meets requirements
                             if (merged.nodes.size()>=minSize && merged.support>=minSup) {
