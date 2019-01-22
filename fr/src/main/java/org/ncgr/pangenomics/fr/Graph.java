@@ -227,4 +227,93 @@ public class Graph {
         verbose = true;
     }
 
+    /**
+     * Print a delineating heading, for general use.
+     */
+    static void printHeading(String heading) {
+        for (int i=0; i<heading.length(); i++) System.out.print("="); System.out.println("");
+        System.out.println(heading);
+        for (int i=0; i<heading.length(); i++) System.out.print("="); System.out.println("");
+    }
+
+    /**
+     * Print out the nodes along with a k histogram.
+     */
+    void printNodes() {
+        Map<Integer,Integer> countMap = new TreeMap<>();
+        printHeading("NODES");
+        for (long nodeId : nodeSequences.keySet()) {
+            String sequence = nodeSequences.get(nodeId);
+            int length = sequence.length();
+            if (countMap.containsKey(length)) {
+                countMap.put(length, ((int)countMap.get(length))+1);
+            } else {
+                countMap.put(length, 1);
+            }
+            System.out.println(nodeId+"("+length+"):"+sequence);
+        }
+        printHeading("k HISTOGRAM");
+        for (int len : countMap.keySet()) {
+            int counts = countMap.get(len);
+            System.out.print("length="+len+"\t("+counts+")\t");
+            for (int i=1; i<=counts; i++) System.out.print("X");
+            System.out.println("");
+        }
+    }
+
+    /**
+     * Print the paths, labeled by pathName.
+     */
+    void printPaths() {
+        printHeading("PATHS");
+        for (Path path : paths) {
+            System.out.print(path.getNameAndLabel()+":");
+            for (long nodeId : path.nodes) {
+                System.out.print(" "+nodeId);
+            }
+            System.out.println("");
+        }
+    }
+
+    /**
+     * Print out the node paths along with counts.
+     */
+    void printNodePaths() {
+        printHeading("NODE PATHS");
+        for (long nodeId : nodePaths.keySet()) {
+            Set<Path> paths = nodePaths.get(nodeId);
+            String asterisk = " ";
+            if (paths.size()==paths.size()) asterisk="*";
+            System.out.print(asterisk+nodeId+"("+paths.size()+"):");
+            for (Path path : paths) {
+                System.out.print(" "+path.name);
+            }
+            System.out.println("");
+        }
+    }
+
+    /**
+     * Print the sequences for each path, labeled by pathName.
+     */
+    void printPathSequences() {
+        printHeading("PATH SEQUENCES");
+        for (String pathName : pathSequences.keySet()) {
+            String sequence = pathSequences.get(pathName);
+            int length = sequence.length();
+            String heading = ">"+pathName+" ("+length+")";
+            System.out.print(heading);
+            for (int i=heading.length(); i<19; i++) System.out.print(" "); System.out.print(".");
+            for (int n=0; n<19; n++) {
+                for (int i=0; i<9; i++) System.out.print(" "); System.out.print(".");
+            }
+            System.out.println("");
+            // // entire sequence
+            // System.out.println(sequence);
+            // trimmed sequence beginning and end
+            System.out.println(sequence.substring(0,100)+"........."+sequence.substring(length-101,length));
+        }
+    }
+
+
+
 }

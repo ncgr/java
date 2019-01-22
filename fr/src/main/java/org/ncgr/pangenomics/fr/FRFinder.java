@@ -4,11 +4,13 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.Set;
+import java.util.HashSet;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -49,9 +51,6 @@ public class FRFinder {
     // the ordered collection of all FRs
     private TreeSet<FrequentedRegion> frequentedRegions;
 
-    // maps a nodeId to the set of paths that contain it
-    TreeMap<Long,Set<Path>> nodePaths; // keyed and ordered by nodeId
-
     /**
      * Construct with a populated Graph and required parameters
      */
@@ -66,17 +65,14 @@ public class FRFinder {
      */
     public void findFRs() {
         if (verbose) {
-            printNodes();
-            printPaths();
+            g.printNodes();
+            g.printPaths();
+            g.printNodePaths();
         }
-            
-        // initialize nodePaths with those in g
-        nodePaths = g.nodePaths;
-        if (verbose) printNodePaths();
 
         // create initial FRs, each containing only one node
         frequentedRegions = new TreeSet<>();
-        for (long nodeId : nodePaths.keySet()) {
+        for (long nodeId : g.nodePaths.keySet()) {
             TreeSet<Long> nodes = new TreeSet<>();
             nodes.add(nodeId);
             frequentedRegions.add(new FrequentedRegion(nodes, g.nodeSequences, g.paths, alpha, kappa));
@@ -90,40 +86,32 @@ public class FRFinder {
         
         // build the FRs round by round
         int round = 0;
-        int maxSize = 0;
-        while (maxSize<5) {
+        while (round<3) {
+            // a round
             round++;
-            Set<FrequentedRegion> newFRs = new TreeSet<>();
-            List<TreeSet<Long>> newDoneList = new LinkedList<>();
-            for (TreeSet<Long> nodes : doneList) {
-                for (Long node : g.nodeSequences.keySet()) {
-                    if (!nodes.contains(node)) {
-                        TreeSet<Long> newNodes = new TreeSet<>();
-                        newNodes.addAll(nodes);
-                        newNodes.add(node);
-                        if (!doneList.contains(newNodes)) {
-                            newDoneList.add(newNodes);
-                            if (newNodes.size()>=minSize) {
-                                FrequentedRegion newFR = new FrequentedRegion(newNodes, g.nodeSequences, g.paths, alpha, kappa);
-                                // add this merged FR if it meets requirements
-                                if (newFR.support>=minSup) {
-                                    newFRs.add(newFR);
-                                }
+            Set<FrequentedRegion> newFRs = Collections.synchronizedSet(new TreeSet<>());       // the FRs we're adding after this round
+            for (FrequentedRegion fr1 : frequentedRegions) {
+                frequentedRegions.parallelStream().forEach((fr2) -> {
+                        //////////
+                        FrequentedRegion merged = FrequentedRegion.merge(fr1, fr2, alpha, kappa);
+                        if (!frequentedRegions.contains(merged)) {
+                            // add this merged FR if it meets requirements
+                            if (merged.nodes.size()>=minSize && merged.support>=minSup) {
+                                newFRs.add(merged);
                             }
                         }
-                    }
-                }
+                        //////////
+                    });
             }
-            doneList = newDoneList;
+            // append the new accepted FRs to the full set
             frequentedRegions.addAll(newFRs);
-            
             // DEBUG
             FrequentedRegion highest = frequentedRegions.last();
             System.out.println("Round "+round+" num="+frequentedRegions.size()+
                                " highest="+highest.nodes+" totalLength="+highest.totalLength+" support="+highest.support+" avgLength="+highest.avgLength);
             // print the histogram of FR sizes
             Map<Integer,Integer> countMap = new TreeMap<>();
-            maxSize = 0;
+            int maxSize = 0;
             for (FrequentedRegion fr : frequentedRegions) {
                 if (fr.nodes.size()>maxSize) maxSize = fr.nodes.size();
                 if (countMap.containsKey(fr.nodes.size())) {
@@ -138,31 +126,66 @@ public class FRFinder {
                 System.out.println("FR node size (#):"+num+" ("+countMap.get(num)+")");
             }
             System.out.println("-------------------------------------------------");
-            
         }
-
-
-        // // DEBUG
-        // // explicitly add some known-to-be-interesting FRs
-        // TreeSet<Long> caseNodes = new TreeSet<>();
-        // TreeSet<Long> controlNodes = new TreeSet<>();
-        // long[] caseNodeIds = {4, 5, 6, 7, 9, 11, 14, 15};
-        // long[] controlNodeIds = {4, 8, 10, 12, 13, 16};
-        // for (long nodeId : caseNodeIds) {
-        //     caseNodes.add(nodeId);
+            
+        // while (round<2) {
+        //     round++;
+        //     List<TreeSet<Long>> newDoneList = new LinkedList<>(); // has to be added to doneList at the end to avoid concurrent modification exception
+        //     Set<FrequentedRegion> newFRs = new TreeSet<>(); // the FRs we're adding in this round
+        //     for (TreeSet<Long> leftNodes : doneList) {
+        //         for (TreeSet<Long> rightNodes : doneList) {
+        //             if (!leftNodes.equals(rightNodes)) {
+        //                 TreeSet<Long> newNodes = new TreeSet<>();
+        //                 newNodes.addAll(leftNodes);
+        //                 newNodes.addAll(rightNodes);
+        //                 if (!doneList.contains(newNodes)) {
+        //                     newDoneList.add(newNodes);
+        //                     if (newNodes.size()>=minSize) {
+        //                         FrequentedRegion newFR = new FrequentedRegion(newNodes, g.nodeSequences, g.paths, alpha, kappa);
+        //                         // add this merged FR if it meets requirements
+        //                         if (newFR.support>=minSup) {
+        //                             newFRs.add(newFR);
+        //                             if (newFR.totalLength>maxTotalLength) {
+        //                                 maxTotalLength = newFR.totalLength;
+        //                                 System.out.println(newFR);
+        //                             }
+        //                         }
+        //                     }
+        //                 }
+        //             }
+        //         }
+        //     }
+        //     doneList = newDoneList;
+        //     frequentedRegions.addAll(newFRs);
+            
+        //     // DEBUG
+        //     FrequentedRegion highest = frequentedRegions.last();
+        //     System.out.println("Round "+round+" num="+frequentedRegions.size()+
+        //                        " highest="+highest.nodes+" totalLength="+highest.totalLength+" support="+highest.support+" avgLength="+highest.avgLength);
+        //     // print the histogram of FR sizes
+        //     Map<Integer,Integer> countMap = new TreeMap<>();
+        //     maxSize = 0;
+        //     for (FrequentedRegion fr : frequentedRegions) {
+        //         if (fr.nodes.size()>maxSize) maxSize = fr.nodes.size();
+        //         if (countMap.containsKey(fr.nodes.size())) {
+        //             int count = countMap.get(fr.nodes.size());
+        //             count++;
+        //             countMap.put(fr.nodes.size(), count);
+        //         } else {
+        //             countMap.put(fr.nodes.size(), 1);
+        //         }
+        //     }
+        //     for (int num : countMap.keySet()) {
+        //         System.out.println("FR node size (#):"+num+" ("+countMap.get(num)+")");
+        //     }
+        //     System.out.println("-------------------------------------------------");
+            
         // }
-        // for (long nodeId : controlNodeIds) {
-        //     controlNodes.add(nodeId);
-        // }
-        // frequentedRegions.add(new FrequentedRegion(caseNodes, g.nodeSequences, g.paths, alpha, kappa));
-        // frequentedRegions.add(new FrequentedRegion(controlNodes, g.nodeSequences, g.paths, alpha, kappa));
-        
+
         if (verbose) printFrequentedRegions();
 
-
-        // DEBUG
-        // printFrequentedRegions();
-
+        // // DEBUG
+        printFrequentedRegions();
         // printPathFRs();
     }
 
@@ -335,93 +358,12 @@ public class FRFinder {
     }
 
     /**
-     * Print out the nodes along with a k histogram.
-     */
-    void printNodes() {
-        Map<Integer,Integer> countMap = new TreeMap<>();
-        printHeading("NODES");
-        for (long nodeId : g.nodeSequences.keySet()) {
-            String sequence = g.nodeSequences.get(nodeId);
-            int length = sequence.length();
-            if (countMap.containsKey(length)) {
-                countMap.put(length, ((int)countMap.get(length))+1);
-            } else {
-                countMap.put(length, 1);
-            }
-            System.out.println(nodeId+"("+length+"):"+sequence);
-        }
-        printHeading("k HISTOGRAM");
-        for (int len : countMap.keySet()) {
-            int counts = countMap.get(len);
-            System.out.print("length="+len+"\t("+counts+")\t");
-            for (int i=1; i<=counts; i++) System.out.print("X");
-            System.out.println("");
-        }
-    }
-
-    /**
-     * Print the paths, labeled by pathName.
-     */
-    void printPaths() {
-        printHeading("PATHS");
-        for (Path path : g.paths) {
-            System.out.print(path.getNameAndLabel()+":");
-            for (long nodeId : path.nodes) {
-                System.out.print(" "+nodeId);
-            }
-            System.out.println("");
-        }
-    }
-
-    /**
-     * Print out the node paths along with counts.
-     */
-    void printNodePaths() {
-        printHeading("NODE PATHS");
-        for (long nodeId : nodePaths.keySet()) {
-            Set<Path> paths = nodePaths.get(nodeId);
-            String asterisk = " ";
-            if (paths.size()==g.paths.size()) asterisk="*";
-            System.out.print(asterisk+nodeId+"("+paths.size()+"):");
-            for (Path path : paths) {
-                System.out.print(" "+path.name);
-            }
-            System.out.println("");
-        }
-    }
-
-    /**
      * Print out the FRs.
      */
     void printFrequentedRegions() {
         printHeading("FREQUENTED REGIONS");
-        int c = 1;
         for (FrequentedRegion fr : frequentedRegions) {
-            System.out.print(c+"\t");
             System.out.println(fr.toString());
-            c++;
-        }
-    }
-
-    /**
-     * Print the sequences for each path, labeled by pathName.
-     */
-    void printPathSequences() {
-        printHeading("PATH SEQUENCES");
-        for (String pathName : g.pathSequences.keySet()) {
-            String sequence = g.pathSequences.get(pathName);
-            int length = sequence.length();
-            String heading = ">"+pathName+" ("+length+")";
-            System.out.print(heading);
-            for (int i=heading.length(); i<19; i++) System.out.print(" "); System.out.print(".");
-            for (int n=0; n<19; n++) {
-                for (int i=0; i<9; i++) System.out.print(" "); System.out.print(".");
-            }
-            System.out.println("");
-            // // entire sequence
-            // System.out.println(sequence);
-            // trimmed sequence beginning and end
-            System.out.println(sequence.substring(0,100)+"........."+sequence.substring(length-101,length));
         }
     }
 
@@ -432,7 +374,7 @@ public class FRFinder {
     void printPathFRs() {
         printHeading("PATH FREQUENTED REGIONS");
         // columns
-        System.out.print("Path\tCat");
+        System.out.print("Path\tLabel");
         int c = 1;
         for (FrequentedRegion fr : frequentedRegions) {
             System.out.print("\t"+c);
