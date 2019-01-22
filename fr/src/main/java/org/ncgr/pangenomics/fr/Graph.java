@@ -38,17 +38,14 @@ public class Graph {
     
     long minLen = Long.MAX_VALUE;  // minimum sequence length
 
-    // maps nodes to their DNA sequences
-    TreeMap<Long,String> nodeSequences; // keyed by nodeId, ordered by nodeId for convenience
+    // the nodes contained in this graph (which, in turn, contain their sequences)
+    TreeSet<Node> nodes;
 
-    // maps a nodeId to the set of paths that traverse it
-    TreeMap<Long,Set<Path>> nodePaths; // keyed and ordered by nodeId
+    // each Path provides the ordered list of nodes that it traverses, along with its full sequence
+    TreeSet<Path> paths; // (ordered simply for convenience)
     
-    // each Path provides the ordered list of nodes that it traverses; ordered by path label/name
-    TreeSet<Path> paths; // ordered by label/name/nodes
-    
-    // maps a Path to its full DNA sequence, ordered by path name
-    TreeMap<String,String> pathSequences; // keyed and ordered by path name
+    // maps a Node to a set of Paths that traverse it
+    TreeMap<Node,Set<Path>> nodePaths; // keyed and ordered by Node (for convenience)
 
     /**
      * Constructor does nothing; use read methods to populate the graph from files.
@@ -63,10 +60,9 @@ public class Graph {
         this.jsonFile = jsonFile;
 
         // instantiate the instance objects
-        nodeSequences = new TreeMap<>();   // keyed and ordered by nodeId
+        nodes = new TreeSet<>();
+        paths = new TreeSet<>();
         nodePaths = new TreeMap<>();       // keyed and ordered by nodeId
-        paths = new TreeSet<>();           // ordered by path
-        pathSequences = new TreeMap<>();   // keyed and ordered by path name
 
         // read the vg-created JSON into a Vg.Graph
         if (verbose) System.out.println("Reading "+jsonFile+"...");
@@ -80,50 +76,41 @@ public class Graph {
         List<Vg.Path> vgPaths = graph.getPathList();
         List<Vg.Edge> vgEdges = graph.getEdgeList();
 
-        // populate nodeSequences
+        // populate nodes with their id and sequence, find the minimum sequence length
         for (Vg.Node node : vgNodes) {
-            long nodeId = node.getId();
+            long id = node.getId();
             String sequence = node.getSequence();
-            nodeSequences.put(nodeId, sequence);
             if (sequence.length()<minLen) minLen = sequence.length();
-	}
-
-        // populate paths and pathSequences
+            nodes.put(new Node(id, sequence));
+        }
+        
+        // populate paths
         for (Vg.Path vgPath : vgPaths) {
             String name = vgPath.getName();
-            // sample paths are assumed to start with "_thread_"
+            // NOTE: sample paths are assumed to start with "_thread_"
             String[] parts = name.split("_");
             if (parts.length>1 && parts[1].equals("thread")) {
-                // we've got a subject/strain/whatever path
+                // we've got a sample path
 		String pathName = parts[2];
                 int allele = Integer.parseInt(parts[4]); // 0 or 1
-                // assume unphased calls, so allele 0 is essentially reference, so only use allele 1
+                // NOTE: assume unphased calls, so allele 0 is essentially reference, so only use allele 1
                 if (allele==1) {
                     List<Vg.Mapping> vgMappingList = vgPath.getMappingList();
-                    // retreive or initialize this sample's sequence (so far)
-                    String sequence = null;
-                    if (pathSequences.containsKey(pathName)) {
-                        sequence = pathSequences.get(pathName);
-                    } else {
-                        sequence = "";
-                    }
-                    // retrieve or initialize this path
+                    // retrieve or initialize this path's nodes
                     LinkedList<Long> nodes = new LinkedList<>();
                     for (Path path : paths) {
                         if (path.name.equals(pathName)) {
                             nodes = path.nodes;
                         }
                     }
-                    // run through this particular mapping and append each node id to the node list, and the node sequence to the total-as-of-yet path sequence
+                    // run through this particular mapping and append each node id to the node list
                     boolean first = true;
                     for (Vg.Mapping vgMapping : vgMappingList) {
                         if (first && nodes.size()>0) {
                             // skip unless very first node
                         } else {
                             long nodeId = vgMapping.getPosition().getNodeId();
-                            String nodeSequence = nodeSequences.get(nodeId);
                             nodes.add(nodeId);
-                            sequence += nodeSequence;
                         }
                         first = false;
                     }
@@ -136,77 +123,80 @@ public class Graph {
                         }
                     }
                     if (!updated) {
-                        // create this new path
+                        // create this new path sans sequence
                         Path path = new Path(pathName, nodes);
                         paths.add(path);
                     }
-                    // update/add path sequence
-                    pathSequences.put(pathName, sequence);
                 }
             }
         }
 
+        // build the path sequences from their nodes (already populated above)
+        buildPathSequences();
+
         // find the node paths
-        findNodePaths();
+        buildNodePaths();
+    }
+
+    /**
+     * Return true if this and that Graph come from the same file.
+     */
+    public boolean equals(Graph that) {
+        if (this.jsonFile!=null && that.jsonFile!==null) {
+            return this.jsonFile.equals(that.jsonFile);
+        } else if (this.dotFile!=null && that.dotFile!=null && this.fastaFile!=null && that.fastaFile!=null) {
+            return this.dotFile.equals(that.dotFile) && this.fastaFile.equals(that.fastaFile);
+        } else {
+            return false;
+        }
+    }
+
+    /**
+     * Build the path sequences - just calls Path.buildSequence() for each path.
+     */
+    void buildPathSequences() {
+        for (Path path : paths) {
+            path.buildSequence();
+        }
     }
 
     /**
      * Find node paths: the set of paths that run through each node.
-     * NOTE: no support for Nlocs yet!
      */
-    void findNodePaths() {
+    void buildNodePaths() {
         // init empty paths for each node
-        for (long nodeId : nodeSequences.keySet()) {
-            nodePaths.put(nodeId, new TreeSet<Path>());
+        for (Node node : nodes) {
+            nodePaths.put(node, new TreeSet<Path>());
         }
         // now load the paths
         for (Path path : paths) {
-            for (long nodeId : path.nodes) {
-                nodePaths.get(nodeId).add(path);
+            for (Node node : path.nodes) {
+                nodePaths.get(node).add(path);
             }
         }
     }
 
-    // /**
-    //  * Find the gap on a path between a start and stop.
-    //  * NOTE: NOT SURE IF THIS WORKS USING INDEXES RATHER THAN SAMPLE NAMES
-    //  */
-    // public int findGap(List<Long> pathList, long start, long stop) {
-    //     int curStart = 1;
-    //     int curEnd = 1;
-    //     for (long s=start; s<=stop; s++) {
-    //         curEnd = curStart + nodeSequences.get(s).length() - 1;
-    //         curStart += nodeSequences.get(s).length() - (minLen-1);
-    //     }
-    //     int gap = curEnd - nodeSequences.get(start).length() - nodeSequences.get(stop).length();
-    //     if (gap<0) gap = 0;
-    //     // DEBUG
-    //     System.out.println("pathList="+pathList);
-    //     System.out.println(" start="+start+" stop="+stop+" gap="+gap);
-    //     return gap;
-    // }
-
     /**
-     * Set path categories from a tab-delimited file. Comment lines start with #.
+     * Set path labels from a tab-delimited file. Comment lines start with #.
      */
-    void setPathCategories(String categoriesFile) throws FileNotFoundException, IOException {
-        BufferedReader reader = new BufferedReader(new FileReader(categoriesFile));
+    void readPathLabels(String labelsFile) throws FileNotFoundException, IOException {
+        BufferedReader reader = new BufferedReader(new FileReader(labelsFile));
         String line = null;
-        Map<String,String> categories = new TreeMap<String,String>();
+        Map<String,String> labels = new TreeMap<String,String>();
         while ((line=reader.readLine())!=null) {
             if (!line.startsWith("#")) {
                 String[] fields = line.split("\t");
                 if (fields.length==2) {
-                    categories.put(fields[0], fields[1]);
+                    labels.put(fields[0], fields[1]);
                 }
             }
         }
-        if (categories.size()==paths.size()) {
+        if (labels.size()==paths.size()) {
             for (Path path : paths) {
-                path.setLabel(categories.get(path.name));
+                path.setLabel(labels.get(path.name));
             }
         } else {
-            System.err.println("ERROR: the categories file "+categoriesFile+" contains "+categories.size()+" labels while there are "+paths.size()+" paths in the graph.");
+            System.err.println("ERROR: the labels file "+labelsFile+" contains "+labels.size()+" labels while there are "+paths.size()+" paths in the graph.");
             System.exit(1);
         }
     }

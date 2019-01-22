@@ -17,17 +17,13 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class FrequentedRegion implements Comparable<FrequentedRegion> {
 
-    // this cluster's nodes
-    TreeSet<Long> nodes;
+    // the Graph that this FrequentedRegion belongs to
+    Graph graph;
 
-    // the sequences for ALL nodes, keyed by nodeId
-    Map<Long,String> nodeSequences;
-
-    // the full strain/subject/subspecies paths, keyed and sorted by path name and nodes
-    // NOTE: this could alternatively be the originating Graph instance, since it has the paths as well.
-    TreeSet<Path> paths;
-
-    // the "maximal" subpaths, identified by their originating path name, that start and end on nodes in this cluster
+    // the set of Nodes that encompass this FR
+    NodeSet nodes;
+    
+    // the subpaths, identified by their originating path name and label, that start and end on this FR's nodes
     TreeSet<Path> subpaths;
     
     // the forward (or total, if rc not enabled) support of this cluster
@@ -53,15 +49,14 @@ public class FrequentedRegion implements Comparable<FrequentedRegion> {
     int totalLength;
 
     /**
-     * Construct given a set of nodes and node sequences, the full set of genome paths, and alpha and kappa filter parameters.
+     * Construct given a Graph, NodeSet and alpha and kappa filter parameters.
      */
-    FrequentedRegion(TreeSet<Long> nodes, Map<Long,String> nodeSequences, TreeSet<Path> paths, double alpha, int kappa) {
+    FrequentedRegion(Graph graph, NodeSet nodes, double alpha, int kappa) {
+        this.graph = graph;
         this.nodes = nodes;
-        this.paths = paths;
-        this.nodeSequences = nodeSequences;
         this.alpha = alpha;
         this.kappa = kappa;
-        // compute the subpaths, average length, support.
+        // compute the subpaths, average length, support, etc.
         update();
     }
 
@@ -76,41 +71,17 @@ public class FrequentedRegion implements Comparable<FrequentedRegion> {
     }
 
     /**
-     * Equality is simply based on the nodes.
+     * Equality is simply based on the NodeSet.
      */
     public boolean equals(FrequentedRegion that) {
         return this.nodes.equals(that.nodes);
     }
     
     /**
-     * Compare based on total length (support*avgLength), number of nodes and finally the first node's value.
+     * Compare based on NodeSet comparison.
      */
     public int compareTo(FrequentedRegion that) {
-        Long thisId = this.nodes.first();
-        Long thatId = that.nodes.first();
-        while (thisId==thatId) {
-            if (this.nodes.higher(thisId)==null || that.nodes.higher(thatId)==null) {
-                return Integer.compare(this.nodes.size(), that.nodes.size());
-            } else {
-                thisId = this.nodes.higher(thisId);
-                thatId = that.nodes.higher(thatId);
-            }
-        }
-        return Long.compare(thisId, thatId);
-                
-        // if (this.equals(that)) {
-        //     return 0;
-        // } else if (this.nodes.containsAll(that.nodes)) {
-        //     return 1;
-        // } else if (that.nodes.containsAll(this.nodes)) {
-        //     return -1;
-        // } else {
-        //     return Integer.compare(this.totalLength, that.totalLength);
-        // } else if (this.nodes.size()!=that.nodes.size()) {
-        //     return Integer.compare(this.nodes.size(), that.nodes.size());
-        // } else {
-        //     return Long.compare(this.nodes.first(), that.nodes.first());
-        // }
+        return this.nodes.compareTo(that.nodes);
     }
 
     /**
@@ -119,14 +90,13 @@ public class FrequentedRegion implements Comparable<FrequentedRegion> {
     void updateLengths() {
         totalLength = 0;
         for (Path subpath : subpaths) {
-            for (long nodeId : subpath.nodes) {
-                String sequence = nodeSequences.get(nodeId);
-                if (sequence==null) {
+            for (Node node : subpath.nodes) {
+                if (node.sequence==null) {
                     // bail, this is an error
-                    System.err.println("ERROR: sequence is null for node "+nodeId);
+                    System.err.println("ERROR: sequence is null for node "+node.id);
                     System.exit(1);
                 } else {
-                    totalLength += sequence.length();
+                    totalLength += node.sequence.length();
                 }
             }
         }
@@ -144,43 +114,43 @@ public class FrequentedRegion implements Comparable<FrequentedRegion> {
         // loop through each genome path
         for (Path path : paths) {
             // find the left/right endpoints of the subpath
-            long left = 0;
-            long right = 0;
-            for (long nodeId : path.nodes) {
-                if (nodes.contains(nodeId)) {
+            Node left = null;
+            Node right = null;
+            for (Node node : path.nodes) {
+                if (nodes.contains(node)) {
                     if (left==0) {
-                        left = nodeId;
+                        left = node;
                     } else {
-                        right = nodeId;
+                        right = node;
                     }
                 }
             }
             
-            LinkedList<Long> subpathNodes = new LinkedList<>();
-            if (left!=0 && right==0) {
+            LinkedList<Node> subpathNodes = new LinkedList<>();
+            if (left!=null && right==null) {
                 // single-node subpath
                 subpathNodes.add(left);
-            } else if (left!=0 && right!=0) {
+            } else if (left!=null && right!=null) {
                 // load the insertions into a set for the kappa filter
-                Set<List<Long>> insertions = new HashSet<>();
+                Set<List<Node>> insertions = new HashSet<>();
                 // scan across the full path from left to right to create the subpath
                 boolean started = false;
                 boolean ended = false;
-                List<Long> currentInsertion = new LinkedList<>();
-                for (long nodeId : path.nodes) {
-                    if (nodeId==left) {
+                List<Node> currentInsertion = new LinkedList<>();
+                for (Node node : path.nodes) {
+                    if (node.equals(left)) {
                         // add the leftmost path node
-                        subpathNodes.add(nodeId);
+                        subpathNodes.add(node);
                         started = true;
-                    } else if (nodeId==right) {
+                    } else if (node.equals(right)) {
                         // add the rightmost path node
-                        subpathNodes.add(nodeId);
+                        subpathNodes.add(node);
                         ended = true;
                         break; // we're done with this loop
                     } else if (started && !ended) {
                         // add all path nodes between left and right
-                        subpathNodes.add(nodeId);
-                        if (nodes.contains(nodeId)) {
+                        subpathNodes.add(node);
+                        if (nodes.contains(node)) {
                             // NOT an insertion
                             if (currentInsertion.size()>0) {
                                 // finish off the previous insertion and start another
@@ -189,7 +159,7 @@ public class FrequentedRegion implements Comparable<FrequentedRegion> {
                             }
                         } else {
                             // IS an insertion
-                            currentInsertion.add(nodeId);
+                            currentInsertion.add(node);
                         }
                     }
                 }
@@ -201,8 +171,8 @@ public class FrequentedRegion implements Comparable<FrequentedRegion> {
                 boolean kappaOK = true;
                 for (List<Long> insertion : insertions) {
                     String insertionSequence = "";
-                    for (long nodeId : insertion) {
-                        insertionSequence += nodeSequences.get(nodeId);
+                    for (Node node : insertion) {
+                        insertionSequence += node.sequence;
                     }
                     if (insertionSequence.length()>kappa) {
                         kappaOK = false;
@@ -218,8 +188,8 @@ public class FrequentedRegion implements Comparable<FrequentedRegion> {
             }
             // alpha filter
             int in = 0;
-            for (long nodeId : subpathNodes) {
-                if (nodes.contains(nodeId)) {
+            for (Node node : subpathNodes) {
+                if (nodes.contains(node)) {
                     in++;
                 }
             }
@@ -265,7 +235,8 @@ public class FrequentedRegion implements Comparable<FrequentedRegion> {
      * Return a string summary of this frequented region.
      */
     public String toString() {
-        String s = nodes.toString();
+        String s = "";
+        for (Node node : nodes) s += " "+node.id;
         Map<String,Integer> labelCount = new TreeMap<>();
         for (Path subpath : subpaths) {
             if (labelCount.containsKey(subpath.label)) {
@@ -282,6 +253,7 @@ public class FrequentedRegion implements Comparable<FrequentedRegion> {
         for (String label : labelCount.keySet()) {
             s += " "+label+":"+labelCount.get(label);
         }
+        // DEBUG
         // HACK
         if (!labelCount.containsKey("1") && !labelCount.containsKey("2")) {
             s += "\t\tCONTROL ONLY";
@@ -292,13 +264,24 @@ public class FrequentedRegion implements Comparable<FrequentedRegion> {
     }
 
     /**
-     * Merge two FrequentedRegions associated with a Graph, subject to alpha and kappa, and return the result.
+     * Merge two FrequentedRegions and return the result.
      */
-    static FrequentedRegion merge(FrequentedRegion fr1, FrequentedRegion fr2, Graph g, double alpha, int kappa) {
-        TreeSet<Long> nodes = new TreeSet<>();
-        nodes.addAll(fr1.nodes);
-        nodes.addAll(fr2.nodes);
-        return new FrequentedRegion(nodes, g.nodeSequences, g.paths, alpha, kappa);
+    static FrequentedRegion merge(FrequentedRegion fr1, FrequentedRegion fr2) {
+        // validation
+        if (!fr1.graph.equals(fr2.graph)) {
+            System.err.println("ERROR: attempt to merge FRs in different graphs.");
+            System.exit(1);
+        } else if (fr1.alpha!=fr2.alpha) {
+            System.err.println("ERROR: attempt to merge FRs with different alpha values.");
+            System.exit(1);
+        } else if (fr1.kappa!=fr2.kappa) {
+            System.err.println("ERROR: attempt to merge FRs with different kappa values.");
+            System.exit(1);
+        } else {
+            NodeSet nodes = new NodeSet();
+            nodes.addAll(fr1.nodes);
+            nodes.addAll(fr2.nodes);
+            return new FrequentedRegion(fr1.graph, nodes, alpha, kappa);
     }
 
     /**
@@ -306,7 +289,7 @@ public class FrequentedRegion implements Comparable<FrequentedRegion> {
      */
     public boolean containsSubpathOf(Path path) {
         for (Path sp : subpaths) {
-            if (sp.name.equals(path.name)) return true;
+            if (sp.equals(path)) return true;
         }
         return false;
     }
@@ -317,7 +300,7 @@ public class FrequentedRegion implements Comparable<FrequentedRegion> {
     public int countSubpathsOf(Path path) {
         int count = 0;
         for (Path sp : subpaths) {
-            if (sp.name.equals(path.name)) count++;
+            if (sp.equals(path)) count++;
         }
         return count;
     }
@@ -329,10 +312,10 @@ public class FrequentedRegion implements Comparable<FrequentedRegion> {
         if (this.equals(fr)) {
             return false;
         } else {
-            return fr.nodes.containsAll(this.nodes);
+            return this.nodes.equals(fr.nodes);
         }
     }
-
+    
     /**
      * Return the count of subpaths that have the given label.
      */

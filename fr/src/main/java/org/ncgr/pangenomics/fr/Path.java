@@ -3,69 +3,57 @@ package org.ncgr.pangenomics.fr;
 import java.util.LinkedList;
 
 /**
- * Encapsulates a path through a Graph.
+ * Encapsulates a path through a Graph, along with its full sequence.
  *
  * @author Sam Hokin
  */
 public class Path implements Comparable<Path> {
 
     String name;             // the name of this path, typically a subject ID
-    String label;         // an optional label label, like +1/-1 for case/control
-    LinkedList<Long> nodes;  // the ordered list of nodes that this path travels
+    String label;            // an optional label, like "+1", "-1", "case", "control", "M", "F"
+    String sequence;         // this path's full sequence
+    LinkedList<Node> nodes;  // the ordered list of nodes that this path travels
 
     /**
-     * Construct given a path name and a list of nodes.
+     * Construct given a path name and a list of nodes (minimum requirement)
      */
-    Path(String name, LinkedList<Long> nodes) {
+    Path(String name, LinkedList<Node> nodes, String sequence) {
         this.name = name;
         this.nodes = nodes;
+        buildSequence();
     }
 
     /**
-     * Construct given a path name, label label and a list of nodes.
+     * Construct given a path name, label and a list of nodes (minimum requirement)
      */
-    Path(String name, String label, LinkedList<Long> nodes) {
+    Path(String name, String label, LinkedList<Node> nodes) {
         this.name = name;
         this.label = label;
         this.nodes = nodes;
-    }
-
-    
-    /**
-     * Construct given a name name, a list of nodes, and the 1-based start and end node indices for this path.
-     */
-    Path(String name, LinkedList<Long> allNodes, int i, int j) {
-        this.name = name;
-        nodes = new LinkedList<>();
-        for (int k=i-1; k<=j-1; k++) {
-            nodes.add(allNodes.get(k));
-        }
+        buildSequence();
     }
 
     /**
-     * Construct given a path name, a label label, and a list of nodes, and the 1-based start and end node indices for this path.
+     * Set this path's label (could be some reason you'd like to relabel the paths).
      */
-    Path(String name, String label, LinkedList<Long> allNodes, int i, int j) {
-        this.name = name;
+    void setLabel(String label) {
         this.label = label;
-        nodes = new LinkedList<>();
-        for (int k=i-1; k<=j-1; k++) {
-            nodes.add(allNodes.get(k));
-        }
     }
 
     /**
-     * Two paths are equal if they contain the same nodes, in the same order, and have the same name.
+     * Two paths are equal if they contain the same nodes, in the same order.
      */
     public boolean equals(Path that) {
-        if (!this.name.equals(that.name)) return false;
-        if (this.nodes.size()!=that.nodes.size()) return false;
-        int i = 0;
-        for (long thisNodeId : this.nodes) {
-            long thatNodeId = that.nodes.get(i++);
-            if (thisNodeId!=thatNodeId) return false;
+        if (this.nodes.size()!=that.nodes.size()) {
+            return false;
+        } else {
+            int i = 0;
+            for (long thisNodeId : this.nodes) {
+                long thatNodeId = that.nodes.get(i++);
+                if (thisNodeId!=thatNodeId) return false;
+            }
+            return true;
         }
-        return true;
     }
 
     /**
@@ -83,6 +71,26 @@ public class Path implements Comparable<Path> {
     }
 
     /**
+     * Compare based on node tree depth, then initial node id.
+     */
+    public int compareTo(Path that) {
+        int i = 0;
+        Long thisId = this.nodes.get(0);
+        Long thatId = that.nodes.get(0);
+        while (thisId==thatId) {
+            i++;
+            if (this.nodes.get(i)==null || that.nodes.get(i)==null) {
+                return Integer.compare(this.nodes.size(), that.nodes.size());
+            } else {
+                thisId = this.nodes.get(i);
+                thatId = that.nodes.get(i);
+            }
+        }
+        return Long.compare(thisId, thatId);
+    }
+
+
+    /**
      * Return the concated name and label of this path
      */
     public String getNameAndLabel() {
@@ -93,13 +101,13 @@ public class Path implements Comparable<Path> {
         }
     }
 
-    // setters
-    public void setNodes(LinkedList<Long> nodes) {
-        this.nodes = nodes;
-    }
-
-    public void setLabel(String label) {
-        this.label = label;
+    /**
+     * Build this path's sequence from its Node list.
+     */
+    public void buildSequence() {
+        sequence = "";
+        for (Node node : nodes) {
+            sequence += node.sequence;
+        }
     }
 }
-    
