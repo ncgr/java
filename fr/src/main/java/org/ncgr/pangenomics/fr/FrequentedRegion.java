@@ -31,11 +31,14 @@ public class FrequentedRegion implements Comparable<FrequentedRegion> {
     TreeSet<Path> subpaths;
     
     // the forward (or total, if rc not enabled) support of this cluster
-    int fwdSupport;
+    int fwdSupport = 0;
     
     // the reverse-complement support of this cluster (if enabled)
     // NOT YET IMPLEMENTED
-    int rcSupport;
+    int rcSupport = 0;
+
+    // the total support = fwdSupport + rcSupport;
+    int support = 0;
 
     // a subpath must satisfy the requirement that it traverses at least alpha*nodes.size()
     double alpha;
@@ -45,6 +48,9 @@ public class FrequentedRegion implements Comparable<FrequentedRegion> {
 
     // the (rounded) average length (in bases) of the subpath sequences
     int avgLength;
+
+    // the total length (in bases) of the subpath sequences
+    int totalLength;
 
     /**
      * Construct given a set of nodes and node sequences, the full set of genome paths, and alpha and kappa filter parameters.
@@ -65,8 +71,8 @@ public class FrequentedRegion implements Comparable<FrequentedRegion> {
      */
     void update() {
         updateSubpaths();
-        updateSupport();  // must follow updatesubPaths() since some paths may have been dropped
-        updateAvgLength();
+        updateSupport();  // must follow updatesubPaths()
+        updateLengths();  // must follow updateSupport()
     }
 
     /**
@@ -77,13 +83,11 @@ public class FrequentedRegion implements Comparable<FrequentedRegion> {
     }
     
     /**
-     * Compare based on support and then number of nodes and finally the first node.
+     * Compare based on total length (support*avgLength), number of nodes and finally the first node's value.
      */
     public int compareTo(FrequentedRegion that) {
-        if (this.fwdSupport!=that.fwdSupport) {
-            return Integer.compare(this.fwdSupport, that.fwdSupport);
-        } else if (this.avgLength!=that.avgLength) {
-            return Integer.compare(this.avgLength, that.avgLength);
+        if (this.totalLength!=that.totalLength) {
+            return Integer.compare(this.totalLength, that.totalLength);
         } else if (this.nodes.size()!=that.nodes.size()) {
             return Integer.compare(this.nodes.size(), that.nodes.size());
         } else {
@@ -92,10 +96,10 @@ public class FrequentedRegion implements Comparable<FrequentedRegion> {
     }
 
     /**
-     * Update the current average length this frequented region's subpath sequences.
+     * Update the total and average length of this frequented region's subpath sequences.
      */
-    void updateAvgLength() {
-        double dAvg = 0.0;
+    void updateLengths() {
+        totalLength = 0;
         for (Path subpath : subpaths) {
             for (long nodeId : subpath.nodes) {
                 String sequence = nodeSequences.get(nodeId);
@@ -104,23 +108,24 @@ public class FrequentedRegion implements Comparable<FrequentedRegion> {
                     System.err.println("ERROR: sequence is null for node "+nodeId);
                     System.exit(1);
                 } else {
-                    dAvg += (double) sequence.length();
+                    totalLength += sequence.length();
                 }
             }
         }
-        avgLength = (int)(dAvg/subpaths.size());
+        avgLength = (int)((double)totalLength/subpaths.size());
     }
 
     /**
      * Update the subpaths from the full genome paths for the current alpha and kappa values.
-     * NOTE: NOT FINISHED, NEED TO IMPLEMENT kappa FILTER.
      */
     void updateSubpaths() {
-        // // DEBUG
-        // FRFinder.printHeading("FrequentedRegion:"+nodes+" alpha="+alpha+" kappa="+kappa);
+
+        // we'll replace subpaths with this set
         TreeSet<Path> newSubpaths = new TreeSet<>();
-        int count = 0;
+        
+        // loop through each genome path
         for (Path path : paths) {
+            // find the left/right endpoints of the subpath
             long left = 0;
             long right = 0;
             for (long nodeId : path.nodes) {
@@ -132,10 +137,11 @@ public class FrequentedRegion implements Comparable<FrequentedRegion> {
                     }
                 }
             }
+            
             LinkedList<Long> subpathNodes = new LinkedList<>();
             if (left!=0 && right==0) {
-                // singleton, do nothing
-                // subpathNodes.add(left);
+                // single-node subpath
+                subpathNodes.add(left);
             } else if (left!=0 && right!=0) {
                 // load the insertions into a set for the kappa filter
                 Set<List<Long>> insertions = new HashSet<>();
@@ -145,34 +151,35 @@ public class FrequentedRegion implements Comparable<FrequentedRegion> {
                 List<Long> currentInsertion = new LinkedList<>();
                 for (long nodeId : path.nodes) {
                     if (nodeId==left) {
-                        // left always matches a cluster node
+                        // add the leftmost path node
+                        subpathNodes.add(nodeId);
                         started = true;
-                        subpathNodes.add(nodeId);
                     } else if (nodeId==right) {
-                        // right always matches a cluster node
-                        ended = true;
+                        // add the rightmost path node
                         subpathNodes.add(nodeId);
-                        break;
+                        ended = true;
+                        break; // we're done with this loop
                     } else if (started && !ended) {
-                        // all path nodes between left and right are in the subpath
+                        // add all path nodes between left and right
                         subpathNodes.add(nodeId);
                         if (nodes.contains(nodeId)) {
+                            // NOT an insertion
                             if (currentInsertion.size()>0) {
                                 // finish off the previous insertion and start another
                                 insertions.add(currentInsertion);
                                 currentInsertion = new LinkedList<>();
                             }
                         } else {
-                            // add to the current insertion
+                            // IS an insertion
                             currentInsertion.add(nodeId);
                         }
                     }
                 }
-                // hit the last insertion
+                // add the last insertion if nonzero
                 if (currentInsertion.size()>0) {
                     insertions.add(currentInsertion);
                 }
-                // kappa filter goes here
+                // kappa filter, bail if we have an insertion exceeding kappa in length
                 boolean kappaOK = true;
                 for (List<Long> insertion : insertions) {
                     String insertionSequence = "";
@@ -181,45 +188,33 @@ public class FrequentedRegion implements Comparable<FrequentedRegion> {
                     }
                     if (insertionSequence.length()>kappa) {
                         kappaOK = false;
+                        break;
                     }
-                    // // DEBUG
-                    // System.out.println("["+path.name+"]"+subpathNodes.toString().replace(" ","")+
-                    //                    " left,right="+left+","+right+" insertion:"+insertion.toString().replace(" ","")+
-                    //                    " length="+insertionSequence.length());
                 }
-                if (!kappaOK) {
-                    // // DEBUG
-                    // System.out.println("["+path.name+"]"+subpathNodes.toString().replace(" ","")+" REJECTED: one or more insertion sequences > than kappa="+kappa+".");
-                    continue; // bail, kappa filter failed
-                }
+
                 // // DEBUG
-                // if (insertions.size()>0) {
-                //     System.out.println("["+path.name+"]"+subpathNodes.toString().replace(" ","")+" ACCEPTED: all insertion sequences <= kappa="+kappa+".");
-                // } else {
-                //     System.out.println("["+path.name+"]"+subpathNodes.toString().replace(" ","")+" NO INSERTIONS");
-                // }
+                // if (!kappaOK) System.out.println("KAPPA-REJECTED: "+nodes.toString()+path.name);
+                
+                // bail on this path if it fails kappa test
+                if (!kappaOK) continue;
             }
             // alpha filter
-            boolean alphaOK = true;
             int in = 0;
-            for (long nodeId : nodes) {
-                if (subpathNodes.contains(nodeId)) {
+            for (long nodeId : subpathNodes) {
+                if (nodes.contains(nodeId)) {
                     in++;
                 }
             }
             double frac = (double)in/(double)nodes.size();
-            alphaOK = frac>=alpha;
-            if (!alphaOK) {
-                // // DEBUG
-                // if (frac>0.0) {
-                //     System.out.println("["+path.name+"]"+subpathNodes.toString().replace(" ","")+" REJECTED: in="+in+", frac="+frac+" < alpha="+alpha);
-                // }
-                continue; // bail, alpha filter failed
-            }
+
             // // DEBUG
-            // System.out.println("["+path.name+"]"+subpathNodes.toString().replace(" ","")+" in="+in);
+            // if (frac>0.0 && frac<alpha) System.out.println("ALPHA-REJECTED: "+nodes.toString()+path.name);
+
+            // bail on this path if it fails the alpha test
+            if (frac<alpha) continue;
+
             // filters passed, add this subpath
-            newSubpaths.add(new Path(path.name, path.category, subpathNodes));
+            newSubpaths.add(new Path(path.name, path.label, subpathNodes));
         }
         // replace the instance subpaths with the new set
         subpaths = newSubpaths;
@@ -227,9 +222,11 @@ public class FrequentedRegion implements Comparable<FrequentedRegion> {
 
     /**
      * Update the current support of this frequented region, which right now is just the size of the subpaths map.
+     * NOTE: haven't yet implemented rc option
      */
     void updateSupport() {
         fwdSupport = subpaths.size();
+        support = fwdSupport + rcSupport;
     }
 
     /**
@@ -250,25 +247,22 @@ public class FrequentedRegion implements Comparable<FrequentedRegion> {
      * Return a string summary of this frequented region.
      */
     public String toString() {
-        String s = "";
-        for (long nodeId : nodes) {
-            s += " "+nodeId;
-        }
-        Map<String,Integer> categoryCount = new TreeMap<>();
+        String s = nodes.toString();
+        Map<String,Integer> labelCount = new TreeMap<>();
         for (Path subpath : subpaths) {
-            if (categoryCount.containsKey(subpath.category)) {
-                int count = categoryCount.get(subpath.category);
-                categoryCount.put(subpath.category, count+1);
+            if (labelCount.containsKey(subpath.label)) {
+                int count = labelCount.get(subpath.label);
+                labelCount.put(subpath.label, count+1);
             } else {
-                categoryCount.put(subpath.category, 1);
+                labelCount.put(subpath.label, 1);
             }
             // s += "\n "+subpath.getLabel()+subpath.nodes.toString().replace(" ","").replace("[","").replace("]","");
         }
         int len = s.length();
-        for (int i=8; i<=56; i+=8) if (len<i) s += "\t";
-        s += avgLength+"\t"+fwdSupport;
-        for (String category : categoryCount.keySet()) {
-            s += " "+category+":"+categoryCount.get(category);
+        for (int i=8; i<=80; i+=8) if (len<i) s += "\t";
+        s += totalLength+"\t"+support;
+        for (String label : labelCount.keySet()) {
+            s += " "+label+":"+labelCount.get(label);
         }
         return s;
     }
@@ -286,6 +280,7 @@ public class FrequentedRegion implements Comparable<FrequentedRegion> {
         nodeSequences.putAll(nc2.nodeSequences);
         paths.addAll(nc1.paths);
         paths.addAll(nc2.paths);
+
         // // DEBUG
         // System.out.println("merge: nodes="+nodes);
         // for (String pathName : paths.keySet()) {
@@ -343,4 +338,25 @@ public class FrequentedRegion implements Comparable<FrequentedRegion> {
         return count;
     }
 
+    /**
+     * Return true if the nodes in this FR are a subset of the nodes in the given FR (but they are not equal!).
+     */
+    public boolean isSubsetOf(FrequentedRegion fr) {
+        if (this.equals(fr)) {
+            return false;
+        } else {
+            return fr.nodes.containsAll(this.nodes);
+        }
+    }
+
+    /**
+     * Return the count of subpaths that have the given label.
+     */
+    public int labelCount(String label) {
+        int count = 0;
+        for (Path sp : subpaths) {
+            if (sp.label.equals(label)) count++;
+        }
+        return count;
+    }
 }

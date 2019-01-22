@@ -44,8 +44,8 @@ public class Graph {
     // maps a nodeId to the set of paths that traverse it
     TreeMap<Long,Set<Path>> nodePaths; // keyed and ordered by nodeId
     
-    // each Path provides the ordered list of nodes that it traverses; ordered by path category/name
-    TreeSet<Path> paths; // ordered by category/name/nodes
+    // each Path provides the ordered list of nodes that it traverses; ordered by path label/name
+    TreeSet<Path> paths; // ordered by label/name/nodes
     
     // maps a Path to its full DNA sequence, ordered by path name
     TreeMap<String,String> pathSequences; // keyed and ordered by path name
@@ -203,10 +203,10 @@ public class Graph {
         }
         if (categories.size()==paths.size()) {
             for (Path path : paths) {
-                path.setCategory(categories.get(path.name));
+                path.setLabel(categories.get(path.name));
             }
         } else {
-            System.err.println("ERROR: the categories file "+categoriesFile+" contains "+categories.size()+" category labels while there are "+paths.size()+" paths in the graph.");
+            System.err.println("ERROR: the categories file "+categoriesFile+" contains "+categories.size()+" labels while there are "+paths.size()+" paths in the graph.");
             System.exit(1);
         }
     }

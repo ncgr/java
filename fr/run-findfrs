@@ -1,0 +1,15 @@
+#!/bin/sh
+# Run B Mumey's original FindFRs routine
+#
+# FindFRs 2.0, last rev. 7-June-2018, copyright 2018
+# required options: d, f, a, k
+#  -a,--alpha <arg>     alpha parameter
+#  -d,--dot <arg>       dot file
+#  -f,--fasta <arg>     fasta file
+#  -k,--kappa <arg>     kappa parameter
+#  -l,--minlen <arg>    minlen parameter
+#  -m,--minsup <arg>    minsup parameter
+#  -r,--rc              rc flag
+#  -z,--minsize <arg>   minsize parameter
+
+java -cp lib/FindFRs.jar:lib/commons-cli-1.4.jar findFRs.FindFRs --alpha 0.1 --kappa 30 --minsup 1 --minsize 1  --fasta HDStudy/HDStudy.HTT.fasta --dot HDStudy/HDStudy.HTT.k60.dot

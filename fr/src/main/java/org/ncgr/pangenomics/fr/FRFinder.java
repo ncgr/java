@@ -42,8 +42,8 @@ public class FRFinder {
  
     // optional parameters, set with setters
     private boolean verbose = VERBOSE;
-    private int minSup = MINSUP;   // minimum support: minimum number of genome paths in order for a region to be considered frequent
-    private int minSize = MINSIZE; // minimum size: minimum number of de Bruijn nodes that an FR must contain to be considered frequent
+    private int minSup = MINSUP;   // minimum support: minimum number of genome paths (fr.support) in order for a region to be considered frequent
+    private int minSize = MINSIZE; // minimum size: minimum number of de Bruijn nodes (fr.nodes.size())that an FR must contain to be considered frequent
     private boolean useRC = USERC; // indicates if the sequence (e.g. FASTA file) had its reverse complement appended
 
     // the ordered collection of all FRs
@@ -74,69 +74,96 @@ public class FRFinder {
         nodePaths = g.nodePaths;
         if (verbose) printNodePaths();
 
-        // create initial FRs, each containing only one node and all of its paths
-        TreeSet<FrequentedRegion> singletons = new TreeSet<>();
+        // create initial FRs, each containing only one node
+        frequentedRegions = new TreeSet<>();
         for (long nodeId : nodePaths.keySet()) {
             TreeSet<Long> nodes = new TreeSet<>();
             nodes.add(nodeId);
-            singletons.add(new FrequentedRegion(nodes, g.nodeSequences, g.paths, alpha, kappa));
-        }
-        frequentedRegions = new TreeSet<>();
-        frequentedRegions.addAll(singletons);
-
-        // spin through the FRs, merging each with a singleton if it has have non-zero support, until we reach equilibrium
-        // NOTE: this is absurdly slow, for testing purposes only!!!
-        FrequentedRegion newHighest = frequentedRegions.last();
-        FrequentedRegion oldHighest = frequentedRegions.lower(newHighest);
-        int round = 0;
-        while (!oldHighest.equals(newHighest)) {
-            round++;
-            oldHighest = frequentedRegions.last();
-            Set<FrequentedRegion> newFRs = new TreeSet<>();
-            for (FrequentedRegion fr1 : frequentedRegions) {
-                for (FrequentedRegion fr2 : singletons) {
-                    FrequentedRegion merged = FrequentedRegion.merge(fr1, fr2, alpha, kappa);
-                    if (merged.fwdSupport>0) newFRs.add(merged);
-                }
-                // FrequentedRegion fr2 = frequentedRegions.higher(fr1);
-                // if (fr2!=null) {
-                // }
-            }
-            frequentedRegions.addAll(newFRs);
-            // // drop the lowest one
-            // frequentedRegions.remove(frequentedRegions.first());
-            // get the new lowest one
-            newHighest = frequentedRegions.last();
-            // DEBUG
-            System.out.println("Round "+round+" num="+frequentedRegions.size()+" oldHighest="+oldHighest.nodes+" newHighest="+newHighest.nodes);
+            frequentedRegions.add(new FrequentedRegion(nodes, g.nodeSequences, g.paths, alpha, kappa));
         }
 
-        // cull out the FRs that have support = # paths (they're very not interesting)
-        Set<FrequentedRegion> removeThese = new TreeSet<>();
+        // this list contains the node sets already added or rejected
+        List<TreeSet<Long>> doneList = new LinkedList<>();
         for (FrequentedRegion fr : frequentedRegions) {
-            if (fr.fwdSupport==g.paths.size()) removeThese.add(fr);
+            doneList.add(fr.nodes);
         }
-        frequentedRegions.removeAll(removeThese);
+        
+        // build the FRs round by round
+        int round = 0;
+        int maxSize = 0;
+        while (maxSize<5) {
+            round++;
+            Set<FrequentedRegion> newFRs = new TreeSet<>();
+            List<TreeSet<Long>> newDoneList = new LinkedList<>();
+            for (TreeSet<Long> nodes : doneList) {
+                for (Long node : g.nodeSequences.keySet()) {
+                    if (!nodes.contains(node)) {
+                        TreeSet<Long> newNodes = new TreeSet<>();
+                        newNodes.addAll(nodes);
+                        newNodes.add(node);
+                        if (!doneList.contains(newNodes)) {
+                            newDoneList.add(newNodes);
+                            if (newNodes.size()>=minSize) {
+                                FrequentedRegion newFR = new FrequentedRegion(newNodes, g.nodeSequences, g.paths, alpha, kappa);
+                                // add this merged FR if it meets requirements
+                                if (newFR.support>=minSup) {
+                                    newFRs.add(newFR);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            doneList = newDoneList;
+            frequentedRegions.addAll(newFRs);
+            
+            // DEBUG
+            FrequentedRegion highest = frequentedRegions.last();
+            System.out.println("Round "+round+" num="+frequentedRegions.size()+
+                               " highest="+highest.nodes+" totalLength="+highest.totalLength+" support="+highest.support+" avgLength="+highest.avgLength);
+            // print the histogram of FR sizes
+            Map<Integer,Integer> countMap = new TreeMap<>();
+            maxSize = 0;
+            for (FrequentedRegion fr : frequentedRegions) {
+                if (fr.nodes.size()>maxSize) maxSize = fr.nodes.size();
+                if (countMap.containsKey(fr.nodes.size())) {
+                    int count = countMap.get(fr.nodes.size());
+                    count++;
+                    countMap.put(fr.nodes.size(), count);
+                } else {
+                    countMap.put(fr.nodes.size(), 1);
+                }
+            }
+            for (int num : countMap.keySet()) {
+                System.out.println("FR node size (#):"+num+" ("+countMap.get(num)+")");
+            }
+            System.out.println("-------------------------------------------------");
+            
+        }
 
-        // DEBUG
-        // explicitly add some known-to-be-interesting FRs
-        TreeSet<Long> caseNodes = new TreeSet<>();
-        TreeSet<Long> controlNodes = new TreeSet<>();
-        long[] caseNodeIds = {4, 5, 6, 7, 9, 11, 14, 15};
-        long[] controlNodeIds = {4, 8, 10, 12, 13, 16};
-        for (long nodeId : caseNodeIds) {
-            caseNodes.add(nodeId);
-        }
-        for (long nodeId : controlNodeIds) {
-            controlNodes.add(nodeId);
-        }
-        frequentedRegions.add(new FrequentedRegion(caseNodes, g.nodeSequences, g.paths, alpha, kappa));
-        frequentedRegions.add(new FrequentedRegion(controlNodes, g.nodeSequences, g.paths, alpha, kappa));
+
+        // // DEBUG
+        // // explicitly add some known-to-be-interesting FRs
+        // TreeSet<Long> caseNodes = new TreeSet<>();
+        // TreeSet<Long> controlNodes = new TreeSet<>();
+        // long[] caseNodeIds = {4, 5, 6, 7, 9, 11, 14, 15};
+        // long[] controlNodeIds = {4, 8, 10, 12, 13, 16};
+        // for (long nodeId : caseNodeIds) {
+        //     caseNodes.add(nodeId);
+        // }
+        // for (long nodeId : controlNodeIds) {
+        //     controlNodes.add(nodeId);
+        // }
+        // frequentedRegions.add(new FrequentedRegion(caseNodes, g.nodeSequences, g.paths, alpha, kappa));
+        // frequentedRegions.add(new FrequentedRegion(controlNodes, g.nodeSequences, g.paths, alpha, kappa));
         
         if (verbose) printFrequentedRegions();
-        printFrequentedRegions();
 
-        printPathFRs();
+
+        // DEBUG
+        // printFrequentedRegions();
+
+        // printPathFRs();
     }
 
     public double getAlpha() {
@@ -338,7 +365,7 @@ public class FRFinder {
     void printPaths() {
         printHeading("PATHS");
         for (Path path : g.paths) {
-            System.out.print(path.getLabel()+":");
+            System.out.print(path.getNameAndLabel()+":");
             for (long nodeId : path.nodes) {
                 System.out.print(" "+nodeId);
             }
@@ -414,7 +441,7 @@ public class FRFinder {
         System.out.println("");
         // rows
         for (Path path : g.paths) {
-            System.out.print(path.name+"\t"+path.category);
+            System.out.print(path.name+"\t"+path.label);
             for (FrequentedRegion fr : frequentedRegions) {
                 System.out.print("\t"+fr.countSubpathsOf(path));
             }
