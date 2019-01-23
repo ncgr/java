@@ -1,5 +1,6 @@
 package org.ncgr.pangenomics.fr;
 
+import java.util.StringJoiner;
 import java.util.TreeSet;
 
 /**
@@ -7,39 +8,86 @@ import java.util.TreeSet;
  *
  * @author Sam Hokin
  */
-public class NodeSet extends TreeSet implements Comparable<NodeSet> {
+public class NodeSet extends TreeSet<Node> implements Comparable <NodeSet> {
 
-    TreeSet<Node> nodes;
-
+    /**
+     * Empty constructor.
+     */
+    NodeSet() {
+        super();
+    }
+    
     /**
      * Construct given a TreeSet of Nodes.
      */
-    Node(TreeSet nodes) {
-        this.nodes = nodes;
+    NodeSet(TreeSet<Node> nodes) {
+        for (Node node : nodes) add(node);
     }
 
     /**
-     * Two NodeSets are equal if they contain the same nodes.
+     * Equality if exactly the same nodes.
      */
     public boolean equals(NodeSet that) {
-        return this.nodes.equals(that.nodes);
+        if (this.size()!=that.size()) {
+            return false;
+        } else {
+            Node thisNode = this.first();
+            Node thatNode = that.first();
+            while (thisNode.equals(thatNode)) {
+                if (this.higher(thisNode)==null) {
+                    return true;
+                } else {
+                    thisNode = this.higher(thisNode);
+                    thatNode = that.higher(thatNode);
+                }
+            }
+            return false;
+        }
     }
 
     /**
      * Compare based on tree depth, then initial node id.
      */
     public int compareTo(NodeSet that) {
-        Long thisId = this.nodes.first();
-        Long thatId = that.nodes.first();
-        while (thisId==thatId) {
-            if (this.nodes.higher(thisId)==null || that.nodes.higher(thatId)==null) {
-                return Integer.compare(this.nodes.size(), that.nodes.size());
-            } else {
-                thisId = this.nodes.higher(thisId);
-                thatId = that.nodes.higher(thatId);
+        if (this.equals(that)) {
+            return 0;
+        } else {
+            Node thisNode = this.first();
+            Node thatNode = that.first();
+            while (thisNode.equals(thatNode)) {
+                if (this.higher(thisNode)==null || that.higher(thatNode)==null) {
+                    return Integer.compare(this.size(), that.size());
+                } else {
+                    thisNode = this.higher(thisNode);
+                    thatNode = that.higher(thatNode);
+                }
             }
+            return thisNode.compareTo(thatNode);
         }
-        return Long.compare(thisId, thatId);
+    }
+
+    /**
+     * Return a readable summary string.
+     */
+    public String toString() {
+        String s = "[";
+        StringJoiner joiner = new StringJoiner(",");
+        for (Node node : this) {
+            joiner.add(String.valueOf(node.id));
+        }
+        s += joiner.toString();
+        s += "]";
+        return s;
+    }
+
+    /**
+     * Return the result of merging two NodeSets.
+     */
+    static NodeSet merge(NodeSet ns1, NodeSet ns2) {
+        NodeSet merged = new NodeSet();
+        merged.addAll(ns1);
+        merged.addAll(ns2);
+        return merged;
     }
 }
     

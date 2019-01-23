@@ -1,6 +1,7 @@
 package org.ncgr.pangenomics.fr;
 
 import java.util.LinkedList;
+import java.util.StringJoiner;
 
 /**
  * Encapsulates a path through a Graph, along with its full sequence.
@@ -17,20 +18,29 @@ public class Path implements Comparable<Path> {
     /**
      * Construct given a path name and a list of nodes (minimum requirement)
      */
-    Path(String name, LinkedList<Node> nodes, String sequence) {
+    Path(String name, LinkedList<Node> nodes) {
         this.name = name;
         this.nodes = nodes;
         buildSequence();
     }
 
     /**
-     * Construct given a path name, label and a list of nodes (minimum requirement)
+     * Construct given a path name, label and a list of nodes
      */
     Path(String name, String label, LinkedList<Node> nodes) {
         this.name = name;
         this.label = label;
         this.nodes = nodes;
         buildSequence();
+    }
+
+    /**
+     * Construct an empty Path given just a path name and label
+     */
+    Path(String name, String label) {
+        this.name = name;
+        this.label = label;
+        this.nodes = new LinkedList<>();
     }
 
     /**
@@ -41,33 +51,27 @@ public class Path implements Comparable<Path> {
     }
 
     /**
-     * Two paths are equal if they contain the same nodes, in the same order.
+     * Add a Node to this Path and update the sequence.
      */
-    public boolean equals(Path that) {
-        if (this.nodes.size()!=that.nodes.size()) {
-            return false;
-        } else {
-            int i = 0;
-            for (long thisNodeId : this.nodes) {
-                long thatNodeId = that.nodes.get(i++);
-                if (thisNodeId!=thatNodeId) return false;
-            }
-            return true;
-        }
+    void addNode(Node node) {
+        this.nodes.add(node);
+        buildSequence();
     }
 
     /**
-     * Compare paths by label, name, size and then node by node comparison.
+     * Return a LinkedList<Long> of node IDs.
      */
-    public int compareTo(Path that) {
-        if (!this.name.equals(that.name)) return this.name.compareTo(that.name);
-        if (this.nodes.size()!=that.nodes.size()) return Integer.compare(this.nodes.size(), that.nodes.size());
-        int i = 0;
-        for (long thisNodeId : this.nodes) {
-            long thatNodeId = that.nodes.get(i++);
-            if (thisNodeId!=thatNodeId) return Long.compare(thisNodeId, thatNodeId);
-        }
-        return 0;
+    public LinkedList<Long> getNodeIds() {
+        LinkedList<Long> nodeIds = new LinkedList<>();
+        for (Node node : nodes) nodeIds.add(node.id);
+        return nodeIds;
+    }
+
+    /**
+     * Two paths are equal if they have the same name and compareTo gives zero.
+     */
+    public boolean equals(Path that) {
+        return this.name.equals(that.name) && this.compareTo(that)==0;
     }
 
     /**
@@ -75,18 +79,18 @@ public class Path implements Comparable<Path> {
      */
     public int compareTo(Path that) {
         int i = 0;
-        Long thisId = this.nodes.get(0);
-        Long thatId = that.nodes.get(0);
-        while (thisId==thatId) {
+        Node thisNode = this.nodes.get(0);
+        Node thatNode = that.nodes.get(0);
+        while (thisNode.equals(thatNode)) {
             i++;
-            if (this.nodes.get(i)==null || that.nodes.get(i)==null) {
+            if (this.nodes.size()<=i || that.nodes.size()<=i) {
                 return Integer.compare(this.nodes.size(), that.nodes.size());
             } else {
-                thisId = this.nodes.get(i);
-                thatId = that.nodes.get(i);
+                thisNode = this.nodes.get(i);
+                thatNode = that.nodes.get(i);
             }
         }
-        return Long.compare(thisId, thatId);
+        return thisNode.compareTo(thatNode);
     }
 
 
@@ -109,5 +113,20 @@ public class Path implements Comparable<Path> {
         for (Node node : nodes) {
             sequence += node.sequence;
         }
+    }
+
+    /**
+     * Return a summary string.
+     */
+    public String toString() {
+        String s = getNameAndLabel();
+        s += ":[";
+        StringJoiner joiner = new StringJoiner(",");
+        for (Node node : nodes) {
+            joiner.add(String.valueOf(node.id));
+        }
+        s += joiner.toString();
+        s += "]";
+        return s;
     }
 }

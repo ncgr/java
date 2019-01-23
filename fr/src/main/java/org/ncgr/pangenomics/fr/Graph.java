@@ -77,11 +77,11 @@ public class Graph {
         List<Vg.Edge> vgEdges = graph.getEdgeList();
 
         // populate nodes with their id and sequence, find the minimum sequence length
-        for (Vg.Node node : vgNodes) {
-            long id = node.getId();
-            String sequence = node.getSequence();
+        for (Vg.Node vgNode : vgNodes) {
+            long id = vgNode.getId();
+            String sequence = vgNode.getSequence();
             if (sequence.length()<minLen) minLen = sequence.length();
-            nodes.put(new Node(id, sequence));
+            nodes.add(new Node(id, sequence));
         }
         
         // populate paths
@@ -97,35 +97,38 @@ public class Graph {
                 if (allele==1) {
                     List<Vg.Mapping> vgMappingList = vgPath.getMappingList();
                     // retrieve or initialize this path's nodes
-                    LinkedList<Long> nodes = new LinkedList<>();
+                    LinkedList<Long> nodeIds = new LinkedList<>();
                     for (Path path : paths) {
                         if (path.name.equals(pathName)) {
-                            nodes = path.nodes;
+                            nodeIds = path.getNodeIds();
                         }
                     }
                     // run through this particular mapping and append each node id to the node list
                     boolean first = true;
                     for (Vg.Mapping vgMapping : vgMappingList) {
-                        if (first && nodes.size()>0) {
-                            // skip unless very first node
+                        if (first && nodeIds.size()>0) {
+                            // skip overlap
                         } else {
-                            long nodeId = vgMapping.getPosition().getNodeId();
-                            nodes.add(nodeId);
+                            nodeIds.add(vgMapping.getPosition().getNodeId());
                         }
                         first = false;
                     }
-                    // update the path with the new nodes and sequence
+                    // build the new set of nodes for this path
+                    LinkedList<Node> pathNodes = new LinkedList<>();
+                    for (Long id : nodeIds) {
+                        pathNodes.add(getNodeForId(id));
+                    }
+                    // update existing path with the new nodes
                     boolean updated = false;
                     for (Path path : paths) {
                         if (path.name.equals(pathName)) {
-                            path.setNodes(nodes);
+                            path.nodes = pathNodes;
                             updated = true;
                         }
                     }
                     if (!updated) {
-                        // create this new path sans sequence
-                        Path path = new Path(pathName, nodes);
-                        paths.add(path);
+                        // create this new path
+                        paths.add(new Path(pathName, pathNodes));
                     }
                 }
             }
@@ -139,10 +142,20 @@ public class Graph {
     }
 
     /**
+     * Return the Node with the given id, null if the id is not in this graph.
+     */
+    public Node getNodeForId(Long id) {
+        for (Node node : nodes) {
+            if (node.id==id) return node;
+        }
+        return null;
+    }
+
+    /**
      * Return true if this and that Graph come from the same file.
      */
     public boolean equals(Graph that) {
-        if (this.jsonFile!=null && that.jsonFile!==null) {
+        if (this.jsonFile!=null && that.jsonFile!=null) {
             return this.jsonFile.equals(that.jsonFile);
         } else if (this.dotFile!=null && that.dotFile!=null && this.fastaFile!=null && that.fastaFile!=null) {
             return this.dotFile.equals(that.dotFile) && this.fastaFile.equals(that.fastaFile);
@@ -232,15 +245,14 @@ public class Graph {
     void printNodes() {
         Map<Integer,Integer> countMap = new TreeMap<>();
         printHeading("NODES");
-        for (long nodeId : nodeSequences.keySet()) {
-            String sequence = nodeSequences.get(nodeId);
-            int length = sequence.length();
+        for (Node node : nodes) {
+            int length = node.sequence.length();
             if (countMap.containsKey(length)) {
                 countMap.put(length, ((int)countMap.get(length))+1);
             } else {
                 countMap.put(length, 1);
             }
-            System.out.println(nodeId+"("+length+"):"+sequence);
+            System.out.println(node.id+"("+length+"):"+node.sequence);
         }
         printHeading("k HISTOGRAM");
         for (int len : countMap.keySet()) {
@@ -258,8 +270,8 @@ public class Graph {
         printHeading("PATHS");
         for (Path path : paths) {
             System.out.print(path.getNameAndLabel()+":");
-            for (long nodeId : path.nodes) {
-                System.out.print(" "+nodeId);
+            for (Node node : path.nodes) {
+                System.out.print(" "+node.id);
             }
             System.out.println("");
         }
@@ -270,11 +282,11 @@ public class Graph {
      */
     void printNodePaths() {
         printHeading("NODE PATHS");
-        for (long nodeId : nodePaths.keySet()) {
-            Set<Path> paths = nodePaths.get(nodeId);
+        for (Node node : nodePaths.keySet()) {
+            Set<Path> paths = nodePaths.get(node);
             String asterisk = " ";
             if (paths.size()==paths.size()) asterisk="*";
-            System.out.print(asterisk+nodeId+"("+paths.size()+"):");
+            System.out.print(asterisk+node.id+"("+paths.size()+"):");
             for (Path path : paths) {
                 System.out.print(" "+path.name);
             }
@@ -287,10 +299,9 @@ public class Graph {
      */
     void printPathSequences() {
         printHeading("PATH SEQUENCES");
-        for (String pathName : pathSequences.keySet()) {
-            String sequence = pathSequences.get(pathName);
-            int length = sequence.length();
-            String heading = ">"+pathName+" ("+length+")";
+        for (Path path : paths) {
+            int length = path.sequence.length();
+            String heading = ">"+path.name+" ("+length+")";
             System.out.print(heading);
             for (int i=heading.length(); i<19; i++) System.out.print(" "); System.out.print(".");
             for (int n=0; n<19; n++) {
@@ -300,7 +311,7 @@ public class Graph {
             // // entire sequence
             // System.out.println(sequence);
             // trimmed sequence beginning and end
-            System.out.println(sequence.substring(0,100)+"........."+sequence.substring(length-101,length));
+            System.out.println(path.sequence.substring(0,100)+"........."+path.sequence.substring(length-101,length));
         }
     }
 

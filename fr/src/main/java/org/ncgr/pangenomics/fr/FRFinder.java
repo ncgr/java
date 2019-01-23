@@ -3,7 +3,6 @@ package org.ncgr.pangenomics.fr;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.LinkedList;
@@ -12,7 +11,6 @@ import java.util.TreeMap;
 import java.util.Set;
 import java.util.HashSet;
 import java.util.TreeSet;
-import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
@@ -38,24 +36,24 @@ public class FRFinder {
     static boolean VERBOSE = false;
 
     // required parameters, no defaults; set in constructor
-    private Graph g;      // the Graph we're analyzing
-    private double alpha; // penetrance: the fraction of a supporting strain's sequence that actually supports the FR; alternatively, `1-alpha` is the fraction of inserted sequence
-    private int kappa;    // maximum insertion: the maximum insertion length (measured in bp) that any supporting path may have
+    Graph graph;  // the Graph we're analyzing
+    double alpha; // penetrance: the fraction of a supporting strain's sequence that actually supports the FR; alternatively, `1-alpha` is the fraction of inserted sequence
+    int kappa;    // maximum insertion: the maximum insertion length (measured in bp) that any supporting path may have
  
     // optional parameters, set with setters
-    private boolean verbose = VERBOSE;
-    private int minSup = MINSUP;   // minimum support: minimum number of genome paths (fr.support) in order for a region to be considered frequent
-    private int minSize = MINSIZE; // minimum size: minimum number of de Bruijn nodes (fr.nodes.size())that an FR must contain to be considered frequent
-    private boolean useRC = USERC; // indicates if the sequence (e.g. FASTA file) had its reverse complement appended
+    boolean verbose = VERBOSE;
+    int minSup = MINSUP;   // minimum support: minimum number of genome paths (fr.support) in order for a region to be considered frequent
+    int minSize = MINSIZE; // minimum size: minimum number of de Bruijn nodes (fr.nodes.size())that an FR must contain to be considered frequent
+    boolean useRC = USERC; // indicates if the sequence (e.g. FASTA file) had its reverse complement appended
 
-    // the ordered collection of all FRs
-    private TreeSet<FrequentedRegion> frequentedRegions;
+    // the FRs
+    Set<FrequentedRegion> frequentedRegions;
 
     /**
      * Construct with a populated Graph and required parameters
      */
-    public FRFinder(Graph g, double alpha, int kappa) {
-        this.g = g;
+    public FRFinder(Graph graph, double alpha, int kappa) {
+        this.graph = graph;
         this.alpha = alpha;
         this.kappa = kappa;
     }
@@ -64,52 +62,59 @@ public class FRFinder {
      * Find the frequented regions in this Graph.
      */
     public void findFRs() {
+
         if (verbose) {
-            g.printNodes();
-            g.printPaths();
-            g.printNodePaths();
+            graph.printNodes();
+            graph.printPaths();
+            graph.printNodePaths();
         }
 
-        // create initial FRs, each containing only one node
-        frequentedRegions = new TreeSet<>();
-        for (long nodeId : g.nodePaths.keySet()) {
-            TreeSet<Long> nodes = new TreeSet<>();
-            nodes.add(nodeId);
-            frequentedRegions.add(new FrequentedRegion(nodes, g.nodeSequences, g.paths, alpha, kappa));
-        }
-
-        // this list contains the node sets already added or rejected
-        List<TreeSet<Long>> doneList = new LinkedList<>();
-        for (FrequentedRegion fr : frequentedRegions) {
-            doneList.add(fr.nodes);
-        }
+        // store the FRs in a synchronized set for parallel processing
+        frequentedRegions = Collections.synchronizedSet(new TreeSet<>());
         
+        // store the analyzed NodeSets in a synchronized list for parallel processing
+        List<NodeSet> syncNodeSets = Collections.synchronizedList(new LinkedList<>());
+
+        // create initial NodeSets each containing only one node; add associated FRs if they pass muster
+        for (Node node : graph.nodes) {
+            NodeSet nodeSet = new NodeSet();
+            nodeSet.add(node);
+            syncNodeSets.add(nodeSet);
+            FrequentedRegion fr = new FrequentedRegion(graph, nodeSet, alpha, kappa);
+            if (passesFilters(fr)) frequentedRegions.add(fr);
+        }
+
         // build the FRs round by round
         int round = 0;
         while (round<2) {
-            // a round
             round++;
-            Set<FrequentedRegion> newFRs = Collections.synchronizedSet(new TreeSet<>());       // the FRs we're adding after this round
-            for (FrequentedRegion fr1 : frequentedRegions) {
-                frequentedRegions.parallelStream().forEach((fr2) -> {
+            // use a frozen copy of the current NodeSets
+            Set<NodeSet> nsSet = new TreeSet<>();
+            nsSet.addAll(syncNodeSets);
+            for (NodeSet ns1 : nsSet) {
+                // DEBUG
+                System.out.println("ns1="+ns1);
+                nsSet.parallelStream().forEach((ns2) -> {
                         //////////
-                        FrequentedRegion merged = FrequentedRegion.merge(fr1, fr2, g, alpha, kappa);
-                        if (!frequentedRegions.contains(merged)) {
-                            newFRs.add(merged);
-                            // // add this merged FR if it meets requirements
-                            // if (merged.nodes.size()>=minSize && merged.support>=minSup) {
-                            // }
+                        if (!ns2.equals(ns1)) {
+                            NodeSet merged = NodeSet.merge(ns1, ns2);
+                            if (!syncNodeSets.contains(merged)) {
+                                syncNodeSets.add(merged);
+                                FrequentedRegion fr = new FrequentedRegion(graph, merged, alpha, kappa);
+                                if (passesFilters(fr)) frequentedRegions.add(fr);
+                            }
                         }
                         //////////
                     });
             }
-            // append the new accepted FRs to the full set
-            frequentedRegions.addAll(newFRs);
 
             // DEBUG
-            FrequentedRegion highest = frequentedRegions.last();
+            TreeSet<FrequentedRegion> sortedFRs = new TreeSet<>();
+            sortedFRs.addAll(frequentedRegions);
+            FrequentedRegion highest = sortedFRs.last();
             System.out.println("Round "+round+" num="+frequentedRegions.size()+
                                " highest="+highest.nodes+" totalLength="+highest.totalLength+" support="+highest.support+" avgLength="+highest.avgLength);
+
             // print the histogram of FR sizes
             Map<Integer,Integer> countMap = new TreeMap<>();
             int maxSize = 0;
@@ -129,12 +134,12 @@ public class FRFinder {
             System.out.println("-------------------------------------------------");
         }
 
-        // purge the remaining non-legit FRs (like the original singletons if too small)
-        Set<FrequentedRegion> removes = new TreeSet<>();
-        for (FrequentedRegion fr : frequentedRegions) {
-            if (fr.nodes.size()<minSize || fr.support<minSup) removes.add(fr);
-        }
-        frequentedRegions.removeAll(removes);
+        // // purge FRs that don't pass filters or support = graph.nodes.size()   || fr.support==graph.paths.size()
+        // Set<FrequentedRegion> removes = new TreeSet<>();
+        // for (FrequentedRegion fr : frequentedRegions) {
+        //     if (fr.nodes.size()<minSize || fr.support<minSup) removes.add(fr);
+        // }
+        // frequentedRegions.removeAll(removes);
             
         // while (round<2) {
         //     round++;
@@ -149,7 +154,7 @@ public class FRFinder {
         //                 if (!doneList.contains(newNodes)) {
         //                     newDoneList.add(newNodes);
         //                     if (newNodes.size()>=minSize) {
-        //                         FrequentedRegion newFR = new FrequentedRegion(newNodes, g.nodeSequences, g.paths, alpha, kappa);
+        //                         FrequentedRegion newFR = new FrequentedRegion(newNodes, graph.nodeSequences, graph.paths, alpha, kappa);
         //                         // add this merged FR if it meets requirements
         //                         if (newFR.support>=minSup) {
         //                             newFRs.add(newFR);
@@ -195,6 +200,13 @@ public class FRFinder {
         // // DEBUG
         printFrequentedRegions();
         // printPathFRs();
+    }
+
+    /**
+     * Return true if the given FR passes support and size filters. Other filters could be added here.
+     */
+    boolean passesFilters(FrequentedRegion fr) {
+        return fr.nodes.size()>=minSize && fr.support>=minSup;
     }
 
     public double getAlpha() {
@@ -256,9 +268,9 @@ public class FRFinder {
         jsonOption.setRequired(false);
         options.addOption(jsonOption);
         //
-        Option categoriesOption = new Option("c", "categories", true, "tab-delimited file with path->categories");
-        categoriesOption.setRequired(false);
-        options.addOption(categoriesOption);
+        Option labelsOption = new Option("l", "labels", true, "tab-delimited file with pathname<tab>label");
+        labelsOption.setRequired(false);
+        options.addOption(labelsOption);
         //
         Option alphaOption = new Option("a", "alpha", true, "alpha=penetrance, fraction of a supporting path's sequence that supports the FR (required)");
         alphaOption.setRequired(true);
@@ -309,7 +321,7 @@ public class FRFinder {
         String dotFile = cmd.getOptionValue("dot");
         String fastaFile = cmd.getOptionValue("fasta");
         String jsonFile = cmd.getOptionValue("json");
-        String categoriesFile = cmd.getOptionValue("categories");
+        String labelsFile = cmd.getOptionValue("labels");
 
         // required parameters
         double alpha = Double.parseDouble(cmd.getOptionValue("alpha"));
@@ -329,9 +341,9 @@ public class FRFinder {
             System.exit(1);
         }
 
-        // if a categories file is given, append the categories to the path names
-        if (categoriesFile!=null) {
-            g.setPathCategories(categoriesFile);
+        // if a labels file is given, append the labels to the path names
+        if (labelsFile!=null) {
+            g.readPathLabels(labelsFile);
         }
         
         // instantiate the FRFinder with this Graph and required parameters
@@ -390,7 +402,7 @@ public class FRFinder {
         }
         System.out.println("");
         // rows
-        for (Path path : g.paths) {
+        for (Path path : graph.paths) {
             System.out.print(path.name+"\t"+path.label);
             for (FrequentedRegion fr : frequentedRegions) {
                 System.out.print("\t"+fr.countSubpathsOf(path));

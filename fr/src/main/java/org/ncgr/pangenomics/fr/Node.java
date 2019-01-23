@@ -19,10 +19,10 @@ public class Node implements Comparable<Node> {
     }
 
     /**
-     * Two nodes are equal if they have the same id and same sequence (just in case).
+     * Two nodes are equal if they have the same id.
      */
     public boolean equals(Node that) {
-        return this.id==that.id && this.sequence.equals(that.sequence));
+        return this.id==that.id;
     }
 
     /**
@@ -30,6 +30,13 @@ public class Node implements Comparable<Node> {
      */
     public int compareTo(Node that) {
         return Long.compare(this.id, that.id);
+    }
+
+    /**
+     * Simply return the id.
+     */
+    public String toString() {
+        return String.valueOf(id);
     }
 }
     
