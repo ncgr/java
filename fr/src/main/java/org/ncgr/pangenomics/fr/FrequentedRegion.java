@@ -40,9 +40,6 @@ public class FrequentedRegion implements Comparable<FrequentedRegion> {
     // the (rounded) average length (in bases) of the subpath sequences
     int avgLength;
 
-    // the total length (in bases) of the subpath sequences
-    int totalLength;
-
     /**
      * Construct given a Graph, NodeSet and alpha and kappa filter parameters.
      */
@@ -83,7 +80,7 @@ public class FrequentedRegion implements Comparable<FrequentedRegion> {
      * Update the total and average length of this frequented region's subpath sequences.
      */
     void updateLengths() {
-        totalLength = 0;
+        int totalLength = 0;
         for (Path subpath : subpaths) {
             for (Node node : subpath.nodes) {
                 if (node.sequence==null) {
@@ -237,26 +234,31 @@ public class FrequentedRegion implements Comparable<FrequentedRegion> {
         String s = nodes.toString();
         Map<String,Integer> labelCount = new TreeMap<>();
         for (Path subpath : subpaths) {
-            if (labelCount.containsKey(subpath.label)) {
-                int count = labelCount.get(subpath.label);
-                labelCount.put(subpath.label, count+1);
-            } else {
-                labelCount.put(subpath.label, 1);
+            if (subpath.label!=null) {
+                if (labelCount.containsKey(subpath.label)) {
+                    int count = labelCount.get(subpath.label);
+                    labelCount.put(subpath.label, count+1);
+                } else {
+                    labelCount.put(subpath.label, 1);
+                }
             }
-            // s += "\n "+subpath.getLabel()+subpath.nodes.toString().replace(" ","").replace("[","").replace("]","");
         }
         int len = s.length();
         for (int i=8; i<=80; i+=8) if (len<i) s += "\t";
-        s += totalLength+"\t"+support;
-        for (String label : labelCount.keySet()) {
-            s += " "+label+":"+labelCount.get(label);
-        }
-        // DEBUG
-        // HACK
-        if (!labelCount.containsKey("1") && !labelCount.containsKey("2")) {
-            s += "\t\tCONTROL ONLY";
-        } else if (!labelCount.containsKey("3")) {
-            s += "\t\tCASE ONLY";
+        if (labelCount.size()>0) {
+            s += avgLength;
+            // special marking for special labels: case/ctrl
+            if (labelCount.containsKey("case") && !labelCount.containsKey("ctrl")) {
+                s += "\tcase:"+labelCount.get("case")+"\t######";
+            } else if (labelCount.containsKey("ctrl") && !labelCount.containsKey("case")) {
+                s += "\t######\tctrl:"+labelCount.get("ctrl");
+            } else {
+                for (String label : labelCount.keySet()) {
+                    s += "\t"+label+":"+labelCount.get(label);
+                }
+            }
+        } else {
+            s += avgLength+"\t"+support;
         }
         return s;
     }

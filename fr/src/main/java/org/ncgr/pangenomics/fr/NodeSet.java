@@ -81,6 +81,20 @@ public class NodeSet extends TreeSet<Node> implements Comparable <NodeSet> {
     }
 
     /**
+     * Return true if this NodeSet is a parent of the given NodeSet, meaning its nodes are a subset of the latter.
+     */
+    public boolean parentOf(NodeSet that) {
+        return that.size()>this.size() && that.containsAll(this);
+    }
+
+    /**
+     * Return true if this NodeSet is a child of the given NodeSet, meaning its nodes are a superset of the latter.
+     */
+    public boolean childOf(NodeSet that) {
+        return that.size()<this.size() && this.containsAll(that);
+    }
+
+    /**
      * Return the result of merging two NodeSets.
      */
     static NodeSet merge(NodeSet ns1, NodeSet ns2) {
