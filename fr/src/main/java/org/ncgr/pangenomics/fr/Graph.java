@@ -14,6 +14,7 @@ import java.util.Map;
 import java.util.TreeMap;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.StringJoiner;
 
 import vg.Vg;
 
@@ -91,10 +92,14 @@ public class Graph {
             String[] parts = name.split("_");
             if (parts.length>1 && parts[1].equals("thread")) {
                 // we've got a sample path
-		String pathName = parts[2];
+                StringJoiner joiner = new StringJoiner("_"); // some samples have "_" in their names!
+                for (int i=2; i<parts.length; i++) {
+                    joiner.add(parts[i]);
+                }
+                String pathName = joiner.toString();
                 int allele = Integer.parseInt(parts[4]); // 0 or 1
-                // NOTE: assume unphased calls, so allele 0 is essentially reference, so only use allele 1
-                if (allele==1) {
+                // NOTE: assume unphased calls, so allele 0 is essentially reference, so only use allele>0
+                if (allele>0) {
                     List<Vg.Mapping> vgMappingList = vgPath.getMappingList();
                     // retrieve or initialize this path's nodes
                     LinkedList<Long> nodeIds = new LinkedList<>();

@@ -92,15 +92,19 @@ public class FRFinder {
 
         // build the FRs round by round
         int round = 0;
-        while (round<3) {
+        while (round<4) {
             round++;
             printHeading("ROUND "+round);
             // use a frozen copy of the current NodeSets
             Set<NodeSet> staticNodeSets = new TreeSet<>();
             staticNodeSets.addAll(syncNodeSets);
+            int n = 0;
+            for (NodeSet ns1 : staticNodeSets) {
 
-            staticNodeSets.parallelStream().forEach((ns1) -> {
-                    ////////
+                // DEBUG
+                n++;
+                if (round<3 || n<2) {
+
                     staticNodeSets.parallelStream().forEach((ns2) -> {
                             ////////
                             if (ns2.compareTo(ns1)>0) {
@@ -108,22 +112,36 @@ public class FRFinder {
                                 if (!syncNodeSets.contains(merged)) {
                                     syncNodeSets.add(merged);
                                     FrequentedRegion fr = new FrequentedRegion(graph, merged, alpha, kappa);
-                                    if (passesFilters(fr)) syncFrequentedRegions.add(fr);
+                                    if (passesFilters(fr)) {
+                                        syncFrequentedRegions.add(fr);
+                                    }
                                 }
                             }
                             ////////
                         });
-                    ////////
-                });
+
+                }
+            }
 
             // print a summary of this round
             if (frequentedRegions.size()>0) {
-                FrequentedRegion highest = frequentedRegions.last();
-                System.out.println("Round "+round+" num="+frequentedRegions.size()+
-                                   " highest="+highest.nodes+": avgLength="+highest.avgLength+" support="+highest.support);
+                FrequentedRegion highestSupportFR = frequentedRegions.first();
+                FrequentedRegion highestAvgLengthFR = frequentedRegions.first();
+                FrequentedRegion highestTotalLengthFR = frequentedRegions.first();
+                for (FrequentedRegion fr : frequentedRegions) {
+                    if (fr.support>highestSupportFR.support) highestSupportFR = fr;
+                    if (fr.avgLength>highestAvgLengthFR.avgLength) highestAvgLengthFR = fr;
+                    if (fr.support*fr.avgLength>highestTotalLengthFR.support*highestTotalLengthFR.avgLength) highestTotalLengthFR = fr;
+                }
+                System.out.println("Highest support:");
+                System.out.println(highestSupportFR);
+                System.out.println("Highest avg length:");
+                System.out.println(highestAvgLengthFR);
+                System.out.println("Highest total length:");
+                System.out.println(highestTotalLengthFR);
             }
 
-            // print the histogram of FR sizes
+            // print the histogram of FR sizes from this round
             Map<Integer,Integer> countMap = new TreeMap<>();
             int maxSize = 0;
             for (FrequentedRegion fr : frequentedRegions) {
@@ -141,18 +159,20 @@ public class FRFinder {
             }
         }
         
-        // // remove the non-root FRs
+        // // remove the non-root FRs that have lower support than their parent
         // // NOTE: this presumes that the FR comparator orders by parent-->child
-        // List<FrequentedRegion> childFRs = new LinkedList<>();
+        // List<FrequentedRegion> uninterestingFRs = new LinkedList<>();
         // FrequentedRegion parentFR = frequentedRegions.first();
         // for (FrequentedRegion thisFR : frequentedRegions) {
         //     if (parentFR.nodes.parentOf(thisFR.nodes)) {
-        //         childFRs.add(thisFR);
+        //         if (parentFR.support>=thisFR.support && parentFR.avgLength>=thisFR.avgLength) {
+        //             uninterestingFRs.add(thisFR);
+        //         }
         //     } else {
         //         parentFR = thisFR;
         //     }
         // }
-        // frequentedRegions.removeAll(childFRs);
+        // frequentedRegions.removeAll(uninterestingFRs);
 
         printFrequentedRegions();
         // printPathFRs();
