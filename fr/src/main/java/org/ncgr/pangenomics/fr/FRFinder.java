@@ -21,7 +21,7 @@ import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 
 /**
- * Finds frequented regions in a Graph. Based loosely on bmumey's static C-like implementation.
+ * Finds frequented regions in a Graph.
  *
  * See Cleary, et al., "Exploring Frequented Regions in Pan-Genomic Graphs", IEEE/ACM Trans Comput Biol Bioinform. 2018 Aug 9. PMID:30106690 DOI:10.1109/TCBB.2018.2864564
  *
@@ -81,7 +81,7 @@ public class FRFinder {
         TreeSet<NodeSet> nodeSets = new TreeSet<>();
         Set<NodeSet> syncNodeSets = Collections.synchronizedSet(nodeSets);
 
-        // create initial NodeSets each containing only one node; add associated FRs if they pass muster
+        // create initial NodeSets each containing only one node; add associated FRs if they pass filter
         for (Node node : graph.nodes) {
             NodeSet nodeSet = new NodeSet();
             nodeSet.add(node);
@@ -94,28 +94,29 @@ public class FRFinder {
         int round = 0;
         while (round<3) {
             round++;
+            printHeading("ROUND "+round);
             // use a frozen copy of the current NodeSets
             Set<NodeSet> staticNodeSets = new TreeSet<>();
             staticNodeSets.addAll(syncNodeSets);
-            for (NodeSet ns1 : staticNodeSets) {
-                System.out.print(".");
-                staticNodeSets.parallelStream().forEach((ns2) -> {
-                        //////////
-                        if (ns2.compareTo(ns1)>0) {
-                            NodeSet merged = NodeSet.merge(ns1, ns2);
-                            if (!syncNodeSets.contains(merged)) {
-                                syncNodeSets.add(merged);
-                                FrequentedRegion fr = new FrequentedRegion(graph, merged, alpha, kappa);
-                                if (passesFilters(fr)) syncFrequentedRegions.add(fr);
+
+            staticNodeSets.parallelStream().forEach((ns1) -> {
+                    ////////
+                    staticNodeSets.parallelStream().forEach((ns2) -> {
+                            ////////
+                            if (ns2.compareTo(ns1)>0) {
+                                NodeSet merged = NodeSet.merge(ns1, ns2);
+                                if (!syncNodeSets.contains(merged)) {
+                                    syncNodeSets.add(merged);
+                                    FrequentedRegion fr = new FrequentedRegion(graph, merged, alpha, kappa);
+                                    if (passesFilters(fr)) syncFrequentedRegions.add(fr);
+                                }
                             }
-                        }
-                        //////////
-                    });
-            }
-            System.out.println("");
+                            ////////
+                        });
+                    ////////
+                });
 
             // print a summary of this round
-            printHeading("ROUND "+round);
             if (frequentedRegions.size()>0) {
                 FrequentedRegion highest = frequentedRegions.last();
                 System.out.println("Round "+round+" num="+frequentedRegions.size()+
@@ -140,18 +141,18 @@ public class FRFinder {
             }
         }
         
-        // remove the non-root FRs
-        // NOTE: this presumes that the FR comparator orders by parent-->child
-        List<FrequentedRegion> childFRs = new LinkedList<>();
-        FrequentedRegion parentFR = frequentedRegions.first();
-        for (FrequentedRegion thisFR : frequentedRegions) {
-            if (parentFR.nodes.parentOf(thisFR.nodes)) {
-                childFRs.add(thisFR);
-            } else {
-                parentFR = thisFR;
-            }
-        }
-        frequentedRegions.removeAll(childFRs);
+        // // remove the non-root FRs
+        // // NOTE: this presumes that the FR comparator orders by parent-->child
+        // List<FrequentedRegion> childFRs = new LinkedList<>();
+        // FrequentedRegion parentFR = frequentedRegions.first();
+        // for (FrequentedRegion thisFR : frequentedRegions) {
+        //     if (parentFR.nodes.parentOf(thisFR.nodes)) {
+        //         childFRs.add(thisFR);
+        //     } else {
+        //         parentFR = thisFR;
+        //     }
+        // }
+        // frequentedRegions.removeAll(childFRs);
 
         printFrequentedRegions();
         // printPathFRs();
