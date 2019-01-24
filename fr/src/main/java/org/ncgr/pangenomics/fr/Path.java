@@ -68,29 +68,17 @@ public class Path implements Comparable<Path> {
     }
 
     /**
-     * Two paths are equal if they have the same name and compareTo gives zero.
+     * Two paths are equal if they have the same name.
      */
     public boolean equals(Path that) {
         return this.name.equals(that.name) && this.compareTo(that)==0;
     }
 
     /**
-     * Compare based on node tree depth, then initial node id.
+     * Compare based on name.
      */
     public int compareTo(Path that) {
-        int i = 0;
-        Node thisNode = this.nodes.get(0);
-        Node thatNode = that.nodes.get(0);
-        while (thisNode.equals(thatNode)) {
-            i++;
-            if (this.nodes.size()<=i || that.nodes.size()<=i) {
-                return Integer.compare(this.nodes.size(), that.nodes.size());
-            } else {
-                thisNode = this.nodes.get(i);
-                thatNode = that.nodes.get(i);
-            }
-        }
-        return thisNode.compareTo(thatNode);
+        return this.name.compareTo(that.name);
     }
 
 

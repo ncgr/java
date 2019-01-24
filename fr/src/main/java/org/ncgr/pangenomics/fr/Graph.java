@@ -196,6 +196,7 @@ public class Graph {
 
     /**
      * Set path labels from a tab-delimited file. Comment lines start with #.
+     * NOTE: actual paths may have suffixes, like _22_0_1, so this method checks that the path name _contains_ a label from the file.
      */
     void readPathLabels(String labelsFile) throws FileNotFoundException, IOException {
         BufferedReader reader = new BufferedReader(new FileReader(labelsFile));
@@ -209,14 +210,21 @@ public class Graph {
                 }
             }
         }
-        if (labels.size()==paths.size()) {
-            for (Path path : paths) {
-                path.setLabel(labels.get(path.name));
+        // find the labels for names that are within the given path name
+        for (Path path : paths) {
+            for (String labelPath : labels.keySet()) {
+                if (path.name.startsWith(labelPath)) path.setLabel(labels.get(labelPath));
             }
-        } else {
-            System.err.println("ERROR: the labels file "+labelsFile+" contains "+labels.size()+" labels while there are "+paths.size()+" paths in the graph.");
-            System.exit(1);
         }
+        // check that we've labeled all the paths
+        boolean pathsAllLabeled = true;
+        for (Path path : paths) {
+            if (path.label==null) {
+                pathsAllLabeled = false;
+                System.err.println("ERROR: the path "+path.name+" has no label in the labels file.");
+            }
+        }
+        if (!pathsAllLabeled) System.exit(1);
     }
     
     // getters of private vars

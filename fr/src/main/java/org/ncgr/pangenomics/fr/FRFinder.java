@@ -92,7 +92,7 @@ public class FRFinder {
 
         // build the FRs round by round
         int round = 0;
-        while (round<4) {
+        while (round<2) {
             round++;
             printHeading("ROUND "+round);
             // use a frozen copy of the current NodeSets
