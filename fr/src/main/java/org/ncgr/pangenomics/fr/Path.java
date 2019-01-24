@@ -35,7 +35,15 @@ public class Path implements Comparable<Path> {
     }
 
     /**
-     * Construct an empty Path given just a path name and label
+     * Construct an empty Path given just a path name
+     */
+    Path(String name) {
+        this.name = name;
+        this.nodes = new LinkedList<>();
+    }
+
+    /**
+     * Construct an empty Path given just a path name and label (which can be null)
      */
     Path(String name, String label) {
         this.name = name;

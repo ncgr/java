@@ -30,12 +30,12 @@ import com.google.protobuf.util.JsonFormat;
 public class Graph {
 
     // output verbosity
-    private boolean verbose = false;
+    boolean verbose = false;
 
     // made available so directory names can be formed from it
-    private String dotFile;
-    private String fastaFile;
-    private String jsonFile;
+    String dotFile;
+    String fastaFile;
+    String jsonFile;
     
     long minLen = Long.MAX_VALUE;  // minimum sequence length
 
@@ -48,6 +48,9 @@ public class Graph {
     // maps a Node to a set of Paths that traverse it
     TreeMap<Node,Set<Path>> nodePaths; // keyed and ordered by Node (for convenience)
 
+    // maps a path label to a count of paths that have that label
+    Map<String,Integer> labelCounts; // keyed by label
+
     /**
      * Constructor does nothing; use read methods to populate the graph from files.
      */
@@ -58,12 +61,13 @@ public class Graph {
      * Read a Graph in from a Vg-generated JSON file.
      */
     public void readVgJsonFile(String jsonFile) throws FileNotFoundException, IOException {
+        // set instance objects from parameters
         this.jsonFile = jsonFile;
 
-        // instantiate the instance objects
+        // instantiate the instance collections
         nodes = new TreeSet<>();
         paths = new TreeSet<>();
-        nodePaths = new TreeMap<>();       // keyed and ordered by nodeId
+        nodePaths = new TreeMap<>();
 
         // read the vg-created JSON into a Vg.Graph
         if (verbose) System.out.println("Reading "+jsonFile+"...");
@@ -85,21 +89,21 @@ public class Graph {
             nodes.add(new Node(id, sequence));
         }
         
-        // populate paths
+        // build paths from the multiple path fragments in the JSON file
+        // path fragments have names of the form _thread_sample_chr_allele_index where allele=0,1,...
+        // The "_"-split pieces will therefore be:
+        // 0:"", 1:"thread", 2:sample1, 3:sample2, L-4:sampleN, L-3:chr, L-2:allele, L-1:i2 where L is the number of pieces,
+        // and sample contains N parts separated by "_".
         for (Vg.Path vgPath : vgPaths) {
             String name = vgPath.getName();
-            // NOTE: sample paths are assumed to start with "_thread_"
-            String[] parts = name.split("_");
-            if (parts.length>1 && parts[1].equals("thread")) {
-                // we've got a sample path
-                StringJoiner joiner = new StringJoiner("_"); // some samples have "_" in their names!
-                for (int i=2; i<parts.length; i++) {
-                    joiner.add(parts[i]);
-                }
-                String pathName = joiner.toString();
-                int allele = Integer.parseInt(parts[4]); // 0 or 1
-                // NOTE: assume unphased calls, so allele 0 is essentially reference, so only use allele>0
-                if (allele>0) {
+            String[] pieces = name.split("_");
+            if (pieces.length>=6 && pieces[1].equals("thread")) {
+                // we've got a sample path fragment
+                String pathName = pieces[2];
+                for (int i=3; i<pieces.length-3; i++) pathName += "_"+pieces[i]; // for (common) cases where samples have underscores
+                int allele = Integer.parseInt(pieces[pieces.length-2]); // 0, 1, etc.
+                // NOTE: assume unphased calls, so allele 0 is nearly reference; so only use allele>0 to avoid REF dilution
+                // if (allele>0) {
                     List<Vg.Mapping> vgMappingList = vgPath.getMappingList();
                     // retrieve or initialize this path's nodes
                     LinkedList<Long> nodeIds = new LinkedList<>();
@@ -135,7 +139,7 @@ public class Graph {
                         // create this new path
                         paths.add(new Path(pathName, pathNodes));
                     }
-                }
+                    // }
             }
         }
 
@@ -195,10 +199,10 @@ public class Graph {
     }
 
     /**
-     * Set path labels from a tab-delimited file. Comment lines start with #.
-     * NOTE: actual paths may have suffixes, like _22_0_1, so this method checks that the path name _contains_ a label from the file.
+     * Read path labels from a tab-delimited file. Comment lines start with #.
      */
     void readPathLabels(String labelsFile) throws FileNotFoundException, IOException {
+        labelCounts = new TreeMap<>();
         BufferedReader reader = new BufferedReader(new FileReader(labelsFile));
         String line = null;
         Map<String,String> labels = new TreeMap<String,String>();
@@ -210,10 +214,26 @@ public class Graph {
                 }
             }
         }
-        // find the labels for names that are within the given path name
+        // find the labels for path names
         for (Path path : paths) {
-            for (String labelPath : labels.keySet()) {
-                if (path.name.startsWith(labelPath)) path.setLabel(labels.get(labelPath));
+            for (String pathName : labels.keySet()) {
+                if (path.name.equals(pathName)) {
+                    String label = labels.get(pathName); 
+                    path.setLabel(label);
+                    if (labelCounts.containsKey(label)) {
+                        int count = labelCounts.get(label);
+                        labelCounts.put(label, count+1);
+                    } else {
+                        labelCounts.put(label, 1);
+                    }
+                }
+            }
+        }
+        // verbosity
+        if (verbose) {
+            printHeading("LABEL COUNTS");
+            for (String label : labelCounts.keySet()) {
+                System.out.println(label+":"+labelCounts.get(label));
             }
         }
         // check that we've labeled all the paths
@@ -227,7 +247,7 @@ public class Graph {
         if (!pathsAllLabeled) System.exit(1);
     }
     
-    // getters of private vars
+    // getters of non-public vars
     public String getDotFile() {
         return dotFile;
     }
@@ -238,7 +258,7 @@ public class Graph {
         return jsonFile;
     }
 
-    // setters of private vars
+    // setters of non-public vars
     public void setVerbose() {
         verbose = true;
     }

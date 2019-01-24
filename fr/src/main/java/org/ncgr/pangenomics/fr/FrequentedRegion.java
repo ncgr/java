@@ -1,5 +1,7 @@
 package org.ncgr.pangenomics.fr;
 
+import java.text.DecimalFormat;
+
 import java.util.List;
 import java.util.LinkedList;
 import java.util.Map;
@@ -12,6 +14,9 @@ import java.util.TreeMap;
  */
 public class FrequentedRegion implements Comparable<FrequentedRegion> {
 
+    // static utility stuff
+    static DecimalFormat pf = new DecimalFormat("##.#%");
+    
     // the Graph that this FrequentedRegion belongs to
     Graph graph;
 
@@ -232,33 +237,30 @@ public class FrequentedRegion implements Comparable<FrequentedRegion> {
      */
     public String toString() {
         String s = nodes.toString();
-        Map<String,Integer> labelCount = new TreeMap<>();
+        Map<String,Integer> labelCounts = new TreeMap<>();
         for (Path subpath : subpaths) {
             if (subpath.label!=null) {
-                if (labelCount.containsKey(subpath.label)) {
-                    int count = labelCount.get(subpath.label);
-                    labelCount.put(subpath.label, count+1);
+                if (labelCounts.containsKey(subpath.label)) {
+                    int count = labelCounts.get(subpath.label);
+                    labelCounts.put(subpath.label, count+1);
                 } else {
-                    labelCount.put(subpath.label, 1);
+                    labelCounts.put(subpath.label, 1);
                 }
             }
         }
         int len = s.length();
         for (int i=8; i<=80; i+=8) if (len<i) s += "\t";
-        if (labelCount.size()>0) {
-            s += avgLength;
-            // special marking for special labels: case/ctrl
-            if (labelCount.containsKey("case") && !labelCount.containsKey("ctrl")) {
-                s += "\tcase:"+labelCount.get("case")+"\t######";
-            } else if (labelCount.containsKey("ctrl") && !labelCount.containsKey("case")) {
-                s += "\t######\tctrl:"+labelCount.get("ctrl");
-            } else {
-                for (String label : labelCount.keySet()) {
-                    s += "\t"+label+":"+labelCount.get(label);
+        s += support+"\t"+avgLength;
+        // show labels (fractions) if available
+        if (graph.labelCounts!=null && graph.labelCounts.size()>0) {
+            for (String label : graph.labelCounts.keySet()) {
+                if (labelCounts.containsKey(label)) {
+                    double frac = (double)labelCounts.get(label)/(double)graph.labelCounts.get(label);
+                    s += "\t"+label+":"+labelCounts.get(label)+"\t"+pf.format(frac);
+                } else {
+                    s += "\t"+label+":0\t####";
                 }
             }
-        } else {
-            s += avgLength+"\t"+support;
         }
         return s;
     }
