@@ -270,7 +270,7 @@ public class FRFinder {
         maxSupOption.setRequired(false);
         options.addOption(maxSupOption);
         //
-        Option minSizeOption = new Option("z", "minsize", true, "minsize=minimum number of nodes that a FR must contain to be considered interesting ("+MINSIZE+")");
+        Option minSizeOption = new Option("s", "minsize", true, "minsize=minimum number of nodes that a FR must contain to be considered interesting ("+MINSIZE+")");
         minSizeOption.setRequired(false);
         options.addOption(minSizeOption);
         //
@@ -285,6 +285,10 @@ public class FRFinder {
         Option verboseOption = new Option("v", "verbose", false, "verbose output ("+VERBOSE+")");
         verboseOption.setRequired(false);
         options.addOption(verboseOption);
+        //
+        Option genotypeOption = new Option("g", "genotype", false, "which genotype to include (0, 1, etc.) from the input file (all)");
+        genotypeOption.setRequired(false);
+        options.addOption(genotypeOption);
 
         try {
             cmd = parser.parse(options, args);
@@ -320,6 +324,7 @@ public class FRFinder {
         // create a Graph from the dot+FASTA or JSON file
         Graph g = new Graph();
         if (cmd.hasOption("verbose")) g.setVerbose();
+        if (cmd.hasOption("genotype")) g.setGenotype(Integer.parseInt(cmd.getOptionValue("genotype")));
         if (dotFile!=null && fastaFile!=null) {
             System.out.println("DOT+FASTA input is not yet enabled.");
             System.exit(0);

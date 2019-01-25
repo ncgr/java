@@ -37,7 +37,11 @@ public class Graph {
     String fastaFile;
     String jsonFile;
     
-    long minLen = Long.MAX_VALUE;  // minimum sequence length
+    // minimum sequence length
+    long minLen = Long.MAX_VALUE;
+
+    // genotype preference (-1 to append all genotypes)
+    int genotype = -1;
 
     // the nodes contained in this graph (which, in turn, contain their sequences)
     TreeSet<Node> nodes;
@@ -90,10 +94,11 @@ public class Graph {
         }
         
         // build paths from the multiple path fragments in the JSON file
-        // path fragments have names of the form _thread_sample_chr_allele_index where allele=0,1,...
+        // path fragments have names of the form _thread_sample_chr_genotype_index where genotype=0,1,...
         // The "_"-split pieces will therefore be:
-        // 0:"", 1:"thread", 2:sample1, 3:sample2, L-4:sampleN, L-3:chr, L-2:allele, L-1:i2 where L is the number of pieces,
+        // 0:"", 1:"thread", 2:sample1, 3:sample2, L-4:sampleN, L-3:chr, L-2:genotype, L-1:i2 where L is the number of pieces,
         // and sample contains N parts separated by "_".
+        // NOTE: with unphased calls, so genotype 0 is nearly reference; so typically set genotype=1 to avoid REF dilution
         for (Vg.Path vgPath : vgPaths) {
             String name = vgPath.getName();
             String[] pieces = name.split("_");
@@ -101,9 +106,11 @@ public class Graph {
                 // we've got a sample path fragment
                 String pathName = pieces[2];
                 for (int i=3; i<pieces.length-3; i++) pathName += "_"+pieces[i]; // for (common) cases where samples have underscores
-                int allele = Integer.parseInt(pieces[pieces.length-2]); // 0, 1, etc.
-                // NOTE: assume unphased calls, so allele 0 is nearly reference; so only use allele>0 to avoid REF dilution
-                // if (allele>0) {
+                int gtype = Integer.parseInt(pieces[pieces.length-2]); // 0, 1, etc.
+                // append the genotype if we're including them all
+                if (genotype==-1) pathName += ":"+gtype;
+                // append this path fragment if appropriate
+                if (genotype==-1 || gtype==genotype) {
                     List<Vg.Mapping> vgMappingList = vgPath.getMappingList();
                     // retrieve or initialize this path's nodes
                     LinkedList<Long> nodeIds = new LinkedList<>();
@@ -116,7 +123,7 @@ public class Graph {
                     boolean first = true;
                     for (Vg.Mapping vgMapping : vgMappingList) {
                         if (first && nodeIds.size()>0) {
-                            // skip overlap
+                            // skip node overlap between fragments
                         } else {
                             nodeIds.add(vgMapping.getPosition().getNodeId());
                         }
@@ -139,7 +146,7 @@ public class Graph {
                         // create this new path
                         paths.add(new Path(pathName, pathNodes));
                     }
-                    // }
+                }
             }
         }
 
@@ -214,11 +221,13 @@ public class Graph {
                 }
             }
         }
-        // find the labels for path names
+        // find the labels for path names (which may have :genotype suffix to ignore)
         for (Path path : paths) {
-            for (String pathName : labels.keySet()) {
-                if (path.name.equals(pathName)) {
-                    String label = labels.get(pathName); 
+            String[] pieces = path.name.split(":");
+            String pathName = pieces[0];
+            for (String sampleName : labels.keySet()) {
+                if (sampleName.equals(pathName)) {
+                    String label = labels.get(sampleName); 
                     path.setLabel(label);
                     if (labelCounts.containsKey(label)) {
                         int count = labelCounts.get(label);
@@ -348,6 +357,10 @@ public class Graph {
         }
     }
 
-
-
+    /**
+     * Set the preferred genotype.
+     */
+    public void setGenotype(int genotype) {
+        this.genotype = genotype;
+    }
 }
