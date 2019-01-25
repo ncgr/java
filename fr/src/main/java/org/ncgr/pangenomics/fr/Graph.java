@@ -366,9 +366,9 @@ public class Graph {
             }
             System.out.println("");
             // print out the sequence, 100 chars to a line
-            for (int i=0; i<path.sequence.length(); i++) {
-                System.out.print(path.sequence.charAt(i));
-                if (i>0 && i%99==0) System.out.print("\n");
+            for (int i=1; i<=path.sequence.length(); i++) {
+                System.out.print(path.sequence.charAt((i-1)));
+                if (i%100==0) System.out.print("\n");
             }
             System.out.println("");
         }

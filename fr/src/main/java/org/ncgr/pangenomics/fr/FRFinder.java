@@ -169,8 +169,13 @@ public class FRFinder {
         // }
         // frequentedRegions.removeAll(uninterestingFRs);
 
+	// verbosity
+	if (verbose) {
+	    printPathFRs();
+	}
+
+	// the end result
         printFrequentedRegions();
-        // printPathFRs();
     }
 
     /**
