@@ -95,16 +95,12 @@ public class FRFinder {
         while (round<2) {
             round++;
             printHeading("ROUND "+round);
-            // use a frozen copy of the current NodeSets
+            // use a frozen copy of the current NodeSets for parallel processing
             Set<NodeSet> staticNodeSets = new TreeSet<>();
             staticNodeSets.addAll(syncNodeSets);
-            int n = 0;
-            for (NodeSet ns1 : staticNodeSets) {
-
-                // DEBUG
-                n++;
-                if (round<3 || n<2) {
-
+            // run two parallel loops over NodeSets
+            staticNodeSets.parallelStream().forEach((ns1) -> {
+                    ////////
                     staticNodeSets.parallelStream().forEach((ns2) -> {
                             ////////
                             if (ns2.compareTo(ns1)>0) {
@@ -119,10 +115,9 @@ public class FRFinder {
                             }
                             ////////
                         });
-
-                }
-            }
-
+                    ////////
+                });
+        
             // print a summary of this round
             if (frequentedRegions.size()>0) {
                 FrequentedRegion highestSupportFR = frequentedRegions.first();
@@ -286,9 +281,13 @@ public class FRFinder {
         verboseOption.setRequired(false);
         options.addOption(verboseOption);
         //
-        Option genotypeOption = new Option("g", "genotype", false, "which genotype to include (0, 1, etc.) from the input file (all)");
+        Option genotypeOption = new Option("g", "genotype", true, "which genotype to include (0,1) from the input file; -1 to include all (-1)");
         genotypeOption.setRequired(false);
         options.addOption(genotypeOption);
+        //
+        Option graphOnlyOption = new Option ("go", "graphonly", false, "just read the graph and output; do not find FRs (for debuggery)");
+        graphOnlyOption.setRequired(false);
+        options.addOption(graphOnlyOption);
 
         try {
             cmd = parser.parse(options, args);
@@ -323,7 +322,7 @@ public class FRFinder {
 
         // create a Graph from the dot+FASTA or JSON file
         Graph g = new Graph();
-        if (cmd.hasOption("verbose")) g.setVerbose();
+        if (cmd.hasOption("verbose") && !cmd.hasOption("graphonly")) g.setVerbose();
         if (cmd.hasOption("genotype")) g.setGenotype(Integer.parseInt(cmd.getOptionValue("genotype")));
         if (dotFile!=null && fastaFile!=null) {
             System.out.println("DOT+FASTA input is not yet enabled.");
@@ -339,6 +338,16 @@ public class FRFinder {
         // if a labels file is given, append the labels to the path names
         if (pathLabelsFile!=null) {
             g.readPathLabels(pathLabelsFile);
+        }
+
+        // bail if we're just looking at the graph
+        if (cmd.hasOption("graphonly")) {
+            if (pathLabelsFile!=null) g.printLabelCounts();
+            g.printNodes();
+            g.printPaths();
+            g.printNodePaths();
+            g.printPathSequences();
+            return;
         }
         
         // instantiate the FRFinder with this Graph and required parameters

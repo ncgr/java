@@ -94,11 +94,11 @@ public class Graph {
         }
         
         // build paths from the multiple path fragments in the JSON file
-        // path fragments have names of the form _thread_sample_chr_genotype_index where genotype=0,1,...
+        // path fragments have names of the form _thread_sample_chr_genotype_index where genotype=0,1
         // The "_"-split pieces will therefore be:
-        // 0:"", 1:"thread", 2:sample1, 3:sample2, L-4:sampleN, L-3:chr, L-2:genotype, L-1:i2 where L is the number of pieces,
+        // 0:"", 1:"thread", 2:sample1, 3:sample2, L-4:sampleN, L-3:chr, L-2:genotype, L-1:idx where L is the number of pieces,
         // and sample contains N parts separated by "_".
-        // NOTE: with unphased calls, so genotype 0 is nearly reference; so typically set genotype=1 to avoid REF dilution
+        // NOTE: with unphased calls, genotype 0 is nearly reference; so typically set genotype=1 to avoid REF dilution
         for (Vg.Path vgPath : vgPaths) {
             String name = vgPath.getName();
             String[] pieces = name.split("_");
@@ -239,12 +239,8 @@ public class Graph {
             }
         }
         // verbosity
-        if (verbose) {
-            printHeading("LABEL COUNTS");
-            for (String label : labelCounts.keySet()) {
-                System.out.println(label+":"+labelCounts.get(label));
-            }
-        }
+        if (verbose) printLabelCounts();
+
         // check that we've labeled all the paths
         boolean pathsAllLabeled = true;
         for (Path path : paths) {
@@ -270,6 +266,13 @@ public class Graph {
     // setters of non-public vars
     public void setVerbose() {
         verbose = true;
+    }
+
+    /**
+     * Set the desired genotype.
+     */
+    public void setGenotype(int genotype) {
+        this.genotype = genotype;
     }
 
     /**
@@ -337,30 +340,47 @@ public class Graph {
     }
 
     /**
-     * Print the sequences for each path, labeled by pathName.
+     * Print the sequences for each path, in FASTA style, labeled by path.name (and path.label if present).
      */
     void printPathSequences() {
         printHeading("PATH SEQUENCES");
         for (Path path : paths) {
-            int length = path.sequence.length();
-            String heading = ">"+path.name+" ("+length+")";
+            String heading = ">"+path.getNameAndLabel()+" ("+path.sequence.length()+")";
             System.out.print(heading);
-            for (int i=heading.length(); i<19; i++) System.out.print(" "); System.out.print(".");
-            for (int n=0; n<19; n++) {
+            // add dots every 10 bases to the heading
+            int h = 19;
+            int m = 8;
+            if (heading.length()>=39) {
+                h = 49;
+                m = 5;
+            } else if (heading.length()>=29) {
+                h = 39;
+                m = 6;
+            } else if (heading.length()>=19) {
+                h = 29;
+                m = 7;
+            }
+            for (int i=heading.length(); i<h; i++) System.out.print(" "); System.out.print(".");
+            for (int n=0; n<m; n++) {
                 for (int i=0; i<9; i++) System.out.print(" "); System.out.print(".");
             }
             System.out.println("");
-            // // entire sequence
-            // System.out.println(sequence);
-            // trimmed sequence beginning and end
-            System.out.println(path.sequence.substring(0,100)+"........."+path.sequence.substring(length-101,length));
+            // print out the sequence, 100 chars to a line
+            for (int i=0; i<path.sequence.length(); i++) {
+                System.out.print(path.sequence.charAt(i));
+                if (i>0 && i%99==0) System.out.print("\n");
+            }
+            System.out.println("");
         }
     }
 
     /**
-     * Set the preferred genotype.
+     * Print the counts of paths per label.
      */
-    public void setGenotype(int genotype) {
-        this.genotype = genotype;
+    void printLabelCounts() {
+        printHeading("LABEL COUNTS");
+        for (String label : labelCounts.keySet()) {
+            System.out.println(label+":"+labelCounts.get(label));
+        }
     }
 }
