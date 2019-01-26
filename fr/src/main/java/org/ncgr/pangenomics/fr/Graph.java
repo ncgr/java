@@ -29,8 +29,15 @@ import com.google.protobuf.util.JsonFormat;
  */ 
 public class Graph {
 
+    // defaults
+    static int GENOTYPE = -1;
+    static boolean VERBOSE = false;
+
     // output verbosity
-    boolean verbose = false;
+    boolean verbose = VERBOSE;
+
+    // genotype preference (-1 to append all genotypes)
+    int genotype = GENOTYPE;
 
     // made available so directory names can be formed from it
     String dotFile;
@@ -39,9 +46,6 @@ public class Graph {
     
     // minimum sequence length
     long minLen = Long.MAX_VALUE;
-
-    // genotype preference (-1 to append all genotypes)
-    int genotype = -1;
 
     // the nodes contained in this graph (which, in turn, contain their sequences)
     TreeSet<Node> nodes;

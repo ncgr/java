@@ -36,7 +36,8 @@ public class FRFinder {
     static int MINLEN = 1;
     static boolean USERC = false;
     static boolean VERBOSE = false;
-
+    static boolean REMOVE_CHILDREN = false;
+    
     // required parameters, no defaults; set in constructor
     Graph graph;  // the Graph we're analyzing
     double alpha; // penetrance: the fraction of a supporting strain's sequence that actually supports the FR; alternatively, `1-alpha` is the fraction of inserted sequence
@@ -44,11 +45,12 @@ public class FRFinder {
  
     // optional parameters, set with setters
     boolean verbose = VERBOSE;
+    boolean useRC = USERC; // indicates if the sequence (e.g. FASTA file) had its reverse complement appended
+    boolean removeChildren = REMOVE_CHILDREN; // option to remove child FRs with lower support from the FR heirarchy
     int minSup = MINSUP;   // minimum support: minimum number of genome paths (fr.support) for an FR to be considered interesting
     int maxSup = MAXSUP;   // maximum support: maximum number of genome paths (fr.support) for an FR to be considered interesting
     int minSize = MINSIZE; // minimum size: minimum number of de Bruijn nodes (fr.nodes.size()) that an FR must contain to be considered interesting
     int minLen = MINLEN;   // minimum average length of a frequented region's subpath sequences (fr.avgLength) to be considered interesting
-    boolean useRC = USERC; // indicates if the sequence (e.g. FASTA file) had its reverse complement appended
 
     // the FRs, sorted for convenience
     TreeSet<FrequentedRegion> frequentedRegions;
@@ -154,20 +156,23 @@ public class FRFinder {
             }
         }
         
-        // // remove the non-root FRs that have lower support than their parent
-        // // NOTE: this presumes that the FR comparator orders by parent-->child
-        // List<FrequentedRegion> uninterestingFRs = new LinkedList<>();
-        // FrequentedRegion parentFR = frequentedRegions.first();
-        // for (FrequentedRegion thisFR : frequentedRegions) {
-        //     if (parentFR.nodes.parentOf(thisFR.nodes)) {
-        //         if (parentFR.support>=thisFR.support && parentFR.avgLength>=thisFR.avgLength) {
-        //             uninterestingFRs.add(thisFR);
-        //         }
-        //     } else {
-        //         parentFR = thisFR;
-        //     }
-        // }
-        // frequentedRegions.removeAll(uninterestingFRs);
+        // remove child FRs that have lower support than their parent
+        // NOTE: this presumes that the FR comparator orders by parent-->child!
+        if (removeChildren) {
+            List<FrequentedRegion> uninterestingFRs = new LinkedList<>();
+            FrequentedRegion parentFR = frequentedRegions.first();
+            for (FrequentedRegion thisFR : frequentedRegions) {
+                if (parentFR.nodes.parentOf(thisFR.nodes)) {
+                    if (parentFR.support>=thisFR.support && parentFR.avgLength>=thisFR.avgLength) {
+                        uninterestingFRs.add(thisFR);
+                    }
+                } else {
+                    parentFR = thisFR;
+                }
+            }
+            frequentedRegions.removeAll(uninterestingFRs);
+            printHeading("REMOVED "+uninterestingFRs.size()+" CHILD FRs");
+        }
 
 	// verbosity
 	if (verbose) {
@@ -209,7 +214,7 @@ public class FRFinder {
 
     // setters for optional parameters
     public void setVerbose() {
-        verbose = true;
+        this.verbose = true;
     }
     public void setMinSup(int minSup) {
         this.minSup = minSup;
@@ -225,6 +230,9 @@ public class FRFinder {
     }
     public void setUseRC() {
         this.useRC = true;
+    }
+    public void setRemoveChildren() {
+        this.removeChildren = true;
     }
 
     /**
@@ -286,13 +294,17 @@ public class FRFinder {
         verboseOption.setRequired(false);
         options.addOption(verboseOption);
         //
-        Option genotypeOption = new Option("g", "genotype", true, "which genotype to include (0,1) from the input file; -1 to include all (-1)");
+        Option genotypeOption = new Option("g", "genotype", true, "which genotype to include (0,1) from the input file; -1 to include all ("+Graph.GENOTYPE+")");
         genotypeOption.setRequired(false);
         options.addOption(genotypeOption);
         //
-        Option graphOnlyOption = new Option ("go", "graphonly", false, "just read the graph and output; do not find FRs (for debuggery)");
+        Option graphOnlyOption = new Option("go", "graphonly", false, "just read the graph and output, do not find FRs; for debuggery (false)");
         graphOnlyOption.setRequired(false);
         options.addOption(graphOnlyOption);
+        //
+        Option removeChildrenOption = new Option("rc", "removechildren", false, "remove child FRs that have lower support ("+REMOVE_CHILDREN+")");
+        removeChildrenOption.setRequired(false);
+        options.addOption(removeChildrenOption);
 
         try {
             cmd = parser.parse(options, args);
@@ -359,9 +371,9 @@ public class FRFinder {
         FRFinder frf = new FRFinder(g, alpha, kappa);
         
         // set optional FRFinder parameters
-        boolean useRC = cmd.hasOption("rc");
         if (cmd.hasOption("verbose")) frf.setVerbose();
         if (cmd.hasOption("userc")) frf.setUseRC();
+        if (cmd.hasOption("removechildren")) frf.setRemoveChildren();
         if (cmd.hasOption("minsup")) {
             int minSup = Integer.parseInt(cmd.getOptionValue("minsup"));
             frf.setMinSup(minSup);
