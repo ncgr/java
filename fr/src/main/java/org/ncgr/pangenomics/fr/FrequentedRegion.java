@@ -6,6 +6,8 @@ import java.util.List;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.Set;
+import java.util.TreeSet;
 
 /**
  * Represents a cluster of nodes along with the supporting subpaths of the full set of strain/subject/subspecies paths.
@@ -15,7 +17,7 @@ import java.util.TreeMap;
 public class FrequentedRegion implements Comparable<FrequentedRegion> {
 
     // static utility stuff
-    static DecimalFormat pf = new DecimalFormat("##.#%");
+    static DecimalFormat df = new DecimalFormat("0.000");
     
     // the Graph that this FrequentedRegion belongs to
     Graph graph;
@@ -233,10 +235,25 @@ public class FrequentedRegion implements Comparable<FrequentedRegion> {
     }
 
     /**
+     * Return the column heading for the toString() fields
+     */
+    public String columnHeading() {
+        String s = "nodes\tsupport\tavgLen";
+        Set<String> labels = new TreeSet<>();
+        for (Path path : graph.paths) {
+            if (path.label!=null) labels.add(path.label);
+        }
+        for (String label : labels) {
+            s += "\t"+label+".n"+"\t"+label+".f";
+        }
+        return s;
+    }
+    
+    /**
      * Return a string summary of this frequented region.
      */
     public String toString() {
-        String s = nodes.toString();
+        // count the support per label if present
         Map<String,Integer> labelCounts = new TreeMap<>();
         for (Path subpath : subpaths) {
             if (subpath.label!=null) {
@@ -248,17 +265,15 @@ public class FrequentedRegion implements Comparable<FrequentedRegion> {
                 }
             }
         }
-        int len = s.length();
-        for (int i=8; i<=80; i+=8) if (len<i) s += "\t";
-        s += support+"\t"+avgLength;
+        String s = nodes.toString()+"\t"+support+"\t"+avgLength;
         // show labels (fractions) if available
         if (graph.labelCounts!=null && graph.labelCounts.size()>0) {
             for (String label : graph.labelCounts.keySet()) {
                 if (labelCounts.containsKey(label)) {
                     double frac = (double)labelCounts.get(label)/(double)graph.labelCounts.get(label);
-                    s += "\t"+label+":"+labelCounts.get(label)+"\t"+pf.format(frac);
+                    s += "\t"+labelCounts.get(label)+"\t"+df.format(frac);
                 } else {
-                    s += "\t"+label+":0\t####";
+                    s += "\t"+0+"\t"+df.format(0.0);
                 }
             }
         }
