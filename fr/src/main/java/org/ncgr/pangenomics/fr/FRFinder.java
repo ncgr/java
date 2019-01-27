@@ -106,21 +106,24 @@ public class FRFinder {
             currentNodeSets.addAll(syncNodeSets);
 
             if (parallel) {
-                // run two parallel loops over the current NodeSets
-                currentNodeSets.parallelStream().forEach((ns1) -> {
-                        ////////
-                        currentNodeSets.parallelStream().forEach((ns2) -> {
-                                ////////
-                                NodeSet merged = NodeSet.merge(ns1, ns2);
-                                if (!syncNodeSets.contains(merged)) {
-                                    syncNodeSets.add(merged);
-                                    FrequentedRegion fr = new FrequentedRegion(graph, merged, alpha, kappa);
-                                    if (passesFilters(fr)) frequentedRegions.add(fr);
-                                }
-                                ////////
-                            });
-                        ////////
-                    });
+                // run non-parallel outer loop
+                for (NodeSet ns1 : currentNodeSets) {
+                    int done = 0;
+                    int alreadyDone = 0;
+                    long start = System.currentTimeMillis();
+                    // run parallel inner loop over the current NodeSets
+                    currentNodeSets.parallelStream().forEach((ns2) -> {
+                            ////////
+                            NodeSet merged = NodeSet.merge(ns1, ns2);
+                            if (!syncNodeSets.contains(merged)) {
+                                syncNodeSets.add(merged);
+                                FrequentedRegion fr = new FrequentedRegion(graph, merged, alpha, kappa);
+                                if (passesFilters(fr)) frequentedRegions.add(fr);
+                            }
+                            ////////
+                        });
+                    System.out.println(ns1.toString()+": elapsed="+(System.currentTimeMillis()-start));
+                }
             } else {
                 // run non-parallel loops over the current NodeSets, for debuggery
                 for (NodeSet ns1 : currentNodeSets) {
