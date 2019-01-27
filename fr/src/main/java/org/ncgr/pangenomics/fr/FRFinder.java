@@ -105,12 +105,18 @@ public class FRFinder {
             final Set<NodeSet> currentNodeSets = new TreeSet<>();
             currentNodeSets.addAll(syncNodeSets);
 
+            // DEBUG
             if (parallel) {
-                // run non-parallel outer loop
-                for (NodeSet ns1 : currentNodeSets) {
-                    int done = 0;
-                    int alreadyDone = 0;
-                    long start = System.currentTimeMillis();
+                System.out.println("n1\tadded\telapsed");
+            } else {
+                System.out.println("n1\tadded\telapsed\tdone\talreadyDone");
+            }
+            
+            // run non-parallel outer loop
+            for (NodeSet ns1 : currentNodeSets) {
+                long start = System.currentTimeMillis();
+                int oldFRSize = frequentedRegions.size();
+                if (parallel) {
                     // run parallel inner loop over the current NodeSets
                     currentNodeSets.parallelStream().forEach((ns2) -> {
                             ////////
@@ -122,14 +128,11 @@ public class FRFinder {
                             }
                             ////////
                         });
-                    System.out.println(ns1.toString()+": elapsed="+(System.currentTimeMillis()-start));
-                }
-            } else {
-                // run non-parallel loops over the current NodeSets, for debuggery
-                for (NodeSet ns1 : currentNodeSets) {
+                    System.out.println(ns1.toString()+"\t"+(frequentedRegions.size()-oldFRSize)+"\t"+(System.currentTimeMillis()-start));
+                } else {
+                    // run non-parallel inner loop, with extra debuggery
                     int done = 0;
                     int alreadyDone = 0;
-                    long start = System.currentTimeMillis();
                     for (NodeSet ns2 : currentNodeSets) {
                         NodeSet merged = NodeSet.merge(ns1, ns2);
                         if (syncNodeSets.contains(merged)) {
@@ -141,7 +144,7 @@ public class FRFinder {
                             if (passesFilters(fr)) frequentedRegions.add(fr);
                         }
                     }
-                    System.out.println(ns1.toString()+":"+done+"|"+alreadyDone+" elapsed:"+(System.currentTimeMillis()-start));
+                    System.out.println(ns1.toString()+"\t"+(frequentedRegions.size()-oldFRSize)+"\t"+(System.currentTimeMillis()-start)+"\t"+done+"\t"+alreadyDone);
                 }
             }
 
