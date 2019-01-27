@@ -34,6 +34,7 @@ public class FRFinder {
     static int MAXSUP = Integer.MAX_VALUE;
     static int MINSIZE = 1;
     static int MINLEN = 1;
+    static int NROUNDS = 2;
     static boolean USERC = false;
     static boolean VERBOSE = false;
     static boolean REMOVE_CHILDREN = false;
@@ -53,6 +54,7 @@ public class FRFinder {
     int maxSup = MAXSUP;   // maximum support: maximum number of genome paths (fr.support) for an FR to be considered interesting
     int minSize = MINSIZE; // minimum size: minimum number of de Bruijn nodes (fr.nodes.size()) that an FR must contain to be considered interesting
     int minLen = MINLEN;   // minimum average length of a frequented region's subpath sequences (fr.avgLength) to be considered interesting
+    int nRounds = NROUNDS; // number of FR-building rounds to run
 
     // the FRs, sorted for convenience
     TreeSet<FrequentedRegion> frequentedRegions;
@@ -95,15 +97,13 @@ public class FRFinder {
 
         // build the FRs round by round
         int round = 0;
-        while (round<2) {
+        while (round<nRounds) {
             round++;
             printHeading("ROUND "+round);
 
             // use a frozen copy of the current NodeSets for iterating
             final Set<NodeSet> currentNodeSets = new TreeSet<>();
             currentNodeSets.addAll(syncNodeSets);
-
-            long start = System.currentTimeMillis();
 
             if (parallel) {
                 // run two parallel loops over the current NodeSets
@@ -115,32 +115,32 @@ public class FRFinder {
                                 if (!syncNodeSets.contains(merged)) {
                                     syncNodeSets.add(merged);
                                     FrequentedRegion fr = new FrequentedRegion(graph, merged, alpha, kappa);
-                                    if (passesFilters(fr)) {
-                                        frequentedRegions.add(fr);
-                                    }
+                                    if (passesFilters(fr)) frequentedRegions.add(fr);
                                 }
                                 ////////
                             });
                         ////////
                     });
             } else {
-                // run non-parallel loops over the current NodeSets
+                // run non-parallel loops over the current NodeSets, for debuggery
                 for (NodeSet ns1 : currentNodeSets) {
+                    int done = 0;
+                    int alreadyDone = 0;
+                    long start = System.currentTimeMillis();
                     for (NodeSet ns2 : currentNodeSets) {
                         NodeSet merged = NodeSet.merge(ns1, ns2);
-                        if (!syncNodeSets.contains(merged)) {
-                            // System.out.println(ns1.toString()+ns2.toString()+"->"+merged.toString());
+                        if (syncNodeSets.contains(merged)) {
+                            alreadyDone++;
+                        } else {
+                            done++;
                             syncNodeSets.add(merged);
                             FrequentedRegion fr = new FrequentedRegion(graph, merged, alpha, kappa);
-                            if (passesFilters(fr)) {
-                                frequentedRegions.add(fr);
-                            }
+                            if (passesFilters(fr)) frequentedRegions.add(fr);
                         }
                     }
+                    System.out.println(ns1.toString()+":"+done+"|"+alreadyDone+" elapsed:"+(System.currentTimeMillis()-start));
                 }
             }
-
-            System.out.println("Elapsed: "+(System.currentTimeMillis()-start));
 
             // print a summary of this round
             if (frequentedRegions.size()>0) {
@@ -254,6 +254,9 @@ public class FRFinder {
     public void setMinLen(int minLen) {
         this.minLen = minLen;
     }
+    public void setNRounds(int nRounds) {
+        this.nRounds = nRounds;
+    }
     public void setUseRC() {
         this.useRC = true;
     }
@@ -335,9 +338,13 @@ public class FRFinder {
         removeChildrenOption.setRequired(false);
         options.addOption(removeChildrenOption);
         //
-        Option parallelOption = new Option("pa", "parallel", false, "run FR building loop in parallel ("+PARALLEL+")");
+        Option parallelOption = new Option("pa", "parallel", false, "run FR-building loop in parallel ("+PARALLEL+")");
         parallelOption.setRequired(false);
         options.addOption(parallelOption);
+        //
+        Option nRoundsOption = new Option("nr", "nrounds", true, "number of FR-building rounds to run ("+NROUNDS+")");
+        nRoundsOption.setRequired(false);
+        options.addOption(nRoundsOption);
 
         try {
             cmd = parser.parse(options, args);
@@ -409,20 +416,19 @@ public class FRFinder {
         if (cmd.hasOption("removechildren")) frf.setRemoveChildren();
         if (cmd.hasOption("parallel")) frf.setParallel();
         if (cmd.hasOption("minsup")) {
-            int minSup = Integer.parseInt(cmd.getOptionValue("minsup"));
-            frf.setMinSup(minSup);
+            frf.setMinSup(Integer.parseInt(cmd.getOptionValue("minsup")));
         }
         if (cmd.hasOption("maxsup")) {
-            int maxSup = Integer.parseInt(cmd.getOptionValue("maxsup"));
-            frf.setMaxSup(maxSup);
+            frf.setMaxSup(Integer.parseInt(cmd.getOptionValue("maxsup")));
         }
         if (cmd.hasOption("minsize")) {
-            int minSize = Integer.parseInt(cmd.getOptionValue("minsize"));
-            frf.setMinSize(minSize);
+            frf.setMinSize(Integer.parseInt(cmd.getOptionValue("minsize")));
         }
         if (cmd.hasOption("minlen")) {
-            int minLen = Integer.parseInt(cmd.getOptionValue("minlen"));
-            frf.setMinLen(minLen);
+            frf.setMinLen(Integer.parseInt(cmd.getOptionValue("minlen")));
+        }
+        if (cmd.hasOption("nrounds")) {
+            frf.setNRounds(Integer.parseInt(cmd.getOptionValue("nrounds")));
         }
         
         //////////////////
