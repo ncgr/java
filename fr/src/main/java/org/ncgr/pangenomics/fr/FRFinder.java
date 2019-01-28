@@ -1,7 +1,10 @@
 package org.ncgr.pangenomics.fr;
 
+import java.io.BufferedWriter;
 import java.io.FileNotFoundException;
+import java.io.FileWriter;
 import java.io.IOException;
+import java.io.PrintWriter;
 
 import java.util.Collections;
 import java.util.List;
@@ -37,6 +40,7 @@ public class FRFinder {
     static int NROUNDS = 2;
     static boolean USERC = false;
     static boolean VERBOSE = false;
+    static boolean DEBUG = false;
     static boolean REMOVE_CHILDREN = false;
     static boolean PARALLEL = false;
     
@@ -47,6 +51,7 @@ public class FRFinder {
  
     // optional parameters, set with setters
     boolean verbose = VERBOSE;
+    boolean debug = DEBUG;
     boolean useRC = USERC; // indicates if the sequence (e.g. FASTA file) had its reverse complement appended
     boolean removeChildren = REMOVE_CHILDREN; // option to remove child FRs with lower support from the FR heirarchy
     boolean parallel = PARALLEL; // option to run FR building loop in parallel
@@ -55,6 +60,7 @@ public class FRFinder {
     int minSize = MINSIZE; // minimum size: minimum number of de Bruijn nodes (fr.nodes.size()) that an FR must contain to be considered interesting
     int minLen = MINLEN;   // minimum average length of a frequented region's subpath sequences (fr.avgLength) to be considered interesting
     int nRounds = NROUNDS; // number of FR-building rounds to run
+    String outputFile = null; // output file for FRs (stdout if null)
 
     // the FRs, sorted for convenience
     TreeSet<FrequentedRegion> frequentedRegions;
@@ -95,6 +101,9 @@ public class FRFinder {
             if (passesFilters(fr)) frequentedRegions.add(fr);
         }
 
+        // for parallelization
+        Set<FrequentedRegion> syncFrequentedRegions = Collections.synchronizedSet(frequentedRegions);
+
         // build the FRs round by round
         int round = 0;
         while (round<nRounds) {
@@ -106,45 +115,53 @@ public class FRFinder {
             currentNodeSets.addAll(syncNodeSets);
 
             // DEBUG
-            if (parallel) {
-                System.out.println("n1\tadded\telapsed");
-            } else {
-                System.out.println("n1\tadded\telapsed\tdone\talreadyDone");
+            if (debug) {
+                if (parallel) {
+                    System.out.println("ns1\tadded\telapsed");
+                } else {
+                    System.out.println("ns1\tadded\telapsed\tdone\talreadyDone");
+                }
             }
             
             // run non-parallel outer loop
             for (NodeSet ns1 : currentNodeSets) {
                 long start = System.currentTimeMillis();
-                int oldFRSize = frequentedRegions.size();
+                int oldFRSize = syncFrequentedRegions.size();
                 if (parallel) {
                     // run parallel inner loop over the current NodeSets
                     currentNodeSets.parallelStream().forEach((ns2) -> {
                             ////////
-                            NodeSet merged = NodeSet.merge(ns1, ns2);
-                            if (!syncNodeSets.contains(merged)) {
-                                syncNodeSets.add(merged);
-                                FrequentedRegion fr = new FrequentedRegion(graph, merged, alpha, kappa);
-                                if (passesFilters(fr)) frequentedRegions.add(fr);
+                            if (ns2.first().compareTo(ns1.last())>0) {
+                                NodeSet merged = NodeSet.merge(ns1, ns2);
+                                if (merged.size()>=minSize && !syncNodeSets.contains(merged)) {
+                                    syncNodeSets.add(merged);
+                                    FrequentedRegion fr = new FrequentedRegion(graph, merged, alpha, kappa);
+                                    if (passesFilters(fr)) syncFrequentedRegions.add(fr);
+                                }
                             }
                             ////////
                         });
-                    System.out.println(ns1.toString()+"\t"+(frequentedRegions.size()-oldFRSize)+"\t"+(System.currentTimeMillis()-start));
+                    if (debug) System.out.println(ns1.toString()+"\t"+(syncFrequentedRegions.size()-oldFRSize)+"\t"+(System.currentTimeMillis()-start));
                 } else {
                     // run non-parallel inner loop, with extra debuggery
                     int done = 0;
                     int alreadyDone = 0;
                     for (NodeSet ns2 : currentNodeSets) {
-                        NodeSet merged = NodeSet.merge(ns1, ns2);
-                        if (syncNodeSets.contains(merged)) {
-                            alreadyDone++;
-                        } else {
-                            done++;
-                            syncNodeSets.add(merged);
-                            FrequentedRegion fr = new FrequentedRegion(graph, merged, alpha, kappa);
-                            if (passesFilters(fr)) frequentedRegions.add(fr);
+                        if (ns2.first().compareTo(ns1.last())>0) {
+                            NodeSet merged = NodeSet.merge(ns1, ns2);
+                            if (merged.size()>=minSize && !nodeSets.contains(merged)) {
+                                // System.out.println(ns1.toString()+ns2.toString()+"->"+merged.toString()+" NEW");
+                                done++;
+                                nodeSets.add(merged);
+                                FrequentedRegion fr = new FrequentedRegion(graph, merged, alpha, kappa);
+                                if (passesFilters(fr)) frequentedRegions.add(fr);
+                            } else {
+                                // System.out.println(ns1.toString()+ns2.toString()+"->"+merged.toString()+" OLD");
+                                alreadyDone++;
+                            }
                         }
                     }
-                    System.out.println(ns1.toString()+"\t"+(frequentedRegions.size()-oldFRSize)+"\t"+(System.currentTimeMillis()-start)+"\t"+done+"\t"+alreadyDone);
+                    if (debug) System.out.println(ns1.toString()+"\t"+(frequentedRegions.size()-oldFRSize)+"\t"+(System.currentTimeMillis()-start)+"\t"+done+"\t"+alreadyDone);
                 }
             }
 
@@ -211,8 +228,7 @@ public class FRFinder {
 	}
 
 	// the end result
-        // DEBUG
-        // printFrequentedRegions();
+        printFrequentedRegions();
     }
 
     /**
@@ -248,6 +264,9 @@ public class FRFinder {
     public void setVerbose() {
         this.verbose = true;
     }
+    public void setDebug() {
+        this.debug = true;
+    }
     public void setMinSup(int minSup) {
         this.minSup = minSup;
     }
@@ -271,6 +290,9 @@ public class FRFinder {
     }
     public void setParallel() {
         this.parallel = true;
+    }
+    public void setOutputFile(String outputFile) {
+        this.outputFile = outputFile;
     }
 
     /**
@@ -332,9 +354,17 @@ public class FRFinder {
         verboseOption.setRequired(false);
         options.addOption(verboseOption);
         //
+        Option debugOption = new Option("d", "debug", false, "debug output ("+DEBUG+")");
+        debugOption.setRequired(false);
+        options.addOption(debugOption);
+        //
         Option genotypeOption = new Option("g", "genotype", true, "which genotype to include (0,1) from the input file; -1 to include all ("+Graph.GENOTYPE+")");
         genotypeOption.setRequired(false);
         options.addOption(genotypeOption);
+        //
+        Option outputfileOption = new Option("o", "outputfile", true, "output file (stdout)");
+        outputfileOption.setRequired(false);
+        options.addOption(outputfileOption);
         //
         Option graphOnlyOption = new Option("go", "graphonly", false, "just read the graph and output, do not find FRs; for debuggery (false)");
         graphOnlyOption.setRequired(false);
@@ -418,6 +448,7 @@ public class FRFinder {
         
         // set optional FRFinder parameters
         if (cmd.hasOption("verbose")) frf.setVerbose();
+        if (cmd.hasOption("debug")) frf.setDebug();
         if (cmd.hasOption("userc")) frf.setUseRC();
         if (cmd.hasOption("removechildren")) frf.setRemoveChildren();
         if (cmd.hasOption("parallel")) frf.setParallel();
@@ -436,6 +467,9 @@ public class FRFinder {
         if (cmd.hasOption("nrounds")) {
             frf.setNRounds(Integer.parseInt(cmd.getOptionValue("nrounds")));
         }
+        if (cmd.hasOption("outputfile")) {
+            frf.setOutputFile(cmd.getOptionValue("outputfile"));
+        }
         
         //////////////////
         // Find the FRs //
@@ -453,13 +487,28 @@ public class FRFinder {
     }
 
     /**
-     * Print out the FRs.
+     * Print out the FRs, either to stdout or outputFile if not null.
      */
     void printFrequentedRegions() {
-        printHeading("FREQUENTED REGIONS");
-        System.out.println(frequentedRegions.first().columnHeading());
-        for (FrequentedRegion fr : frequentedRegions) {
-            System.out.println(fr.toString());
+        if (outputFile==null) {
+            printHeading("FREQUENTED REGIONS");
+            System.out.println(frequentedRegions.first().columnHeading());
+            for (FrequentedRegion fr : frequentedRegions) {
+                System.out.println(fr.toString());
+            }
+        } else {
+            try {
+                // no heading for file output
+                PrintWriter out = new PrintWriter(new BufferedWriter(new FileWriter(outputFile)));
+                out.println(frequentedRegions.first().columnHeading());
+                for (FrequentedRegion fr : frequentedRegions) {
+                    out.println(fr.toString());
+                }
+                out.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+                System.exit(1);
+            }
         }
     }
 
