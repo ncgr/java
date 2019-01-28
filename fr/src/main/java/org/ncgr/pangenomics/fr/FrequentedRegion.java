@@ -1,5 +1,10 @@
 package org.ncgr.pangenomics.fr;
 
+import org.ncgr.pangenomics.Graph;
+import org.ncgr.pangenomics.Node;
+import org.ncgr.pangenomics.NodeSet;
+import org.ncgr.pangenomics.Path;
+
 import java.text.DecimalFormat;
 
 import java.util.List;

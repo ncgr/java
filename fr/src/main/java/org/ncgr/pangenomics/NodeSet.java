@@ -1,4 +1,4 @@
-package org.ncgr.pangenomics.fr;
+package org.ncgr.pangenomics;
 
 import java.util.StringJoiner;
 import java.util.TreeSet;
@@ -13,14 +13,14 @@ public class NodeSet extends TreeSet<Node> implements Comparable <NodeSet> {
     /**
      * Empty constructor.
      */
-    NodeSet() {
+    public NodeSet() {
         super();
     }
     
     /**
      * Construct given a TreeSet of Nodes.
      */
-    NodeSet(TreeSet<Node> nodes) {
+    public NodeSet(TreeSet<Node> nodes) {
         for (Node node : nodes) add(node);
     }
 
@@ -97,7 +97,7 @@ public class NodeSet extends TreeSet<Node> implements Comparable <NodeSet> {
     /**
      * Return the result of merging two NodeSets.
      */
-    static NodeSet merge(NodeSet ns1, NodeSet ns2) {
+    public static NodeSet merge(NodeSet ns1, NodeSet ns2) {
         NodeSet merged = new NodeSet();
         merged.addAll(ns1);
         merged.addAll(ns2);

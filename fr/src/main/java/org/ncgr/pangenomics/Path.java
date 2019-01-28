@@ -1,4 +1,4 @@
-package org.ncgr.pangenomics.fr;
+package org.ncgr.pangenomics;
 
 import java.util.LinkedList;
 import java.util.StringJoiner;
@@ -10,15 +10,16 @@ import java.util.StringJoiner;
  */
 public class Path implements Comparable<Path> {
 
-    String name;             // the name of this path, typically a subject ID
-    String label;            // an optional label, like "+1", "-1", "case", "control", "M", "F"
-    String sequence;         // this path's full sequence
-    LinkedList<Node> nodes;  // the ordered list of nodes that this path travels
+    // probably ought to use getters/setters for these...
+    public String name;             // the name of this path, typically a subject ID
+    public String label;            // an optional label, like "+1", "-1", "case", "control", "M", "F"
+    public String sequence;         // this path's full sequence
+    public LinkedList<Node> nodes;  // the ordered list of nodes that this path travels
 
     /**
      * Construct given a path name and a list of nodes (minimum requirement)
      */
-    Path(String name, LinkedList<Node> nodes) {
+    public Path(String name, LinkedList<Node> nodes) {
         this.name = name;
         this.nodes = nodes;
         buildSequence();
@@ -27,7 +28,7 @@ public class Path implements Comparable<Path> {
     /**
      * Construct given a path name, label and a list of nodes
      */
-    Path(String name, String label, LinkedList<Node> nodes) {
+    public Path(String name, String label, LinkedList<Node> nodes) {
         this.name = name;
         this.label = label;
         this.nodes = nodes;
@@ -37,7 +38,7 @@ public class Path implements Comparable<Path> {
     /**
      * Construct an empty Path given just a path name
      */
-    Path(String name) {
+    public Path(String name) {
         this.name = name;
         this.nodes = new LinkedList<>();
     }
@@ -45,7 +46,7 @@ public class Path implements Comparable<Path> {
     /**
      * Construct an empty Path given just a path name and label (which can be null)
      */
-    Path(String name, String label) {
+    public Path(String name, String label) {
         this.name = name;
         this.label = label;
         this.nodes = new LinkedList<>();
@@ -54,14 +55,14 @@ public class Path implements Comparable<Path> {
     /**
      * Set this path's label (could be some reason you'd like to relabel the paths).
      */
-    void setLabel(String label) {
+    public void setLabel(String label) {
         this.label = label;
     }
 
     /**
      * Add a Node to this Path and update the sequence.
      */
-    void addNode(Node node) {
+    public void addNode(Node node) {
         this.nodes.add(node);
         buildSequence();
     }

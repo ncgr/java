@@ -1,5 +1,10 @@
 package org.ncgr.pangenomics.fr;
 
+import org.ncgr.pangenomics.Graph;
+import org.ncgr.pangenomics.Node;
+import org.ncgr.pangenomics.NodeSet;
+import org.ncgr.pangenomics.Path;
+
 import java.io.BufferedWriter;
 import java.io.FileNotFoundException;
 import java.io.FileWriter;
@@ -471,10 +476,25 @@ public class FRFinder {
             frf.setOutputFile(cmd.getOptionValue("outputfile"));
         }
 
-        // print out the parameters
-        printHeading("PARAMETERS");
-        for (Option o : cmd.getOptions()) {
-            if (o.getValue()!=null) System.out.println(o.getLongOpt()+"\t"+o.getValue());
+        // print out the parameters to stdout or outputFile+".params" if exists
+        if (frf.outputFile==null) {
+                printHeading("PARAMETERS");
+                for (Option o : cmd.getOptions()) {
+                    if (o.getValue()!=null) System.out.println(o.getLongOpt()+"\t"+o.getValue());
+                }
+        } else {
+            try {
+                // no heading for file output; append to outputFile
+                String paramFile = frf.outputFile+".params";
+                PrintWriter out = new PrintWriter(new BufferedWriter(new FileWriter(paramFile)));
+                for (Option o : cmd.getOptions()) {
+                    if (o.getValue()!=null) out.println(o.getLongOpt()+"\t"+o.getValue());
+                }
+                out.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+                System.exit(1);
+            }
         }
         
         //////////////////

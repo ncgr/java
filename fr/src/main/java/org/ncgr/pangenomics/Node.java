@@ -1,4 +1,4 @@
-package org.ncgr.pangenomics.fr;
+package org.ncgr.pangenomics;
 
 /**
  * Encapsulates a node in a Graph.
@@ -7,13 +7,13 @@ package org.ncgr.pangenomics.fr;
  */
 public class Node implements Comparable<Node> {
 
-    Long id;         // the id of this node, assigned by the graph reader
-    String sequence; // the genomic sequence associated with this node
+    public Long id;         // the id of this node, assigned by the graph reader
+    public String sequence; // the genomic sequence associated with this node
 
     /**
      * Construct given a node id and sequence.
      */
-    Node(Long id, String sequence) {
+    public Node(Long id, String sequence) {
         this.id = id;
         this.sequence = sequence;
     }

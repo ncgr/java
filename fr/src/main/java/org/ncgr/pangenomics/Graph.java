@@ -1,4 +1,4 @@
-package org.ncgr.pangenomics.fr;
+package org.ncgr.pangenomics;
 
 import java.io.BufferedReader;
 import java.io.FileInputStream;
@@ -30,14 +30,14 @@ import com.google.protobuf.util.JsonFormat;
 public class Graph {
 
     // defaults
-    static int GENOTYPE = -1;
-    static boolean VERBOSE = false;
+    public static int GENOTYPE = -1;
+    public static boolean VERBOSE = false;
 
     // output verbosity
-    boolean verbose = VERBOSE;
+    public boolean verbose = VERBOSE;
 
     // genotype preference (-1 to append all genotypes)
-    int genotype = GENOTYPE;
+    public int genotype = GENOTYPE;
 
     // made available so directory names can be formed from it
     String dotFile;
@@ -48,16 +48,16 @@ public class Graph {
     long minLen = Long.MAX_VALUE;
 
     // the nodes contained in this graph (which, in turn, contain their sequences)
-    TreeSet<Node> nodes;
+    public TreeSet<Node> nodes;
 
     // each Path provides the ordered list of nodes that it traverses, along with its full sequence
-    TreeSet<Path> paths; // (ordered simply for convenience)
+    public TreeSet<Path> paths; // (ordered simply for convenience)
     
     // maps a Node to a set of Paths that traverse it
-    TreeMap<Node,Set<Path>> nodePaths; // keyed and ordered by Node (for convenience)
+    public TreeMap<Node,Set<Path>> nodePaths; // keyed and ordered by Node (for convenience)
 
     // maps a path label to a count of paths that have that label
-    Map<String,Integer> labelCounts; // keyed by label
+    public Map<String,Integer> labelCounts; // keyed by label
 
     /**
      * Constructor does nothing; use read methods to populate the graph from files.
@@ -212,7 +212,7 @@ public class Graph {
     /**
      * Read path labels from a tab-delimited file. Comment lines start with #.
      */
-    void readPathLabels(String labelsFile) throws FileNotFoundException, IOException {
+    public void readPathLabels(String labelsFile) throws FileNotFoundException, IOException {
         labelCounts = new TreeMap<>();
         BufferedReader reader = new BufferedReader(new FileReader(labelsFile));
         String line = null;
@@ -291,7 +291,7 @@ public class Graph {
     /**
      * Print out the nodes along with a k histogram.
      */
-    void printNodes() {
+    public void printNodes() {
         Map<Integer,Integer> countMap = new TreeMap<>();
         printHeading("NODES");
         for (Node node : nodes) {
@@ -315,7 +315,7 @@ public class Graph {
     /**
      * Print the paths, labeled by pathName.
      */
-    void printPaths() {
+    public void printPaths() {
         printHeading("PATHS");
         for (Path path : paths) {
             System.out.print(path.getNameAndLabel()+":");
@@ -329,7 +329,7 @@ public class Graph {
     /**
      * Print out the node paths along with counts.
      */
-    void printNodePaths() {
+    public void printNodePaths() {
         printHeading("NODE PATHS");
         for (Node node : nodePaths.keySet()) {
             Set<Path> paths = nodePaths.get(node);
@@ -346,7 +346,7 @@ public class Graph {
     /**
      * Print the sequences for each path, in FASTA style, labeled by path.name (and path.label if present).
      */
-    void printPathSequences() {
+    public void printPathSequences() {
         printHeading("PATH SEQUENCES");
         for (Path path : paths) {
             String heading = ">"+path.getNameAndLabel()+" ("+path.sequence.length()+")";
@@ -381,7 +381,7 @@ public class Graph {
     /**
      * Print the counts of paths per label.
      */
-    void printLabelCounts() {
+    public void printLabelCounts() {
         printHeading("LABEL COUNTS");
         for (String label : labelCounts.keySet()) {
             System.out.println(label+":"+labelCounts.get(label));

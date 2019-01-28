@@ -9,7 +9,7 @@ import java.util.TreeMap;
 import java.util.Set;
 import java.util.TreeSet;
 
-import org.ncgr.pangenomics.fr.Graph;
+import org.ncgr.pangenomics.Graph;
 
 /**
  * Read a Vg JSON into a fr.Graph.
