@@ -470,6 +470,12 @@ public class FRFinder {
         if (cmd.hasOption("outputfile")) {
             frf.setOutputFile(cmd.getOptionValue("outputfile"));
         }
+
+        // print out the parameters
+        printHeading("PARAMETERS");
+        for (Option o : cmd.getOptions()) {
+            if (o.getValue()!=null) System.out.println(o.getLongOpt()+"\t"+o.getValue());
+        }
         
         //////////////////
         // Find the FRs //
@@ -484,6 +490,30 @@ public class FRFinder {
         for (int i=0; i<heading.length(); i++) System.out.print("="); System.out.println("");
         System.out.println(heading);
         for (int i=0; i<heading.length(); i++) System.out.print("="); System.out.println("");
+    }
+
+    /**
+     * Print the path names and the FRs that have subpaths belonging to those paths.
+     * This can be used as input to a classification routine.
+     */
+    void printPathFRs() {
+        printHeading("PATH FREQUENTED REGIONS");
+        // columns
+        System.out.print("Path\tLabel");
+        int c = 1;
+        for (FrequentedRegion fr : frequentedRegions) {
+            System.out.print("\t"+c);
+            c++;
+        }
+        System.out.println("");
+        // rows
+        for (Path path : graph.paths) {
+            System.out.print(path.name+"\t"+path.label);
+            for (FrequentedRegion fr : frequentedRegions) {
+                System.out.print("\t"+fr.countSubpathsOf(path));
+            }
+            System.out.println("");
+        }
     }
 
     /**
@@ -509,30 +539,6 @@ public class FRFinder {
                 e.printStackTrace();
                 System.exit(1);
             }
-        }
-    }
-
-    /**
-     * Print the path names and the FRs that have subpaths belonging to those paths.
-     * This can be used as input to a classification routine.
-     */
-    void printPathFRs() {
-        printHeading("PATH FREQUENTED REGIONS");
-        // columns
-        System.out.print("Path\tLabel");
-        int c = 1;
-        for (FrequentedRegion fr : frequentedRegions) {
-            System.out.print("\t"+c);
-            c++;
-        }
-        System.out.println("");
-        // rows
-        for (Path path : graph.paths) {
-            System.out.print(path.name+"\t"+path.label);
-            for (FrequentedRegion fr : frequentedRegions) {
-                System.out.print("\t"+fr.countSubpathsOf(path));
-            }
-            System.out.println("");
         }
     }
 }
