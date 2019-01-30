@@ -12,4 +12,4 @@
 #  -r,--rc              rc flag
 #  -z,--minsize <arg>   minsize parameter
 
-java -cp lib/FindFRs.jar:lib/commons-cli-1.4.jar findFRs.FindFRs --alpha 0.1 --kappa 30 --minsup 1 --minsize 1  --fasta HDStudy/HDStudy.HTT.fasta --dot HDStudy/HDStudy.HTT.k60.dot
+java -cp "lib/FindFRs.jar:build/install/fr/lib/*" findFRs.FindFRs --alpha 0.1 --kappa 30 --minsup 1 --minsize 1  --fasta sample/ecoli.pan3.fa --dot sample/ecoli.pan3.dot

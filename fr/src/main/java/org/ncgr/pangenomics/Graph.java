@@ -195,15 +195,23 @@ public class Graph {
     }
 
     /**
-     * Read a Graph in from a splitMEM-style DOT file using guru.nidi.graphviz.mode classes.
+     * Read a Graph in from a splitMEM-style DOT file and a FASTA file using guru.nidi.graphviz and BioJava classes.
      */
     public void readSplitMEMDotFile(String dotFile, String fastaFile) throws IOException {
         this.dotFile = dotFile;
         this.fastaFile = fastaFile;
+        this.minLen = Long.MAX_VALUE;
+
+        if (verbose) System.out.println("Reading FASTA file: "+fastaFile);
+        Map<String,DNASequence> fastaMap = FastaReaderHelper.readFastaDNASequence​(new File(fastaFile));
+        String fasta = "";
+        for (String seqName : fastaMap.keySet()) {
+            DNASequence dnaSequence = fastaMap.get(seqName);
+            fasta += ">"+dnaSequence.getSequenceAsString();
+            if (verbose) System.out.println(dnaSequence.getOriginalHeader()+":"+dnaSequence.getLength());
+        }
+        
         if (verbose) System.out.println("Reading dot file: "+dotFile);
-
-        minLen = Long.MAX_VALUE;
-
         MutableGraph g = Parser.read(new File(dotFile));
         Collection<MutableNode> nodes = g.nodes();
         for (MutableNode node : nodes) {
@@ -212,10 +220,18 @@ public class Graph {
             int length = Integer.parseInt(parts[1]);
 
             // DEBUG
+            System.out.println("---------------");
             System.out.println(node.get("label").toString()+" nodeId="+nodeId+" length="+length);
 
-            // lengthMap.put(id,l);
-            // if (l<minLen) minLen = l;
+            if (length<minLen) minLen = length;
+            String[] startStrings = parts[0].split(",");
+            for (String startString : startStrings) {
+                int start = Integer.parseInt(startString);
+                System.out.println("start:"+start+" length:"+length);
+                System.out.println(fasta.substring(start,start+length));
+            }
+
+
             // String[] startStrings = parts[0].split(",");
             // long[] starts = new long[startStrings.length];
             // for (int i=0; i<startStrings.length; i++) {
@@ -235,14 +251,6 @@ public class Graph {
             // neighborMap.put(id, linkSet);
         }
 
-        // FASTA fun
-        if (verbose) System.out.println("Reading FASTA file: "+fastaFile);
-        Map<String,DNASequence> fastaMap = FastaReaderHelper.readFastaDNASequence​(new File(fastaFile));
-        for (String seqName : fastaMap.keySet()) {
-            DNASequence dnaSequence = fastaMap.get(seqName);
-            System.out.println(">"+seqName);
-            System.out.println(dnaSequence.getSequenceAsString());
-        }
         
         // DEBUG
         System.exit(0);
