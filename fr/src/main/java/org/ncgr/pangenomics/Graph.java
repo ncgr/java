@@ -32,9 +32,11 @@ public class Graph {
     // defaults
     public static int GENOTYPE = -1;
     public static boolean VERBOSE = false;
+    public static boolean DEBUG = false;
 
     // output verbosity
-    public boolean verbose = VERBOSE;
+    boolean verbose = VERBOSE;
+    boolean debug = DEBUG;
 
     // genotype preference (-1 to append all genotypes)
     public int genotype = GENOTYPE;
@@ -47,14 +49,14 @@ public class Graph {
     // minimum sequence length
     long minLen = Long.MAX_VALUE;
 
-    // the nodes contained in this graph (which, in turn, contain their sequences)
-    public TreeSet<Node> nodes;
+    // the nodes contained in this graph, in the form of an id->Node map (redundant, since Node contains id, but this allows quick retrieval on id)
+    public TreeMap<Long,Node> nodes;
 
     // each Path provides the ordered list of nodes that it traverses, along with its full sequence
     public TreeSet<Path> paths; // (ordered simply for convenience)
     
     // maps a Node to a set of Paths that traverse it
-    public TreeMap<Node,Set<Path>> nodePaths; // keyed and ordered by Node (for convenience)
+    public TreeMap<Long,Set<Path>> nodePaths; // keyed and ordered by Node Id (for convenience)
 
     // maps a path label to a count of paths that have that label
     public Map<String,Integer> labelCounts; // keyed by label
@@ -73,16 +75,17 @@ public class Graph {
         this.jsonFile = jsonFile;
 
         // instantiate the instance collections
-        nodes = new TreeSet<>();
+        nodes = new TreeMap<>();
         paths = new TreeSet<>();
         nodePaths = new TreeMap<>();
 
         // read the vg-created JSON into a Vg.Graph
-        if (verbose) System.out.println("Reading "+jsonFile+"...");
+        if (verbose || debug) System.out.print("Reading "+jsonFile+"...");
 	Reader reader = new InputStreamReader(new FileInputStream(jsonFile));
 	Vg.Graph.Builder graphBuilder = Vg.Graph.newBuilder();
 	JsonFormat.parser().merge(reader, graphBuilder);
         Vg.Graph graph = graphBuilder.build();
+	if (verbose || debug) System.out.println("done.");
 
         // a graph is nodes, edges and individual paths through it
         List<Vg.Node> vgNodes = graph.getNodeList();
@@ -90,12 +93,14 @@ public class Graph {
         List<Vg.Edge> vgEdges = graph.getEdgeList();
 
         // populate nodes with their id and sequence, find the minimum sequence length
+	if (verbose || debug) System.out.print("Populating nodes...");
         for (Vg.Node vgNode : vgNodes) {
             long id = vgNode.getId();
             String sequence = vgNode.getSequence();
             if (sequence.length()<minLen) minLen = sequence.length();
-            nodes.add(new Node(id, sequence));
+	    nodes.put(id, new Node(id,sequence));
         }
+	if (verbose || debug) System.out.println(" done.");
         
         // build paths from the multiple path fragments in the JSON file
         // path fragments have names of the form _thread_sample_chr_genotype_index where genotype=0,1
@@ -136,7 +141,13 @@ public class Graph {
                     // build the new set of nodes for this path
                     LinkedList<Node> pathNodes = new LinkedList<>();
                     for (Long id : nodeIds) {
-                        pathNodes.add(getNodeForId(id));
+			Node n = nodes.get(id);
+			if (n==null) {
+			    System.err.println("NULL node retrieved for id="+id);
+			    System.exit(1);
+			} else {
+			    pathNodes.add(n);
+			}
                     }
                     // update existing path with the new nodes
                     boolean updated = false;
@@ -148,7 +159,16 @@ public class Graph {
                     }
                     if (!updated) {
                         // create this new path
-                        paths.add(new Path(pathName, pathNodes));
+			if (pathName!=null && pathNodes.size()>0) {
+			    try {
+				paths.add(new Path(pathName, pathNodes));
+			    } catch (Exception e) {
+				System.err.println("paths="+paths);
+				System.err.println("pathName="+pathName+" pathNodes="+pathNodes);
+				e.printStackTrace();
+				System.exit(1);
+			    }
+			}
                     }
                 }
             }
@@ -159,16 +179,6 @@ public class Graph {
 
         // find the node paths
         buildNodePaths();
-    }
-
-    /**
-     * Return the Node with the given id, null if the id is not in this graph.
-     */
-    public Node getNodeForId(Long id) {
-        for (Node node : nodes) {
-            if (node.id==id) return node;
-        }
-        return null;
     }
 
     /**
@@ -198,13 +208,13 @@ public class Graph {
      */
     void buildNodePaths() {
         // init empty paths for each node
-        for (Node node : nodes) {
-            nodePaths.put(node, new TreeSet<Path>());
+        for (Long nodeId : nodes.keySet()) {
+            nodePaths.put(nodeId, new TreeSet<Path>());
         }
         // now load the paths
         for (Path path : paths) {
             for (Node node : path.nodes) {
-                nodePaths.get(node).add(path);
+                nodePaths.get(node.id).add(path);
             }
         }
     }
@@ -267,9 +277,11 @@ public class Graph {
         return jsonFile;
     }
 
-    // setters of non-public vars
     public void setVerbose() {
         verbose = true;
+    }
+    public void setDebug() {
+	debug = true;
     }
 
     /**
@@ -294,7 +306,7 @@ public class Graph {
     public void printNodes() {
         Map<Integer,Integer> countMap = new TreeMap<>();
         printHeading("NODES");
-        for (Node node : nodes) {
+        for (Node node : nodes.values()) {
             int length = node.sequence.length();
             if (countMap.containsKey(length)) {
                 countMap.put(length, ((int)countMap.get(length))+1);
@@ -331,11 +343,11 @@ public class Graph {
      */
     public void printNodePaths() {
         printHeading("NODE PATHS");
-        for (Node node : nodePaths.keySet()) {
-            Set<Path> paths = nodePaths.get(node);
+        for (Long nodeId : nodePaths.keySet()) {
+            Set<Path> paths = nodePaths.get(nodeId);
             String asterisk = " ";
             if (paths.size()==paths.size()) asterisk="*";
-            System.out.print(asterisk+node.id+"("+paths.size()+"):");
+            System.out.print(asterisk+nodeId+"("+paths.size()+"):");
             for (Path path : paths) {
                 System.out.print(" "+path.name);
             }

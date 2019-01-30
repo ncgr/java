@@ -98,7 +98,7 @@ public class FRFinder {
         Set<NodeSet> syncNodeSets = Collections.synchronizedSet(nodeSets);
 
         // create initial NodeSets each containing only one node; add associated FRs if they pass filter
-        for (Node node : graph.nodes) {
+        for (Node node : graph.nodes.values()) {
             NodeSet nodeSet = new NodeSet();
             nodeSet.add(node);
             syncNodeSets.add(nodeSet);
@@ -310,7 +310,11 @@ public class FRFinder {
         HelpFormatter formatter = new HelpFormatter();
         CommandLine cmd;
 
-        // FRFinder options
+        //
+        Option alphaOption = new Option("a", "alpha", true, "alpha=penetrance, fraction of a supporting path's sequence that supports the FR (required)");
+        alphaOption.setRequired(true);
+        options.addOption(alphaOption);
+	// 
         Option dotOption = new Option("d", "dot", true, "splitMEM DOT file (requires FASTA file)");
         dotOption.setRequired(false);
         options.addOption(dotOption);
@@ -319,21 +323,21 @@ public class FRFinder {
         fastaOption.setRequired(false);
         options.addOption(fastaOption);
         //
+        Option genotypeOption = new Option("g", "genotype", true, "which genotype to include (0,1) from the input file; -1 to include all ("+Graph.GENOTYPE+")");
+        genotypeOption.setRequired(false);
+        options.addOption(genotypeOption);
+        //
         Option jsonOption = new Option("j", "json", true, "vg JSON file");
         jsonOption.setRequired(false);
         options.addOption(jsonOption);
         //
-        Option labelsOption = new Option("p", "pathlabels", true, "tab-delimited file with pathname<tab>label");
-        labelsOption.setRequired(false);
-        options.addOption(labelsOption);
-        //
-        Option alphaOption = new Option("a", "alpha", true, "alpha=penetrance, fraction of a supporting path's sequence that supports the FR (required)");
-        alphaOption.setRequired(true);
-        options.addOption(alphaOption);
-        //
         Option kappaOption = new Option("k", "kappa", true, "kappa=maximum insertion length that any supporting path may have (required)");
         kappaOption.setRequired(true);
         options.addOption(kappaOption);
+        //
+        Option minLenOption = new Option("l", "minlen", true, "minlen=minimum allowed average length (bp) of an FR's subpaths ("+MINLEN+")");
+        minLenOption.setRequired(false);
+        options.addOption(minLenOption);
         //
         Option minSupOption = new Option("m", "minsup", true, "minsup=minimum number of supporting paths for a region to be considered interesting ("+MINSUP+")");
         minSupOption.setRequired(false);
@@ -343,33 +347,29 @@ public class FRFinder {
         maxSupOption.setRequired(false);
         options.addOption(maxSupOption);
         //
-        Option minSizeOption = new Option("s", "minsize", true, "minsize=minimum number of nodes that a FR must contain to be considered interesting ("+MINSIZE+")");
-        minSizeOption.setRequired(false);
-        options.addOption(minSizeOption);
+        Option outputfileOption = new Option("o", "outputfile", true, "output file (stdout)");
+        outputfileOption.setRequired(false);
+        options.addOption(outputfileOption);
         //
-        Option minLenOption = new Option("l", "minlen", true, "minlen=minimum allowed average length (bp) of an FR's subpaths ("+MINLEN+")");
-        minLenOption.setRequired(false);
-        options.addOption(minLenOption);
+        Option labelsOption = new Option("p", "pathlabels", true, "tab-delimited file with pathname<tab>label");
+        labelsOption.setRequired(false);
+        options.addOption(labelsOption);
         //
         Option rcOption = new Option("r", "userc", false, "useRC=flag to indicate if the sequence (e.g. FASTA) had its reverse complement appended ("+USERC+")");
         rcOption.setRequired(false);
         options.addOption(rcOption);
         //
+        Option minSizeOption = new Option("s", "minsize", true, "minsize=minimum number of nodes that a FR must contain to be considered interesting ("+MINSIZE+")");
+        minSizeOption.setRequired(false);
+        options.addOption(minSizeOption);
+        //
         Option verboseOption = new Option("v", "verbose", false, "verbose output ("+VERBOSE+")");
         verboseOption.setRequired(false);
         options.addOption(verboseOption);
         //
-        Option debugOption = new Option("d", "debug", false, "debug output ("+DEBUG+")");
+        Option debugOption = new Option("do", "debug", false, "debug output ("+DEBUG+")");
         debugOption.setRequired(false);
         options.addOption(debugOption);
-        //
-        Option genotypeOption = new Option("g", "genotype", true, "which genotype to include (0,1) from the input file; -1 to include all ("+Graph.GENOTYPE+")");
-        genotypeOption.setRequired(false);
-        options.addOption(genotypeOption);
-        //
-        Option outputfileOption = new Option("o", "outputfile", true, "output file (stdout)");
-        outputfileOption.setRequired(false);
-        options.addOption(outputfileOption);
         //
         Option graphOnlyOption = new Option("go", "graphonly", false, "just read the graph and output, do not find FRs; for debuggery (false)");
         graphOnlyOption.setRequired(false);
@@ -420,7 +420,8 @@ public class FRFinder {
 
         // create a Graph from the dot+FASTA or JSON file
         Graph g = new Graph();
-        if (cmd.hasOption("verbose") && !cmd.hasOption("graphonly")) g.setVerbose();
+        if (cmd.hasOption("verbose")) g.setVerbose();
+        if (cmd.hasOption("debug")) g.setDebug();
         if (cmd.hasOption("genotype")) g.setGenotype(Integer.parseInt(cmd.getOptionValue("genotype")));
         if (dotFile!=null && fastaFile!=null) {
             System.out.println("DOT+FASTA input is not yet enabled.");
