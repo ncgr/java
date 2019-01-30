@@ -1,6 +1,9 @@
 package org.ncgr.pangenomics;
 
+import vg.Vg;
+
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
@@ -8,6 +11,7 @@ import java.io.InputStreamReader;
 import java.io.IOException;
 import java.io.Reader;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.LinkedList;
 import java.util.Map;
@@ -16,9 +20,17 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.StringJoiner;
 
-import vg.Vg;
-
 import com.google.protobuf.util.JsonFormat;
+
+import guru.nidi.graphviz.engine.Format;
+import guru.nidi.graphviz.engine.Graphviz;
+import guru.nidi.graphviz.model.Link;
+import guru.nidi.graphviz.model.MutableGraph;
+import guru.nidi.graphviz.model.MutableNode;
+import guru.nidi.graphviz.parse.Parser;
+
+import org.biojava.nbio.core.sequence.DNASequence;
+import org.biojava.nbio.core.sequence.io.FastaReaderHelper;
 
 /**
  * Storage of a graph.
@@ -47,7 +59,7 @@ public class Graph {
     String jsonFile;
     
     // minimum sequence length
-    long minLen = Long.MAX_VALUE;
+    long minLen;
 
     // the nodes contained in this graph, in the form of an id->Node map (redundant, since Node contains id, but this allows quick retrieval on id)
     public TreeMap<Long,Node> nodes;
@@ -94,6 +106,7 @@ public class Graph {
 
         // populate nodes with their id and sequence, find the minimum sequence length
 	if (verbose || debug) System.out.print("Populating nodes...");
+        minLen = Long.MAX_VALUE;
         for (Vg.Node vgNode : vgNodes) {
             long id = vgNode.getId();
             String sequence = vgNode.getSequence();
@@ -180,6 +193,72 @@ public class Graph {
         // find the node paths
         buildNodePaths();
     }
+
+    /**
+     * Read a Graph in from a splitMEM-style DOT file using guru.nidi.graphviz.mode classes.
+     */
+    public void readSplitMEMDotFile(String dotFile, String fastaFile) throws IOException {
+        this.dotFile = dotFile;
+        this.fastaFile = fastaFile;
+        if (verbose) System.out.println("Reading dot file: "+dotFile);
+
+        minLen = Long.MAX_VALUE;
+
+        MutableGraph g = Parser.read(new File(dotFile));
+        Collection<MutableNode> nodes = g.nodes();
+        for (MutableNode node : nodes) {
+            long nodeId = Long.parseLong(node.name().toString());
+            String[] parts = node.get("label").toString().split(":");
+            int length = Integer.parseInt(parts[1]);
+
+            // DEBUG
+            System.out.println(node.get("label").toString()+" nodeId="+nodeId+" length="+length);
+
+            // lengthMap.put(id,l);
+            // if (l<minLen) minLen = l;
+            // String[] startStrings = parts[0].split(",");
+            // long[] starts = new long[startStrings.length];
+            // for (int i=0; i<startStrings.length; i++) {
+            //     starts[i] = Long.parseLong(startStrings[i]) - 1; // ADDED - 1
+            //     startToNode.put(starts[i], id);
+            //     if (starts[i]>maxStart) maxStart = starts[i];
+            // }
+            // anyNodeStartMap.put(id, starts[0]);
+            // Set<Integer> linkSet = new TreeSet<>();
+            // List<Link> links = node.links();
+            // for (Link link : links) {
+            //     String toString = link.to().toString();
+            //     String[] chunks = toString.split(":");
+            //     int to = Integer.parseInt(chunks[0]);
+            //     linkSet.add(to);
+            // }
+            // neighborMap.put(id, linkSet);
+        }
+
+        // FASTA fun
+        if (verbose) System.out.println("Reading FASTA file: "+fastaFile);
+        Map<String,DNASequence> fastaMap = FastaReaderHelper.readFastaDNASequence​(new File(fastaFile));
+        for (String seqName : fastaMap.keySet()) {
+            DNASequence dnaSequence = fastaMap.get(seqName);
+            System.out.println(">"+seqName);
+            System.out.println(dnaSequence.getSequenceAsString());
+        }
+        
+        // DEBUG
+        System.exit(0);
+
+        // // get the FASTA file parameters
+        // FastaFile f = new FastaFile(this);
+        // if (verbose) f.setVerbose();
+        // f.readFastaFile(fastaFile);
+        // sequences = f.getSequences();
+        // paths = f.getPaths();
+        // Nlocs = f.getNlocs();
+        
+        // // print a summary
+        // if (verbose) printSummary();
+    }
+
 
     /**
      * Return true if this and that Graph come from the same file.

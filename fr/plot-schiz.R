@@ -1,7 +1,7 @@
-## make informative plots of FRFinder hdstudy results
+## make informative plots of FRFinder schiz results
 
-plot(hdstudy.all$ctrl.n,
-     hdstudy.all$case.n,
+plot(schiz.all$ctrl.n,
+     schiz.all$case.n,
      xlab="ctrl sample support",
      ylab="case sample support",
      xlim=c(0,10),
@@ -9,16 +9,16 @@ plot(hdstudy.all$ctrl.n,
      col="darkgreen"
      )
 
-title(main=paste("HDStudy:"," alpha=",alpha," kappa=",kappa," minsup=",minsup," minlen=",minlen," genotype=",genotype, sep=""), cex.main=0.9)
+title(main=paste("Schiz:"," alpha=",alpha," kappa=",kappa," minsup=",minsup," minlen=",minlen," genotype=",genotype, sep=""), cex.main=0.9)
 
-points(hdstudy.rc$ctrl.n,
-       hdstudy.rc$case.n,
+points(schiz.rc$ctrl.n,
+       schiz.rc$case.n,
        col="darkred",
        )
 
-text(hdstudy.all$ctrl.n,
-     hdstudy.all$case.n,
-     hdstudy.all$nodes,
+text(schiz.all$ctrl.n,
+     schiz.all$case.n,
+     schiz.all$nodes,
      cex=0.4, pos=1, offset=0.4
      )
 

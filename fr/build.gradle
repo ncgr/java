@@ -46,6 +46,9 @@ dependencies {
     // https://mvnrepository.com/artifact/guru.nidi/graphviz-java
     compile group: 'guru.nidi', name: 'graphviz-java', version: '0.8.0'
 
+    // https://mvnrepository.com/artifact/org.biojava/biojava-core
+    compile group: 'org.biojava', name: 'biojava-core', version: '5.2.0'
+
 }
 
 // In this section you declare where to find the dependencies of your project

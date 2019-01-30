@@ -424,9 +424,7 @@ public class FRFinder {
         if (cmd.hasOption("debug")) g.setDebug();
         if (cmd.hasOption("genotype")) g.setGenotype(Integer.parseInt(cmd.getOptionValue("genotype")));
         if (dotFile!=null && fastaFile!=null) {
-            System.out.println("DOT+FASTA input is not yet enabled.");
-            System.exit(0);
-            // g.readSplitMEMDotFile(dotFile, fastaFile);
+            g.readSplitMEMDotFile(dotFile, fastaFile);
         } else if (jsonFile!=null) {
             g.readVgJsonFile(jsonFile);
         } else {
