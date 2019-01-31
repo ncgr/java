@@ -19,6 +19,14 @@ public class Node implements Comparable<Node> {
     }
 
     /**
+     * Construct without a sequence.
+     */
+    public Node(Long id) {
+        this.id = id;
+        this.sequence = null;
+    }
+
+    /**
      * Two nodes are equal if they have the same id.
      */
     public boolean equals(Node that) {

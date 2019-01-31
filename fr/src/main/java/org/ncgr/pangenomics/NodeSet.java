@@ -25,6 +25,17 @@ public class NodeSet extends TreeSet<Node> implements Comparable <NodeSet> {
     }
 
     /**
+     * Construct from a string representation, e.g. "[5,7,15,33]".
+     * NOTE: the nodes will lack sequences!
+     */
+    public NodeSet(String str) {
+        String[] nodeStrings = str.replace("[","").replace("]","").split(",");
+        for (String s : nodeStrings) {
+            add(new Node(Long.parseLong(s)));
+        }
+    }
+
+    /**
      * Equality if exactly the same nodes.
      */
     public boolean equals(NodeSet that) {

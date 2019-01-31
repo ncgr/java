@@ -65,6 +65,13 @@ public class FrequentedRegion implements Comparable<FrequentedRegion> {
     }
 
     /**
+     * Construct given only a NodeSet, used for various post-processing routines.
+     */
+    FrequentedRegion(NodeSet nodes) {
+        this.nodes = nodes;
+    }
+
+    /**
      * Update this frequented region with its existing contents and the current alpha,kappa values.
      * This should be run any time a new FrequentedRegion is made.
      */

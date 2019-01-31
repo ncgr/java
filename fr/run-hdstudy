@@ -22,8 +22,9 @@
 # -nr,--nrounds <arg>     number of FR-building rounds to run (2)
 # -do,--debug             debug output (false)
 
-java -server -cp lib/fr.jar:lib/commons-cli-1.4.jar:lib/protobuf-java-3.6.1.jar:lib/protobuf-java-util-3.6.1.jar:lib/gson-2.7.jar org.ncgr.pangenomics.fr.FRFinder \
-	--json HDStudy/HTT.paths.json --pathlabels HDStudy/labels.txt --genotype 1 \
-	--alpha 0.1 --kappa 1 --minsup 1 --maxsup 99 --minsize 1 --minlen 100 \
-	--nrounds 2 --parallel --debug  \
-	--outputfile hdstudy.all.out
+java -server -cp "build/install/fr/lib/*" org.ncgr.pangenomics.fr.FRFinder --json HDStudy/HTT.paths.json --pathlabels HDStudy/labels.txt --genotype 1 \
+	--alpha 0.1 --kappa 0 --minsup 1 --maxsup 99 --minsize 1 --minlen 100 \
+	--nrounds 2 --parallel --debug \
+	-outputfile hdstudy.all.out
+
+java -server -cp "build/install/fr/lib/*" org.ncgr.pangenomics.fr.PostProcessor --removechildren --inputfile hdstudy.all.out --outputfile hdstudy.rc.out

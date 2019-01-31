@@ -13,13 +13,19 @@ title(main=paste("HDStudy:"," alpha=",alpha," kappa=",kappa," minsup=",minsup," 
 
 points(hdstudy.rc$ctrl.n,
        hdstudy.rc$case.n,
-       col="darkred",
+       col="darkred", pch=19
        )
 
 text(hdstudy.all$ctrl.n,
      hdstudy.all$case.n,
      hdstudy.all$nodes,
-     cex=0.4, pos=1, offset=0.4
+     cex=0.4, pos=1, offset=0.4, col="gray"
+     )
+
+text(hdstudy.rc$ctrl.n,
+     hdstudy.rc$case.n,
+     hdstudy.rc$nodes,
+     cex=0.4, pos=1, offset=0.4, col="darkred"
      )
 
 lines(c(0,10), c(0,27), col="gray")
@@ -33,7 +39,7 @@ lines(c(0,10), c(30,20), col="gray", lty=2)
 lines(c(0,10), c(37,27), col="gray", lty=2)
 
 legend(c("roots", "children"),
-       pch=1,
+       pch=c(19,1),
        col=c("darkred","darkgreen"),
        x="topleft")
        

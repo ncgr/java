@@ -53,15 +53,16 @@ public class Graph {
     // genotype preference (-1 to append all genotypes)
     public int genotype = GENOTYPE;
 
-    // made available so directory names can be formed from it
-    String dotFile;
-    String fastaFile;
-    String jsonFile;
+    // input files
+    public String dotFile;
+    public String fastaFile;
+    public String jsonFile;
     
-    // minimum sequence length
-    long minLen;
+    // minimum sequence length found in the graph
+    public long minLen;
 
-    // the nodes contained in this graph, in the form of an id->Node map (redundant, since Node contains id, but this allows quick retrieval on id)
+    // the nodes contained in this graph, in the form of an id->Node map
+    // (Redundant, since Node also contains id, but this allows quick retrieval on id)
     public TreeMap<Long,Node> nodes;
 
     // each Path provides the ordered list of nodes that it traverses, along with its full sequence
@@ -74,9 +75,12 @@ public class Graph {
     public Map<String,Integer> labelCounts; // keyed by label
 
     /**
-     * Constructor does nothing; use read methods to populate the graph from files.
+     * Constructor instantiates collections; then use read methods to populate the graph from files.
      */
     public Graph() {
+        nodes = new TreeMap<>();
+        paths = new TreeSet<>();
+        nodePaths = new TreeMap<>();
     }
 
     /**
@@ -85,11 +89,6 @@ public class Graph {
     public void readVgJsonFile(String jsonFile) throws FileNotFoundException, IOException {
         // set instance objects from parameters
         this.jsonFile = jsonFile;
-
-        // instantiate the instance collections
-        nodes = new TreeMap<>();
-        paths = new TreeSet<>();
-        nodePaths = new TreeMap<>();
 
         // read the vg-created JSON into a Vg.Graph
         if (verbose || debug) System.out.print("Reading "+jsonFile+"...");
@@ -207,30 +206,37 @@ public class Graph {
         String fasta = "";
         for (String seqName : fastaMap.keySet()) {
             DNASequence dnaSequence = fastaMap.get(seqName);
-            fasta += ">"+dnaSequence.getSequenceAsString();
+            fasta += dnaSequence.getSequenceAsString()+"$"; // splitMEM appends a termination character
             if (verbose) System.out.println(dnaSequence.getOriginalHeader()+":"+dnaSequence.getLength());
         }
         
         if (verbose) System.out.println("Reading dot file: "+dotFile);
         MutableGraph g = Parser.read(new File(dotFile));
-        Collection<MutableNode> nodes = g.nodes();
-        for (MutableNode node : nodes) {
-            long nodeId = Long.parseLong(node.name().toString());
-            String[] parts = node.get("label").toString().split(":");
+        Collection<MutableNode> mNodes = g.nodes();
+        for (MutableNode mNode : mNodes) {
+            long nodeId = Long.parseLong(mNode.name().toString()) + 1; // we use 1-based nodeIds
+            String[] parts = mNode.get("label").toString().split(":");
             int length = Integer.parseInt(parts[1]);
-
-            // DEBUG
-            System.out.println("---------------");
-            System.out.println(node.get("label").toString()+" nodeId="+nodeId+" length="+length);
-
             if (length<minLen) minLen = length;
             String[] startStrings = parts[0].split(",");
+            String sequence = null;
+            boolean first = true;
             for (String startString : startStrings) {
-                int start = Integer.parseInt(startString);
-                System.out.println("start:"+start+" length:"+length);
-                System.out.println(fasta.substring(start,start+length));
+                int start = Integer.parseInt(startString) - 1;
+                String s = fasta.substring(start,start+length);
+                if (first) {
+                    sequence = s;
+                    first = false;
+                } else if (!s.equals(sequence)) {
+                    // ERROR out if we've got mismatched sequences for same node
+                    System.err.println("ERROR: sequences at node "+nodeId+" are not equal!");
+                    System.err.println("First="+sequence);
+                    System.err.println(" This="+s);
+                    System.exit(1);
+                }
             }
-
+            Node node = new Node(nodeId, sequence);
+            nodes.put(nodeId, node);
 
             // String[] startStrings = parts[0].split(",");
             // long[] starts = new long[startStrings.length];
@@ -250,6 +256,8 @@ public class Graph {
             // }
             // neighborMap.put(id, linkSet);
         }
+
+        if (verbose) printNodes();
 
         
         // DEBUG
@@ -353,29 +361,17 @@ public class Graph {
         if (!pathsAllLabeled) System.exit(1);
     }
     
-    // getters of non-public vars
-    public String getDotFile() {
-        return dotFile;
-    }
-    public String getFastaFile() {
-        return fastaFile;
-    }
-    public String getJsonFile() {
-        return jsonFile;
-    }
-
+    /**
+     * Set the verbose flag.
+     */
     public void setVerbose() {
         verbose = true;
     }
+    /**
+     * Set the debug flag.
+     */
     public void setDebug() {
 	debug = true;
-    }
-
-    /**
-     * Set the desired genotype.
-     */
-    public void setGenotype(int genotype) {
-        this.genotype = genotype;
     }
 
     /**
@@ -431,11 +427,11 @@ public class Graph {
     public void printNodePaths() {
         printHeading("NODE PATHS");
         for (Long nodeId : nodePaths.keySet()) {
-            Set<Path> paths = nodePaths.get(nodeId);
+            Set<Path> nPaths = nodePaths.get(nodeId);
             String asterisk = " ";
-            if (paths.size()==paths.size()) asterisk="*";
-            System.out.print(asterisk+nodeId+"("+paths.size()+"):");
-            for (Path path : paths) {
+            if (nPaths.size()==paths.size()) asterisk="*"; // flag a node that is supported by ALL paths
+            System.out.print(asterisk+nodeId+"("+nPaths.size()+"):");
+            for (Path path : nPaths) {
                 System.out.print(" "+path.name);
             }
             System.out.println("");
