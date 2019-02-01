@@ -212,9 +212,10 @@ public class Graph {
         
         if (verbose) System.out.println("Reading dot file: "+dotFile);
         MutableGraph g = Parser.read(new File(dotFile));
+        
         Collection<MutableNode> mNodes = g.nodes();
         for (MutableNode mNode : mNodes) {
-            long nodeId = Long.parseLong(mNode.name().toString()) + 1; // we use 1-based nodeIds
+            long nodeId = getNodeId(mNode);
             String[] parts = mNode.get("label").toString().split(":");
             int length = Integer.parseInt(parts[1]);
             if (length<minLen) minLen = length;
@@ -235,31 +236,21 @@ public class Graph {
                     System.exit(1);
                 }
             }
+
+
+            List<Link> links = mNode.links();
+            System.out.println("----- NODE "+nodeId+" -----");
+            for (Link link : links) {
+                System.out.println("from["+link.from().toString()+"] to["+link.to().toString()+"]");
+            }
+
+
+            
             Node node = new Node(nodeId, sequence);
             nodes.put(nodeId, node);
-
-            // String[] startStrings = parts[0].split(",");
-            // long[] starts = new long[startStrings.length];
-            // for (int i=0; i<startStrings.length; i++) {
-            //     starts[i] = Long.parseLong(startStrings[i]) - 1; // ADDED - 1
-            //     startToNode.put(starts[i], id);
-            //     if (starts[i]>maxStart) maxStart = starts[i];
-            // }
-            // anyNodeStartMap.put(id, starts[0]);
-            // Set<Integer> linkSet = new TreeSet<>();
-            // List<Link> links = node.links();
-            // for (Link link : links) {
-            //     String toString = link.to().toString();
-            //     String[] chunks = toString.split(":");
-            //     int to = Integer.parseInt(chunks[0]);
-            //     linkSet.add(to);
-            // }
-            // neighborMap.put(id, linkSet);
         }
-
         if (verbose) printNodes();
 
-        
         // DEBUG
         System.exit(0);
 
@@ -273,6 +264,13 @@ public class Graph {
         
         // // print a summary
         // if (verbose) printSummary();
+    }
+
+    /**
+     * Return the long 1-based nodeId associated with the given MutableNode.
+     */
+    long getNodeId(MutableNode mNode) {
+        return Long.parseLong(mNode.name().toString()) + 1;
     }
 
 

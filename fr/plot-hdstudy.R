@@ -38,9 +38,9 @@ lines(c(0,10), c(25,15), col="gray", lty=2)
 lines(c(0,10), c(30,20), col="gray", lty=2)
 lines(c(0,10), c(37,27), col="gray", lty=2)
 
-legend(c("roots", "children"),
-       pch=c(19,1),
-       col=c("darkred","darkgreen"),
-       x="topleft")
+## legend(c("roots", "children"),
+##        pch=c(19,1),
+##        col=c("darkred","darkgreen"),
+##        x="topleft")
        
 

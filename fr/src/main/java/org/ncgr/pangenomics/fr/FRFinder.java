@@ -19,6 +19,7 @@ import java.util.TreeMap;
 import java.util.Set;
 import java.util.HashSet;
 import java.util.TreeSet;
+import java.util.concurrent.ThreadLocalRandom;
 
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
@@ -132,7 +133,7 @@ public class FRFinder {
             final Set<NodeSet> currentNodeSets = new TreeSet<>();
             currentNodeSets.addAll(syncNodeSets);
 
-            // DEBUG
+            // debug output
             if (debug) {
                 if (parallel) {
                     System.out.println("ns1\tadded\telapsed");
@@ -148,7 +149,6 @@ public class FRFinder {
                 if (parallel) {
                     // run parallel inner loop over the current NodeSets
                     currentNodeSets.parallelStream().forEach((ns2) -> {
-                            ////////
                             if (ns2.first().compareTo(ns1.last())>0) {
                                 NodeSet merged = NodeSet.merge(ns1, ns2);
                                 if (merged.size()>=minSize && !syncNodeSets.contains(merged)) {
@@ -157,29 +157,39 @@ public class FRFinder {
                                     if (passesFilters(fr)) syncFrequentedRegions.add(fr);
                                 }
                             }
-                            ////////
                         });
                     if (debug) System.out.println(ns1.toString()+"\t"+(syncFrequentedRegions.size()-oldFRSize)+"\t"+(System.currentTimeMillis()-start));
                 } else {
                     // run non-parallel inner loop, with extra debuggery
                     int done = 0;
                     int alreadyDone = 0;
-                    for (NodeSet ns2 : currentNodeSets) {
-                        if (ns2.first().compareTo(ns1.last())>0) {
-                            NodeSet merged = NodeSet.merge(ns1, ns2);
-                            if (merged.size()>=minSize && !nodeSets.contains(merged)) {
-                                // System.out.println(ns1.toString()+ns2.toString()+"->"+merged.toString()+" NEW");
-                                done++;
-                                nodeSets.add(merged);
-                                FrequentedRegion fr = new FrequentedRegion(graph, merged, alpha, kappa);
-                                if (passesFilters(fr)) frequentedRegions.add(fr);
-                            } else {
-                                // System.out.println(ns1.toString()+ns2.toString()+"->"+merged.toString()+" OLD");
-                                alreadyDone++;
-                            }
-                        }
+                    
+                    // for (NodeSet ns2 : currentNodeSets) {
+                    //     if (ns2.first().compareTo(ns1.last())>0) {
+                    
+                    // try a single random ns2 of random length > 1
+                    NodeSet ns2 = new NodeSet();
+                    int nMax = ThreadLocalRandom.current().nextInt(2, graph.nodes.size());
+                    for (int i=0; i<nMax; i++) {
+                        long n = (long) ThreadLocalRandom.current().nextInt(1, nMax+1);
+                        ns2.add(graph.nodes.get(n));
                     }
-                    if (debug) System.out.println(ns1.toString()+"\t"+(frequentedRegions.size()-oldFRSize)+"\t"+(System.currentTimeMillis()-start)+"\t"+done+"\t"+alreadyDone);
+
+                    NodeSet merged = NodeSet.merge(ns1, ns2);
+                    if (merged.size()>=minSize && !nodeSets.contains(merged)) {
+                        // System.out.println(ns1.toString()+ns2.toString()+"->"+merged.toString()+" NEW");
+                        done++;
+                        nodeSets.add(merged);
+                        FrequentedRegion fr = new FrequentedRegion(graph, merged, alpha, kappa);
+                        if (passesFilters(fr)) frequentedRegions.add(fr);
+                    } else {
+                        // System.out.println(ns1.toString()+ns2.toString()+"->"+merged.toString()+" OLD");
+                        alreadyDone++;
+                    }
+                    
+                    //     }
+                    // }
+                    // if (debug) System.out.println(ns1.toString()+"\t"+(frequentedRegions.size()-oldFRSize)+"\t"+(System.currentTimeMillis()-start)+"\t"+done+"\t"+alreadyDone);
                 }
             }
 
@@ -205,21 +215,7 @@ public class FRFinder {
             }
 
             // print the histogram of FR sizes from this round
-            Map<Integer,Integer> countMap = new TreeMap<>();
-            int maxSize = 0;
-            for (FrequentedRegion fr : frequentedRegions) {
-                if (fr.nodes.size()>maxSize) maxSize = fr.nodes.size();
-                if (countMap.containsKey(fr.nodes.size())) {
-                    int count = countMap.get(fr.nodes.size());
-                    count++;
-                    countMap.put(fr.nodes.size(), count);
-                } else {
-                    countMap.put(fr.nodes.size(), 1);
-                }
-            }
-            for (int num : countMap.keySet()) {
-                System.out.println("FR node size (#):"+num+" ("+countMap.get(num)+")");
-            }
+            printFRHistogram();
         }
         
         // remove child FRs that have lower support than their parent
@@ -243,19 +239,25 @@ public class FRFinder {
     }
 
     /**
-     * Remove FRs whose nodes are children of another FR's nodes
+     * Remove FRs whose nodes are children of another FR's nodes.
      */
     public void removeChildren() {
-        List<FrequentedRegion> uninterestingFRs = new LinkedList<>();
-        for (FrequentedRegion parentFR : frequentedRegions) {
-            for (FrequentedRegion childFR : frequentedRegions) {
-                if (parentFR.nodes.parentOf(childFR.nodes) && parentFR.support>=childFR.support) {
-                    uninterestingFRs.add(childFR);
-                }
-            }
-        }
+        List<FrequentedRegion> uninterestingFRs = Collections.synchronizedList(new LinkedList<>());
+        frequentedRegions.parallelStream().forEach((fr1) -> {
+                ////////
+                frequentedRegions.parallelStream().forEach((fr2) -> {
+                        ////////
+                        if (fr1.nodes.parentOf(fr2.nodes) && fr1.support>=fr2.support) {
+                            uninterestingFRs.add(fr2);
+                        }
+                        ////////
+                    });
+                ////////
+            });
         frequentedRegions.removeAll(uninterestingFRs);
+        // output
         printHeading("REMOVED "+uninterestingFRs.size()+" CHILD FRs");
+        printFRHistogram();
     }
 
     public double getAlpha() {
@@ -540,6 +542,7 @@ public class FRFinder {
     void printFrequentedRegions() throws IOException {
         PrintStream out = null;
         if (inputFile==null) {
+            // output from a findFRs run
             if (outputFile==null) {
                 out = System.out;
                 printHeading("FREQUENTED REGIONS");
@@ -549,10 +552,11 @@ public class FRFinder {
             out.println("FR\t"+frequentedRegions.first().columnHeading());
             int c = 1;
             for (FrequentedRegion fr : frequentedRegions) {
-                System.out.println(c+"\t"+fr.toString());
+                out.println(c+"\t"+fr.toString());
                 c++;
             }
         } else {
+            // output from post-processing
             if (outputFile==null) {
                 out = System.out;
                 printHeading("FREQUENTED REGIONS");
@@ -568,8 +572,9 @@ public class FRFinder {
 
     /**
      * Read FR NodeSets from the output from a previous run.
-     * nodes	   support avgLen label1.n label1.f label2.n label2.f
-     * [5,7,15,33] 28	   282	  18       0.667    10       1.000
+     * 0   1           2       3      4        5        6        7        ...
+     * FR  nodes       support avgLen label1.n label1.f label2.n label2.f ...
+     * 1   [5,7,15,33] 28      282    18       0.667    10       1.000    ...
      */
     void readFrequentedRegions(String inputFile) throws FileNotFoundException, IOException {
         BufferedReader reader = new BufferedReader(new FileReader(inputFile));
@@ -579,11 +584,32 @@ public class FRFinder {
         String line = null;
         while ((line=reader.readLine())!=null) {
             String[] fields = line.split("\t");
-            String nsString = fields[0];
+            String nsString = fields[1];
             NodeSet ns = new NodeSet(nsString);
             outputLines.put(ns,line);
             FrequentedRegion fr = new FrequentedRegion(ns);
             frequentedRegions.add(fr);
+        }
+    }
+
+    /**
+     * Print a crude histogram of FR node sizes.
+     */
+    public void printFRHistogram() {
+        Map<Integer,Integer> countMap = new TreeMap<>();
+        int maxSize = 0;
+        for (FrequentedRegion fr : frequentedRegions) {
+            if (fr.nodes.size()>maxSize) maxSize = fr.nodes.size();
+            if (countMap.containsKey(fr.nodes.size())) {
+                int count = countMap.get(fr.nodes.size());
+                count++;
+                countMap.put(fr.nodes.size(), count);
+            } else {
+                countMap.put(fr.nodes.size(), 1);
+            }
+        }
+        for (int num : countMap.keySet()) {
+            System.out.println("FR node size (#):"+num+" ("+countMap.get(num)+")");
         }
     }
 
@@ -642,7 +668,7 @@ public class FRFinder {
                 dotFile = parts[1];
             } else if (parts[0].equals("fastafile")) {
                 fastaFile = parts[1];
-            } else if (parts[1].equals("genotyupe")) {
+            } else if (parts[0].equals("genotype")) {
                 genotype = Integer.parseInt(parts[1]);
             } else if (parts[0].equals("alpha")) {
                 alpha = Double.parseDouble(parts[1]);
