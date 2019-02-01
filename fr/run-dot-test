@@ -6,7 +6,7 @@
 # -z --minsize  [1] minimum number of de Bruijn nodes that an FR must contain to be considered frequent
 # -r --rc       flag to indicate whether the sequence (e.g. FASTA file) had its reverse complement appended
 
-java -cp "build/install/fr/lib/*" org.ncgr.pangenomics.fr.FRFinder -v -d sample/ecoli.pan3.dot -f sample/ecoli.pan3.fa -a 0.5 -k 3
+java -cp "build/install/fr/lib/*" org.ncgr.pangenomics.fr.FRFinder -v -d ecoli/ecoli.pan3.k10.dot -f ecoli/ecoli.pan3.fa -a 0.5 -k 3
 
 #echo ""
 #echo "The following FIVE file comparisons should all report as identical:"

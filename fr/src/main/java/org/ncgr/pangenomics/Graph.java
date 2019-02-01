@@ -203,19 +203,26 @@ public class Graph {
 
         if (verbose) System.out.println("Reading FASTA file: "+fastaFile);
         Map<String,DNASequence> fastaMap = FastaReaderHelper.readFastaDNASequence​(new File(fastaFile));
+
         String fasta = "";
         for (String seqName : fastaMap.keySet()) {
             DNASequence dnaSequence = fastaMap.get(seqName);
-            fasta += dnaSequence.getSequenceAsString()+"$"; // splitMEM appends a termination character
             if (verbose) System.out.println(dnaSequence.getOriginalHeader()+":"+dnaSequence.getLength());
+            System.out.println(dnaSequence.getSequenceAsString());
+            fasta += "N" + dnaSequence.getSequenceAsString(); // splitMEM appends a termination character
         }
-        
+        fasta += "N";
+
         if (verbose) System.out.println("Reading dot file: "+dotFile);
         MutableGraph g = Parser.read(new File(dotFile));
         
         Collection<MutableNode> mNodes = g.nodes();
         for (MutableNode mNode : mNodes) {
             long nodeId = getNodeId(mNode);
+
+            System.out.println("----- NODE "+nodeId+" -----");
+            System.out.println(mNode.get("label").toString());
+
             String[] parts = mNode.get("label").toString().split(":");
             int length = Integer.parseInt(parts[1]);
             if (length<minLen) minLen = length;
@@ -223,11 +230,12 @@ public class Graph {
             String sequence = null;
             boolean first = true;
             for (String startString : startStrings) {
-                int start = Integer.parseInt(startString) - 1;
+                int start = Integer.parseInt(startString);
                 String s = fasta.substring(start,start+length);
                 if (first) {
                     sequence = s;
                     first = false;
+                    System.out.println(sequence);
                 } else if (!s.equals(sequence)) {
                     // ERROR out if we've got mismatched sequences for same node
                     System.err.println("ERROR: sequences at node "+nodeId+" are not equal!");
@@ -239,7 +247,6 @@ public class Graph {
 
 
             List<Link> links = mNode.links();
-            System.out.println("----- NODE "+nodeId+" -----");
             for (Link link : links) {
                 System.out.println("from["+link.from().toString()+"] to["+link.to().toString()+"]");
             }
@@ -249,7 +256,9 @@ public class Graph {
             Node node = new Node(nodeId, sequence);
             nodes.put(nodeId, node);
         }
-        if (verbose) printNodes();
+
+        
+        // if (verbose) printNodes();
 
         // DEBUG
         System.exit(0);
