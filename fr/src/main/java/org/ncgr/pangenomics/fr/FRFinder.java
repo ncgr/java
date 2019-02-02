@@ -138,7 +138,7 @@ public class FRFinder {
                 if (parallel) {
                     System.out.println("ns1\tadded\telapsed");
                 } else {
-                    System.out.println("ns1\tadded\telapsed\tdone\talreadyDone");
+                    System.out.println("ns1\tadded\telapsed\tdone\tskipped\trejected");
                 }
             }
             
@@ -147,49 +147,72 @@ public class FRFinder {
                 long start = System.currentTimeMillis();
                 int oldFRSize = syncFrequentedRegions.size();
                 if (parallel) {
-                    // run parallel inner loop over the current NodeSets
+                    ///////////////////////////////////////////////////////
+                    // run parallel inner loop over the current NodeSets //
+                    ///////////////////////////////////////////////////////
                     currentNodeSets.parallelStream().forEach((ns2) -> {
+                            ////////
                             if (ns2.first().compareTo(ns1.last())>0) {
                                 NodeSet merged = NodeSet.merge(ns1, ns2);
                                 if (merged.size()>=minSize && !syncNodeSets.contains(merged)) {
                                     syncNodeSets.add(merged);
                                     FrequentedRegion fr = new FrequentedRegion(graph, merged, alpha, kappa);
-                                    if (passesFilters(fr)) syncFrequentedRegions.add(fr);
+                                    if (passesFilters(fr)) {
+                                        boolean interesting = true;
+                                        for (FrequentedRegion fr2 : frequentedRegions) {
+                                            if (fr2.nodes.parentOf(fr.nodes) && fr2.support>=fr.support) {
+                                                interesting = false;
+                                            }
+                                        }
+                                        if (interesting) syncFrequentedRegions.add(fr);
+                                    }
                                 }
                             }
+                            ////////
                         });
                     if (debug) System.out.println(ns1.toString()+"\t"+(syncFrequentedRegions.size()-oldFRSize)+"\t"+(System.currentTimeMillis()-start));
+                    ///////////////////////////////////////////////////////
+                    ///////////////////////////////////////////////////////
+                    ///////////////////////////////////////////////////////
                 } else {
-                    // run non-parallel inner loop, with extra debuggery
+                    ///////////////////////////////////////////////////////
+                    // run non-parallel inner loop, with extra debuggery // 
+                    ///////////////////////////////////////////////////////
                     int done = 0;
-                    int alreadyDone = 0;
-                    
-                    // for (NodeSet ns2 : currentNodeSets) {
-                    //     if (ns2.first().compareTo(ns1.last())>0) {
-                    
-                    // try a single random ns2 of random length > 1
-                    NodeSet ns2 = new NodeSet();
-                    int nMax = ThreadLocalRandom.current().nextInt(2, graph.nodes.size());
-                    for (int i=0; i<nMax; i++) {
-                        long n = (long) ThreadLocalRandom.current().nextInt(1, nMax+1);
-                        ns2.add(graph.nodes.get(n));
+                    int skipped = 0;
+                    int rejected = 0;
+                    for (NodeSet ns2 : currentNodeSets) {
+                        if (ns2.first().compareTo(ns1.last())>0) {
+                            NodeSet merged = NodeSet.merge(ns1, ns2);
+                            if (merged.size()>=minSize && !nodeSets.contains(merged)) {
+                                // System.out.println(ns1.toString()+ns2.toString()+"->"+merged.toString()+" NEW");
+                                done++;
+                                nodeSets.add(merged);
+                                FrequentedRegion fr = new FrequentedRegion(graph, merged, alpha, kappa);
+                                if (passesFilters(fr)) {
+                                    boolean interesting = true;
+                                    for (FrequentedRegion fr2 : frequentedRegions) {
+                                        if (fr2.nodes.parentOf(fr.nodes) && fr2.support>=fr.support) {
+                                            interesting = false;
+                                        }
+                                    }
+                                    if (interesting) {
+                                        syncFrequentedRegions.add(fr);
+                                    } else {
+                                        rejected++;
+                                    }
+                                }
+                            } else {
+                                // System.out.println(ns1.toString()+ns2.toString()+"->"+merged.toString()+" OLD");
+                                skipped++;
+                            }
+                        }
                     }
-
-                    NodeSet merged = NodeSet.merge(ns1, ns2);
-                    if (merged.size()>=minSize && !nodeSets.contains(merged)) {
-                        // System.out.println(ns1.toString()+ns2.toString()+"->"+merged.toString()+" NEW");
-                        done++;
-                        nodeSets.add(merged);
-                        FrequentedRegion fr = new FrequentedRegion(graph, merged, alpha, kappa);
-                        if (passesFilters(fr)) frequentedRegions.add(fr);
-                    } else {
-                        // System.out.println(ns1.toString()+ns2.toString()+"->"+merged.toString()+" OLD");
-                        alreadyDone++;
-                    }
-                    
-                    //     }
-                    // }
-                    // if (debug) System.out.println(ns1.toString()+"\t"+(frequentedRegions.size()-oldFRSize)+"\t"+(System.currentTimeMillis()-start)+"\t"+done+"\t"+alreadyDone);
+                    if (debug) System.out.println(ns1.toString()+"\t"+(frequentedRegions.size()-oldFRSize)+"\t"+(System.currentTimeMillis()-start)+
+                                                  "\t"+done+"\t"+skipped+"\t"+rejected);
+                    ///////////////////////////////////////////////////////
+                    ///////////////////////////////////////////////////////
+                    ///////////////////////////////////////////////////////
                 }
             }
 

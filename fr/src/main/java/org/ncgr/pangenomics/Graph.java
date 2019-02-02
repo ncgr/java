@@ -9,6 +9,7 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.InputStreamReader;
 import java.io.IOException;
+import java.io.PrintStream;
 import java.io.Reader;
 
 import java.util.Collection;
@@ -31,6 +32,14 @@ import guru.nidi.graphviz.parse.Parser;
 
 import org.biojava.nbio.core.sequence.DNASequence;
 import org.biojava.nbio.core.sequence.io.FastaReaderHelper;
+
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.CommandLineParser;
+import org.apache.commons.cli.DefaultParser;
+import org.apache.commons.cli.HelpFormatter;
+import org.apache.commons.cli.Option;
+import org.apache.commons.cli.Options;
+import org.apache.commons.cli.ParseException;
 
 /**
  * Storage of a graph.
@@ -209,9 +218,8 @@ public class Graph {
             DNASequence dnaSequence = fastaMap.get(seqName);
             if (verbose) System.out.println(dnaSequence.getOriginalHeader()+":"+dnaSequence.getLength());
             System.out.println(dnaSequence.getSequenceAsString());
-            fasta += "N" + dnaSequence.getSequenceAsString(); // splitMEM appends a termination character
+            fasta += "$" + dnaSequence.getSequenceAsString(); // splitMEM appends a termination character
         }
-        fasta += "N";
 
         if (verbose) System.out.println("Reading dot file: "+dotFile);
         MutableGraph g = Parser.read(new File(dotFile));
@@ -244,35 +252,17 @@ public class Graph {
                     System.exit(1);
                 }
             }
-
+            Node node = new Node(nodeId, sequence);
+            nodes.put(nodeId, node);
 
             List<Link> links = mNode.links();
             for (Link link : links) {
                 System.out.println("from["+link.from().toString()+"] to["+link.to().toString()+"]");
             }
-
-
-            
-            Node node = new Node(nodeId, sequence);
-            nodes.put(nodeId, node);
         }
-
         
-        // if (verbose) printNodes();
-
         // DEBUG
         System.exit(0);
-
-        // // get the FASTA file parameters
-        // FastaFile f = new FastaFile(this);
-        // if (verbose) f.setVerbose();
-        // f.readFastaFile(fastaFile);
-        // sequences = f.getSequences();
-        // paths = f.getPaths();
-        // Nlocs = f.getNlocs();
-        
-        // // print a summary
-        // if (verbose) printSummary();
     }
 
     /**
@@ -488,5 +478,143 @@ public class Graph {
         for (String label : labelCounts.keySet()) {
             System.out.println(label+":"+labelCounts.get(label));
         }
+    }
+
+    /**
+     * Print node participation by path, appropriate for PCA analysis.
+     * Prints to file if jsonFile or dotFile exist, otherwise stdout.
+     * Ignore nodes which are traversed by all paths - they dilute the PCA.
+     */
+    public void printPcaData() throws FileNotFoundException, IOException {
+        PrintStream out = null;
+        if (jsonFile!=null) {
+            out = new PrintStream(jsonFile+".pca.txt");
+        } else if (dotFile!=null) {
+            out = new PrintStream(dotFile+".pca.txt");
+        } else {
+            out = System.out;
+        }
+        // header is paths
+        boolean first = true;
+        for (Path path : paths) {
+            if (first) {
+                out.print("P"+path.name);
+                first = false;
+            } else {
+                out.print("\tP"+path.name);
+            }
+            if (path.label!=null) out.print("."+path.label);
+        }
+        out.println("");
+
+        // rows are nodes
+        for (long nodeId : nodes.keySet()) {
+            Node node = nodes.get(nodeId);
+            Set<Path> nPaths = nodePaths.get(nodeId);
+            if (nPaths.size()<paths.size()) {
+                out.print("N"+nodeId);
+                for (Path path : paths) {
+                    if (path.nodes.contains(node)) {
+                        out.print("\t1");
+                    } else {
+                        out.print("\t0");
+                    }
+                }
+                out.println("");
+            }
+        }
+    }
+
+    /**
+     * Command-line utility
+     */
+    public static void main(String[] args) throws FileNotFoundException, IOException {
+
+        Options options = new Options();
+        CommandLineParser parser = new DefaultParser();
+        HelpFormatter formatter = new HelpFormatter();
+        CommandLine cmd;
+
+        Option dotOption = new Option("d", "dot", true, "DOT file (requires FASTA file)");
+        dotOption.setRequired(false);
+        options.addOption(dotOption);
+        //
+        Option fastaOption = new Option("f", "fasta", true, "FASTA file (requires DOT file)");
+        fastaOption.setRequired(false);
+        options.addOption(fastaOption);
+        //
+        Option genotypeOption = new Option("g", "genotype", true, "which genotype to include (0,1) from the JSON file; -1 to include all ("+GENOTYPE+")");
+        genotypeOption.setRequired(false);
+        options.addOption(genotypeOption);
+        //
+        Option jsonOption = new Option("j", "json", true, "vg JSON file");
+        jsonOption.setRequired(false);
+        options.addOption(jsonOption);
+        //
+        Option labelsOption = new Option("p", "pathlabels", true, "tab-delimited file with pathname<tab>label");
+        labelsOption.setRequired(false);
+        options.addOption(labelsOption);
+        //
+        Option verboseOption = new Option("v", "verbose", false, "verbose output ("+VERBOSE+")");
+        verboseOption.setRequired(false);
+        options.addOption(verboseOption);
+        //
+        Option debugOption = new Option("do", "debug", false, "debug output ("+DEBUG+")");
+        debugOption.setRequired(false);
+        options.addOption(debugOption);
+
+        try {
+            cmd = parser.parse(options, args);
+        } catch (ParseException e) {
+            System.err.println(e.getMessage());
+            formatter.printHelp("Graph", options);
+            System.exit(1);
+            return;
+        }
+
+        // parameter validation
+        if (!cmd.hasOption("dot") && !cmd.hasOption("json")) {
+            System.err.println("You must specify either a splitMEM dot file plus FASTA (-d/--dot and -f/--fasta ) or a vg JSON file (-j, --json)");
+            System.exit(1);
+            return;
+        }
+        if (cmd.hasOption("dot") && !cmd.hasOption("fasta")) {
+            System.err.println("If you specify a splitMEM dot file (-d/--dot) you MUST ALSO specify a FASTA file (-f/--fasta)");
+            System.exit(1);
+            return;
+        }
+        
+        // files
+        String dotFile = cmd.getOptionValue("dot");
+        String fastaFile = cmd.getOptionValue("fasta");
+        String jsonFile = cmd.getOptionValue("json");
+        String pathLabelsFile = cmd.getOptionValue("pathlabels");
+
+        // create a Graph from the dot+FASTA or JSON file
+        Graph g = new Graph();
+        if (cmd.hasOption("verbose")) g.setVerbose();
+        if (cmd.hasOption("debug")) g.setDebug();
+        if (cmd.hasOption("genotype")) g.genotype = Integer.parseInt(cmd.getOptionValue("genotype"));
+        if (dotFile!=null && fastaFile!=null) {
+            g.readSplitMEMDotFile(dotFile, fastaFile);
+        } else if (jsonFile!=null) {
+            g.readVgJsonFile(jsonFile);
+        } else {
+            System.err.println("ERROR: no DOT+FASTA or JSON provided.");
+            System.exit(1);
+        }
+
+        // if a labels file is given, append the labels to the path names
+        if (pathLabelsFile!=null) {
+            g.readPathLabels(pathLabelsFile);
+        }
+
+        // output
+        g.printNodes();
+        g.printPaths();
+        g.printNodePaths();
+        if (g.debug) g.printPathSequences();
+
+        g.printPcaData();
     }
 }

@@ -278,10 +278,9 @@ public class SvmScaler {
             System.out.print("\n");
         }
         if (newNumNonzeroes > numNonzeroes) {
-            System.err.print(
-                             "WARNING: original #nonzeros " + numNonzeroes+"\n"
-                             +"         new      #nonzeros " + newNumNonzeroes+"\n"
-                             +"Use -l 0 if many original feature values are zeros\n");
+            System.err.println("WARNING: original #nonzeros " + numNonzeroes);
+            System.err.println("         new      #nonzeros " + newNumNonzeroes);
+            System.err.println("Use -l 0 if many original feature values are zeros");
         }
 
         fp.close();
