@@ -1,7 +1,7 @@
 ## load a pair of FRFinder hdstudy files
 
 hdstudy.all = read.table("hdstudy.all.out", header=TRUE)
-hdstudy.rc  = read.table("hdstudy.rc.out", header=TRUE)
+## hdstudy.rc  = read.table("hdstudy.rc.out", header=TRUE)
 
 params = read.delim(file="hdstudy.all.out.params", header=F)
 for (i in 1:length(rownames(params))) {

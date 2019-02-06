@@ -24,7 +24,5 @@
 # -do,--debug		debug output (false)
 
 java -server -cp "build/install/fr/lib/*" org.ncgr.pangenomics.fr.FRFinder --gfa HDStudy/HTT.paths.gfa --pathlabels HDStudy/labels.txt --genotype 1 \
-	--alpha 0.3 --kappa 60 --minsup 5 --maxsup 99 --minsize 1 --minlen 100 \
-	--nrounds 2 --parallel --verbose --debug --outputfile hdstudy.all.out
-
-java -server -cp "build/install/fr/lib/*" org.ncgr.pangenomics.fr.PostProcessor --removechildren --inputfile hdstudy.all.out --outputfile hdstudy.rc.out
+	--alpha 0.1 --kappa 60 --minsup 5 --maxsup 99 --minsize 1 --minlen 100 \
+	--nrounds 3 --verbose --debug --outputfile hdstudy.all.out

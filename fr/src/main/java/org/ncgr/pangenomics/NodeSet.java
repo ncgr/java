@@ -10,6 +10,8 @@ import java.util.TreeSet;
  */
 public class NodeSet extends TreeSet<Node> implements Comparable <NodeSet> {
 
+    public int totalBases;
+
     /**
      * Empty constructor.
      */
@@ -21,7 +23,8 @@ public class NodeSet extends TreeSet<Node> implements Comparable <NodeSet> {
      * Construct given a TreeSet of Nodes.
      */
     public NodeSet(TreeSet<Node> nodes) {
-        for (Node node : nodes) add(node);
+        this.addAll(nodes);
+        update();
     }
 
     /**
@@ -33,6 +36,17 @@ public class NodeSet extends TreeSet<Node> implements Comparable <NodeSet> {
         for (String s : nodeStrings) {
             add(new Node(Long.parseLong(s)));
         }
+    }
+
+    /**
+     * Update derived quantities like totalBases.
+     */
+    public void update() {
+        String bases = "";
+        for (Node n : this) {
+            bases += n.sequence;
+        }
+        this.totalBases = bases.length();
     }
 
     /**

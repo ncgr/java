@@ -47,8 +47,6 @@ public class FRFinder {
     static boolean USERC = false;
     static boolean VERBOSE = false;
     static boolean DEBUG = false;
-    static boolean REMOVE_CHILDREN = false;
-    static boolean PARALLEL = false;
     
     // required parameters, no defaults; set in constructor
     Graph graph;  // the Graph we're analyzing
@@ -59,8 +57,6 @@ public class FRFinder {
     boolean verbose = VERBOSE;
     boolean debug = DEBUG;
     boolean useRC = USERC; // indicates if the sequence (e.g. FASTA file) had its reverse complement appended
-    boolean removeChildren = REMOVE_CHILDREN; // option to remove child FRs with lower support from the FR heirarchy
-    boolean parallel = PARALLEL; // option to run FR building loop in parallel
     int minSup = MINSUP;   // minimum support: minimum number of genome paths (fr.support) for an FR to be considered interesting
     int maxSup = MAXSUP;   // maximum support: maximum number of genome paths (fr.support) for an FR to be considered interesting
     int minSize = MINSIZE; // minimum size: minimum number of de Bruijn nodes (fr.nodes.size()) that an FR must contain to be considered interesting
@@ -104,8 +100,9 @@ public class FRFinder {
             graph.printNodePaths();
         }
 
-        // store the FRs in a TreeSet, backed with a synchronizedSet for parallel processing
+        // store the FRs in a TreeSet, backed with a synchronized Set for parallel processing
         frequentedRegions = new TreeSet<>();
+        Set<FrequentedRegion> syncFrequentedRegions = Collections.synchronizedSet(frequentedRegions);
         
         // store the analyzed NodeSets in a TreeSet, backed with a synchronizedSet for parallel processing
         TreeSet<NodeSet> nodeSets = new TreeSet<>();
@@ -120,110 +117,61 @@ public class FRFinder {
             if (passesFilters(fr)) frequentedRegions.add(fr);
         }
 
-        // for parallelization
-        Set<FrequentedRegion> syncFrequentedRegions = Collections.synchronizedSet(frequentedRegions);
-
         // build the FRs round by round
         int round = 0;
         while (round<nRounds) {
             round++;
             printHeading("ROUND "+round);
 
+            // gently suggest garbage collection
+            System.gc();
+
             // use a frozen copy of the current NodeSets for iterating
             final Set<NodeSet> currentNodeSets = new TreeSet<>(syncNodeSets);
 
-            // debug output
-            if (debug) {
-                if (parallel) {
-                    System.out.println("ns1\tadded\telapsed");
-                } else {
-                    System.out.println("ns1\tadded\telapsed\tdone\tskipped\tuninteresting");
-                }
-            }
-            
-            // run non-parallel outer loop
+            // non-parallel outer loop through this round's NodeSets
             for (NodeSet ns1 : currentNodeSets) {
                 long start = System.currentTimeMillis();
-                int oldFRSize = syncFrequentedRegions.size();
-                if (parallel) {
-                    ///////////////////////////////////////////////////////
-                    // run parallel inner loop over the current NodeSets //
-                    ///////////////////////////////////////////////////////
-                    Set<FrequentedRegion> newFRs = Collections.synchronizedSet(new TreeSet<>());
-                    currentNodeSets.parallelStream().forEach((ns2) -> {
-                            ////////
-                            if (ns2.first().compareTo(ns1.last())>0) {
-                                NodeSet merged = NodeSet.merge(ns1, ns2);
-                                if (merged.size()>=minSize && !syncNodeSets.contains(merged)) {
-                                    syncNodeSets.add(merged);
-                                    FrequentedRegion fr = new FrequentedRegion(graph, merged, alpha, kappa);
-                                    if (passesFilters(fr)) {
-                                        newFRs.add(fr);
-                                    }
-                                }
-                            }
-                            ////////
-                        });
-                    // spin through the new FRs to see if they're really legit
-                    for (FrequentedRegion fr1 : newFRs) {
-                        boolean interesting = true;
-                        // for (FrequentedRegion fr2 : frequentedRegions) {
-                        //     if (fr2.nodes.parentOf(fr1.nodes) && fr2.support>=fr1.support) {
-                        //         interesting = false;
-                        //     }
-                        // }
-                        if (interesting) {
-                            syncFrequentedRegions.add(fr1);
-                            if (debug) System.out.println(fr1.toString());
-                        }
-                    }
-                    ///////////////////////////////////////////////////////
-                    ///////////////////////////////////////////////////////
-                    ///////////////////////////////////////////////////////
-                } else {
-                    ///////////////////////////////////////////////////////
-                    // run non-parallel inner loop, with extra debuggery // 
-                    ///////////////////////////////////////////////////////
-                    int done = 0;
-                    int skipped = 0;
-                    int uninteresting = 0;
-                    for (NodeSet ns2 : currentNodeSets) {
+                // we'll add the new FRs to a synchronized set
+                Set<FrequentedRegion> newFRs = Collections.synchronizedSet(new HashSet<>());
+                // run parallel inner loop over the current NodeSets
+                currentNodeSets.parallelStream().forEach((ns2) -> {
+                        //////// START PARALLEL CODE ////////
                         if (ns2.first().compareTo(ns1.last())>0) {
                             NodeSet merged = NodeSet.merge(ns1, ns2);
-                            if (merged.size()>=minSize && !nodeSets.contains(merged)) {
-                                // System.out.println(ns1.toString()+ns2.toString()+"->"+merged.toString()+" NEW");
-                                done++;
-                                nodeSets.add(merged);
+                            if (merged.size()>=minSize && !syncNodeSets.contains(merged)) {
+                                syncNodeSets.add(merged);
                                 FrequentedRegion fr = new FrequentedRegion(graph, merged, alpha, kappa);
-                                if (passesFilters(fr)) {
-                                    boolean interesting = true;
-                                    for (FrequentedRegion fr2 : frequentedRegions) {
-                                        if (fr2.nodes.parentOf(fr.nodes) && fr2.support>=fr.support) {
-                                            interesting = false;
-                                        }
-                                    }
-                                    if (interesting) {
-                                        syncFrequentedRegions.add(fr);
-                                    } else {
-                                        uninteresting++;
-                                    }
-                                }
-                            } else {
-                                // System.out.println(ns1.toString()+ns2.toString()+"->"+merged.toString()+" OLD");
-                                skipped++;
+                                if (passesFilters(fr)) newFRs.add(fr);
                             }
                         }
-                    }
-                    if (debug) {
-                        int added = frequentedRegions.size()-oldFRSize;
-                        long duration = System.currentTimeMillis()-start;
-                        System.out.println(ns1.toString()+"\t"+added+"\t"+duration+"ms"+"\t"+done+"\t"+skipped+"\t"+uninteresting);
-                    }
-                    // bail?
-                    // if (added==0) break;
-                    ///////////////////////////////////////////////////////
-                    ///////////////////////////////////////////////////////
-                    ///////////////////////////////////////////////////////
+                        //////// END PARALLEL CODE ////////
+                    });
+                // spin through the new FRs to see if they are "maximal" (so far) and remove the parents if so
+                Set<FrequentedRegion> toAdd = Collections.synchronizedSet(new HashSet<>());
+                Set<FrequentedRegion> toRemove = Collections.synchronizedSet(new HashSet<>());
+                toAdd.addAll(newFRs); // start with them all, remove them as appropropriate
+                newFRs.parallelStream().forEach((newFR) -> {
+                        //////// START PARALLEL CODE ////////
+                        syncFrequentedRegions.parallelStream().forEach((oldFR) -> {
+                                if (newFR.nodes.parentOf(oldFR.nodes)) {
+                                    toAdd.remove(newFR); // oldFR spans newFR
+                                } else if (oldFR.nodes.parentOf(newFR.nodes)) {
+                                    toRemove.add(oldFR); // newFR spans oldFR
+                                }
+                            });
+                        //////// END PARALLEL CODE ////////
+                    });
+                // update frequentedRegions, display some debug stats
+                frequentedRegions.addAll(toAdd);
+                frequentedRegions.removeAll(toRemove);
+                int added = toAdd.size();
+                int removed = toRemove.size();
+                int current = frequentedRegions.size();
+                if (debug) {
+                    long elapsed = System.currentTimeMillis()-start;
+                    System.out.println("ns1\telapsed\tadded\tremoved\tcurrent");
+                    System.out.println(ns1.toString()+"\t"+elapsed+"ms\t"+added+"\t"+removed+"\t"+current);
                 }
             }
 
@@ -237,6 +185,7 @@ public class FRFinder {
                     if (fr.avgLength>highestAvgLengthFR.avgLength) highestAvgLengthFR = fr;
                     if (fr.support*fr.avgLength>highestTotalLengthFR.support*highestTotalLengthFR.avgLength) highestTotalLengthFR = fr;
                 }
+                System.out.println("---------------");
                 System.out.println("Highest support:");
                 System.out.println(highestSupportFR.columnHeading());
                 System.out.println(highestSupportFR.toString());
@@ -252,10 +201,6 @@ public class FRFinder {
             printFRHistogram();
         }
         
-        // remove child FRs that have lower support than their parent
-        // NOTE: this presumes that the FR comparator orders by parent-->child!
-        if (removeChildren) removeChildren();
-
 	// verbosity
 	if (verbose) {
 	    printPathFRs();
@@ -270,28 +215,6 @@ public class FRFinder {
      */
     boolean passesFilters(FrequentedRegion fr) {
         return fr.nodes.size()>=minSize && fr.support>=minSup && fr.support<=maxSup && fr.avgLength>=minLen;
-    }
-
-    /**
-     * Remove FRs whose nodes are children of another FR's nodes.
-     */
-    public void removeChildren() {
-        List<FrequentedRegion> uninterestingFRs = Collections.synchronizedList(new LinkedList<>());
-        frequentedRegions.parallelStream().forEach((fr1) -> {
-                ////////
-                frequentedRegions.parallelStream().forEach((fr2) -> {
-                        ////////
-                        if (fr1.nodes.parentOf(fr2.nodes) && fr1.support>=fr2.support) {
-                            uninterestingFRs.add(fr2);
-                        }
-                        ////////
-                    });
-                ////////
-            });
-        frequentedRegions.removeAll(uninterestingFRs);
-        // output
-        printHeading("REMOVED "+uninterestingFRs.size()+" CHILD FRs");
-        printFRHistogram();
     }
 
     public double getAlpha() {
@@ -340,12 +263,6 @@ public class FRFinder {
     }
     public void setUseRC() {
         this.useRC = true;
-    }
-    public void setRemoveChildren() {
-        this.removeChildren = true;
-    }
-    public void setParallel() {
-        this.parallel = true;
     }
     public void setOutputFile(String outputFile) {
         this.outputFile = outputFile;
@@ -430,14 +347,6 @@ public class FRFinder {
         graphOnlyOption.setRequired(false);
         options.addOption(graphOnlyOption);
         //
-        Option removeChildrenOption = new Option("rc", "removechildren", false, "remove child FRs that have equal or lower support ("+REMOVE_CHILDREN+")");
-        removeChildrenOption.setRequired(false);
-        options.addOption(removeChildrenOption);
-        //
-        Option parallelOption = new Option("pa", "parallel", false, "run FR-building loop in parallel ("+PARALLEL+")");
-        parallelOption.setRequired(false);
-        options.addOption(parallelOption);
-        //
         Option nRoundsOption = new Option("nr", "nrounds", true, "number of FR-building rounds to run ("+NROUNDS+")");
         nRoundsOption.setRequired(false);
         options.addOption(nRoundsOption);
@@ -512,8 +421,6 @@ public class FRFinder {
         if (cmd.hasOption("verbose")) frf.setVerbose();
         if (cmd.hasOption("debug")) frf.setDebug();
         if (cmd.hasOption("userc")) frf.setUseRC();
-        if (cmd.hasOption("removechildren")) frf.setRemoveChildren();
-        if (cmd.hasOption("parallel")) frf.setParallel();
         if (cmd.hasOption("minsup")) {
             frf.setMinSup(Integer.parseInt(cmd.getOptionValue("minsup")));
         }
@@ -683,8 +590,6 @@ public class FRFinder {
         out.println("minlen"+"\t"+minLen);
         out.println("nrounds"+"\t"+nRounds);
         out.println("userc"+"\t"+useRC);
-        out.println("removechildren"+"\t"+removeChildren);
-        out.println("parallel"+"\t"+parallel);
         if (inputFile!=null) out.println("inputfile"+"\t"+inputFile);
         if (outputFile!=null) out.println("outputfile"+"\t"+outputFile);
     }
@@ -727,10 +632,6 @@ public class FRFinder {
                 nRounds = Integer.parseInt(parts[1]);
             } else if (parts[0].equals("userc")) {
                 useRC = Boolean.parseBoolean(parts[1]);
-            } else if (parts[0].equals("removechildren")) {
-                removeChildren = Boolean.parseBoolean(parts[1]);
-            } else if (parts[0].equals("parallel")) {
-                parallel = Boolean.parseBoolean(parts[1]);
             }
             // load the Graph if we've got the files
             if (jsonFile!=null) {

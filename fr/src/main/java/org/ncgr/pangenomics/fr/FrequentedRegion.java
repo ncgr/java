@@ -43,7 +43,7 @@ public class FrequentedRegion implements Comparable<FrequentedRegion> {
     // the total support = fwdSupport + rcSupport;
     int support = 0;
 
-    // a subpath must satisfy the requirement that it traverses at least alpha*nodes.size()
+    // a subpath must satisfy the requirement that it traverses at least alpha*nodes.totalBases;
     double alpha;
 
     // a subpath must satisfy the requirement that its contiguous nodes that do NOT belong in this.nodes have total sequence length no larger than kappa
@@ -61,6 +61,7 @@ public class FrequentedRegion implements Comparable<FrequentedRegion> {
         this.alpha = alpha;
         this.kappa = kappa;
         // compute the subpaths, average length, support, etc.
+        this.nodes.update();
         update();
     }
 
@@ -69,6 +70,7 @@ public class FrequentedRegion implements Comparable<FrequentedRegion> {
      */
     FrequentedRegion(NodeSet nodes) {
         this.nodes = nodes;
+        this.nodes.update();
     }
 
     /**
@@ -204,14 +206,14 @@ public class FrequentedRegion implements Comparable<FrequentedRegion> {
             }
 
             
-            // alpha filter
-            int in = 0;
+            // alpha filter = minimum fraction of total BASES, not nodes
+            String subSequence = "";
             for (Node node : subpath.nodes) {
                 if (nodes.contains(node)) {
-                    in++;
+                    subSequence += node.sequence;
                 }
             }
-            double frac = (double)in/(double)nodes.size();
+            double frac = (double)subSequence.length()/(double)nodes.totalBases;
             if (frac<alpha) continue;
 
             // filters passed, add this subpath
@@ -220,7 +222,6 @@ public class FrequentedRegion implements Comparable<FrequentedRegion> {
 
         // replace the instance subpaths with the new set
         subpaths = newSubpaths;
-
     }
 
     /**

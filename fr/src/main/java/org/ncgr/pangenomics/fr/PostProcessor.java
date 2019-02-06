@@ -56,11 +56,11 @@ public class PostProcessor {
             frf.setOutputFile(cmd.getOptionValue("outputfile"));
         }
 
-        // do the deed
-        if (cmd.hasOption("removechildren")) {
-            frf.setRemoveChildren();
-            frf.removeChildren();
-        }
+        // // do the deed
+        // if (cmd.hasOption("removechildren")) {
+        //     frf.setRemoveChildren();
+        //     frf.removeChildren();
+        // }
 
         // print out the parameters to stdout or outputFile+".params" if exists
         frf.printParameters();
