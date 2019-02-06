@@ -42,9 +42,7 @@ import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 
 /**
- * Storage of a graph.
- *
- * Getting rid of 0-based primitive arrays in favor of Collections and readability and compatibility with Vg numbering, etc.
+ * Storage of a pan-genomic graph.
  *
  * @author Sam Hokin
  */ 
@@ -66,6 +64,7 @@ public class Graph {
     public String dotFile;
     public String fastaFile;
     public String jsonFile;
+    public String gfaFile;
     
     // minimum sequence length found in the graph
     public long minLen;
@@ -203,7 +202,119 @@ public class Graph {
     }
 
     /**
-     * Read a Graph in from a splitMEM-style DOT file and a FASTA file using guru.nidi.graphviz and BioJava classes.
+     * Read in from a GFA file as output from vg view --gfa.
+     */
+    public void readVgGfaFile(String gfaFile) throws IOException {
+        this.gfaFile = gfaFile;
+        if (verbose) System.out.println("Reading GFA file: "+gfaFile);
+
+        // public TreeMap<Long,Node> nodes;
+        // public TreeSet<Path> paths;
+
+        BufferedReader reader = new BufferedReader(new FileReader(gfaFile));
+        String line = null;
+        while ((line=reader.readLine())!=null) {
+            String[] parts = line.split("\t");
+            String recordType = parts[0];
+            if (recordType.equals("H")) {
+                // header gives version
+                String version = parts[1];
+                if (verbose) System.out.println(version);
+            } else if (recordType.equals("S")) {
+                // node sequence
+                long nodeId = Long.parseLong(parts[1]);
+                String sequence = parts[2];
+                Node node = new Node(nodeId, sequence);
+                nodes.put(nodeId, node);
+            } else if (recordType.equals("P")) {
+                // build paths from the multiple path fragments in the GFA
+                // path fragments have names of the form _thread_sample_chr_genotype_index where genotype=0,1
+                // The "_"-split pieces will therefore be:
+                // 0:"", 1:"thread", 2:sample1, 3:sample2, L-4:sampleN, L-3:chr, L-2:genotype, L-1:idx where L is the number of pieces,
+                // and sample contains N parts separated by "_".
+                // NOTE: with unphased calls, genotype 0 is nearly reference; so typically set genotype=1 to avoid REF dilution
+                String name = parts[1];
+                String[] pieces = name.split("_");
+                if (pieces.length>=6 && pieces[1].equals("thread")) {
+                    // we've got a sample path fragment
+                    String pathName = pieces[2];
+                    for (int i=3; i<pieces.length-3; i++) pathName += "_"+pieces[i]; // for (common) cases where samples have underscores
+                    int gtype = Integer.parseInt(pieces[pieces.length-2]); // 0, 1, etc.
+                    // append the genotype if we're including them all
+                    if (genotype==-1) pathName += ":"+gtype;
+                    // append this path fragment if appropriate
+                    if (genotype==-1 || gtype==genotype) {
+                        List<Long> mappingList = new LinkedList<>();
+                        String[] mappingNodes = parts[2].split(","); // e.g. 27+,29+,30+
+                        for (String mappingNode : mappingNodes) {
+                            long nodeId = Long.parseLong(mappingNode.replace("+",""));
+                            mappingList.add(nodeId);
+                        }
+                        LinkedList<Long> nodeIds = new LinkedList<>();
+                        for (Path path : paths) {
+                            if (path.name.equals(pathName)) {
+                                nodeIds = path.getNodeIds();
+                            }
+                        }
+                        // run through this particular mapping and append each node id to the path's node list
+                        boolean first = true;
+                        for (long nodeId : mappingList) {
+                            if (first && nodeIds.size()>0) {
+                                // skip node overlap between fragments
+                            } else {
+                                nodeIds.add(nodeId);
+                            }
+                            first = false;
+                        }
+                        // build the new set of Nodes for this path
+                        LinkedList<Node> pathNodes = new LinkedList<>();
+                        for (long id : nodeIds) {
+                            Node n = nodes.get(id);
+                            if (n==null) {
+                                System.err.println("NULL node retrieved for id="+id);
+                                System.exit(1);
+                            } else {
+                                pathNodes.add(n);
+                            }
+                        }
+                        // update existing path with the new nodes
+                        boolean updated = false;
+                        for (Path path : paths) {
+                            if (path.name.equals(pathName)) {
+                                path.nodes = pathNodes;
+                                updated = true;
+                            }
+                        }
+                        if (!updated) {
+                            // create this new path
+                            if (pathName!=null && pathNodes.size()>0) {
+                                try {
+                                    paths.add(new Path(pathName, pathNodes));
+                                } catch (Exception e) {
+                                    System.err.println("paths="+paths);
+                                    System.err.println("pathName="+pathName+" pathNodes="+pathNodes);
+                                    e.printStackTrace();
+                                    System.exit(1);
+                                }
+                            }
+                        }
+                    }
+                }
+            } else if (recordType.equals("L")) {
+                // link, not used
+            }
+        }
+        reader.close();
+        
+        // build the path sequences from their nodes (populated above)
+        buildPathSequences();
+
+        // find the node paths
+        buildNodePaths();
+    }        
+    
+    /**
+     * Read in from a splitMEM-style DOT file and a FASTA file using guru.nidi.graphviz and BioJava classes.
      */
     public void readSplitMEMDotFile(String dotFile, String fastaFile) throws IOException {
         this.dotFile = dotFile;
@@ -543,7 +654,11 @@ public class Graph {
         fastaOption.setRequired(false);
         options.addOption(fastaOption);
         //
-        Option genotypeOption = new Option("g", "genotype", true, "which genotype to include (0,1) from the JSON file; -1 to include all ("+GENOTYPE+")");
+        Option gfaOption = new Option("gfa", "gfa", true, "GFA file");
+        gfaOption.setRequired(false);
+        options.addOption(gfaOption);
+        //
+        Option genotypeOption = new Option("g", "genotype", true, "which genotype to include (0,1) from the JSON/GFA file; -1 to include all ("+GENOTYPE+")");
         genotypeOption.setRequired(false);
         options.addOption(genotypeOption);
         //
@@ -573,13 +688,13 @@ public class Graph {
         }
 
         // parameter validation
-        if (!cmd.hasOption("dot") && !cmd.hasOption("json")) {
-            System.err.println("You must specify either a splitMEM dot file plus FASTA (-d/--dot and -f/--fasta ) or a vg JSON file (-j, --json)");
+        if (!cmd.hasOption("dot") && !cmd.hasOption("json") && !cmd.hasOption("gfa")) {
+            System.err.println("You must specify a splitMEM-style DOT file plus FASTA (-d/--dot and -f/--fasta ), a vg JSON file (-j, --json) or a vg GFA file (--gfa)");
             System.exit(1);
             return;
         }
         if (cmd.hasOption("dot") && !cmd.hasOption("fasta")) {
-            System.err.println("If you specify a splitMEM dot file (-d/--dot) you MUST ALSO specify a FASTA file (-f/--fasta)");
+            System.err.println("If you specify a splitMEM-style DOT file (-d/--dot) you MUST ALSO specify a FASTA file (-f/--fasta)");
             System.exit(1);
             return;
         }
@@ -588,9 +703,10 @@ public class Graph {
         String dotFile = cmd.getOptionValue("dot");
         String fastaFile = cmd.getOptionValue("fasta");
         String jsonFile = cmd.getOptionValue("json");
+        String gfaFile = cmd.getOptionValue("gfa");
         String pathLabelsFile = cmd.getOptionValue("pathlabels");
 
-        // create a Graph from the dot+FASTA or JSON file
+        // create a Graph from the dot+FASTA or JSON or GFA file
         Graph g = new Graph();
         if (cmd.hasOption("verbose")) g.setVerbose();
         if (cmd.hasOption("debug")) g.setDebug();
@@ -599,8 +715,10 @@ public class Graph {
             g.readSplitMEMDotFile(dotFile, fastaFile);
         } else if (jsonFile!=null) {
             g.readVgJsonFile(jsonFile);
+        } else if (gfaFile!=null) {
+            g.readVgGfaFile(gfaFile);
         } else {
-            System.err.println("ERROR: no DOT+FASTA or JSON provided.");
+            System.err.println("ERROR: no DOT+FASTA or JSON or GFA provided.");
             System.exit(1);
         }
 

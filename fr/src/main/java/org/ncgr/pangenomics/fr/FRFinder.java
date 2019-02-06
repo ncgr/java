@@ -138,7 +138,7 @@ public class FRFinder {
                 if (parallel) {
                     System.out.println("ns1\tadded\telapsed");
                 } else {
-                    System.out.println("ns1\tadded\telapsed\tdone\tskipped\trejected");
+                    System.out.println("ns1\tadded\telapsed\tdone\tskipped\tuninteresting");
                 }
             }
             
@@ -150,6 +150,7 @@ public class FRFinder {
                     ///////////////////////////////////////////////////////
                     // run parallel inner loop over the current NodeSets //
                     ///////////////////////////////////////////////////////
+                    Set<FrequentedRegion> newFRs = Collections.synchronizedSet(new TreeSet<>());
                     currentNodeSets.parallelStream().forEach((ns2) -> {
                             ////////
                             if (ns2.first().compareTo(ns1.last())>0) {
@@ -158,19 +159,32 @@ public class FRFinder {
                                     syncNodeSets.add(merged);
                                     FrequentedRegion fr = new FrequentedRegion(graph, merged, alpha, kappa);
                                     if (passesFilters(fr)) {
-                                        boolean interesting = true;
-                                        for (FrequentedRegion fr2 : frequentedRegions) {
-                                            if (fr2.nodes.parentOf(fr.nodes) && fr2.support>=fr.support) {
-                                                interesting = false;
-                                            }
-                                        }
-                                        if (interesting) syncFrequentedRegions.add(fr);
+                                        newFRs.add(fr);
                                     }
                                 }
                             }
                             ////////
                         });
-                    if (debug) System.out.println(ns1.toString()+"\t"+(syncFrequentedRegions.size()-oldFRSize)+"\t"+(System.currentTimeMillis()-start));
+                    // spin through the new FRs to see if they're really legit
+                    Set<FrequentedRegion> addedFRs = new TreeSet<>();
+                    for (FrequentedRegion fr1 : newFRs) {
+                        boolean interesting = true;
+                        for (FrequentedRegion fr2 : frequentedRegions) {
+                            if (fr2.nodes.parentOf(fr1.nodes) && fr2.support>=fr1.support) {
+                                interesting = false;
+                            }
+                        }
+                        if (interesting) addedFRs.add(fr1);
+                    }
+                    frequentedRegions.addAll(addedFRs);
+                    int added = addedFRs.size();
+                    long duration = System.currentTimeMillis()-start;
+                    if (debug && added>0) {
+                        System.out.println(ns1.toString()+"\t"+added+"\t"+duration+"ms");
+                        for (FrequentedRegion fr : addedFRs) {
+                            System.out.println("+"+fr.nodes);
+                        }
+                    }
                     ///////////////////////////////////////////////////////
                     ///////////////////////////////////////////////////////
                     ///////////////////////////////////////////////////////
@@ -180,7 +194,7 @@ public class FRFinder {
                     ///////////////////////////////////////////////////////
                     int done = 0;
                     int skipped = 0;
-                    int rejected = 0;
+                    int uninteresting = 0;
                     for (NodeSet ns2 : currentNodeSets) {
                         if (ns2.first().compareTo(ns1.last())>0) {
                             NodeSet merged = NodeSet.merge(ns1, ns2);
@@ -199,7 +213,7 @@ public class FRFinder {
                                     if (interesting) {
                                         syncFrequentedRegions.add(fr);
                                     } else {
-                                        rejected++;
+                                        uninteresting++;
                                     }
                                 }
                             } else {
@@ -208,8 +222,13 @@ public class FRFinder {
                             }
                         }
                     }
-                    if (debug) System.out.println(ns1.toString()+"\t"+(frequentedRegions.size()-oldFRSize)+"\t"+(System.currentTimeMillis()-start)+
-                                                  "\t"+done+"\t"+skipped+"\t"+rejected);
+                    if (debug) {
+                        int added = frequentedRegions.size()-oldFRSize;
+                        long duration = System.currentTimeMillis()-start;
+                        System.out.println(ns1.toString()+"\t"+added+"\t"+duration+"ms"+"\t"+done+"\t"+skipped+"\t"+uninteresting);
+                    }
+                    // bail?
+                    // if (added==0) break;
                     ///////////////////////////////////////////////////////
                     ///////////////////////////////////////////////////////
                     ///////////////////////////////////////////////////////
@@ -371,6 +390,10 @@ public class FRFinder {
         jsonOption.setRequired(false);
         options.addOption(jsonOption);
         //
+        Option gfaOption = new Option("gfa", "gfa", true, "GFA file");
+        gfaOption.setRequired(false);
+        options.addOption(gfaOption);
+        //
         Option kappaOption = new Option("k", "kappa", true, "kappa=maximum insertion length that any supporting path may have (required)");
         kappaOption.setRequired(true);
         options.addOption(kappaOption);
@@ -437,8 +460,8 @@ public class FRFinder {
         }
 
         // parameter validation
-        if (!cmd.hasOption("dot") && !cmd.hasOption("json")) {
-            System.err.println("You must specify either a splitMEM dot file plus FASTA (-d/--dot and -f/--fasta ) or a vg JSON file (-j, --json)");
+        if (!cmd.hasOption("dot") && !cmd.hasOption("json") && !cmd.hasOption("gfa")) {
+            System.err.println("You must specify a splitMEM-style DOT file plus FASTA (-d/--dot and -f/--fasta ), a vg JSON file (-j, --json) or a vg GFA file (--gfa)");
             System.exit(1);
             return;
         }
@@ -452,13 +475,14 @@ public class FRFinder {
         String dotFile = cmd.getOptionValue("dot");
         String fastaFile = cmd.getOptionValue("fasta");
         String jsonFile = cmd.getOptionValue("json");
+        String gfaFile = cmd.getOptionValue("gfa");
         String pathLabelsFile = cmd.getOptionValue("pathlabels");
 
         // required parameters
         double alpha = Double.parseDouble(cmd.getOptionValue("alpha"));
         int kappa = Integer.parseInt(cmd.getOptionValue("kappa"));
 
-        // create a Graph from the dot+FASTA or JSON file
+        // create a Graph from the dot+FASTA or JSON or GFA file
         Graph g = new Graph();
         if (cmd.hasOption("verbose")) g.setVerbose();
         if (cmd.hasOption("debug")) g.setDebug();
@@ -467,8 +491,10 @@ public class FRFinder {
             g.readSplitMEMDotFile(dotFile, fastaFile);
         } else if (jsonFile!=null) {
             g.readVgJsonFile(jsonFile);
+        } else if (gfaFile!=null) {
+            g.readVgGfaFile(gfaFile);
         } else {
-            System.err.println("ERROR: no DOT+FASTA or JSON provided.");
+            System.err.println("ERROR: no DOT+FASTA or JSON or GFA provided.");
             System.exit(1);
         }
 
