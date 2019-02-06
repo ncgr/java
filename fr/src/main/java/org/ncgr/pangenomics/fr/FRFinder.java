@@ -134,6 +134,8 @@ public class FRFinder {
                 long start = System.currentTimeMillis();
                 // we'll add the new FRs to a synchronized set
                 Set<FrequentedRegion> newFRs = Collections.synchronizedSet(new HashSet<>());
+                // DEBUG let's keep track of skipped NodeSets
+                Set<NodeSet> skippedNodeSets = Collections.synchronizedSet(new HashSet<>());
                 // run parallel inner loop over the current NodeSets
                 currentNodeSets.parallelStream().forEach((ns2) -> {
                         //////// START PARALLEL CODE ////////
@@ -143,6 +145,8 @@ public class FRFinder {
                                 syncNodeSets.add(merged);
                                 FrequentedRegion fr = new FrequentedRegion(graph, merged, alpha, kappa);
                                 if (passesFilters(fr)) newFRs.add(fr);
+                            } else {
+                                skippedNodeSets.add(merged);
                             }
                         }
                         //////// END PARALLEL CODE ////////
@@ -168,10 +172,12 @@ public class FRFinder {
                 int added = toAdd.size();
                 int removed = toRemove.size();
                 int current = frequentedRegions.size();
-                if (debug) {
+                int skipped = skippedNodeSets.size();
+                int total = syncNodeSets.size();
+                if (debug && added>0) {
                     long elapsed = System.currentTimeMillis()-start;
-                    System.out.println("ns1\telapsed\tadded\tremoved\tcurrent");
-                    System.out.println(ns1.toString()+"\t"+elapsed+"ms\t"+added+"\t"+removed+"\t"+current);
+                    System.out.println("ns1\telapsed\tadded\tremoved\tcurrent\tskipped\ttotal");
+                    System.out.println(ns1.toString()+"\t"+elapsed+"ms\t"+added+"\t"+removed+"\t"+current+"\t"+skipped+"\t"+total);
                 }
             }
 
