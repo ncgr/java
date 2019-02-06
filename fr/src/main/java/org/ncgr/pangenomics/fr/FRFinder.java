@@ -130,8 +130,7 @@ public class FRFinder {
             printHeading("ROUND "+round);
 
             // use a frozen copy of the current NodeSets for iterating
-            final Set<NodeSet> currentNodeSets = new TreeSet<>();
-            currentNodeSets.addAll(syncNodeSets);
+            final Set<NodeSet> currentNodeSets = new TreeSet<>(syncNodeSets);
 
             // debug output
             if (debug) {
@@ -166,23 +165,16 @@ public class FRFinder {
                             ////////
                         });
                     // spin through the new FRs to see if they're really legit
-                    Set<FrequentedRegion> addedFRs = new TreeSet<>();
                     for (FrequentedRegion fr1 : newFRs) {
                         boolean interesting = true;
-                        for (FrequentedRegion fr2 : frequentedRegions) {
-                            if (fr2.nodes.parentOf(fr1.nodes) && fr2.support>=fr1.support) {
-                                interesting = false;
-                            }
-                        }
-                        if (interesting) addedFRs.add(fr1);
-                    }
-                    frequentedRegions.addAll(addedFRs);
-                    int added = addedFRs.size();
-                    long duration = System.currentTimeMillis()-start;
-                    if (debug && added>0) {
-                        System.out.println(ns1.toString()+"\t"+added+"\t"+duration+"ms");
-                        for (FrequentedRegion fr : addedFRs) {
-                            System.out.println("+"+fr.nodes);
+                        // for (FrequentedRegion fr2 : frequentedRegions) {
+                        //     if (fr2.nodes.parentOf(fr1.nodes) && fr2.support>=fr1.support) {
+                        //         interesting = false;
+                        //     }
+                        // }
+                        if (interesting) {
+                            syncFrequentedRegions.add(fr1);
+                            if (debug) System.out.println(fr1.toString());
                         }
                     }
                     ///////////////////////////////////////////////////////
