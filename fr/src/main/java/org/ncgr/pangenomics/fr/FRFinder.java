@@ -112,7 +112,7 @@ public class FRFinder {
         for (Node node : graph.nodes.values()) {
             NodeSet nodeSet = new NodeSet();
             nodeSet.add(node);
-            syncNodeSets.add(nodeSet);
+            nodeSets.add(nodeSet);
             FrequentedRegion fr = new FrequentedRegion(graph, nodeSet, alpha, kappa);
             if (passesFilters(fr)) frequentedRegions.add(fr);
         }
@@ -127,7 +127,7 @@ public class FRFinder {
             System.gc();
 
             // use a frozen copy of the current NodeSets for iterating
-            final Set<NodeSet> currentNodeSets = new TreeSet<>(syncNodeSets);
+            final Set<NodeSet> currentNodeSets = new TreeSet<>(nodeSets);
 
             // non-parallel outer loop through this round's NodeSets
             for (NodeSet ns1 : currentNodeSets) {
@@ -144,7 +144,9 @@ public class FRFinder {
                             if (merged.size()>=minSize && !syncNodeSets.contains(merged)) {
                                 syncNodeSets.add(merged);
                                 FrequentedRegion fr = new FrequentedRegion(graph, merged, alpha, kappa);
-                                if (passesFilters(fr)) newFRs.add(fr);
+                                if (passesFilters(fr)) {
+                                    newFRs.add(fr);
+                                }
                             } else {
                                 skippedNodeSets.add(merged);
                             }
@@ -160,7 +162,7 @@ public class FRFinder {
                         syncFrequentedRegions.parallelStream().forEach((oldFR) -> {
                                 if (newFR.nodes.parentOf(oldFR.nodes)) {
                                     toAdd.remove(newFR); // oldFR spans newFR
-                                } else if (oldFR.nodes.parentOf(newFR.nodes)) {
+                                } else if (newFR.nodes.childOf(oldFR.nodes)) {
                                     toRemove.add(oldFR); // newFR spans oldFR
                                 }
                             });
