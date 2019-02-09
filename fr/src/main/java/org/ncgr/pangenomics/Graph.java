@@ -207,10 +207,6 @@ public class Graph {
     public void readVgGfaFile(String gfaFile) throws IOException {
         this.gfaFile = gfaFile;
         if (verbose) System.out.println("Reading GFA file: "+gfaFile);
-
-        // public TreeMap<Long,Node> nodes;
-        // public TreeSet<Path> paths;
-
         BufferedReader reader = new BufferedReader(new FileReader(gfaFile));
         String line = null;
         while ((line=reader.readLine())!=null) {

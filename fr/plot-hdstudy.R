@@ -1,36 +1,26 @@
 ## make informative plots of FRFinder hdstudy results
 
-plot(hdstudy.all$ctrl.n,
-     hdstudy.all$case.n,
-     xlab="ctrl sample support", ylab="case sample support",
+plot(hdstudy$ctrl.n,
+     hdstudy$case.n,
+     xlab="HDStudy ctrl sample support", ylab="HDStudy case sample support",
      xlim=c(0,10), ylim=c(0,10),
-     col="darkgreen"
+     col="darkgray"
      )
 
-title(main=paste("HDStudy:"," alpha=",alpha," kappa=",kappa," minsup=",minsup," minlen=",minlen," genotype=",genotype, sep=""), cex.main=0.9)
+title(main=paste("alpha=",alpha," kappa=",kappa," minsup=",minsup," minlen=",minlen," genotype=",genotype," min(case/ctrl)=",mincasectrlratio, sep=""), cex.main=0.9)
 
-lines(c(0,10), c(0,10), col="gray")
+lines(c(0,10), c(0,10), col="lightgray")
 for (i in 1:20) {
-    lines(c(0,i),  c(i,0), col="gray", lty=2)
+    lines(c(0,i),  c(i,0), col="lightgray", lty=2)
 }
 
-## points(hdstudy.rc$ctrl.n,
-##        hdstudy.rc$case.n,
-##        col="darkred", pch=19
-##        )
-
-text(hdstudy.all$ctrl.n,
-     hdstudy.all$case.n,
-     hdstudy.all$nodes,
+text(hdstudy$ctrl.n,
+     hdstudy$case.n,
+     hdstudy$nodes,
      cex=0.4, pos=1, offset=0.4, col="gray"
      )
 
-## text(hdstudy.rc$ctrl.n,
-##      hdstudy.rc$case.n,
-##      hdstudy.rc$nodes,
-##      cex=0.4, pos=1, offset=0.4, col="darkred"
-##      )
-
+text(0, 0, paste(length(hdstudy$nodes),"FRs"), pos=4)
 
 ## lines(c(0,10), c(15,5),  col="gray", lty=2)
 ## lines(c(0,10), c(20,10), col="gray", lty=2)

@@ -1,11 +1,11 @@
 #!/bin/sh
 ## analysis parameters
-# -a,--alpha <arg>	alpha=penetrance, fraction of a supporting path's sequence that supports the FR (required)
-# -k,--kappa <arg>	kappa=maximum insertion length that any supporting path may have (required)
-# -l,--minlen <arg>	minlen=minimum allowed average length (bp) of an FR's subpaths (1)
-# -m,--minsup <arg>	minsup=minimum number of supporting paths for a region to be considered interesting (1)
-# -n,--maxsup <arg>	maxsup=maximum number of supporting paths for a region to be considered interesting (2147483647)
-# -s,--minsize <arg>	minsize=minimum number of nodes that a FR must contain to be considered interesting (1)
+# -a,--alpha <arg>	penetrance, fraction of a supporting path's sequence that supports the FR (required)
+# -k,--kappa <arg>	maximum insertion length that any supporting path may have (required)
+# -l,--minlen <arg>	minimum allowed average length (bp) of an FR's subpaths (1)
+# -m,--minsup <arg>	minimum number of supporting paths for a region to be considered interesting (1)
+# -n,--maxsup <arg>	maximum number of supporting paths for a region to be considered interesting (2147483647)
+# -s,--minsize <arg>	minimum number of nodes that a FR must contain to be considered interesting (0)
 ## I/O
 # -d,--dot <arg>	splitMEM DOT file (requires FASTA file)
 # -f,--fasta <arg>	FASTA file (requires DOT file)
@@ -24,5 +24,5 @@
 # -do,--debug		debug output (false)
 
 java -server -cp "build/install/fr/lib/*" org.ncgr.pangenomics.fr.FRFinder --gfa HDStudy/HTT.paths.gfa --pathlabels HDStudy/labels.txt --genotype 1 \
-	--alpha 0.1 --kappa 60 --minsup 5 --maxsup 99 --minsize 1 --minlen 100 \
-	--nrounds 2 --verbose --debug --outputfile hdstudy.all.out
+	--alpha 0.1 --kappa 60 --minsup 5 --minsize 4 --minlen 100 --mincasectrlratio 4.0 \
+	--nrounds 2 --verbose --debug --outputfile hdstudy.out

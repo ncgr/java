@@ -1,9 +1,8 @@
 ## load a pair of FRFinder hdstudy files
 
-hdstudy.all = read.table("hdstudy.all.out", header=TRUE)
-## hdstudy.rc  = read.table("hdstudy.rc.out", header=TRUE)
+hdstudy = read.table("hdstudy.out", header=TRUE)
 
-params = read.delim(file="hdstudy.all.out.params", header=F)
+params = read.delim(file="hdstudy.out.params", header=F)
 for (i in 1:length(rownames(params))) {
     if (params$V1[i]=="json") json = params$V2[i]
     if (params$V1[i]=="pathlabels") pathlabels = params$V2[i]
@@ -15,5 +14,6 @@ for (i in 1:length(rownames(params))) {
     if (params$V1[i]=="minsize") minsize = params$V2[i]
     if (params$V1[i]=="minlen") minlen = params$V2[i]
     if (params$V1[i]=="nrounds") nrounds = params$V2[i]
+    if (params$V1[i]=="mincasectrlratio") mincasectrlratio = params$V2[i]
 }
 rm(params)

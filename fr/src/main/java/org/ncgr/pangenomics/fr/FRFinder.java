@@ -44,6 +44,7 @@ public class FRFinder {
     static int MINSIZE = 1;
     static int MINLEN = 1;
     static int NROUNDS = 2;
+    static double MIN_CASE_CTRL_RATIO = 0.0;
     static boolean USERC = false;
     static boolean VERBOSE = false;
     static boolean DEBUG = false;
@@ -62,6 +63,7 @@ public class FRFinder {
     int minSize = MINSIZE; // minimum size: minimum number of de Bruijn nodes (fr.nodes.size()) that an FR must contain to be considered interesting
     int minLen = MINLEN;   // minimum average length of a frequented region's subpath sequences (fr.avgLength) to be considered interesting
     int nRounds = NROUNDS; // number of FR-building rounds to run
+    double minCaseCtrlRatio = MIN_CASE_CTRL_RATIO; // if >0 then remove FRs that do not have at least this ratio of case/ctrl or ctrl/case labeled paths
     String outputFile = null; // output file for FRs (stdout if null)
 
     // the FRs, sorted for convenience
@@ -122,6 +124,7 @@ public class FRFinder {
         while (round<nRounds) {
             round++;
             printHeading("ROUND "+round);
+            if (debug) System.out.println("ns1\telapsed\tadded\tremoved\tcurrent\ttotal");
 
             // gently suggest garbage collection
             System.gc();
@@ -134,36 +137,33 @@ public class FRFinder {
                 long start = System.currentTimeMillis();
                 // we'll add the new FRs to a synchronized set
                 Set<FrequentedRegion> newFRs = Collections.synchronizedSet(new HashSet<>());
-                // DEBUG let's keep track of skipped NodeSets
-                Set<NodeSet> skippedNodeSets = Collections.synchronizedSet(new HashSet<>());
                 // run parallel inner loop over the current NodeSets
                 currentNodeSets.parallelStream().forEach((ns2) -> {
                         //////// START PARALLEL CODE ////////
                         if (ns2.first().compareTo(ns1.last())>0) {
                             NodeSet merged = NodeSet.merge(ns1, ns2);
-                            if (merged.size()>=minSize && !syncNodeSets.contains(merged)) {
+                            if (!syncNodeSets.contains(merged)) {
                                 syncNodeSets.add(merged);
-                                FrequentedRegion fr = new FrequentedRegion(graph, merged, alpha, kappa);
-                                if (passesFilters(fr)) {
-                                    newFRs.add(fr);
+                                if (merged.size()>=minSize) {
+                                    FrequentedRegion fr = new FrequentedRegion(graph, merged, alpha, kappa);
+                                    if (passesFilters(fr)) {
+                                        newFRs.add(fr);
+                                    }
                                 }
-                            } else {
-                                skippedNodeSets.add(merged);
                             }
                         }
                         //////// END PARALLEL CODE ////////
                     });
                 // spin through the new FRs to see if they are "maximal" (so far) and remove the parents if so
-                Set<FrequentedRegion> toAdd = Collections.synchronizedSet(new HashSet<>());
+                Set<FrequentedRegion> toAdd = Collections.synchronizedSet(new HashSet<>(newFRs));
                 Set<FrequentedRegion> toRemove = Collections.synchronizedSet(new HashSet<>());
-                toAdd.addAll(newFRs); // start with them all, remove them as appropropriate
-                newFRs.parallelStream().forEach((newFR) -> {
+                syncFrequentedRegions.parallelStream().forEach((oldFR) -> {
                         //////// START PARALLEL CODE ////////
-                        syncFrequentedRegions.parallelStream().forEach((oldFR) -> {
+                        newFRs.parallelStream().forEach((newFR) -> {
                                 if (newFR.nodes.parentOf(oldFR.nodes)) {
-                                    toAdd.remove(newFR); // oldFR spans newFR
+                                    toAdd.remove(newFR); // yank newFR, oldFR is more maximal
                                 } else if (newFR.nodes.childOf(oldFR.nodes)) {
-                                    toRemove.add(oldFR); // newFR spans oldFR
+                                    toRemove.add(oldFR); // yank oldFR, newFR is more maximal
                                 }
                             });
                         //////// END PARALLEL CODE ////////
@@ -174,12 +174,10 @@ public class FRFinder {
                 int added = toAdd.size();
                 int removed = toRemove.size();
                 int current = frequentedRegions.size();
-                int skipped = skippedNodeSets.size();
                 int total = syncNodeSets.size();
                 if (debug && added>0) {
                     long elapsed = System.currentTimeMillis()-start;
-                    System.out.println("ns1\telapsed\tadded\tremoved\tcurrent\tskipped\ttotal");
-                    System.out.println(ns1.toString()+"\t"+elapsed+"ms\t"+added+"\t"+removed+"\t"+current+"\t"+skipped+"\t"+total);
+                    System.out.println(ns1.toString()+"\t"+elapsed+"ms\t"+added+"\t"+removed+"\t"+current+"\t"+total);
                 }
             }
 
@@ -222,7 +220,24 @@ public class FRFinder {
      * Return true if the given FR passes support and size filters. Other filters could be added here.
      */
     boolean passesFilters(FrequentedRegion fr) {
-        return fr.nodes.size()>=minSize && fr.support>=minSup && fr.support<=maxSup && fr.avgLength>=minLen;
+        // basic filters
+        boolean passes = fr.nodes.size()>=minSize && fr.support>=minSup && fr.support<=maxSup && fr.avgLength>=minLen;
+        // min case/ctrl or ctrl/case ratio
+        if (minCaseCtrlRatio>1.0) {
+            int caseCounts = fr.getLabelCount("case");
+            int ctrlCounts = fr.getLabelCount("ctrl");
+            if (caseCounts>0 || ctrlCounts>0) {
+                double ratio = 1.0;
+                if (caseCounts>=ctrlCounts && ctrlCounts>0) {
+                    ratio = (double)caseCounts/(double)ctrlCounts;
+                    passes = passes && ratio>minCaseCtrlRatio;
+                } else if (ctrlCounts>=caseCounts && caseCounts>0) {
+                    ratio = (double)ctrlCounts/(double)caseCounts;
+                    passes = passes && ratio>minCaseCtrlRatio;
+                }
+            }
+        }
+        return passes;
     }
 
     public double getAlpha() {
@@ -268,6 +283,9 @@ public class FRFinder {
     }
     public void setNRounds(int nRounds) {
         this.nRounds = nRounds;
+    }
+    public void setMinCaseCtrlRatio(double minCaseCtrlRatio) {
+        this.minCaseCtrlRatio = minCaseCtrlRatio;
     }
     public void setUseRC() {
         this.useRC = true;
@@ -358,6 +376,11 @@ public class FRFinder {
         Option nRoundsOption = new Option("nr", "nrounds", true, "number of FR-building rounds to run ("+NROUNDS+")");
         nRoundsOption.setRequired(false);
         options.addOption(nRoundsOption);
+        //
+        Option minCaseCtrlRatioOption = new Option("mccr", "mincasectrlratio", true,
+                                                   "minimum ratio of case/ctrl or ctrl/case labeled paths for FR to qualify ("+MIN_CASE_CTRL_RATIO+")");
+        minCaseCtrlRatioOption.setRequired(false);
+        options.addOption(minCaseCtrlRatioOption);
 
         try {
             cmd = parser.parse(options, args);
@@ -443,6 +466,14 @@ public class FRFinder {
         }
         if (cmd.hasOption("nrounds")) {
             frf.setNRounds(Integer.parseInt(cmd.getOptionValue("nrounds")));
+        }
+        if (cmd.hasOption("mincasectrlratio")) {
+            double mccr = Double.parseDouble(cmd.getOptionValue("mincasectrlratio"));
+            if (mccr<1.0) {
+                System.err.println("ERROR: parameter mccr/mincasectrlratio must be greater than 1");
+                System.exit(1);
+            }
+            frf.setMinCaseCtrlRatio(mccr);
         }
         if (cmd.hasOption("outputfile")) {
             frf.setOutputFile(cmd.getOptionValue("outputfile"));
@@ -597,6 +628,7 @@ public class FRFinder {
         out.println("minsize"+"\t"+minSize);
         out.println("minlen"+"\t"+minLen);
         out.println("nrounds"+"\t"+nRounds);
+        out.println("mincasectrlratio"+"\t"+minCaseCtrlRatio);
         out.println("userc"+"\t"+useRC);
         if (inputFile!=null) out.println("inputfile"+"\t"+inputFile);
         if (outputFile!=null) out.println("outputfile"+"\t"+outputFile);

@@ -261,7 +261,18 @@ public class FrequentedRegion implements Comparable<FrequentedRegion> {
         }
         return s;
     }
-    
+
+    /**
+     * Return the count of subpaths labeled with the given label.
+     */
+    public int getLabelCount(String label) {
+        int count = 0;
+        for (Path subpath : subpaths) {
+            if (subpath.label!=null && subpath.label.equals(label)) count++;
+        }
+        return count;
+    }
+
     /**
      * Return a string summary of this frequented region.
      */
