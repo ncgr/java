@@ -102,6 +102,9 @@ public class FRFinder {
             graph.printNodePaths();
         }
 
+        // utility
+        NodeSet allNodeSet = new NodeSet(graph.nodes.values());
+
         // store the FRs in a TreeSet, backed with a synchronized Set for parallel processing
         frequentedRegions = new TreeSet<>();
         Set<FrequentedRegion> syncFrequentedRegions = Collections.synchronizedSet(frequentedRegions);
@@ -134,6 +137,12 @@ public class FRFinder {
 
             // non-parallel outer loop through this round's NodeSets
             for (NodeSet ns1 : currentNodeSets) {
+                // check that we have enough nodes to be able to reach minSize and minLen
+                NodeSet ns1up = NodeSet.merge(ns1, new NodeSet(allNodeSet.tailSet(ns1.last())));
+                ns1up.update();
+                if (ns1up.size()<minSize || ns1up.totalBases<minLen) {
+                    continue;
+                }
                 long start = System.currentTimeMillis();
                 // we'll add the new FRs to a synchronized set
                 Set<FrequentedRegion> newFRs = Collections.synchronizedSet(new HashSet<>());

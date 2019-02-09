@@ -1,5 +1,6 @@
 package org.ncgr.pangenomics;
 
+import java.util.Collection;
 import java.util.StringJoiner;
 import java.util.TreeSet;
 
@@ -22,7 +23,7 @@ public class NodeSet extends TreeSet<Node> implements Comparable <NodeSet> {
     /**
      * Construct given a TreeSet of Nodes.
      */
-    public NodeSet(TreeSet<Node> nodes) {
+    public NodeSet(Collection<Node> nodes) {
         this.addAll(nodes);
         update();
     }
@@ -121,6 +122,7 @@ public class NodeSet extends TreeSet<Node> implements Comparable <NodeSet> {
 
     /**
      * Return the result of merging two NodeSets.
+     * NOTE: does NOT run update() on the result!
      */
     public static NodeSet merge(NodeSet ns1, NodeSet ns2) {
         NodeSet merged = new NodeSet();

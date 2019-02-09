@@ -25,4 +25,4 @@
 
 java -server -cp "build/install/fr/lib/*" org.ncgr.pangenomics.fr.FRFinder --gfa HDStudy/HTT.paths.gfa --pathlabels HDStudy/labels.txt --genotype 1 \
 	--alpha 0.1 --kappa 30 --minsup 5 --minsize 4 --minlen 400 \
-	--nrounds 3 --verbose --debug --outputfile hdstudy.out
+	--nrounds 4 --verbose --debug --outputfile hdstudy.out
