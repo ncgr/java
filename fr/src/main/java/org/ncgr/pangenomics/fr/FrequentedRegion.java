@@ -280,13 +280,8 @@ public class FrequentedRegion implements Comparable<FrequentedRegion> {
         // count the support per label if present
         Map<String,Integer> labelCounts = new TreeMap<>();
         for (Path subpath : subpaths) {
-            if (subpath.label!=null) {
-                if (labelCounts.containsKey(subpath.label)) {
-                    int count = labelCounts.get(subpath.label);
-                    labelCounts.put(subpath.label, count+1);
-                } else {
-                    labelCounts.put(subpath.label, 1);
-                }
+            if (subpath.label!=null && !labelCounts.containsKey(subpath.label)) {
+                labelCounts.put(subpath.label, getLabelCount(subpath.label));
             }
         }
         String s = nodes.toString()+"\t"+support+"\t"+avgLength;

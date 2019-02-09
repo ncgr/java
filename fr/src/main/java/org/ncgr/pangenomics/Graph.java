@@ -517,7 +517,7 @@ public class Graph {
     public void printPaths() {
         printHeading("PATHS");
         for (Path path : paths) {
-            System.out.print(path.getNameAndLabel()+":");
+            System.out.print(path.getNameAndLabel()+"("+path.sequence.length()+"):");
             for (Node node : path.nodes) {
                 System.out.print(" "+node.id);
             }
