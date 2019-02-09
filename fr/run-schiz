@@ -1,13 +1,27 @@
 #!/bin/sh
-# -1 --onebased flag to number FR IDs from 1 rather than 0
-# -a --alpha    the fraction of a supporting strain's sequence that actually supports the FR; alternatively, `1-alpha` is the fraction of inserted sequence
-# -k --kappa    the maximum insertion length (measured in bp) that any supporting path may have
-# -m --minsup   [1] minimum number of genome paths in order for a region to be considered frequent
-# -z --minsize  [1] minimum number of de Bruijn nodes that an FR must contain to be considered frequent
-# -r --rc       flag to indicate whether the sequence (e.g. FASTA file) had its reverse complement appended
+## analysis parameters
+# -a,--alpha <arg>	penetrance, fraction of a supporting path's sequence that supports the FR (required)
+# -k,--kappa <arg>	maximum insertion length that any supporting path may have (required)
+# -l,--minlen <arg>	minimum allowed average length (bp) of an FR's subpaths (1)
+# -m,--minsup <arg>	minimum number of supporting paths for a region to be considered interesting (1)
+# -n,--maxsup <arg>	maximum number of supporting paths for a region to be considered interesting (2147483647)
+# -s,--minsize <arg>	minimum number of nodes that a FR must contain to be considered interesting (0)
+## I/O
+# -d,--dot <arg>	splitMEM DOT file (requires FASTA file)
+# -f,--fasta <arg>	FASTA file (requires DOT file)
+# -j,--json <arg>	vg JSON file
+# -gfa,--gfa <arg>	vg GFA file
+# -g,--genotype <arg>	which genotype to include (0,1) from the input file; -1 to include all (-1)
+# -p,--pathlabels <arg>	tab-delimited file with pathname<tab>label
+# -o,--outputfile <arg>	output file (stdout)
+# -r,--userc		indicates if the sequence (e.g. FASTA) had its reverse complement appended (false)
+## other
+# -pa,--parallel	run FR-building loop in parallel (false)
+# -rc,--removechildren	remove child FRs that have equal or lower support (false)
+# -v,--verbose		verbose output (false)
+# -go,--graphonly	just read the graph and output, do not find FRs; for debuggery (false)
+# -nr,--nrounds <arg>	number of FR-building rounds to run (2)
+# -do,--debug		debug output (false)
 
-java -cp build/install/fr/lib/fr.jar:build/install/fr/lib/commons-cli-1.4.jar:build/install/fr/lib/protobuf-java-3.6.1.jar:build/install/fr/lib/protobuf-java-util-3.6.1.jar:build/install/fr/lib/gson-2.7.jar \
-	org.ncgr.pangenomics.fr.FRFinder --json Schiz/DGCR8.paths.json --pathlabels Schiz/labels.txt --genotype 1 \
-	--alpha 0.1 --kappa 1 --minsup 1 --maxsup 99 --minsize 1 --minlen 100 \
-	--nrounds 2 --debug  -v   \
-	--removechildren --outputfile schiz.rc.out
+java -server -cp "build/install/fr/lib/*" org.ncgr.pangenomics.fr.FRFinder --gfa Schiz/DGCR8.paths.gfa --pathlabels Schiz/labels.txt --genotype 1 \
+	--alpha 0.1 --kappa 30 --minsup 5 --minsize 4 --minlen 100 --nrounds 4 --verbose --debug --outputfile schiz.out
