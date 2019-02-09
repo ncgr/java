@@ -184,7 +184,7 @@ public class FRFinder {
                 int removed = toRemove.size();
                 int current = frequentedRegions.size();
                 int total = syncNodeSets.size();
-                if (debug) {
+                if (debug && added>0) {
                     long elapsed = System.currentTimeMillis()-start;
                     System.out.println(ns1.toString()+"\t"+elapsed+"ms\t"+added+"\t"+removed+"\t"+current+"\t"+total);
                 }
