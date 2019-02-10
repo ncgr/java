@@ -128,7 +128,7 @@ public class FrequentedRegion implements Comparable<FrequentedRegion> {
         // TODO: handle multiple subpaths of a path
         for (Path path : graph.paths) {
 
-            // find the left/right endpoints of this path's subpath(s)
+            // find the MAXIMUM subpath, even if it fails tests below!
             Node left = null;
             Node right = null;
             for (Node node : path.nodes) {
@@ -206,14 +206,14 @@ public class FrequentedRegion implements Comparable<FrequentedRegion> {
             }
 
             
-            // alpha filter = minimum fraction of total BASES, not nodes
-            String subSequence = "";
+            // alpha filter = minimum fraction of FR's NODES
+            int count = 0;
             for (Node node : subpath.nodes) {
-                if (nodes.contains(node)) {
-                    subSequence += node.sequence;
+                if (this.nodes.contains(node)) {
+                    count++;
                 }
             }
-            double frac = (double)subSequence.length()/(double)nodes.totalBases;
+            double frac = (double)(count)/(double)this.nodes.size();
             if (frac<alpha) continue;
 
             // filters passed, add this subpath

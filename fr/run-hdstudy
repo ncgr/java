@@ -1,6 +1,6 @@
 #!/bin/sh
 ## analysis parameters
-# -a,--alpha <arg>	penetrance, fraction of a supporting path's sequence that supports the FR (required)
+# -a,--alpha <arg>	penetrance, fraction of a supporting path's NODES that supports the FR (required)
 # -k,--kappa <arg>	maximum insertion length that any supporting path may have (required)
 # -l,--minlen <arg>	minimum allowed average length (bp) of an FR's subpaths (1)
 # -m,--minsup <arg>	minimum number of supporting paths for a region to be considered interesting (1)
@@ -16,13 +16,11 @@
 # -o,--outputfile <arg>	output file (stdout)
 # -r,--userc		indicates if the sequence (e.g. FASTA) had its reverse complement appended (false)
 ## other
-# -pa,--parallel	run FR-building loop in parallel (false)
-# -rc,--removechildren	remove child FRs that have equal or lower support (false)
 # -v,--verbose		verbose output (false)
 # -go,--graphonly	just read the graph and output, do not find FRs; for debuggery (false)
 # -nr,--nrounds <arg>	number of FR-building rounds to run (2)
 # -do,--debug		debug output (false)
 
 java -server -cp "build/install/fr/lib/*" org.ncgr.pangenomics.fr.FRFinder --gfa HDStudy/HTT.paths.gfa --pathlabels HDStudy/labels.txt --genotype 1 \
-	--alpha 0.1 --kappa 30 --minsup 5 --minsize 4 --minlen 400 \
-	--nrounds 4 --verbose --debug --outputfile hdstudy.out
+	--alpha 0.5 --kappa 21 --minsup 1 --minsize 8 --minlen 100 \
+	--nrounds 15 --debug  --outputfile hdstudy.out

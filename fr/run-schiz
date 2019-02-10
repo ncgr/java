@@ -24,4 +24,4 @@
 # -do,--debug		debug output (false)
 
 java -server -cp "build/install/fr/lib/*" org.ncgr.pangenomics.fr.FRFinder --gfa Schiz/DGCR8.paths.gfa --pathlabels Schiz/labels.txt --genotype 1 \
-	--alpha 0.1 --kappa 30 --minsup 5 --minsize 4 --minlen 100 --nrounds 4 --verbose --debug --outputfile schiz.out
+	--alpha 0.5 --kappa 30 --minsup 1 --minsize 10 --minlen 200 --nrounds 4 --debug --outputfile schiz.out

@@ -114,9 +114,11 @@ public class FRFinder {
         Set<NodeSet> syncNodeSets = Collections.synchronizedSet(nodeSets);
 
         // create initial NodeSets each containing only one node; add associated FRs if they pass filter
+        TreeSet<NodeSet> singleNodeSets = new TreeSet<>();
         for (Node node : graph.nodes.values()) {
             NodeSet nodeSet = new NodeSet();
             nodeSet.add(node);
+            singleNodeSets.add(nodeSet);
             nodeSets.add(nodeSet);
             FrequentedRegion fr = new FrequentedRegion(graph, nodeSet, alpha, kappa);
             if (passesFilters(fr)) frequentedRegions.add(fr);
@@ -124,10 +126,11 @@ public class FRFinder {
 
         // build the FRs round by round
         int round = 0;
-        while (round<nRounds) {
+        int added = 0;
+        while (round<minSize || added>0) {
             round++;
+            added = 0;
             printHeading("ROUND "+round);
-            if (debug) System.out.println("ns1\telapsed\tadded\tremoved\tcurrent\ttotal");
 
             // gently suggest garbage collection
             System.gc();
@@ -140,56 +143,40 @@ public class FRFinder {
                 // check that we have enough nodes to be able to reach minSize and minLen
                 NodeSet ns1up = NodeSet.merge(ns1, new NodeSet(allNodeSet.tailSet(ns1.last())));
                 ns1up.update();
-                if (ns1up.size()<minSize || ns1up.totalBases<minLen) {
-                    continue;
-                }
-                long start = System.currentTimeMillis();
-                // we'll add the new FRs to a synchronized set
-                Set<FrequentedRegion> newFRs = Collections.synchronizedSet(new HashSet<>());
-                // run parallel inner loop over the current NodeSets
-                currentNodeSets.parallelStream().forEach((ns2) -> {
-                        //////// START PARALLEL CODE ////////
-                        if (ns2.first().compareTo(ns1.last())>0) {
-                            NodeSet merged = NodeSet.merge(ns1, ns2);
-                            if (!syncNodeSets.contains(merged)) {
-                                syncNodeSets.add(merged);
-                                if (merged.size()>=minSize) {
-                                    FrequentedRegion fr = new FrequentedRegion(graph, merged, alpha, kappa);
-                                    if (passesFilters(fr)) {
-                                        newFRs.add(fr);
+                if (ns1up.size()>=minSize && ns1up.totalBases>=minLen) {
+                    // we'll add the new FRs to a synchronized set for counting
+                    Set<FrequentedRegion> newFRs = Collections.synchronizedSet(new HashSet<>());
+                    // run parallel inner loop over the current NodeSets
+                    // currentNodeSets.parallelStream().forEach((ns2) -> {
+                    // run parallel inner loop over the singletons
+                    singleNodeSets.parallelStream().forEach((ns2) -> {
+                            //////// START PARALLEL CODE ////////
+                            if (ns2.first().compareTo(ns1.last())>0) {
+                                NodeSet merged = NodeSet.merge(ns1, ns2);
+                                if (!syncNodeSets.contains(merged)) {
+                                    syncNodeSets.add(merged);
+                                    if (merged.size()>=minSize) {
+                                        FrequentedRegion fr = new FrequentedRegion(graph, merged, alpha, kappa);
+                                        if (passesFilters(fr)) {
+                                            newFRs.add(fr);
+                                        }
                                     }
                                 }
                             }
-                        }
-                        //////// END PARALLEL CODE ////////
-                    });
-                // spin through the new FRs to see if they are "maximal" (so far) and remove the parents if so
-                Set<FrequentedRegion> toAdd = Collections.synchronizedSet(new HashSet<>(newFRs));
-                Set<FrequentedRegion> toRemove = Collections.synchronizedSet(new HashSet<>());
-                syncFrequentedRegions.parallelStream().forEach((oldFR) -> {
-                        //////// START PARALLEL CODE ////////
-                        newFRs.parallelStream().forEach((newFR) -> {
-                                if (newFR.nodes.parentOf(oldFR.nodes)) {
-                                    toAdd.remove(newFR); // yank newFR, oldFR is more maximal
-                                } else if (newFR.nodes.childOf(oldFR.nodes)) {
-                                    toRemove.add(oldFR); // yank oldFR, newFR is more maximal
-                                }
-                            });
-                        //////// END PARALLEL CODE ////////
-                    });
-                // update frequentedRegions, display some debug stats
-                frequentedRegions.addAll(toAdd);
-                frequentedRegions.removeAll(toRemove);
-                int added = toAdd.size();
-                int removed = toRemove.size();
-                int current = frequentedRegions.size();
-                int total = syncNodeSets.size();
-                if (debug && added>0) {
-                    long elapsed = System.currentTimeMillis()-start;
-                    System.out.println(ns1.toString()+"\t"+elapsed+"ms\t"+added+"\t"+removed+"\t"+current+"\t"+total);
+                            //////// END PARALLEL CODE ////////
+                        });
+                    // update frequentedRegions, display some debug stats
+                    frequentedRegions.addAll(newFRs);
+                    added += newFRs.size();
+                    // debug diagnostics
+                    if (debug && newFRs.size()>0) {
+                        int current = frequentedRegions.size();
+                        int total = syncNodeSets.size();
+                        System.out.println(ns1.toString()+"\t"+newFRs.size()+"\t"+current+"\t"+total);
+                    }
                 }
             }
-
+        
             // print a summary of this round
             if (frequentedRegions.size()>0) {
                 FrequentedRegion highestSupportFR = frequentedRegions.first();
@@ -200,7 +187,6 @@ public class FRFinder {
                     if (fr.avgLength>highestAvgLengthFR.avgLength) highestAvgLengthFR = fr;
                     if (fr.support*fr.avgLength>highestTotalLengthFR.support*highestTotalLengthFR.avgLength) highestTotalLengthFR = fr;
                 }
-                System.out.println("---------------");
                 System.out.println("Highest support:");
                 System.out.println(highestSupportFR.columnHeading());
                 System.out.println(highestSupportFR.toString());
@@ -235,15 +221,15 @@ public class FRFinder {
         if (minCaseCtrlRatio>1.0) {
             int caseCounts = fr.getLabelCount("case");
             int ctrlCounts = fr.getLabelCount("ctrl");
-            if (caseCounts>0 || ctrlCounts>0) {
-                double ratio = 1.0;
-                if (caseCounts>=ctrlCounts && ctrlCounts>0) {
-                    ratio = (double)caseCounts/(double)ctrlCounts;
-                    passes = passes && ratio>minCaseCtrlRatio;
-                } else if (ctrlCounts>=caseCounts && caseCounts>0) {
-                    ratio = (double)ctrlCounts/(double)caseCounts;
-                    passes = passes && ratio>minCaseCtrlRatio;
-                }
+            if (caseCounts>0 && ctrlCounts>0) {
+                double ratio = (double)caseCounts/(double)ctrlCounts;
+                passes = passes && ratio>=minCaseCtrlRatio;
+            } else if (caseCounts>0) {
+                passes = passes; // infinite ratio
+            } else if (ctrlCounts>0) {
+                passes = passes; // infinite ratio
+            } else {
+                passes = false; // zero case or ctrl support
             }
         }
         return passes;
@@ -536,6 +522,7 @@ public class FRFinder {
      * Print out the FRs, either to stdout or outputFile if not null.
      */
     void printFrequentedRegions() throws IOException {
+        if (frequentedRegions.size()==0) return;
         PrintStream out = null;
         if (inputFile==null) {
             // output from a findFRs run
