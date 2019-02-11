@@ -19,6 +19,7 @@ import java.util.TreeMap;
 import java.util.Set;
 import java.util.HashSet;
 import java.util.TreeSet;
+import java.util.PriorityQueue;
 import java.util.concurrent.ThreadLocalRandom;
 
 import org.apache.commons.cli.CommandLine;
@@ -102,104 +103,155 @@ public class FRFinder {
             graph.printNodePaths();
         }
 
-        // utility
-        NodeSet allNodeSet = new NodeSet(graph.nodes.values());
+        // // utility
+        // NodeSet allNodeSet = new NodeSet(graph.nodes.values());
 
         // store the FRs in a TreeSet, backed with a synchronized Set for parallel processing
         frequentedRegions = new TreeSet<>();
         Set<FrequentedRegion> syncFrequentedRegions = Collections.synchronizedSet(frequentedRegions);
         
-        // store the analyzed NodeSets in a TreeSet, backed with a synchronizedSet for parallel processing
-        TreeSet<NodeSet> nodeSets = new TreeSet<>();
-        Set<NodeSet> syncNodeSets = Collections.synchronizedSet(nodeSets);
+        // // store the analyzed NodeSets in a TreeSet, backed with a synchronizedSet for parallel processing
+        // TreeSet<NodeSet> nodeSets = new TreeSet<>();
+        // Set<NodeSet> syncNodeSets = Collections.synchronizedSet(nodeSets);
 
-        // create initial NodeSets each containing only one node; add associated FRs if they pass filter
-        TreeSet<NodeSet> singleNodeSets = new TreeSet<>();
+        // // create initial NodeSets each containing only one node; add associated FRs if they pass filter
+        // TreeSet<NodeSet> singleNodeSets = new TreeSet<>();
+        // for (Node node : graph.nodes.values()) {
+        //     NodeSet nodeSet = new NodeSet();
+        //     nodeSet.add(node);
+        //     singleNodeSets.add(nodeSet);
+        //     nodeSets.add(nodeSet);
+        //     FrequentedRegion fr = new FrequentedRegion(graph, nodeSet, alpha, kappa);
+        //     if (passesFilters(fr)) frequentedRegions.add(fr);
+        // }
+
+        // create initial single-node FRs
         for (Node node : graph.nodes.values()) {
-            NodeSet nodeSet = new NodeSet();
-            nodeSet.add(node);
-            singleNodeSets.add(nodeSet);
-            nodeSets.add(nodeSet);
-            FrequentedRegion fr = new FrequentedRegion(graph, nodeSet, alpha, kappa);
-            if (passesFilters(fr)) frequentedRegions.add(fr);
+            NodeSet c = new NodeSet();
+            c.add(node);
+            Set<Path> s = new HashSet<>();
+            for (Path p : graph.paths) {
+                Set<Path> support = computeSupport(c,p);
+                s.addAll(support);
+            }
+            if (s.size()>0) {
+                FrequentedRegion fr = new FrequentedRegion(graph, c, s);
+                frequentedRegions.add(fr);
+            }
         }
 
+        // keep track of NodeSets we've already looked at
+        List<NodeSet> usedNodeSets = new LinkedList<>();
+        
         // build the FRs round by round
         int round = 0;
-        int added = 0;
-        while (round<minSize || added>0) {
+        boolean added = true;
+        while (added) {
             round++;
-            added = 0;
+            added = false;
             printHeading("ROUND "+round);
 
             // gently suggest garbage collection
             System.gc();
 
-            // use a frozen copy of the current NodeSets for iterating
-            final Set<NodeSet> currentNodeSets = new TreeSet<>(nodeSets);
-
-            // non-parallel outer loop through this round's NodeSets
-            for (NodeSet ns1 : currentNodeSets) {
-                // check that we have enough nodes to be able to reach minSize and minLen
-                NodeSet ns1up = NodeSet.merge(ns1, new NodeSet(allNodeSet.tailSet(ns1.last())));
-                ns1up.update();
-                if (ns1up.size()>=minSize && ns1up.totalBases>=minLen) {
-                    // we'll add the new FRs to a synchronized set for counting
-                    Set<FrequentedRegion> newFRs = Collections.synchronizedSet(new HashSet<>());
-                    // run parallel inner loop over the current NodeSets
-                    // currentNodeSets.parallelStream().forEach((ns2) -> {
-                    // run parallel inner loop over the singletons
-                    singleNodeSets.parallelStream().forEach((ns2) -> {
-                            //////// START PARALLEL CODE ////////
-                            if (ns2.first().compareTo(ns1.last())>0) {
-                                NodeSet merged = NodeSet.merge(ns1, ns2);
-                                if (!syncNodeSets.contains(merged)) {
-                                    syncNodeSets.add(merged);
-                                    if (merged.size()>=minSize) {
-                                        FrequentedRegion fr = new FrequentedRegion(graph, merged, alpha, kappa);
-                                        if (passesFilters(fr)) {
-                                            newFRs.add(fr);
-                                        }
-                                    }
-                                }
-                            }
-                            //////// END PARALLEL CODE ////////
-                        });
-                    // update frequentedRegions, display some debug stats
-                    frequentedRegions.addAll(newFRs);
-                    added += newFRs.size();
-                    // debug diagnostics
-                    if (debug && newFRs.size()>0) {
-                        int current = frequentedRegions.size();
-                        int total = syncNodeSets.size();
-                        System.out.println(ns1.toString()+"\t"+newFRs.size()+"\t"+current+"\t"+total);
+            int maxSupport = 0;
+            FrequentedRegion fr1Max = null;
+            FrequentedRegion fr2Max = null;
+            Set<Path> maxPaths = null;
+            for (FrequentedRegion fr1 : frequentedRegions) {
+                for (FrequentedRegion fr2 : frequentedRegions) {
+                    if (!usedNodeSets.contains(fr1.nodes) && !usedNodeSets.contains(fr2.nodes) && fr2.nodes.compareTo(fr1.nodes)>0) {
+                        Set<Path> paths = evalMerge(fr1, fr2);
+                        if (paths.size()>maxSupport) {
+                            maxSupport = paths.size();
+                            fr1Max = fr1;
+                            fr2Max = fr2;
+                            maxPaths = paths;
+                        }
                     }
                 }
             }
-        
-            // print a summary of this round
-            if (frequentedRegions.size()>0) {
-                FrequentedRegion highestSupportFR = frequentedRegions.first();
-                FrequentedRegion highestAvgLengthFR = frequentedRegions.first();
-                FrequentedRegion highestTotalLengthFR = frequentedRegions.first();
-                for (FrequentedRegion fr : frequentedRegions) {
-                    if (fr.support>highestSupportFR.support) highestSupportFR = fr;
-                    if (fr.avgLength>highestAvgLengthFR.avgLength) highestAvgLengthFR = fr;
-                    if (fr.support*fr.avgLength>highestTotalLengthFR.support*highestTotalLengthFR.avgLength) highestTotalLengthFR = fr;
-                }
-                System.out.println("Highest support:");
-                System.out.println(highestSupportFR.columnHeading());
-                System.out.println(highestSupportFR.toString());
-                System.out.println("Highest avg length:");
-                System.out.println(highestAvgLengthFR.columnHeading());
-                System.out.println(highestAvgLengthFR.toString());
-                System.out.println("Highest total length:");
-                System.out.println(highestTotalLengthFR.columnHeading());
-                System.out.println(highestTotalLengthFR.toString());
+            if (maxSupport>0) {
+                added = true;
+                usedNodeSets.add(fr1Max.nodes);
+                usedNodeSets.add(fr2Max.nodes);
+                NodeSet merged = NodeSet.merge(fr1Max.nodes, fr2Max.nodes);
+                FrequentedRegion fr = new FrequentedRegion(graph, merged, maxPaths);
+                frequentedRegions.add(fr);
+                System.out.println("added:"+fr);
+                System.out.println("support paths:"+maxPaths);
             }
 
-            // print the histogram of FR sizes from this round
-            printFRHistogram();
+            // // use a frozen copy of the current NodeSets for iterating
+            // final Set<NodeSet> currentNodeSets = new TreeSet<>(nodeSets);
+
+            // // non-parallel outer loop through this round's NodeSets
+            // for (NodeSet ns1 : currentNodeSets) {
+            //     // check that we have enough nodes to be able to reach minSize and minLen
+            //     NodeSet ns1up = NodeSet.merge(ns1, new NodeSet(allNodeSet.tailSet(ns1.last())));
+            //     ns1up.update();
+            //     if (ns1up.size()>=minSize && ns1up.totalBases>=minLen) {
+            //         // we'll add the new FRs to a synchronized set for counting
+            //         Set<FrequentedRegion> newFRs = Collections.synchronizedSet(new HashSet<>());
+
+                    // ////////////////////////////////////////////////////////
+                    // // run parallel inner loop over the current NodeSets
+                    // // currentNodeSets.parallelStream().forEach((ns2) -> {
+                    // // run parallel inner loop over the singletons
+                    // singleNodeSets.parallelStream().forEach((ns2) -> {
+                    //         //////// START PARALLEL CODE ////////
+                    //         if (ns2.first().compareTo(ns1.last())>0) {
+                    //             NodeSet merged = NodeSet.merge(ns1, ns2);
+                    //             if (!syncNodeSets.contains(merged)) {
+                    //                 syncNodeSets.add(merged);
+                    //                 if (merged.size()>=minSize) {
+                    //                     FrequentedRegion fr = new FrequentedRegion(graph, merged, alpha, kappa);
+                    //                     if (passesFilters(fr)) {
+                    //                         newFRs.add(fr);
+                    //                     }
+                    //                 }
+                    //             }
+                    //         }
+                    //         //////// END PARALLEL CODE ////////
+                    //     });
+                    // ////////////////////////////////////////////////////////
+
+                    
+            //         // update frequentedRegions, display some debug stats
+            //         frequentedRegions.addAll(newFRs);
+            //         added += newFRs.size();
+            //         // debug diagnostics
+            //         if (debug && newFRs.size()>0) {
+            //             int current = frequentedRegions.size();
+            //             int total = syncNodeSets.size();
+            //             System.out.println(ns1.toString()+"\t"+newFRs.size()+"\t"+current+"\t"+total);
+            //         }
+            //     }
+            // }
+        
+            // // print a summary of this round
+            // if (frequentedRegions.size()>0) {
+            //     FrequentedRegion highestSupportFR = frequentedRegions.first();
+            //     FrequentedRegion highestAvgLengthFR = frequentedRegions.first();
+            //     FrequentedRegion highestTotalLengthFR = frequentedRegions.first();
+            //     for (FrequentedRegion fr : frequentedRegions) {
+            //         if (fr.support>highestSupportFR.support) highestSupportFR = fr;
+            //         if (fr.avgLength>highestAvgLengthFR.avgLength) highestAvgLengthFR = fr;
+            //         if (fr.support*fr.avgLength>highestTotalLengthFR.support*highestTotalLengthFR.avgLength) highestTotalLengthFR = fr;
+            //     }
+            //     System.out.println("Highest support:");
+            //     System.out.println(highestSupportFR.columnHeading());
+            //     System.out.println(highestSupportFR.toString());
+            //     System.out.println("Highest avg length:");
+            //     System.out.println(highestAvgLengthFR.columnHeading());
+            //     System.out.println(highestAvgLengthFR.toString());
+            //     System.out.println("Highest total length:");
+            //     System.out.println(highestTotalLengthFR.columnHeading());
+            //     System.out.println(highestTotalLengthFR.toString());
+            // }
+
+            // // print the histogram of FR sizes from this round
+            // printFRHistogram();
         }
         
 	// verbosity
@@ -212,7 +264,60 @@ public class FRFinder {
     }
 
     /**
-     * Return true if the given FR passes support and size filters. Other filters could be added here.
+     * Algorithm 1 from Cleary, et al. returns supporting path segments for the given NodeSet ns and and Path p.
+     * @param c the NodeSet, or cluster C as it's called in Algorithm 1
+     * @param p the Path for which we want the set of supporting paths
+     * @returns the set of supporting path segments
+     */
+    Set<Path> computeSupport(NodeSet c, Path p) {
+        Set<Path> s = new HashSet<>();
+        // m = the list of p's nodes that are in c
+        LinkedList<Node> m = new LinkedList<>();
+        for (Node n : p.nodes) {
+            if (c.contains(n)) m.add(n);
+        }
+        // find subpaths that satisfy alpha, kappa criteria
+        int start = 0;
+        while (start<m.size()) {
+            int i = start;
+            Node nl = m.get(i);
+            Node nr = nl;
+            while ((i<m.size()-1)) {
+                if (p.gap(nl,m.get(i+1))>kappa) break;
+                i = i + 1;
+                nr = m.get(i);
+            }
+            if ((i-start+1)>=alpha*c.size()) {
+                Path subpath = p.subpath(nl,nr);
+                if (subpath.nodes.size()==0) {
+                    System.err.println("ERROR: subpath.nodes.size()=0; p="+p+" nl="+nl+" nr="+nr);
+                } else {
+                    s.add(subpath);
+                }
+            }
+            start = i + 1;
+        }
+        return s;
+    }
+
+    /**
+     * Algorithm 2 from Cleary, et al. returns the supporting path segments for the given merge of FRs.
+     * @param frl the "left" FR (represented by (C_L,S_L) in the paper)
+     * @param frr the "right FR (represented by (C_R,S_R) in the paper)
+     * @returns the set of supporting path segments
+     */
+    Set<Path> evalMerge(FrequentedRegion frl, FrequentedRegion frr) {
+        NodeSet c = NodeSet.merge(frl.nodes, frr.nodes);
+        Set<Path> s = new HashSet<>();
+        for (Path p : graph.paths) {
+            s.addAll(computeSupport(c,p));
+        }
+        return s;
+    }
+
+    /**
+     * Return true if the given FR passes support and size filters.
+     * PLUS: filter on case/control ratio if desired.
      */
     boolean passesFilters(FrequentedRegion fr) {
         // basic filters
@@ -522,7 +627,10 @@ public class FRFinder {
      * Print out the FRs, either to stdout or outputFile if not null.
      */
     void printFrequentedRegions() throws IOException {
-        if (frequentedRegions.size()==0) return;
+        if (frequentedRegions.size()==0) {
+            System.err.println("NO FREQUENTED REGIONS!");
+            return;
+        }
         PrintStream out = null;
         if (inputFile==null) {
             // output from a findFRs run

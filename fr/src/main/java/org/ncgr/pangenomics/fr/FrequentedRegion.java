@@ -12,6 +12,7 @@ import java.util.LinkedList;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.Set;
+import java.util.HashSet;
 import java.util.TreeSet;
 
 /**
@@ -31,7 +32,7 @@ public class FrequentedRegion implements Comparable<FrequentedRegion> {
     NodeSet nodes;
     
     // the subpaths, identified by their originating path name and label, that start and end on this FR's nodes
-    List<Path> subpaths;
+    Set<Path> subpaths;
     
     // the forward (or total, if rc not enabled) support of this cluster
     int fwdSupport = 0;
@@ -64,6 +65,18 @@ public class FrequentedRegion implements Comparable<FrequentedRegion> {
         this.nodes.update();
         update();
     }
+
+    /**
+     * Construct given a Graph, NodeSet and Subpaths
+     */
+    FrequentedRegion(Graph graph, NodeSet nodes, Set<Path> subpaths) {
+        this.graph = graph;
+        this.nodes = nodes;
+        this.subpaths = subpaths;
+        updateSupport();
+        updateLengths();
+    }
+        
 
     /**
      * Construct given only a NodeSet, used for various post-processing routines.
@@ -122,7 +135,7 @@ public class FrequentedRegion implements Comparable<FrequentedRegion> {
     void updateSubpaths() {
 
         // we'll replace subpaths with this set
-        List<Path> newSubpaths = new LinkedList<>();
+        Set<Path> newSubpaths = new HashSet<>();
         
         // loop through each genome path
         // TODO: handle multiple subpaths of a path

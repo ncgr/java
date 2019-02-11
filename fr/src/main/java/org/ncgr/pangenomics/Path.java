@@ -77,19 +77,33 @@ public class Path implements Comparable<Path> {
     }
 
     /**
-     * Two paths are equal if they have the same name.
+     * Two paths are equal if they have the same name and traverse the same nodes.
      */
     public boolean equals(Path that) {
-        return this.name.equals(that.name) && this.compareTo(that)==0;
+        if (!this.name.equals(that.name)) {
+            return false;
+        } else {
+            for (int i=0; i<this.nodes.size(); i++) {
+                if (!this.nodes.get(i).equals(that.nodes.get(i))) {
+                    return false;
+                }
+            }
+            return true;
+        }
     }
 
     /**
-     * Compare based on name.
+     * Compare based on name and then node size then first node id.
      */
     public int compareTo(Path that) {
-        return this.name.compareTo(that.name);
+        if (!this.name.equals(that.name)) {
+            return this.name.compareTo(that.name);
+        } else if (this.nodes.size()!=that.nodes.size()) {
+            return this.nodes.size() - that.nodes.size();
+        } else {
+            return (int)(this.nodes.get(0).id - that.nodes.get(0).id);
+        }
     }
-
 
     /**
      * Return the concated name and label of this path
@@ -109,6 +123,63 @@ public class Path implements Comparable<Path> {
         sequence = "";
         for (Node node : nodes) {
             sequence += node.sequence;
+        }
+    }
+
+    /**
+     * Return the subpath inclusively between the two given nodes (empty if one of the nodes is not present in this path).
+     * @param nl the "left" node
+     * @param nr the "right" node
+     * @returns the Path inclusively between nl and nr
+     */
+    public Path subpath(Node nl, Node nr) {
+        LinkedList<Node> subnodes = new LinkedList<>();
+        if (nodes.contains(nl) && nodes.contains(nr)) {
+            if (nl.equals(nr)) {
+                subnodes.add(nl);
+            } else {
+                boolean started = false;
+                boolean finished = false;
+                for (Node node : nodes) {
+                    if (!started && node.equals(nl)) {
+                        started = true;
+                        subnodes.add(node);
+                    } else if (node.equals(nr) && !finished) {
+                        subnodes.add(node);
+                        finished = true;
+                    } else if (started && !finished) {
+                        subnodes.add(node);
+                    }
+                }
+            }
+        }
+        return new Path(this.name, this.label, subnodes);
+    }
+
+    /**
+     * Return the subsequence inclusively between the two given nodes (empty String if one of the nodes is not present in this path).
+     * @param nl the "left" node
+     * @param nr the "right" node
+     * @returns the subsequence inclusively between nl and nr
+     */
+    public String subsequence(Node nl, Node nr) {
+        if (!nodes.contains(nl) || !nodes.contains(nr)) return "";
+        return subpath(nl,nr).sequence;
+    }
+
+    /**
+     * Return the length of this path's sequence exclusively between the two given nodes (0 if one of the nodes is not in this path, or if nl=nr).
+     * @param nl the "left" node
+     * @param nr the "right" node
+     * @returns the length of this path's sequence exclusively between nl and nr
+     */
+    public int gap(Node nl, Node nr) {
+        if (!nodes.contains(nl) || !nodes.contains(nr)) {
+            return 0;
+        } else if (nl.equals(nr)) {
+            return 0;
+        } else {
+            return subsequence(nl,nr).length() - nl.sequence.length() - nr.sequence.length();
         }
     }
 

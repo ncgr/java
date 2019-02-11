@@ -2,7 +2,6 @@
 plot(hdstudy$ctrl.n,
      hdstudy$case.n,
      xlab="HDStudy ctrl sample support", ylab="HDStudy case sample support",
-     xlim=c(0,10), ylim=c(0,10),
      col="darkgray"
      )
 title(main=paste("alpha=",alpha," kappa=",kappa," minsize=",minsize," minlen=",minlen," genotype=",genotype," min(case/ctrl)=",mincasectrlratio, sep=""), cex.main=0.9)

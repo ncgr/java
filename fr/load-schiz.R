@@ -1,9 +1,8 @@
-## load a pair of FRFinder hdstudy files
+## load a schiz study FR output
 
-schiz.all = read.table("schiz.all.out", header=TRUE)
-schiz.rc  = read.table("schiz.rc.out", header=TRUE)
+schiz = read.table("schiz.out", header=TRUE)
 
-params = read.delim(file="schiz.all.out.params", header=F)
+params = read.delim(file="schiz.out.params", header=F)
 for (i in 1:length(rownames(params))) {
     if (params$V1[i]=="json") json = params$V2[i]
     if (params$V1[i]=="pathlabels") pathlabels = params$V2[i]
