@@ -50,8 +50,8 @@ public class FrequentedRegion implements Comparable<FrequentedRegion> {
     // a subpath must satisfy the requirement that its contiguous nodes that do NOT belong in this.nodes have total sequence length no larger than kappa
     int kappa;
 
-    // the (rounded) average length (in bases) of the subpath sequences
-    int avgLength;
+    // the average length of the subpath sequences
+    double avgLength;
 
     /**
      * Construct given a Graph, NodeSet and alpha and kappa filter parameters.
@@ -126,7 +126,7 @@ public class FrequentedRegion implements Comparable<FrequentedRegion> {
                 }
             }
         }
-        avgLength = (int)((double)totalLength/subpaths.size());
+        avgLength = (double)totalLength/(double)subpaths.size();
     }
 
     /**
@@ -155,7 +155,7 @@ public class FrequentedRegion implements Comparable<FrequentedRegion> {
             }
             
             // build the subpath
-            Path subpath = new Path(path.name, path.label);
+            Path subpath = new Path(path.name, path.genotype, path.label);
 
             if (left!=null && right==null) {
                 // single-node subpath
@@ -265,12 +265,8 @@ public class FrequentedRegion implements Comparable<FrequentedRegion> {
      */
     public String columnHeading() {
         String s = "nodes\tsupport\tavgLen";
-        Set<String> labels = new TreeSet<>();
-        for (Path path : graph.paths) {
-            if (path.label!=null) labels.add(path.label);
-        }
-        for (String label : labels) {
-            s += "\t"+label+".n"+"\t"+label+".f";
+        for (String label : graph.labelCounts.keySet()) {
+            s += "\t"+label;
         }
         return s;
     }
@@ -287,25 +283,39 @@ public class FrequentedRegion implements Comparable<FrequentedRegion> {
     }
 
     /**
+     * Return the count of subpaths labeled with the given label and genotype.
+     */
+    public int getLabelGenotypeCount(String label, int genotype) {
+        int count = 0;
+        for (Path subpath : subpaths) {
+            if (subpath.label!=null) {
+                if (subpath.label.equals(label) && subpath.genotype==genotype) count++;
+            }
+        }
+        return count;
+    }
+
+    /**
      * Return a string summary of this frequented region.
      */
     public String toString() {
         // count the support per label if present
         Map<String,Integer> labelCounts = new TreeMap<>();
         for (Path subpath : subpaths) {
-            if (subpath.label!=null && !labelCounts.containsKey(subpath.label)) {
-                labelCounts.put(subpath.label, getLabelCount(subpath.label));
+            if (subpath.label!=null) {
+                if (!labelCounts.containsKey(subpath.label)) {
+                    labelCounts.put(subpath.label, getLabelCount(subpath.label));
+                }
             }
         }
-        String s = nodes.toString()+"\t"+support+"\t"+avgLength;
+        String s = nodes.toString()+"\t"+support+"\t"+Math.round(avgLength);
         // show labels (fractions) if available
         if (graph.labelCounts!=null && graph.labelCounts.size()>0) {
             for (String label : graph.labelCounts.keySet()) {
                 if (labelCounts.containsKey(label)) {
-                    double frac = (double)labelCounts.get(label)/(double)graph.labelCounts.get(label);
-                    s += "\t"+labelCounts.get(label)+"\t"+df.format(frac);
+                    s += "\t"+labelCounts.get(label);
                 } else {
-                    s += "\t"+0+"\t"+df.format(0.0);
+                    s += "\t"+0;
                 }
             }
         }

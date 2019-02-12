@@ -19,8 +19,7 @@ import java.util.TreeMap;
 import java.util.Set;
 import java.util.HashSet;
 import java.util.TreeSet;
-import java.util.PriorityQueue;
-import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.PriorityBlockingQueue;
 
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
@@ -140,8 +139,8 @@ public class FRFinder {
             }
         }
 
-        // keep track of NodeSets we've already looked at
-        List<NodeSet> usedNodeSets = new LinkedList<>();
+        // keep track of FRs we've already looked at
+        List<FrequentedRegion> usedFRs = new LinkedList<>();
         
         // build the FRs round by round
         int round = 0;
@@ -154,32 +153,29 @@ public class FRFinder {
             // gently suggest garbage collection
             System.gc();
 
-            int maxSupport = 0;
-            FrequentedRegion fr1Max = null;
-            FrequentedRegion fr2Max = null;
-            Set<Path> maxPaths = null;
-            for (FrequentedRegion fr1 : frequentedRegions) {
-                for (FrequentedRegion fr2 : frequentedRegions) {
-                    if (!usedNodeSets.contains(fr1.nodes) && !usedNodeSets.contains(fr2.nodes) && fr2.nodes.compareTo(fr1.nodes)>0) {
-                        Set<Path> paths = evalMerge(fr1, fr2);
-                        if (paths.size()>maxSupport) {
-                            maxSupport = paths.size();
-                            fr1Max = fr1;
-                            fr2Max = fr2;
-                            maxPaths = paths;
-                        }
-                    }
-                }
-            }
-            if (maxSupport>0) {
+            // put FR pairs into a PriorityBlockingQueue which sorts them by decreasing support
+            PriorityBlockingQueue<FRPair> pbq = new PriorityBlockingQueue<>();
+
+            // spin through FRs in a parallel manner
+            syncFrequentedRegions.parallelStream().forEach((fr1) -> {
+                    syncFrequentedRegions.parallelStream().forEach((fr2) -> {
+                            if (!usedFRs.contains(fr1) && !usedFRs.contains(fr2) && fr2.compareTo(fr1)>0) {
+                                pbq.add(new FRPair(fr1,fr2));
+                            }
+                        });
+                });
+
+            // add our new FR
+            FRPair frpair = pbq.peek();
+            if (frpair.supportPaths.size()>0) {
                 added = true;
-                usedNodeSets.add(fr1Max.nodes);
-                usedNodeSets.add(fr2Max.nodes);
-                NodeSet merged = NodeSet.merge(fr1Max.nodes, fr2Max.nodes);
-                FrequentedRegion fr = new FrequentedRegion(graph, merged, maxPaths);
+                usedFRs.add(frpair.fr1);
+                usedFRs.add(frpair.fr2);
+                NodeSet merged = NodeSet.merge(frpair.fr1.nodes, frpair.fr2.nodes);
+                FrequentedRegion fr = new FrequentedRegion(graph, merged, frpair.supportPaths);
                 frequentedRegions.add(fr);
-                System.out.println("added:"+fr);
-                System.out.println("support paths:"+maxPaths);
+                System.out.println(fr.toString());
+                // System.out.println(frpair.supportPaths.toString());
             }
 
             // // use a frozen copy of the current NodeSets for iterating
@@ -586,6 +582,35 @@ public class FRFinder {
         // Find the FRs //
         //////////////////
         frf.findFRs();
+    }
+
+    /**
+     * Contains a pair of FRs for storage in the PriorityBlockingQueue with reverse support then avgLen as the comparator.
+     */
+    class FRPair implements Comparable<FRPair> {
+        FrequentedRegion fr1;
+        FrequentedRegion fr2;
+        Set<Path> supportPaths;
+        double avgLength;
+        FRPair(FrequentedRegion fr1, FrequentedRegion fr2) {
+            this.fr1 = fr1;
+            this.fr2 = fr2;
+            supportPaths = evalMerge(fr1,fr2);
+            int totalLength = 0;
+            for (Path p : supportPaths) {
+                for (Node n : p.nodes) {
+                    totalLength += n.sequence.length();
+                }
+            }
+            avgLength = (double)totalLength/(double)supportPaths.size();
+        }
+        public int compareTo(FRPair that) {
+            if (that.supportPaths.size()!=this.supportPaths.size()) {
+                return Integer.compare(that.supportPaths.size(),this.supportPaths.size());
+            } else {
+                return Double.compare(that.avgLength, this.avgLength);
+            }
+        }
     }
 
     /**

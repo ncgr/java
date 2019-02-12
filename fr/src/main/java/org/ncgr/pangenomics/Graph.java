@@ -67,9 +67,6 @@ public class Graph {
     public String jsonFile;
     public String gfaFile;
     
-    // minimum sequence length found in the graph
-    public long minLen;
-
     // the nodes contained in this graph, in the form of an id->Node map
     // (Redundant, since Node also contains id, but this allows quick retrieval on id)
     public TreeMap<Long,Node> nodes;
@@ -98,101 +95,65 @@ public class Graph {
     public void readVgJsonFile(String jsonFile) throws FileNotFoundException, IOException {
         // set instance objects from parameters
         this.jsonFile = jsonFile;
-
         // read the vg-created JSON into a Vg.Graph
-        if (verbose || debug) System.out.print("Reading "+jsonFile+"...");
+        if (verbose) System.out.print("Reading JSON file:"+jsonFile);
 	Reader reader = new InputStreamReader(new FileInputStream(jsonFile));
 	Vg.Graph.Builder graphBuilder = Vg.Graph.newBuilder();
 	JsonFormat.parser().merge(reader, graphBuilder);
         Vg.Graph graph = graphBuilder.build();
-	if (verbose || debug) System.out.println("done.");
-
         // a graph is nodes, edges and individual paths through it
         List<Vg.Node> vgNodes = graph.getNodeList();
         List<Vg.Path> vgPaths = graph.getPathList();
         List<Vg.Edge> vgEdges = graph.getEdgeList();
-
         // populate nodes with their id and sequence, find the minimum sequence length
-	if (verbose || debug) System.out.print("Populating nodes...");
-        minLen = Long.MAX_VALUE;
         for (Vg.Node vgNode : vgNodes) {
             long id = vgNode.getId();
             String sequence = vgNode.getSequence();
-            if (sequence.length()<minLen) minLen = sequence.length();
 	    nodes.put(id, new Node(id,sequence));
         }
-	if (verbose || debug) System.out.println(" done.");
-        
         // build paths from the multiple path fragments in the JSON file
         // path fragments have names of the form _thread_sample_chr_genotype_index where genotype=0,1
         // The "_"-split pieces will therefore be:
         // 0:"", 1:"thread", 2:sample1, 3:sample2, L-4:sampleN, L-3:chr, L-2:genotype, L-1:idx where L is the number of pieces,
         // and sample contains N parts separated by "_".
-        // NOTE: with unphased calls, genotype 0 is nearly reference; so typically set genotype=1 to avoid REF dilution
+        // NOTE: with unphased calls, genotype 0 or 1 can have the ALT haplotype, so set genotype=-1 to keep both
+        Map<String,LinkedList<Node>> nodeListMap = new HashMap<>();
         for (Vg.Path vgPath : vgPaths) {
             String name = vgPath.getName();
             String[] pieces = name.split("_");
             if (pieces.length>=6 && pieces[1].equals("thread")) {
-                // we've got a sample path fragment
                 String pathName = pieces[2];
                 for (int i=3; i<pieces.length-3; i++) pathName += "_"+pieces[i]; // for (common) cases where samples have underscores
+                // genotype -- append to path name
                 int gtype = Integer.parseInt(pieces[pieces.length-2]); // 0, 1, etc.
-                // append the genotype if we're including them all
-                if (genotype==-1) pathName += ":"+gtype;
+                pathName += ":"+gtype; // store this way for now
                 // append this path fragment if appropriate
                 if (genotype==-1 || gtype==genotype) {
+                    LinkedList<Node> newNodeList = new LinkedList<>();
                     List<Vg.Mapping> vgMappingList = vgPath.getMappingList();
-                    // retrieve or initialize this path's nodes
-                    LinkedList<Long> nodeIds = new LinkedList<>();
-                    for (Path path : paths) {
-                        if (path.name.equals(pathName)) {
-                            nodeIds = path.getNodeIds();
-                        }
-                    }
-                    // run through this particular mapping and append each node id to the node list
-                    boolean first = true;
                     for (Vg.Mapping vgMapping : vgMappingList) {
-                        if (first && nodeIds.size()>0) {
-                            // skip node overlap between fragments
-                        } else {
-                            nodeIds.add(vgMapping.getPosition().getNodeId());
-                        }
-                        first = false;
+                        long nodeId = vgMapping.getPosition().getNodeId();
+                        newNodeList.add(nodes.get(nodeId));
                     }
-                    // build the new set of nodes for this path
-                    LinkedList<Node> pathNodes = new LinkedList<>();
-                    for (Long id : nodeIds) {
-			Node n = nodes.get(id);
-			if (n==null) {
-			    System.err.println("NULL node retrieved for id="+id);
-			    System.exit(1);
-			} else {
-			    pathNodes.add(n);
-			}
-                    }
-                    // update existing path with the new nodes
-                    boolean updated = false;
-                    for (Path path : paths) {
-                        if (path.name.equals(pathName)) {
-                            path.nodes = pathNodes;
-                            updated = true;
-                        }
-                    }
-                    if (!updated) {
-                        // create this new path
-			if (pathName!=null && pathNodes.size()>0) {
-			    try {
-				paths.add(new Path(pathName, pathNodes));
-			    } catch (Exception e) {
-				System.err.println("paths="+paths);
-				System.err.println("pathName="+pathName+" pathNodes="+pathNodes);
-				e.printStackTrace();
-				System.exit(1);
-			    }
-			}
+                    if (nodeListMap.containsKey(pathName)) {
+                        LinkedList<Node> nodeList = nodeListMap.get(pathName);
+                        nodeList.addAll(newNodeList);
+                        nodeListMap.put(pathName, nodeList);
+                    } else {
+                        nodeListMap.put(pathName, newNodeList);
                     }
                 }
             }
+        }
+        reader.close();
+
+        // build the paths from the nodeListMap
+        for (String pathName : nodeListMap.keySet()) {
+            LinkedList<Node> nodeList = nodeListMap.get(pathName);
+            String[] parts = pathName.split(":"); // separate out the genotype
+            String name = parts[0];
+            int genotype = Integer.parseInt(parts[1]);
+            paths.add(new Path(name, genotype, nodeList));
         }
 
         // build the path sequences from their nodes (already populated above)
@@ -207,21 +168,19 @@ public class Graph {
      *
      * http://gfa-spec.github.io/GFA-spec/GFA1.html
      *
-     * NOTE 1: the P lines are NOT in traversal order! For example:
-     * P	_thread_412119_4_0_0	1+,3+,4+	42M,1M,153M	
-     * P	_thread_412119_4_0_1	4+,15+,16+	153M,6M,44M	
-     * P	_thread_412119_4_0_10	41+,43+,44+	211M,1M,125M	
-     * P	_thread_412119_4_0_11	44+,45+,47+	125M	
-     * NOTE 2: with unphased calls, genotype 0 is nearly reference; so typically set genotype=1 to avoid REF dilution
+     * Paths are assumed to be on a single P line per genotype:
+     * P	_thread_714413_4_0_0	1+,3+,4+,17+,18+,20+,21+,...,83+,85+,86+	42M,1M,153M,...,1M,85M,1M,161M
+     * P	_thread_714413_4_1_0	1+,3+,4+,6+,18+,20+,21+,....,83+,85+,86+	42M,1M,153M,...,1M,85M,1M,161M
+     *
+     * NOTE: with unphased calls, genotype 0 is the ALT genotype (presuming vg index --force-phasing was used).
      * 
      * @param gfaFile the full path name of the GFA file to parse
      */
     public void readVgGfaFile(String gfaFile) throws IOException {
         this.gfaFile = gfaFile;
         if (verbose) System.out.println("Reading GFA file: "+gfaFile);
-        // put the path mappings into sorted maps to deal with them not being in proper node order
-        // those are stored in a map keyed by pathName
-        HashMap<String,TreeMap<Integer,List<Long>>> pathMappings = new HashMap<>();
+        // store the node lists by path name so we can update them
+        Map<String,LinkedList<Node>> nodeListMap = new HashMap<>();
         BufferedReader reader = new BufferedReader(new FileReader(gfaFile));
         String line = null;
         while ((line=reader.readLine())!=null) {
@@ -239,123 +198,58 @@ public class Graph {
                 nodes.put(nodeId, node);
             } else if (recordType.equals("P")) {
                 // Path line
-                // Build paths from the multiple path fragments in the GFA
-                // path fragments have names of the form _thread_sample_chr_genotype_index where genotype=0,1
+                // Paths have names of the form _thread_sample_chr_genotype_index where genotype=0,1
                 // and sample often has "_" in it. The "_"-split pieces will therefore be:
                 // 0:"", 1:"thread", 2:sample1, 3:sample2, L-4:sampleN, L-3:chr, L-2:genotype, L-1:idx where L is the number of pieces,
                 // and sample contains N parts separated by "_".
                 String name = parts[1];
                 String[] pieces = name.split("_");
                 if (pieces.length>=6 && pieces[1].equals("thread")) {
-                    // if (parts.length<3) {
-                    //     System.err.println("ERROR: P record has parts.length="+parts.length);
-                    //     System.err.println("line="+line);
-                    //     System.exit(1);
-                    // }
-                    // build pathName
+                    // build pathName, assuming it may have underscores
                     String pathName = pieces[2];
                     for (int i=3; i<pieces.length-3; i++) pathName += "_"+pieces[i]; // for (common) cases where samples have underscores
                     // genotype
-                    int gtype = Integer.parseInt(pieces[pieces.length-2]); // 0, 1, etc.
-                    // traversal index
-                    int idx = Integer.parseInt(pieces[pieces.length-1]); // 1, 10, 11, 12, 2, 3, etc.
-                    // append the genotype to pathName if we're including them all
-                    if (genotype==-1) pathName += ":"+gtype;
-                    // append this path fragment if appropriate
+                    int gtype = Integer.parseInt(pieces[pieces.length-2]); // 0, 1
+                    // path segment index
+                    int idx = Integer.parseInt(pieces[pieces.length-1]);
+                    // append the genotype to pathName
+                    pathName += ":"+gtype;
+                    // build/append this path's node list
                     if (genotype==-1 || gtype==genotype) {
-                        List<Long> mappingList = new LinkedList<>();
-                        if (parts.length<3) {
-                            // deletion, no segments indicated, leave mappingList empty
-                        } else {
-                            String[] mappingNodes = parts[2].split(","); // e.g. 27+,29+,30+
-                            for (String mappingNode : mappingNodes) {
-                                // NOTE: assuming no reverse-complement entries, which would have minus sign!
-                                long nodeId = Long.parseLong(mappingNode.replace("+",""));
-                                mappingList.add(nodeId);
-                            }
+                        LinkedList<Node> newNodeList = new LinkedList<>();
+                        String[] nodeStrings = parts[2].split(","); // e.g. 27+,29+,30+
+                        for (String nodeString : nodeStrings) {
+                            // NOTE: we're assuming no reverse-complement entries, which would have minus sign!
+                            long nodeId = Long.parseLong(nodeString.replace("+",""));
+                            newNodeList.add(nodes.get(nodeId)); // nodes should already be loaded from S lines above P lines
                         }
-                        if (pathMappings.containsKey(pathName)) {
-                            // put this mapping into this path's map of mappings
-                            TreeMap<Integer,List<Long>> mappings = pathMappings.get(pathName);
-                            mappings.put(idx, mappingList);
+                        if (nodeListMap.containsKey(pathName)) {
+                            LinkedList<Node> nodeList = nodeListMap.get(pathName);
+                            nodeList.addAll(newNodeList);
+                            nodeListMap.put(pathName, nodeList);
                         } else {
-                            // create the map of mappings for this path and add this mapping
-                            TreeMap<Integer,List<Long>> mappings = new TreeMap<>();
-                            mappings.put(idx, mappingList);
-                            pathMappings.put(pathName, mappings);
+                            nodeListMap.put(pathName, newNodeList);
                         }
-                        // LinkedList<Long> nodeIds = new LinkedList<>();
-                        // for (Path path : paths) {
-                        //     if (path.name.equals(pathName)) {
-                        //         nodeIds = path.getNodeIds();
-                        //     }
-                        // }
-                        // // run through this particular mapping and append each node id to the path's node list
-                        // boolean first = true;
-                        // for (long nodeId : mappingList) {
-                        //     if (first && nodeIds.size()>0) {
-                        //         // skip node overlap between fragments
-                        //     } else {
-                        //         nodeIds.add(nodeId);
-                        //     }
-                        //     first = false;
-                        // }
-                        // // build the new set of Nodes for this path
-                        // LinkedList<Node> pathNodes = new LinkedList<>();
-                        // for (long id : nodeIds) {
-                        //     Node n = nodes.get(id);
-                        //     if (n==null) {
-                        //         System.err.println("NULL node retrieved for id="+id);
-                        //         System.exit(1);
-                        //     } else {
-                        //         pathNodes.add(n);
-                        //     }
-                        // }
-                        // // update existing path with the new nodes
-                        // boolean updated = false;
-                        // for (Path path : paths) {
-                        //     if (path.name.equals(pathName)) {
-                        //         path.nodes = pathNodes;
-                        //         updated = true;
-                        //     }
-                        // }
-                        // if (!updated) {
-                        //     // create this new path
-                        //     if (pathName!=null && pathNodes.size()>0) {
-                        //         try {
-                        //             paths.add(new Path(pathName, pathNodes));
-                        //         } catch (Exception e) {
-                        //             System.err.println("paths="+paths);
-                        //             System.err.println("pathName="+pathName+" pathNodes="+pathNodes);
-                        //             e.printStackTrace();
-                        //             System.exit(1);
-                        //         }
-                        //     }
-                        // }
                     }
                 }
             }
         }
         reader.close();
 
-        // DEBUG
-        printNodes();
-        
-        printHeading("PATH MAPPINGS");
-        for (String pathName : pathMappings.keySet()) {
-            System.out.println(pathName);
-            TreeMap<Integer,List<Long>> mappings = pathMappings.get(pathName);
-            for (int idx : mappings.keySet()) {
-                System.out.println(idx+":"+mappings.get(idx));
-            }
+        // build the paths from the nodeListMap
+        for (String pathName : nodeListMap.keySet()) {
+            LinkedList<Node> nodeList = nodeListMap.get(pathName);
+            String[] parts = pathName.split(":"); // separate out the genotype
+            String name = parts[0];
+            int genotype = Integer.parseInt(parts[1]);
+            paths.add(new Path(name, genotype, nodeList));
         }
-        System.exit(0);
 
-        // // build the path sequences from their nodes (populated above)
-        // buildPathSequences();
+        // build the path sequences from their nodes (populated above)
+        buildPathSequences();
 
-        // // find the node paths
-        // buildNodePaths();
+        // build the node paths
+        buildNodePaths();
     }        
     
     /**
@@ -364,7 +258,6 @@ public class Graph {
     public void readSplitMEMDotFile(String dotFile, String fastaFile) throws IOException {
         this.dotFile = dotFile;
         this.fastaFile = fastaFile;
-        this.minLen = Long.MAX_VALUE;
 
         if (verbose) System.out.println("Reading FASTA file: "+fastaFile);
         Map<String,DNASequence> fastaMap = FastaReaderHelper.readFastaDNASequence​(new File(fastaFile));
@@ -389,7 +282,6 @@ public class Graph {
 
             String[] parts = mNode.get("label").toString().split(":");
             int length = Integer.parseInt(parts[1]);
-            if (length<minLen) minLen = length;
             String[] startStrings = parts[0].split(",");
             String sequence = null;
             boolean first = true;
@@ -667,17 +559,15 @@ public class Graph {
         for (long nodeId : nodes.keySet()) {
             Node node = nodes.get(nodeId);
             Set<Path> nPaths = nodePaths.get(nodeId);
-            if (nPaths.size()<paths.size()) {
-                out.print("N"+nodeId);
-                for (Path path : paths) {
-                    if (path.nodes.contains(node)) {
-                        out.print("\t1");
-                    } else {
-                        out.print("\t0");
-                    }
+            out.print("N"+nodeId);
+            for (Path path : paths) {
+                if (path.nodes.contains(node)) {
+                    out.print("\t1");
+                } else {
+                    out.print("\t0");
                 }
-                out.println("");
             }
+            out.println("");
         }
     }
 
