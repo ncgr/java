@@ -4,18 +4,17 @@ plot(hdstudy$ctrl,
      xlab="ctrl sample support", ylab="case sample support",
      col="darkgray"
      )
-title(main=paste("HDStudy  alpha=",alpha," kappa=",kappa," minsize=",minsize," minlen=",minlen," min(case/ctrl)=",mincasectrlratio, sep=""), cex.main=0.9)
+title(main=paste("HDStudy  alpha=",alpha," kappa=",kappa," minsize=",minsize," minlen=",minlen," case/ctrl=",casectrl, sep=""), cex.main=0.9)
 lines(c(0,100), c(0,100), col="lightgray")
 for (i in 1:100) {
     lines(c(0,i),  c(i,0), col="lightgray", lty=2)
 }
-text(hdstudy$ctrl,
-     hdstudy$case,
-     hdstudy$nodes,
-     cex=0.4, pos=1, offset=0.4, col="gray"
-     )
 text(0, 0, paste(length(hdstudy$nodes),"FRs"), pos=4)
-
+## text(hdstudy$ctrl,
+##      hdstudy$case,
+##      hdstudy$nodes,
+##      cex=0.4, pos=1, offset=0.4, col="gray"
+##      )
 
 ## ## case-control vs pos-neg
 ## plot(hdstudy$case-hdstudy$ctrl,

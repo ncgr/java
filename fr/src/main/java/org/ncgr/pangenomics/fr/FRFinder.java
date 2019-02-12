@@ -43,8 +43,7 @@ public class FRFinder {
     static int MAXSUP = Integer.MAX_VALUE;
     static int MINSIZE = 1;
     static int MINLEN = 1;
-    static int NROUNDS = 2;
-    static double MIN_CASE_CTRL_RATIO = 0.0;
+    static boolean CASE_CTRL = false;
     static boolean USERC = false;
     static boolean VERBOSE = false;
     static boolean DEBUG = false;
@@ -62,8 +61,7 @@ public class FRFinder {
     int maxSup = MAXSUP;   // maximum support: maximum number of genome paths (fr.support) for an FR to be considered interesting
     int minSize = MINSIZE; // minimum size: minimum number of de Bruijn nodes (fr.nodes.size()) that an FR must contain to be considered interesting
     int minLen = MINLEN;   // minimum average length of a frequented region's subpath sequences (fr.avgLength) to be considered interesting
-    int nRounds = NROUNDS; // number of FR-building rounds to run
-    double minCaseCtrlRatio = MIN_CASE_CTRL_RATIO; // if >0 then remove FRs that do not have at least this ratio of case/ctrl or ctrl/case labeled paths
+    boolean caseCtrl = CASE_CTRL; // emphasize FRs that have large case/control support
     String outputFile = null; // output file for FRs (stdout if null)
 
     // the FRs, sorted for convenience
@@ -102,39 +100,21 @@ public class FRFinder {
             graph.printNodePaths();
         }
 
-        // // utility
-        // NodeSet allNodeSet = new NodeSet(graph.nodes.values());
-
         // store the FRs in a TreeSet, backed with a synchronized Set for parallel processing
         frequentedRegions = new TreeSet<>();
         Set<FrequentedRegion> syncFrequentedRegions = Collections.synchronizedSet(frequentedRegions);
         
-        // // store the analyzed NodeSets in a TreeSet, backed with a synchronizedSet for parallel processing
-        // TreeSet<NodeSet> nodeSets = new TreeSet<>();
-        // Set<NodeSet> syncNodeSets = Collections.synchronizedSet(nodeSets);
-
-        // // create initial NodeSets each containing only one node; add associated FRs if they pass filter
-        // TreeSet<NodeSet> singleNodeSets = new TreeSet<>();
-        // for (Node node : graph.nodes.values()) {
-        //     NodeSet nodeSet = new NodeSet();
-        //     nodeSet.add(node);
-        //     singleNodeSets.add(nodeSet);
-        //     nodeSets.add(nodeSet);
-        //     FrequentedRegion fr = new FrequentedRegion(graph, nodeSet, alpha, kappa);
-        //     if (passesFilters(fr)) frequentedRegions.add(fr);
-        // }
-
         // create initial single-node FRs
         for (Node node : graph.nodes.values()) {
             NodeSet c = new NodeSet();
             c.add(node);
             Set<Path> s = new HashSet<>();
             for (Path p : graph.paths) {
-                Set<Path> support = computeSupport(c,p);
+                Set<Path> support = FrequentedRegion.computeSupport(c, p, alpha, kappa);
                 s.addAll(support);
             }
             if (s.size()>0) {
-                FrequentedRegion fr = new FrequentedRegion(graph, c, s);
+                FrequentedRegion fr = new FrequentedRegion(graph, c, s, alpha, kappa);
                 frequentedRegions.add(fr);
             }
         }
@@ -148,7 +128,6 @@ public class FRFinder {
         while (added) {
             round++;
             added = false;
-            printHeading("ROUND "+round);
 
             // gently suggest garbage collection
             System.gc();
@@ -167,87 +146,14 @@ public class FRFinder {
 
             // add our new FR
             FRPair frpair = pbq.peek();
-            if (frpair.supportPaths.size()>0) {
+            if (frpair.merged.support>0) {
                 added = true;
                 usedFRs.add(frpair.fr1);
                 usedFRs.add(frpair.fr2);
-                NodeSet merged = NodeSet.merge(frpair.fr1.nodes, frpair.fr2.nodes);
-                FrequentedRegion fr = new FrequentedRegion(graph, merged, frpair.supportPaths);
-                frequentedRegions.add(fr);
-                System.out.println(fr.toString());
+                frequentedRegions.add(frpair.merged);
+                System.out.println(round+":"+frpair.merged.toString());
                 // System.out.println(frpair.supportPaths.toString());
             }
-
-            // // use a frozen copy of the current NodeSets for iterating
-            // final Set<NodeSet> currentNodeSets = new TreeSet<>(nodeSets);
-
-            // // non-parallel outer loop through this round's NodeSets
-            // for (NodeSet ns1 : currentNodeSets) {
-            //     // check that we have enough nodes to be able to reach minSize and minLen
-            //     NodeSet ns1up = NodeSet.merge(ns1, new NodeSet(allNodeSet.tailSet(ns1.last())));
-            //     ns1up.update();
-            //     if (ns1up.size()>=minSize && ns1up.totalBases>=minLen) {
-            //         // we'll add the new FRs to a synchronized set for counting
-            //         Set<FrequentedRegion> newFRs = Collections.synchronizedSet(new HashSet<>());
-
-                    // ////////////////////////////////////////////////////////
-                    // // run parallel inner loop over the current NodeSets
-                    // // currentNodeSets.parallelStream().forEach((ns2) -> {
-                    // // run parallel inner loop over the singletons
-                    // singleNodeSets.parallelStream().forEach((ns2) -> {
-                    //         //////// START PARALLEL CODE ////////
-                    //         if (ns2.first().compareTo(ns1.last())>0) {
-                    //             NodeSet merged = NodeSet.merge(ns1, ns2);
-                    //             if (!syncNodeSets.contains(merged)) {
-                    //                 syncNodeSets.add(merged);
-                    //                 if (merged.size()>=minSize) {
-                    //                     FrequentedRegion fr = new FrequentedRegion(graph, merged, alpha, kappa);
-                    //                     if (passesFilters(fr)) {
-                    //                         newFRs.add(fr);
-                    //                     }
-                    //                 }
-                    //             }
-                    //         }
-                    //         //////// END PARALLEL CODE ////////
-                    //     });
-                    // ////////////////////////////////////////////////////////
-
-                    
-            //         // update frequentedRegions, display some debug stats
-            //         frequentedRegions.addAll(newFRs);
-            //         added += newFRs.size();
-            //         // debug diagnostics
-            //         if (debug && newFRs.size()>0) {
-            //             int current = frequentedRegions.size();
-            //             int total = syncNodeSets.size();
-            //             System.out.println(ns1.toString()+"\t"+newFRs.size()+"\t"+current+"\t"+total);
-            //         }
-            //     }
-            // }
-        
-            // // print a summary of this round
-            // if (frequentedRegions.size()>0) {
-            //     FrequentedRegion highestSupportFR = frequentedRegions.first();
-            //     FrequentedRegion highestAvgLengthFR = frequentedRegions.first();
-            //     FrequentedRegion highestTotalLengthFR = frequentedRegions.first();
-            //     for (FrequentedRegion fr : frequentedRegions) {
-            //         if (fr.support>highestSupportFR.support) highestSupportFR = fr;
-            //         if (fr.avgLength>highestAvgLengthFR.avgLength) highestAvgLengthFR = fr;
-            //         if (fr.support*fr.avgLength>highestTotalLengthFR.support*highestTotalLengthFR.avgLength) highestTotalLengthFR = fr;
-            //     }
-            //     System.out.println("Highest support:");
-            //     System.out.println(highestSupportFR.columnHeading());
-            //     System.out.println(highestSupportFR.toString());
-            //     System.out.println("Highest avg length:");
-            //     System.out.println(highestAvgLengthFR.columnHeading());
-            //     System.out.println(highestAvgLengthFR.toString());
-            //     System.out.println("Highest total length:");
-            //     System.out.println(highestTotalLengthFR.columnHeading());
-            //     System.out.println(highestTotalLengthFR.toString());
-            // }
-
-            // // print the histogram of FR sizes from this round
-            // printFRHistogram();
         }
         
 	// verbosity
@@ -257,83 +163,6 @@ public class FRFinder {
 
 	// the end result
         printFrequentedRegions();
-    }
-
-    /**
-     * Algorithm 1 from Cleary, et al. returns supporting path segments for the given NodeSet ns and and Path p.
-     * @param c the NodeSet, or cluster C as it's called in Algorithm 1
-     * @param p the Path for which we want the set of supporting paths
-     * @returns the set of supporting path segments
-     */
-    Set<Path> computeSupport(NodeSet c, Path p) {
-        Set<Path> s = new HashSet<>();
-        // m = the list of p's nodes that are in c
-        LinkedList<Node> m = new LinkedList<>();
-        for (Node n : p.nodes) {
-            if (c.contains(n)) m.add(n);
-        }
-        // find subpaths that satisfy alpha, kappa criteria
-        int start = 0;
-        while (start<m.size()) {
-            int i = start;
-            Node nl = m.get(i);
-            Node nr = nl;
-            while ((i<m.size()-1)) {
-                if (p.gap(nl,m.get(i+1))>kappa) break;
-                i = i + 1;
-                nr = m.get(i);
-            }
-            if ((i-start+1)>=alpha*c.size()) {
-                Path subpath = p.subpath(nl,nr);
-                if (subpath.nodes.size()==0) {
-                    System.err.println("ERROR: subpath.nodes.size()=0; p="+p+" nl="+nl+" nr="+nr);
-                } else {
-                    s.add(subpath);
-                }
-            }
-            start = i + 1;
-        }
-        return s;
-    }
-
-    /**
-     * Algorithm 2 from Cleary, et al. returns the supporting path segments for the given merge of FRs.
-     * @param frl the "left" FR (represented by (C_L,S_L) in the paper)
-     * @param frr the "right FR (represented by (C_R,S_R) in the paper)
-     * @returns the set of supporting path segments
-     */
-    Set<Path> evalMerge(FrequentedRegion frl, FrequentedRegion frr) {
-        NodeSet c = NodeSet.merge(frl.nodes, frr.nodes);
-        Set<Path> s = new HashSet<>();
-        for (Path p : graph.paths) {
-            s.addAll(computeSupport(c,p));
-        }
-        return s;
-    }
-
-    /**
-     * Return true if the given FR passes support and size filters.
-     * PLUS: filter on case/control ratio if desired.
-     */
-    boolean passesFilters(FrequentedRegion fr) {
-        // basic filters
-        boolean passes = fr.nodes.size()>=minSize && fr.support>=minSup && fr.support<=maxSup && fr.avgLength>=minLen;
-        // min case/ctrl or ctrl/case ratio
-        if (minCaseCtrlRatio>1.0) {
-            int caseCounts = fr.getLabelCount("case");
-            int ctrlCounts = fr.getLabelCount("ctrl");
-            if (caseCounts>0 && ctrlCounts>0) {
-                double ratio = (double)caseCounts/(double)ctrlCounts;
-                passes = passes && ratio>=minCaseCtrlRatio;
-            } else if (caseCounts>0) {
-                passes = passes; // infinite ratio
-            } else if (ctrlCounts>0) {
-                passes = passes; // infinite ratio
-            } else {
-                passes = false; // zero case or ctrl support
-            }
-        }
-        return passes;
     }
 
     public double getAlpha() {
@@ -377,11 +206,8 @@ public class FRFinder {
     public void setMinLen(int minLen) {
         this.minLen = minLen;
     }
-    public void setNRounds(int nRounds) {
-        this.nRounds = nRounds;
-    }
-    public void setMinCaseCtrlRatio(double minCaseCtrlRatio) {
-        this.minCaseCtrlRatio = minCaseCtrlRatio;
+    public void setCaseCtrl() {
+        this.caseCtrl = true;
     }
     public void setUseRC() {
         this.useRC = true;
@@ -469,14 +295,9 @@ public class FRFinder {
         graphOnlyOption.setRequired(false);
         options.addOption(graphOnlyOption);
         //
-        Option nRoundsOption = new Option("nr", "nrounds", true, "number of FR-building rounds to run ("+NROUNDS+")");
-        nRoundsOption.setRequired(false);
-        options.addOption(nRoundsOption);
-        //
-        Option minCaseCtrlRatioOption = new Option("mccr", "mincasectrlratio", true,
-                                                   "minimum ratio of case/ctrl or ctrl/case labeled paths for FR to qualify ("+MIN_CASE_CTRL_RATIO+")");
-        minCaseCtrlRatioOption.setRequired(false);
-        options.addOption(minCaseCtrlRatioOption);
+        Option caseCtrlOption = new Option("cc", "casectrl", false, "emphasize FRs that have large case vs. control support ("+CASE_CTRL+")");
+        caseCtrlOption.setRequired(false);
+        options.addOption(caseCtrlOption);
 
         try {
             cmd = parser.parse(options, args);
@@ -560,16 +381,8 @@ public class FRFinder {
         if (cmd.hasOption("minlen")) {
             frf.setMinLen(Integer.parseInt(cmd.getOptionValue("minlen")));
         }
-        if (cmd.hasOption("nrounds")) {
-            frf.setNRounds(Integer.parseInt(cmd.getOptionValue("nrounds")));
-        }
-        if (cmd.hasOption("mincasectrlratio")) {
-            double mccr = Double.parseDouble(cmd.getOptionValue("mincasectrlratio"));
-            if (mccr<1.0) {
-                System.err.println("ERROR: parameter mccr/mincasectrlratio must be greater than 1");
-                System.exit(1);
-            }
-            frf.setMinCaseCtrlRatio(mccr);
+        if (cmd.hasOption("casectrl")) {
+            frf.setCaseCtrl();
         }
         if (cmd.hasOption("outputfile")) {
             frf.setOutputFile(cmd.getOptionValue("outputfile"));
@@ -585,30 +398,32 @@ public class FRFinder {
     }
 
     /**
-     * Contains a pair of FRs for storage in the PriorityBlockingQueue with reverse support then avgLen as the comparator.
+     * Contains a pair of FRs for storage in the PriorityBlockingQueue with a comparator to decide which FRs "win".
+     * This is where one implements weighting for certain FR characteristics.
      */
     class FRPair implements Comparable<FRPair> {
         FrequentedRegion fr1;
         FrequentedRegion fr2;
-        Set<Path> supportPaths;
-        double avgLength;
+        FrequentedRegion merged;
         FRPair(FrequentedRegion fr1, FrequentedRegion fr2) {
             this.fr1 = fr1;
             this.fr2 = fr2;
-            supportPaths = evalMerge(fr1,fr2);
-            int totalLength = 0;
-            for (Path p : supportPaths) {
-                for (Node n : p.nodes) {
-                    totalLength += n.sequence.length();
-                }
-            }
-            avgLength = (double)totalLength/(double)supportPaths.size();
+            merged = FrequentedRegion.merge(fr1, fr2, graph, alpha, kappa);
         }
         public int compareTo(FRPair that) {
-            if (that.supportPaths.size()!=this.supportPaths.size()) {
-                return Integer.compare(that.supportPaths.size(),this.supportPaths.size());
+            if (caseCtrl) {
+                // use distance from case=control line if different
+                int thisDistance = Math.abs(this.merged.getLabelCount("case")-this.merged.getLabelCount("ctrl"));
+                int thatDistance = Math.abs(that.merged.getLabelCount("case")-that.merged.getLabelCount("ctrl"));
+                if (thisDistance!=thatDistance) {
+                    return Integer.compare(thatDistance, thisDistance);
+                }
+            }
+            // default: support then avgLength
+            if (that.merged.support!=this.merged.support) {
+                return Integer.compare(that.merged.support, this.merged.support);
             } else {
-                return Double.compare(that.avgLength, this.avgLength);
+                return Double.compare(that.merged.avgLength, this.merged.avgLength);
             }
         }
     }
@@ -744,10 +559,11 @@ public class FRFinder {
         }
         // Graph
         if (graph!=null) {
+            out.println("genotype"+"\t"+graph.genotype);
             if (graph.jsonFile!=null) out.println("jsonfile"+"\t"+graph.jsonFile);
+            if (graph.gfaFile!=null) out.println("gfafile"+"\t"+graph.gfaFile);
             if (graph.dotFile!=null) out.println("dotfile"+"\t"+graph.dotFile);
             if (graph.fastaFile!=null) out.println("fastafile"+"\t"+graph.fastaFile);
-            out.println("genotype"+"\t"+graph.genotype);
         }
         // FRFinder
         out.println("alpha"+"\t"+alpha);
@@ -756,8 +572,7 @@ public class FRFinder {
         out.println("maxsup"+"\t"+maxSup);
         out.println("minsize"+"\t"+minSize);
         out.println("minlen"+"\t"+minLen);
-        out.println("nrounds"+"\t"+nRounds);
-        out.println("mincasectrlratio"+"\t"+minCaseCtrlRatio);
+        out.println("casectrl"+"\t"+caseCtrl);
         out.println("userc"+"\t"+useRC);
         if (inputFile!=null) out.println("inputfile"+"\t"+inputFile);
         if (outputFile!=null) out.println("outputfile"+"\t"+outputFile);
@@ -797,8 +612,6 @@ public class FRFinder {
                 minSize = Integer.parseInt(parts[1]);
             } else if (parts[0].equals("minlen")) {
                 minLen = Integer.parseInt(parts[1]);
-            } else if (parts[0].equals("nrounds")) {
-                nRounds = Integer.parseInt(parts[1]);
             } else if (parts[0].equals("userc")) {
                 useRC = Boolean.parseBoolean(parts[1]);
             }

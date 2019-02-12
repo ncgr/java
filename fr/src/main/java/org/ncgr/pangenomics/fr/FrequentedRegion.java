@@ -44,14 +44,14 @@ public class FrequentedRegion implements Comparable<FrequentedRegion> {
     // the total support = fwdSupport + rcSupport;
     int support = 0;
 
-    // a subpath must satisfy the requirement that it traverses at least alpha*nodes.totalBases;
+    // the average length of the subpath sequences
+    double avgLength;
+
+    // a subpath must satisfy the requirement that it traverses at least alpha*nodes.size()
     double alpha;
 
     // a subpath must satisfy the requirement that its contiguous nodes that do NOT belong in this.nodes have total sequence length no larger than kappa
     int kappa;
-
-    // the average length of the subpath sequences
-    double avgLength;
 
     /**
      * Construct given a Graph, NodeSet and alpha and kappa filter parameters.
@@ -63,37 +63,30 @@ public class FrequentedRegion implements Comparable<FrequentedRegion> {
         this.kappa = kappa;
         // compute the subpaths, average length, support, etc.
         this.nodes.update();
-        update();
+        updateSubpaths();
+        updateSupport();
+        updateAvgLength();
     }
 
     /**
      * Construct given a Graph, NodeSet and Subpaths
      */
-    FrequentedRegion(Graph graph, NodeSet nodes, Set<Path> subpaths) {
+    FrequentedRegion(Graph graph, NodeSet nodes, Set<Path> subpaths, double alpha, int kappa) {
         this.graph = graph;
         this.nodes = nodes;
         this.subpaths = subpaths;
+        this.alpha = alpha;
+        this.kappa = kappa;
         updateSupport();
-        updateLengths();
+        updateAvgLength();
     }
         
-
     /**
      * Construct given only a NodeSet, used for various post-processing routines.
      */
     FrequentedRegion(NodeSet nodes) {
         this.nodes = nodes;
         this.nodes.update();
-    }
-
-    /**
-     * Update this frequented region with its existing contents and the current alpha,kappa values.
-     * This should be run any time a new FrequentedRegion is made.
-     */
-    void update() {
-        updateSubpaths();
-        updateSupport();  // must follow updatesubPaths()
-        updateLengths();  // must follow updateSupport()
     }
 
     /**
@@ -111,130 +104,130 @@ public class FrequentedRegion implements Comparable<FrequentedRegion> {
     }
     
     /**
-     * Update the total and average length of this frequented region's subpath sequences.
+     * Update the average length of this frequented region's subpath sequences.
      */
-    void updateLengths() {
+    void updateAvgLength() {
         int totalLength = 0;
         for (Path subpath : subpaths) {
             for (Node node : subpath.nodes) {
-                if (node.sequence==null) {
-                    // bail, this is an error
-                    System.err.println("ERROR: sequence is null for node "+node.id);
-                    System.exit(1);
-                } else {
-                    totalLength += node.sequence.length();
-                }
+                totalLength += node.sequence.length();
             }
         }
         avgLength = (double)totalLength/(double)subpaths.size();
     }
 
     /**
-     * Update the subpaths from the full genome paths for the current alpha and kappa values.
+     * Update the subpaths from the graph paths for the current alpha and kappa values.
      */
     void updateSubpaths() {
 
-        // we'll replace subpaths with this set
-        Set<Path> newSubpaths = new HashSet<>();
-        
-        // loop through each genome path
-        // TODO: handle multiple subpaths of a path
-        for (Path path : graph.paths) {
-
-            // find the MAXIMUM subpath, even if it fails tests below!
-            Node left = null;
-            Node right = null;
-            for (Node node : path.nodes) {
-                if (nodes.contains(node)) {
-                    if (left==null) {
-                        left = node;
-                    } else {
-                        right = node;
-                    }
-                }
-            }
-            
-            // build the subpath
-            Path subpath = new Path(path.name, path.genotype, path.label);
-
-            if (left!=null && right==null) {
-                // single-node subpath
-                subpath.addNode(left);
-
-            } else if (left!=null && right!=null) {
-                // load the insertions into a set for the kappa filter
-                List<List<Node>> insertions = new LinkedList<>();
-                // scan across the full path from left to right to create the subpath
-                boolean started = false;
-                boolean ended = false;
-
-                List<Node> insertion = new LinkedList<>();
-                for (Node node : path.nodes) {
-                    if (node.equals(left)) {
-                        // add the leftmost path node
-                        subpath.addNode(node);
-                        started = true;
-                    } else if (node.equals(right)) {
-                        // add the rightmost path node
-                        subpath.addNode(node);
-                        ended = true;
-                        break; // we're done with this loop
-                    } else if (started && !ended) {
-                        // add all path nodes between left and right
-                        subpath.addNode(node);
-                        // deal with insertion
-                        if (nodes.contains(node)) {
-                            // NOT an insertion
-                            if (insertion.size()>0) {
-                                // finish off the previous insertion and start another
-                                insertions.add(insertion);
-                                insertion = new LinkedList<>();
-                            }
-                        } else {
-                            // IS an insertion
-                            insertion.add(node);
-                        }
-                    }
-                }
-                // add the last insertion if nonzero
-                if (insertion.size()>0) {
-                    insertions.add(insertion);
-                }
-                
-                // kappa filter, bail if we have an insertion exceeding kappa in length
-                boolean kappaOK = true;
-                for (List<Node> insn : insertions) {
-                    String insnSequence = "";
-                    for (Node node : insn) {
-                        insnSequence += node.sequence;
-                    }
-                    if (insnSequence.length()>kappa) {
-                        kappaOK = false;
-                        break;
-                    }
-                }
-
-                // bail on this path if it fails kappa test
-                if (!kappaOK) continue;
-            }
-
-            
-            // alpha filter = minimum fraction of FR's NODES
-            int count = 0;
-            for (Node node : subpath.nodes) {
-                if (this.nodes.contains(node)) {
-                    count++;
-                }
-            }
-            double frac = (double)(count)/(double)this.nodes.size();
-            if (frac<alpha) continue;
-
-            // filters passed, add this subpath
-            newSubpaths.add(subpath);
+        subpaths = new HashSet<>();
+        for (Path p : graph.paths) {
+            subpaths.addAll(computeSupport(nodes, p, alpha, kappa));
         }
 
-        // replace the instance subpaths with the new set
-        subpaths = newSubpaths;
+
+        // // we'll replace subpaths with this set
+        // Set<Path> newSubpaths = new HashSet<>();
+        
+        // // loop through each genome path
+        // // TODO: handle multiple subpaths of a path
+        // for (Path path : graph.paths) {
+
+        //     // find the MAXIMUM subpath, even if it fails tests below!
+        //     Node left = null;
+        //     Node right = null;
+        //     for (Node node : path.nodes) {
+        //         if (nodes.contains(node)) {
+        //             if (left==null) {
+        //                 left = node;
+        //             } else {
+        //                 right = node;
+        //             }
+        //         }
+        //     }
+            
+        //     // build the subpath
+        //     Path subpath = new Path(path.name, path.genotype, path.label);
+
+        //     if (left!=null && right==null) {
+        //         // single-node subpath
+        //         subpath.addNode(left);
+
+        //     } else if (left!=null && right!=null) {
+        //         // load the insertions into a set for the kappa filter
+        //         List<List<Node>> insertions = new LinkedList<>();
+        //         // scan across the full path from left to right to create the subpath
+        //         boolean started = false;
+        //         boolean ended = false;
+
+        //         List<Node> insertion = new LinkedList<>();
+        //         for (Node node : path.nodes) {
+        //             if (node.equals(left)) {
+        //                 // add the leftmost path node
+        //                 subpath.addNode(node);
+        //                 started = true;
+        //             } else if (node.equals(right)) {
+        //                 // add the rightmost path node
+        //                 subpath.addNode(node);
+        //                 ended = true;
+        //                 break; // we're done with this loop
+        //             } else if (started && !ended) {
+        //                 // add all path nodes between left and right
+        //                 subpath.addNode(node);
+        //                 // deal with insertion
+        //                 if (nodes.contains(node)) {
+        //                     // NOT an insertion
+        //                     if (insertion.size()>0) {
+        //                         // finish off the previous insertion and start another
+        //                         insertions.add(insertion);
+        //                         insertion = new LinkedList<>();
+        //                     }
+        //                 } else {
+        //                     // IS an insertion
+        //                     insertion.add(node);
+        //                 }
+        //             }
+        //         }
+        //         // add the last insertion if nonzero
+        //         if (insertion.size()>0) {
+        //             insertions.add(insertion);
+        //         }
+                
+        //         // kappa filter, bail if we have an insertion exceeding kappa in length
+        //         boolean kappaOK = true;
+        //         for (List<Node> insn : insertions) {
+        //             String insnSequence = "";
+        //             for (Node node : insn) {
+        //                 insnSequence += node.sequence;
+        //             }
+        //             if (insnSequence.length()>kappa) {
+        //                 kappaOK = false;
+        //                 break;
+        //             }
+        //         }
+
+        //         // bail on this path if it fails kappa test
+        //         if (!kappaOK) continue;
+        //     }
+
+            
+        //     // alpha filter = minimum fraction of FR's NODES
+        //     int count = 0;
+        //     for (Node node : subpath.nodes) {
+        //         if (this.nodes.contains(node)) {
+        //             count++;
+        //         }
+        //     }
+        //     double frac = (double)(count)/(double)this.nodes.size();
+        //     if (frac<alpha) continue;
+
+        //     // filters passed, add this subpath
+        //     newSubpaths.add(subpath);
+        // }
+
+        // // replace the instance subpaths with the new set
+        // subpaths = newSubpaths;
     }
 
     /**
@@ -325,26 +318,76 @@ public class FrequentedRegion implements Comparable<FrequentedRegion> {
     /**
      * Merge two FrequentedRegions and return the result.
      */
-    static FrequentedRegion merge(FrequentedRegion fr1, FrequentedRegion fr2) {
-        // validation
-        if (!fr1.graph.equals(fr2.graph)) {
-            System.err.println("ERROR: attempt to merge FRs in different graphs.");
-            System.exit(1);
-            return null;
-        } else if (fr1.alpha!=fr2.alpha) {
-            System.err.println("ERROR: attempt to merge FRs with different alpha values.");
-            System.exit(1);
-            return null;
-        } else if (fr1.kappa!=fr2.kappa) {
-            System.err.println("ERROR: attempt to merge FRs with different kappa values.");
-            System.exit(1);
-            return null;
-        } else {
-            NodeSet nodes = new NodeSet();
-            nodes.addAll(fr1.nodes);
-            nodes.addAll(fr2.nodes);
-            return new FrequentedRegion(fr1.graph, nodes, fr1.alpha, fr1.kappa);
+    // static FrequentedRegion merge(FrequentedRegion fr1, FrequentedRegion fr2) {
+    //     // validation
+    //     if (!fr1.graph.equals(fr2.graph)) {
+    //         System.err.println("ERROR: attempt to merge FRs in different graphs.");
+    //         System.exit(1);
+    //         return null;
+    //     } else if (fr1.alpha!=fr2.alpha) {
+    //         System.err.println("ERROR: attempt to merge FRs with different alpha values.");
+    //         System.exit(1);
+    //         return null;
+    //     } else if (fr1.kappa!=fr2.kappa) {
+    //         System.err.println("ERROR: attempt to merge FRs with different kappa values.");
+    //         System.exit(1);
+    //         return null;
+    //     } else {
+    //         NodeSet nodes = new NodeSet();
+    //         nodes.addAll(fr1.nodes);
+    //         nodes.addAll(fr2.nodes);
+    //         return new FrequentedRegion(fr1.graph, nodes, fr1.alpha, fr1.kappa);
+    //     }
+    // }
+
+    /**
+     * Algorithm 1 from Cleary, et al. generates the supporting path segments for the given NodeSet c and and Path p.
+     * @param c the NodeSet, or cluster C as it's called in Algorithm 1
+     * @param p the Path for which we want the set of supporting paths
+     * @param alpha the penetrance parameter
+     * @param kappa the insertion parameter
+     * @returns the set of supporting path segments
+     */
+    static Set<Path> computeSupport(NodeSet c, Path p, double alpha, int kappa) {
+        Set<Path> s = new HashSet<>();
+        // m = the list of p's nodes that are in c
+        LinkedList<Node> m = new LinkedList<>();
+        for (Node n : p.nodes) {
+            if (c.contains(n)) m.add(n);
         }
+        // find subpaths that satisfy alpha, kappa criteria
+        int start = 0;
+        while (start<m.size()) {
+            int i = start;
+            Node nl = m.get(i);
+            Node nr = nl;
+            while ((i<m.size()-1)) {
+                if (p.gap(nl,m.get(i+1))>kappa) break;
+                i = i + 1;
+                nr = m.get(i);
+            }
+            if ((i-start+1)>=alpha*c.size()) {
+                Path subpath = p.subpath(nl,nr);
+                if (subpath.nodes.size()==0) {
+                    System.err.println("ERROR: subpath.nodes.size()=0; p="+p+" nl="+nl+" nr="+nr);
+                } else {
+                    s.add(subpath);
+                }
+            }
+            start = i + 1;
+        }
+        return s;
+    }
+
+    /**
+     * Algorithm 2 from Cleary, et al. returns the supporting path segments for the given merge of FRs.
+     * @param fr1 the "left" FR (represented by (C_L,S_L) in the paper)
+     * @param fr2 the "right FR (represented by (C_R,S_R) in the paper)
+     * @returns the set of supporting path segments
+     */
+    static FrequentedRegion merge(FrequentedRegion fr1, FrequentedRegion fr2, Graph graph, double alpha, int kappa) {
+        NodeSet c = NodeSet.merge(fr1.nodes, fr2.nodes);
+        return new FrequentedRegion(graph, c, alpha, kappa);
     }
 
     /**
