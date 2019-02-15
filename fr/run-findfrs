@@ -17,6 +17,8 @@ KAPPA=51
 MINSUP=2
 MINSIZE=1
 
+# HDStudy/HTT.dot HDStudy/HTT.k15.dot  HDStudy/HTT.k30.dot  HDStudy/HTT.k60.dot HDStudy/HTT.k120.dot
+
 java -cp "lib/FindFRs.jar:build/install/fr/lib/*" findFRs.FindFRs --alpha $ALPHA --kappa $KAPPA --minsup $MINSUP --minsize $MINSIZE --fasta HDStudy/HTT.fasta --dot HDStudy/HTT.dot
 java -cp "lib/FindFRs.jar:build/install/fr/lib/*" findFRs.FindFRs --alpha $ALPHA --kappa $KAPPA --minsup $MINSUP --minsize $MINSIZE --fasta HDStudy/HTT.fasta --dot HDStudy/HTT.k15.dot
 java -cp "lib/FindFRs.jar:build/install/fr/lib/*" findFRs.FindFRs --alpha $ALPHA --kappa $KAPPA --minsup $MINSUP --minsize $MINSIZE --fasta HDStudy/HTT.fasta --dot HDStudy/HTT.k30.dot

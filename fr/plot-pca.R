@@ -16,18 +16,18 @@ require(RColorBrewer)
 
 ## NOT FANCY
 num = length(colnames(pca$rotation))
+
 ## colors = brewer.pal(12,"Set3")
 
 ## case/control labels and colors
 labels = array(dim=length(rownames(pca$rotation)))
 colors = array(dim=length(rownames(pca$rotation)))
 for (i in 1:length(rownames(pca$rotation))) {
-    parts = unlist(strsplit(rownames(pca$rotation)[i], ".", fixed = TRUE))
-    labels[i] = substring(parts[1], 2);
-    if (parts[2]=="case") {
-        colors[i] = "darkred"
-    } else if (parts[2]=="ctrl") {
+    labels[i] = rownames(pca$rotation)[i]
+    if (grepl("case", labels[i])) {
         colors[i] = "darkgreen"
+    } else if (grepl("ctrl", labels[i])) {
+        colors[i] = "darkred"
     } else {
         colors[i] = "gray";
     }
@@ -37,7 +37,8 @@ for (i in (num-1):1) {
     xlabel = paste("PC",i,  " ",round(summary(pca)$importance["Proportion of Variance",i]*100,1),"% of variance", sep="")
     ylabel = paste("PC",i+1," ",round(summary(pca)$importance["Proportion of Variance",i+1]*100,1),"% of variance", sep="")
     plot(pca$rotation[,i], pca$rotation[,i+1], xlab=xlabel, ylab=ylabel, pch=20, cex=1.2, col=colors)
-    ## ## colors!
-    ## points(pca$rotation[,i], pca$rotation[,i+1], xlab=xlabel, ylab=ylabel, pch=20, col=colors)
-    text(pca$rotation[,i], pca$rotation[,i+1], labels, pos=1, col=colors)
+    title(main=paste("HDStudy  alpha=",alpha," kappa=",kappa," minsup=",minsup," minsize=",minsize," minlen=",minlen," case/ctrl=",casectrl, sep=""), cex.main=0.9)
+    ## colors!
+    points(pca$rotation[,i], pca$rotation[,i+1], xlab=xlabel, ylab=ylabel, pch=20, col=colors)
+    text(pca$rotation[,i], pca$rotation[,i+1], labels, pos=1, col=colors, cex=0.5)
 }

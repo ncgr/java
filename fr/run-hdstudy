@@ -6,6 +6,7 @@
 # -m,--minsup <arg>	minimum number of supporting paths for a region to be considered interesting (1)
 # -n,--maxsup <arg>	maximum number of supporting paths for a region to be considered interesting (2147483647)
 # -s,--minsize <arg>	minimum number of nodes that a FR must contain to be considered interesting (0)
+# --casectrl            emphasize case vs. ctrl support rather than total support (requires labels)
 ## I/O
 # -d,--dot <arg>	splitMEM DOT file (requires FASTA file)
 # -f,--fasta <arg>	FASTA file (requires DOT file)
@@ -13,7 +14,7 @@
 # -gfa,--gfa <arg>	vg GFA file
 # -g,--genotype <arg>	which genotype to include (0,1) from the input file; -1 to include all (-1)
 # -p,--pathlabels <arg>	tab-delimited file with pathname<tab>label
-# -o,--outputfile <arg>	output file (stdout)
+# -o,--outputprefix<arg>output file prefix (stdout)
 # -r,--userc		indicates if the sequence (e.g. FASTA) had its reverse complement appended (false)
 ## other
 # -v,--verbose		verbose output (false)
@@ -21,6 +22,6 @@
 # -nr,--nrounds <arg>	number of FR-building rounds to run (2)
 # -do,--debug		debug output (false)
 
-java -server -cp "build/install/fr/lib/*" org.ncgr.pangenomics.fr.FRFinder --gfa HDStudy/HTT.paths.gfa --pathlabels HDStudy/labels.txt --genotype -1 \
-	--alpha 0.5 --kappa 21 --minsup 1 --minsize 8 --minlen 100 --casectrl \
-	--debug --outputfile hdstudy.out
+java -server -cp "build/install/fr/lib/*" org.ncgr.pangenomics.fr.FRFinder --gfa HDStudy/HTT.paths.gfa --pathlabels HDStudy/labels.txt \
+	--alpha 0.6 --kappa 21 --minsup 1 --minsize 1 --minlen 1 --casectrl \
+	--debug --verbose --outputprefix hdstudy

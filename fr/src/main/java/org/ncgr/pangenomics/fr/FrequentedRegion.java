@@ -406,7 +406,7 @@ public class FrequentedRegion implements Comparable<FrequentedRegion> {
     public int countSubpathsOf(Path path) {
         int count = 0;
         for (Path sp : subpaths) {
-            if (sp.equals(path)) count++;
+            if (sp.name.equals(path.name) && sp.genotype==path.genotype) count++;
         }
         return count;
     }

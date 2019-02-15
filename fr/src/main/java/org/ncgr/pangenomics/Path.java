@@ -119,7 +119,7 @@ public class Path implements Comparable<Path> {
      */
     public String getNameAndLabel() {
         String n = name+"."+genotype;
-        if (label!=null) n += "{"+label+"}";
+        if (label!=null) n += "."+label;
         return n;
     }
 

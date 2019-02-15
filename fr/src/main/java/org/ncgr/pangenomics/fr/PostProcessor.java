@@ -31,9 +31,9 @@ public class PostProcessor {
         inputfileOption.setRequired(false);
         options.addOption(inputfileOption);
         //
-        Option outputfileOption = new Option("o", "outputfile", true, "output file (stdout)");
-        outputfileOption.setRequired(false);
-        options.addOption(outputfileOption);
+        Option outputprefixOption = new Option("o", "outputprefix", true, "output file (stdout)");
+        outputprefixOption.setRequired(false);
+        options.addOption(outputprefixOption);
         //
         Option removeChildrenOption = new Option("rc", "removechildren", false, "remove child FRs");
         removeChildrenOption.setRequired(false);
@@ -52,8 +52,8 @@ public class PostProcessor {
         String inputFile = cmd.getOptionValue("inputfile");
         FRFinder frf = new FRFinder(inputFile);
         frf.readParameters();
-        if (cmd.hasOption("outputfile")) {
-            frf.setOutputFile(cmd.getOptionValue("outputfile"));
+        if (cmd.hasOption("outputprefix")) {
+            frf.setOutputPrefix(cmd.getOptionValue("outputprefix"));
         }
 
         // // do the deed
@@ -62,7 +62,7 @@ public class PostProcessor {
         //     frf.removeChildren();
         // }
 
-        // print out the parameters to stdout or outputFile+".params" if exists
+        // print out the parameters to stdout or outputprefix+".params" if exists
         frf.printParameters();
 
         // output the result

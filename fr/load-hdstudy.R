@@ -1,10 +1,10 @@
 ## load a pair of FRFinder hdstudy files
 
-hdstudy = read.table("hdstudy.out", header=TRUE)
-rownames(hdstudy) = hdstudy$FR
-hdstudy$FR = NULL
+frs = read.table("hdstudy.frs.txt", header=TRUE)
+rownames(frs) = frs$FR
+frs$FR = NULL
 
-params = read.delim(file="hdstudy.out.params", header=F)
+params = read.delim(file="hdstudy.params.txt", header=F)
 for (i in 1:length(rownames(params))) {
     if (params$V1[i]=="genotype") genotype = params$V2[i]
     if (params$V1[i]=="alpha") alpha = params$V2[i]

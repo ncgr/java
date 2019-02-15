@@ -62,7 +62,7 @@ public class FRFinder {
     int minSize = MINSIZE; // minimum size: minimum number of de Bruijn nodes (fr.nodes.size()) that an FR must contain to be considered interesting
     int minLen = MINLEN;   // minimum average length of a frequented region's subpath sequences (fr.avgLength) to be considered interesting
     boolean caseCtrl = CASE_CTRL; // emphasize FRs that have large case/control support
-    String outputFile = null; // output file for FRs (stdout if null)
+    String outputPrefix = null; // output file for FRs (stdout if null)
 
     // the FRs, sorted for convenience
     TreeSet<FrequentedRegion> frequentedRegions;
@@ -100,9 +100,11 @@ public class FRFinder {
             graph.printNodePaths();
         }
 
-        // store the FRs in a TreeSet, backed with a synchronized Set for parallel processing
+        // store the saved FRs in a TreeSet
         frequentedRegions = new TreeSet<>();
-        Set<FrequentedRegion> syncFrequentedRegions = Collections.synchronizedSet(frequentedRegions);
+        
+        // store the studied FRs in a synchronizedSet
+        Set<FrequentedRegion> syncFrequentedRegions = Collections.synchronizedSet(new TreeSet<>());
         
         // create initial single-node FRs
         for (Node node : graph.nodes.values()) {
@@ -115,7 +117,7 @@ public class FRFinder {
             }
             if (s.size()>0) {
                 FrequentedRegion fr = new FrequentedRegion(graph, c, s, alpha, kappa);
-                frequentedRegions.add(fr);
+                syncFrequentedRegions.add(fr);
             }
         }
 
@@ -132,9 +134,10 @@ public class FRFinder {
             // gently suggest garbage collection
             System.gc();
 
-            // put FR pairs into a PriorityBlockingQueue which sorts them by decreasing support
+            // put FR pairs into a PriorityBlockingQueue which sorts them by decreasing interest (defined by the FRPair comparator)
             PriorityBlockingQueue<FRPair> pbq = new PriorityBlockingQueue<>();
 
+            ////////////////////////////////////////
             // spin through FRs in a parallel manner
             syncFrequentedRegions.parallelStream().forEach((fr1) -> {
                     syncFrequentedRegions.parallelStream().forEach((fr2) -> {
@@ -143,26 +146,42 @@ public class FRFinder {
                             }
                         });
                 });
-
+            ////////////////////////////////////////
+            
             // add our new FR
-            FRPair frpair = pbq.peek();
-            if (frpair.merged.support>0) {
-                added = true;
-                usedFRs.add(frpair.fr1);
-                usedFRs.add(frpair.fr2);
-                frequentedRegions.add(frpair.merged);
-                System.out.println(round+":"+frpair.merged.toString());
-                // System.out.println(frpair.supportPaths.toString());
+            if (pbq.size()>0) {
+                FRPair frpair = pbq.peek();
+                if (frpair.merged.support>0) {
+                    added = true;
+                    usedFRs.add(frpair.fr1);
+                    usedFRs.add(frpair.fr2);
+                    syncFrequentedRegions.add(frpair.merged);
+                    // flag FRs that don't meet the filters
+                    boolean passes = true;
+                    String reason = "";
+                    if (frpair.merged.support<minSup) {
+                        passes = false;
+                        reason += " support<minSup";
+                    }
+                    if (frpair.merged.avgLength<minLen) {
+                        passes = false;
+                        reason += " avgLength<minLen";
+                    }
+                    if (frpair.merged.nodes.size()<minSize) {
+                        passes = false;
+                        reason += " size<minSize";
+                    }
+                    if (passes) frequentedRegions.add(frpair.merged);
+                    System.out.println(round+":"+frpair.merged.toString()+reason);
+                }
             }
-        }
-        
-	// verbosity
-	if (verbose) {
-	    printPathFRs();
-	}
 
-	// the end result
+        }
+
+	// final output
         printFrequentedRegions();
+        printPathFRs();
+        printPathFRsSVM();
     }
 
     public double getAlpha() {
@@ -212,8 +231,8 @@ public class FRFinder {
     public void setUseRC() {
         this.useRC = true;
     }
-    public void setOutputFile(String outputFile) {
-        this.outputFile = outputFile;
+    public void setOutputPrefix(String outputPrefix) {
+        this.outputPrefix = outputPrefix;
     }
 
     /**
@@ -267,9 +286,9 @@ public class FRFinder {
         maxSupOption.setRequired(false);
         options.addOption(maxSupOption);
         //
-        Option outputfileOption = new Option("o", "outputfile", true, "output file (stdout)");
-        outputfileOption.setRequired(false);
-        options.addOption(outputfileOption);
+        Option outputprefixOption = new Option("o", "outputprefix", true, "output file prefix (stdout)");
+        outputprefixOption.setRequired(false);
+        options.addOption(outputprefixOption);
         //
         Option labelsOption = new Option("p", "pathlabels", true, "tab-delimited file with pathname<tab>label");
         labelsOption.setRequired(false);
@@ -384,11 +403,11 @@ public class FRFinder {
         if (cmd.hasOption("casectrl")) {
             frf.setCaseCtrl();
         }
-        if (cmd.hasOption("outputfile")) {
-            frf.setOutputFile(cmd.getOptionValue("outputfile"));
+        if (cmd.hasOption("outputprefix")) {
+            frf.setOutputPrefix(cmd.getOptionValue("outputprefix"));
         }
 
-        // print out the parameters to stdout or outputFile+".params" if exists
+        // print out the parameters to stdout or outputPrefix+".params" if exists
         frf.printParameters();
         
         //////////////////
@@ -438,33 +457,78 @@ public class FRFinder {
     }
 
     /**
-     * Print the path names and the FRs that have subpaths belonging to those paths.
+     * Print the path names and the count of subpaths for each FR, to stdout or outputPrefix.paths.txt.
      * This can be used as input to a classification routine.
      */
-    void printPathFRs() {
-        printHeading("PATH FREQUENTED REGIONS");
+    void printPathFRs() throws IOException {
+        PrintStream out = null;
+        // output from a findFRs run
+        if (outputPrefix==null) {
+            out = System.out;
+            printHeading("PATH FREQUENTED REGIONS");
+        } else {
+            out = new PrintStream(outputPrefix+".paths.txt");
+        }
         // columns
-        System.out.print("Path\\FR");
-        if (graph.paths.first().label!=null) System.out.print("\tLabel");
+        boolean first = true;
+        for (Path path : graph.paths) {
+            if (first) {
+                first = false;
+            } else {
+                out.print("\t");
+            }
+            out.print(path.getNameAndLabel());
+        }
+        out.println("");        
+        // rows
         int c = 1;
         for (FrequentedRegion fr : frequentedRegions) {
-            System.out.print("\t"+c);
-            c++;
-        }
-        System.out.println("");
-        // rows
-        for (Path path : graph.paths) {
-            System.out.print(path.name);
-            if (path.label!=null) System.out.print("\t"+path.label);
-            for (FrequentedRegion fr : frequentedRegions) {
-                System.out.print("\t"+fr.countSubpathsOf(path));
+            out.print(c++);
+            for (Path path : graph.paths) {
+                out.print("\t"+fr.countSubpathsOf(path));
             }
-            System.out.println("");
+            out.println("");
         }
+        if (outputPrefix!=null) out.close();
     }
 
     /**
-     * Print out the FRs, either to stdout or outputFile if not null.
+     * Print the path FR support for libsvm. Lines are like:
+     * +1 1:1 2:1 3:1 4:0 ...
+     * -1 1:0 2:0 3:0 4:1 ...
+     * +1 1:0 2:1 3:0 4:2 ...
+     * Where +1 corresponds to "case" and -1 corresponds to "ctrl" (0 otherwise).
+     */
+    void printPathFRsSVM() throws IOException {
+        PrintStream out = null;
+        // output from a findFRs run
+        if (outputPrefix==null) {
+            out = System.out;
+            printHeading("PATH SVM RECORDS");
+        } else {
+            out = new PrintStream(outputPrefix+".svm.txt");
+        }
+        // only rows, one per path
+        for (Path path : graph.paths) {
+            String group = "0";
+            if (path.label!=null && path.label.equals("case")) {
+                group = "+1";
+            } else if (path.label!=null && path.label.equals("ctrl")) {
+                group = "-1";
+            }
+            out.print(group);
+            int c = 0;
+            for (FrequentedRegion fr : frequentedRegions) {
+                c++;
+                out.print("\t"+c+":"+fr.countSubpathsOf(path));
+            }
+            out.println("");
+        }
+        if (outputPrefix!=null) out.close();
+    }
+    
+    /**
+     * Print out the FRs, either to stdout or outputPrefix.frs.txt
      */
     void printFrequentedRegions() throws IOException {
         if (frequentedRegions.size()==0) {
@@ -474,31 +538,30 @@ public class FRFinder {
         PrintStream out = null;
         if (inputFile==null) {
             // output from a findFRs run
-            if (outputFile==null) {
+            if (outputPrefix==null) {
                 out = System.out;
                 printHeading("FREQUENTED REGIONS");
             } else {
-                out = new PrintStream(outputFile);
+                out = new PrintStream(outputPrefix+".frs.txt");
             }
-            out.println("FR\t"+frequentedRegions.first().columnHeading());
-            int c = 1;
+            out.println(frequentedRegions.first().columnHeading());
             for (FrequentedRegion fr : frequentedRegions) {
-                out.println(c+"\t"+fr.toString());
-                c++;
+                out.println(fr.toString());
             }
         } else {
             // output from post-processing
-            if (outputFile==null) {
+            if (outputPrefix==null) {
                 out = System.out;
                 printHeading("FREQUENTED REGIONS");
             } else {
-                out = new PrintStream(outputFile);
+                out = new PrintStream(outputPrefix+".frs.txt");
             }
             out.println(outputHeading);
             for (FrequentedRegion fr : frequentedRegions) {
                 out.println(outputLines.get(fr.nodes));
             }
         }
+        if (outputPrefix!=null) out.close();
     }
 
     /**
@@ -545,16 +608,16 @@ public class FRFinder {
     }
 
     /**
-     * Print out the parameters, either to stdout or {outputFile}.params
+     * Print out the parameters, either to stdout or outputPrefix.params.txt
      */
     public void printParameters() throws IOException {
         PrintStream out = null;
-        if (outputFile==null) {
+        if (outputPrefix==null) {
             out = System.out;
             printHeading("PARAMETERS");
         } else {
-            // no heading for file output; append to outputFile
-            String paramFile = outputFile+".params";
+            // no heading for file output; append to output file
+            String paramFile = outputPrefix+".params.txt";
             out = new PrintStream(paramFile);
         }
         // Graph
@@ -575,7 +638,7 @@ public class FRFinder {
         out.println("casectrl"+"\t"+caseCtrl);
         out.println("userc"+"\t"+useRC);
         if (inputFile!=null) out.println("inputfile"+"\t"+inputFile);
-        if (outputFile!=null) out.println("outputfile"+"\t"+outputFile);
+        if (outputPrefix!=null) out.println("outputprefix"+"\t"+outputPrefix);
     }
 
     /**
