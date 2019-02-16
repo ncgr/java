@@ -161,22 +161,27 @@ public class FRFinder {
                     String reason = "";
                     if (frpair.merged.support<minSup) {
                         passes = false;
-                        reason += " support<minSup";
+                        reason += " support";
                     }
                     if (frpair.merged.avgLength<minLen) {
                         passes = false;
-                        reason += " avgLength<minLen";
+                        reason += " avgLength";
                     }
                     if (frpair.merged.nodes.size()<minSize) {
                         passes = false;
-                        reason += " size<minSize";
+                        reason += " size";
                     }
-                    if (passes) frequentedRegions.add(frpair.merged);
+                    if (passes) {
+                        reason += " *";
+                        frequentedRegions.add(frpair.merged);
+                    }
                     System.out.println(round+":"+frpair.merged.toString()+reason);
                 }
             }
 
         }
+
+        System.out.println("Found "+frequentedRegions.size()+" FRs.");
 
 	// final output
         printFrequentedRegions();
@@ -438,11 +443,13 @@ public class FRFinder {
                     return Integer.compare(thatDistance, thisDistance);
                 }
             }
-            // default: support then avgLength
+            // default: support then avgLength then size
             if (that.merged.support!=this.merged.support) {
                 return Integer.compare(that.merged.support, this.merged.support);
-            } else {
+            } else if (that.merged.avgLength!=this.merged.avgLength) {
                 return Double.compare(that.merged.avgLength, this.merged.avgLength);
+            } else {
+                return Integer.compare(that.merged.nodes.size(), this.merged.nodes.size());
             }
         }
     }
