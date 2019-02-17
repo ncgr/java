@@ -66,6 +66,7 @@ public class Graph {
     public String fastaFile;
     public String jsonFile;
     public String gfaFile;
+    public String labelsFile;
     
     // the nodes contained in this graph, in the form of an id->Node map
     // (Redundant, since Node also contains id, but this allows quick retrieval on id)
@@ -363,6 +364,7 @@ public class Graph {
      * Read path labels from a tab-delimited file. Comment lines start with #.
      */
     public void readPathLabels(String labelsFile) throws FileNotFoundException, IOException {
+        this.labelsFile = labelsFile;
         labelCounts = new TreeMap<>();
         BufferedReader reader = new BufferedReader(new FileReader(labelsFile));
         String line = null;
@@ -375,19 +377,32 @@ public class Graph {
                 }
             }
         }
-        // find the labels for path names (which may have :genotype suffix to ignore)
+        // find the labels for path names (which may have .genotype suffix)
         for (Path path : paths) {
-            String[] pieces = path.name.split(":");
-            String pathName = pieces[0];
-            for (String sampleName : labels.keySet()) {
-                if (sampleName.equals(pathName)) {
-                    String label = labels.get(sampleName); 
+            for (String sample : labels.keySet()) {
+                String label = labels.get(sample); 
+                if (sample.equals(path.name)) {
+                    // sample = path name labeling
                     path.setLabel(label);
                     if (labelCounts.containsKey(label)) {
                         int count = labelCounts.get(label);
                         labelCounts.put(label, count+1);
                     } else {
                         labelCounts.put(label, 1);
+                    }
+                } else {
+                    // sample = path name.genotype labeling
+                    String[] parts = sample.split("\\.");
+                    String sampleName = parts[0];
+                    int sampleGenotype = Integer.parseInt(parts[1]);
+                    if (sampleName.equals(path.name) && sampleGenotype==path.genotype) {
+                        path.setLabel(label);
+                        if (labelCounts.containsKey(label)) {
+                            int count = labelCounts.get(label);
+                            labelCounts.put(label, count+1);
+                        } else {
+                            labelCounts.put(label, 1);
+                        }
                     }
                 }
             }

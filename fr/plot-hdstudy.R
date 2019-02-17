@@ -4,8 +4,8 @@ plot(frs$ctrl, frs$case,
      xlab="ctrl sample support",  ylab="case sample support",
      col="darkgray"
      )
-title(main=paste("HDStudy  alpha=",alpha," kappa=",kappa," minsup=",minsup," minsize=",minsize," minlen=",minlen," case/ctrl=",casectrl, sep=""), cex.main=0.9)
-lines(c(0,100), c(0,100), col="lightgray")
+title(main=paste("HDStudy  alpha=",alpha," kappa=",kappa," case/ctrl=",casectrl, sep=""), cex.main=0.9)
+lines(c(0,47), c(0,27), col="lightgray")
 for (i in seq(5,100,by=5)) {
     lines(c(0,i),  c(i,0), col="lightgray", lty=2)
 }

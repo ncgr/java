@@ -16,6 +16,19 @@ import org.apache.commons.cli.ParseException;
  */
 public class PostProcessor {
 
+    // parameter defaults
+    static int MINSUP = 1;
+    static int MAXSUP = Integer.MAX_VALUE;
+    static int MINSIZE = 1;
+    static int MINLEN = 1;
+ 
+    // optional parameters, set with setters
+    int minSup = MINSUP;   // minimum support: minimum number of genome paths (fr.support) for an FR to be considered interesting
+    int maxSup = MAXSUP;   // maximum support: maximum number of genome paths (fr.support) for an FR to be considered interesting
+    int minSize = MINSIZE; // minimum size: minimum number of de Bruijn nodes (fr.nodes.size()) that an FR must contain to be considered interesting
+    int minLen = MINLEN;   // minimum average length of a frequented region's subpath sequences (fr.avgLength) to be considered interesting
+    String outputPrefix = null; // output file for FRs (stdout if null)
+
     /**
      * Command-line utility
      */
@@ -26,18 +39,25 @@ public class PostProcessor {
         HelpFormatter formatter = new HelpFormatter();
         CommandLine cmd;
 
-        //
-        Option inputfileOption = new Option("i", "inputfile", true, "input file (output from FRFinder)");
-        inputfileOption.setRequired(false);
-        options.addOption(inputfileOption);
-        //
-        Option outputprefixOption = new Option("o", "outputprefix", true, "output file (stdout)");
+        Option outputprefixOption = new Option("o", "outputprefix", true, "output file prefix from FRFinder run");
         outputprefixOption.setRequired(false);
         options.addOption(outputprefixOption);
         //
-        Option removeChildrenOption = new Option("rc", "removechildren", false, "remove child FRs");
-        removeChildrenOption.setRequired(false);
-        options.addOption(removeChildrenOption);
+        Option minLenOption = new Option("l", "minlen", true, "minlen=minimum allowed average length (bp) of an FR's subpaths ("+MINLEN+")");
+        minLenOption.setRequired(false);
+        options.addOption(minLenOption);
+        //
+        Option minSupOption = new Option("m", "minsup", true, "minsup=minimum number of supporting paths for a region to be considered interesting ("+MINSUP+")");
+        minSupOption.setRequired(false);
+        options.addOption(minSupOption);
+        //
+        Option maxSupOption = new Option("n", "maxsup", true, "maxsup=maximum number of supporting paths for a region to be considered interesting ("+MAXSUP+")");
+        maxSupOption.setRequired(false);
+        options.addOption(maxSupOption);
+        //
+        Option minSizeOption = new Option("s", "minsize", true, "minsize=minimum number of nodes that a FR must contain to be considered interesting ("+MINSIZE+")");
+        minSizeOption.setRequired(false);
+        options.addOption(minSizeOption);
 
         try {
             cmd = parser.parse(options, args);
@@ -48,25 +68,21 @@ public class PostProcessor {
             return;
         }
 
-        // instantiate an FRFinder with the FRs read from inputfile
-        String inputFile = cmd.getOptionValue("inputfile");
-        FRFinder frf = new FRFinder(inputFile);
-        frf.readParameters();
-        if (cmd.hasOption("outputprefix")) {
-            frf.setOutputPrefix(cmd.getOptionValue("outputprefix"));
-        }
-
-        // // do the deed
-        // if (cmd.hasOption("removechildren")) {
-        //     frf.setRemoveChildren();
-        //     frf.removeChildren();
+        // // instantiate an FRFinder with the FRs read from frfile
+        // String outputPrefix = null;
+        // if (cmd.hasOption("outputprefix")) {
+        //     outputPrefix = cmd.getOptionValue("outputprefix");
+        // } else {
+        //     System.err.println("-o/--outprefix is required");
+        //     System.exit(1);
         // }
+        
+        // // load the previous FRFinder state from the output files
+        // FRFinder frf = new FRFinder(outputPrefix);
 
-        // print out the parameters to stdout or outputprefix+".params" if exists
-        frf.printParameters();
-
-        // output the result
-        frf.printFrequentedRegions();
+        // //
+        // // grab the maps and stuff and run a post-process and then print out the results
+        // //
     }
 
 }

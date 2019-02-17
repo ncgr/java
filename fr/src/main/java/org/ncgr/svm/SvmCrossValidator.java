@@ -8,7 +8,7 @@ import java.io.DataOutputStream;
 import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
-
+import java.text.DecimalFormat;
 import java.util.StringTokenizer;
 import java.util.Vector;
 
@@ -24,6 +24,8 @@ import org.apache.commons.cli.ParseException;
  * Use svm to run a stratified k-fold cross-validation of data.
  */
 public class SvmCrossValidator {
+
+    static DecimalFormat pf = new DecimalFormat("0.0%");
     
     svm_parameter param;
     svm_problem prob;
@@ -319,7 +321,7 @@ public class SvmCrossValidator {
             System.out.println("Cross Validation Squared correlation coefficient = "+svc.squaredCorrCoeff);
         } else {
             System.out.println("correct/total="+svc.totalCorrect+"/"+svc.totalSamples);
-            System.out.println("Cross Validation Accuracy = "+100.0*svc.accuracy+"%");
+            System.out.println("Cross Validation Accuracy = "+pf.format(svc.accuracy));
         }
     }
 

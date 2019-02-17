@@ -1,27 +1,51 @@
 #!/bin/sh
-## analysis parameters
-# -a,--alpha <arg>	penetrance, fraction of a supporting path's NODES that supports the FR (required)
-# -k,--kappa <arg>	maximum insertion length that any supporting path may have (required)
-# -l,--minlen <arg>	minimum allowed average length (bp) of an FR's subpaths (1)
-# -m,--minsup <arg>	minimum number of supporting paths for a region to be considered interesting (1)
-# -n,--maxsup <arg>	maximum number of supporting paths for a region to be considered interesting (2147483647)
-# -s,--minsize <arg>	minimum number of nodes that a FR must contain to be considered interesting (0)
-# --casectrl            emphasize case vs. ctrl support rather than total support (requires labels)
-## I/O
-# -d,--dot <arg>	splitMEM DOT file (requires FASTA file)
-# -f,--fasta <arg>	FASTA file (requires DOT file)
-# -j,--json <arg>	vg JSON file
-# -gfa,--gfa <arg>	vg GFA file
-# -g,--genotype <arg>	which genotype to include (0,1) from the input file; -1 to include all (-1)
-# -p,--pathlabels <arg>	tab-delimited file with pathname<tab>label
-# -o,--outputprefix<arg>output file prefix (stdout)
-# -r,--userc		indicates if the sequence (e.g. FASTA) had its reverse complement appended (false)
-## other
-# -v,--verbose		verbose output (false)
-# -go,--graphonly	just read the graph and output, do not find FRs; for debuggery (false)
-# -nr,--nrounds <arg>	number of FR-building rounds to run (2)
-# -do,--debug		debug output (false)
+# algorithm
+#  -a,--alpha <arg>          alpha=penetrance, fraction of a supporting path's sequence that supports the FR (required)
+#  -k,--kappa <arg>          kappa=maximum insertion length that any supporting path may have (required)
+#  -cc,--casectrl            emphasize FRs that have large case vs. control support (false)
+# input
+#  -d,--dot <arg>            splitMEM DOT file (requires FASTA file)
+#  -f,--fasta <arg>          FASTA file (requires DOT file)
+#  -g,--genotype <arg>       which genotype to include (0,1) from the input file; -1 to include all (-1)
+#  -j,--json <arg>           vg JSON file
+#  -gfa,--gfa <arg>          GFA file
+#  -p,--pathlabels <arg>     tab-delimited file with pathname<tab>label
+# post-processing input
+#  -i,--inputprefix <arg>    input file prefix for further processing (=outputprefix from previous run)
+#  -m,--minsup <arg>         minsup=minimum number of supporting paths for a region to be considered interesting (1)
+#  -s,--minsize <arg>        minsize=minimum number of nodes that a FR must contain to be considered interesting (1)
+#  -l,--minlen <arg>         minlen=minimum allowed average length (bp) of an FR's subpaths (1)
+# output
+#  -o,--outputprefix <arg>   output file prefix (stdout)
+# other
+#  -go,--graphonly           just read the graph and output, do not find FRs; for debuggery (false)
+#  -v,--verbose              verbose output (false)
+#  -do,--debug               debug output (false)
 
-java -server -cp "build/install/fr/lib/*" org.ncgr.pangenomics.fr.FRFinder --gfa HDStudy/HTT.paths.gfa --pathlabels HDStudy/labels.txt \
-	--alpha 0.6 --kappa 21 --minsup 5 --minsize 10 --minlen 99 --casectrl \
-	--debug --outputprefix hdstudy
+# ## initial run
+# java -server -cp "build/install/fr/lib/*" org.ncgr.pangenomics.fr.FRFinder --gfa HDStudy/HTT.paths.gfa --pathlabels HDStudy/labels.txt --outputprefix hdstudy \
+# 	--alpha 0.6 --kappa 21 --casectrl --debug
+
+## post-process with various minsup, minsize, minlen
+java -server -cp "build/install/fr/lib/*" org.ncgr.pangenomics.fr.FRFinder --debug --inputprefix hdstudy --minsup 1  --minsize 1  --minlen 99
+java -server -cp "build/install/fr/lib/*" org.ncgr.pangenomics.fr.FRFinder --debug --inputprefix hdstudy --minsup 1  --minsize 5  --minlen 99
+java -server -cp "build/install/fr/lib/*" org.ncgr.pangenomics.fr.FRFinder --debug --inputprefix hdstudy --minsup 1  --minsize 10 --minlen 99
+java -server -cp "build/install/fr/lib/*" org.ncgr.pangenomics.fr.FRFinder --debug --inputprefix hdstudy --minsup 10 --minsize 1  --minlen 99
+java -server -cp "build/install/fr/lib/*" org.ncgr.pangenomics.fr.FRFinder --debug --inputprefix hdstudy --minsup 20 --minsize 1  --minlen 99
+java -server -cp "build/install/fr/lib/*" org.ncgr.pangenomics.fr.FRFinder --debug --inputprefix hdstudy --minsup 30 --minsize 1  --minlen 99
+java -server -cp "build/install/fr/lib/*" org.ncgr.pangenomics.fr.FRFinder --debug --inputprefix hdstudy --minsup 40 --minsize 1  --minlen 99
+java -server -cp "build/install/fr/lib/*" org.ncgr.pangenomics.fr.FRFinder --debug --inputprefix hdstudy --minsup 50 --minsize 1  --minlen 99
+java -server -cp "build/install/fr/lib/*" org.ncgr.pangenomics.fr.FRFinder --debug --inputprefix hdstudy --minsup 60 --minsize 1  --minlen 99
+java -server -cp "build/install/fr/lib/*" org.ncgr.pangenomics.fr.FRFinder --debug --inputprefix hdstudy --minsup 70 --minsize 1  --minlen 99
+
+## run SVM
+./run-svm hdstudy 1 1 99
+./run-svm hdstudy 1 5 99
+./run-svm hdstudy 1 10 99
+./run-svm hdstudy 10 1 99
+./run-svm hdstudy 20 1 99
+./run-svm hdstudy 30 1 99
+./run-svm hdstudy 40 1 99
+./run-svm hdstudy 50 1 99
+./run-svm hdstudy 60 1 99
+./run-svm hdstudy 70 1 99

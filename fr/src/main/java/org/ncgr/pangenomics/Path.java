@@ -39,6 +39,21 @@ public class Path implements Comparable<Path> {
     }
 
     /**
+     * Construct given a path name, genotype, label and a node string of the form [3,56,98,126].
+     * There are no sequences associated with these nodes.
+     */
+    public Path(String name, int genotype, String label, String nodeString) {
+        this.name = name;
+        this.genotype = genotype;
+        this.label = label;
+        nodes = new LinkedList<>();
+        String[] nodesAsStrings = nodeString.replace("[","").replace("]","").split(",");
+        for (String nodeAsString : nodesAsStrings) {
+            nodes.add(new Node(Long.parseLong(nodeAsString)));
+        }
+    }
+
+    /**
      * Construct an empty Path given just a path name and genotype
      */
     public Path(String name, int genotype) {

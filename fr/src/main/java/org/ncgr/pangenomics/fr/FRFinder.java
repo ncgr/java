@@ -40,11 +40,9 @@ public class FRFinder {
 
     // optional parameter defaults
     static int MINSUP = 1;
-    static int MAXSUP = Integer.MAX_VALUE;
     static int MINSIZE = 1;
     static int MINLEN = 1;
     static boolean CASE_CTRL = false;
-    static boolean USERC = false;
     static boolean VERBOSE = false;
     static boolean DEBUG = false;
     
@@ -56,21 +54,17 @@ public class FRFinder {
     // optional parameters, set with setters
     boolean verbose = VERBOSE;
     boolean debug = DEBUG;
-    boolean useRC = USERC; // indicates if the sequence (e.g. FASTA file) had its reverse complement appended
     int minSup = MINSUP;   // minimum support: minimum number of genome paths (fr.support) for an FR to be considered interesting
-    int maxSup = MAXSUP;   // maximum support: maximum number of genome paths (fr.support) for an FR to be considered interesting
     int minSize = MINSIZE; // minimum size: minimum number of de Bruijn nodes (fr.nodes.size()) that an FR must contain to be considered interesting
     int minLen = MINLEN;   // minimum average length of a frequented region's subpath sequences (fr.avgLength) to be considered interesting
     boolean caseCtrl = CASE_CTRL; // emphasize FRs that have large case/control support
-    String outputPrefix = null; // output file for FRs (stdout if null)
+    String outputPrefix; // output file prefix
 
     // the FRs, sorted for convenience
     TreeSet<FrequentedRegion> frequentedRegions;
 
-    // utility items for post-processing
-    String inputFile;
-    String outputHeading;
-    Map<NodeSet,String> outputLines;
+    // post-processing
+    String inputPrefix;
 
     /**
      * Construct with a populated Graph and required parameters
@@ -82,11 +76,16 @@ public class FRFinder {
     }
 
     /**
-     * Construct with the output from a previous run
+     * Construct with the output from a previous run, applying the requested post-processing filters
      */
-    public FRFinder(String inputFile) throws FileNotFoundException, IOException {
-        this.inputFile = inputFile;
-        readFrequentedRegions(inputFile);
+    public FRFinder(String inputPrefix, int minSup, int minSize, int minLen) throws FileNotFoundException, IOException {
+        this.inputPrefix = inputPrefix;
+        this.minSup = minSup;
+        this.minSize = minSize;
+        this.minLen = minLen;
+        outputPrefix = getOutputPrefix(inputPrefix);
+        readParameters();
+        readFrequentedRegions();
     }
 
     /**
@@ -156,26 +155,8 @@ public class FRFinder {
                     usedFRs.add(frpair.fr1);
                     usedFRs.add(frpair.fr2);
                     syncFrequentedRegions.add(frpair.merged);
-                    // flag FRs that don't meet the filters
-                    boolean passes = true;
-                    String reason = "";
-                    if (frpair.merged.support<minSup) {
-                        passes = false;
-                        reason += " support";
-                    }
-                    if (frpair.merged.avgLength<minLen) {
-                        passes = false;
-                        reason += " avgLength";
-                    }
-                    if (frpair.merged.nodes.size()<minSize) {
-                        passes = false;
-                        reason += " size";
-                    }
-                    if (passes) {
-                        reason += " *";
-                        frequentedRegions.add(frpair.merged);
-                    }
-                    System.out.println(round+":"+frpair.merged.toString()+reason);
+                    frequentedRegions.add(frpair.merged);
+                    System.out.println(round+":"+frpair.fr1.nodes+frpair.fr2.nodes+"\t"+frpair.merged.summaryString());
                 }
             }
 
@@ -185,7 +166,44 @@ public class FRFinder {
 
 	// final output
         printFrequentedRegions();
+        printFRSubpaths();
         printPathFRs();
+        printPathFRsSVM();
+    }
+
+    /**
+     * Post-process a set of FRs for given minSup, minLen and minSize.
+     */
+    public void postprocess() throws FileNotFoundException, IOException {
+        TreeSet<FrequentedRegion> filteredFRs = new TreeSet<>();
+        for (FrequentedRegion fr : frequentedRegions) {
+            boolean passes = true;
+            String reason = "";
+            if (fr.support<minSup) {
+                passes = false;
+                reason += " support";
+            } else {
+                reason += " SUPPORT";
+            }
+            if (fr.avgLength<minLen) {
+                passes = false;
+                reason += " avgLength";
+            } else {
+                reason += " AVGLENGTH";
+            }
+            if (fr.nodes.size()<minSize) {
+                passes = false;
+                reason += " size";
+            } else {
+                reason += " SIZE";
+            }
+            if (passes) filteredFRs.add(fr);
+            if (verbose) System.out.println(fr.summaryString()+reason);
+        }
+        System.out.println(filteredFRs.size()+" FRs passed minSup="+minSup+", minLen="+minLen+", minSize="+minSize);
+	// output the filtered FRs and SVM data
+        frequentedRegions = filteredFRs;
+        printFrequentedRegions();
         printPathFRsSVM();
     }
 
@@ -195,14 +213,8 @@ public class FRFinder {
     public int getKappa() {
         return kappa;
     }
-    public boolean getUseRC() {
-        return useRC;
-    }
     public int getMinSup() {
         return minSup;
-    }
-    public int getMaxSup() {
-        return maxSup;
     }
     public int getMinSize() {
         return minSize;
@@ -221,9 +233,6 @@ public class FRFinder {
     public void setMinSup(int minSup) {
         this.minSup = minSup;
     }
-    public void setMaxSup(int maxSup) {
-        this.maxSup = maxSup;
-    }
     public void setMinSize(int minSize) {
         this.minSize = minSize;
     }
@@ -232,9 +241,6 @@ public class FRFinder {
     }
     public void setCaseCtrl() {
         this.caseCtrl = true;
-    }
-    public void setUseRC() {
-        this.useRC = true;
     }
     public void setOutputPrefix(String outputPrefix) {
         this.outputPrefix = outputPrefix;
@@ -252,7 +258,7 @@ public class FRFinder {
 
         //
         Option alphaOption = new Option("a", "alpha", true, "alpha=penetrance, fraction of a supporting path's sequence that supports the FR (required)");
-        alphaOption.setRequired(true);
+        alphaOption.setRequired(false);
         options.addOption(alphaOption);
 	// 
         Option dotOption = new Option("d", "dot", true, "splitMEM DOT file (requires FASTA file)");
@@ -276,7 +282,7 @@ public class FRFinder {
         options.addOption(gfaOption);
         //
         Option kappaOption = new Option("k", "kappa", true, "kappa=maximum insertion length that any supporting path may have (required)");
-        kappaOption.setRequired(true);
+        kappaOption.setRequired(false);
         options.addOption(kappaOption);
         //
         Option minLenOption = new Option("l", "minlen", true, "minlen=minimum allowed average length (bp) of an FR's subpaths ("+MINLEN+")");
@@ -287,21 +293,17 @@ public class FRFinder {
         minSupOption.setRequired(false);
         options.addOption(minSupOption);
         //
-        Option maxSupOption = new Option("n", "maxsup", true, "maxsup=maximum number of supporting paths for a region to be considered interesting ("+MAXSUP+")");
-        maxSupOption.setRequired(false);
-        options.addOption(maxSupOption);
-        //
         Option outputprefixOption = new Option("o", "outputprefix", true, "output file prefix (stdout)");
         outputprefixOption.setRequired(false);
         options.addOption(outputprefixOption);
         //
+        Option inputprefixOption = new Option("i", "inputprefix", true, "input file prefix for further processing");
+        inputprefixOption.setRequired(false);
+        options.addOption(inputprefixOption);
+        //
         Option labelsOption = new Option("p", "pathlabels", true, "tab-delimited file with pathname<tab>label");
         labelsOption.setRequired(false);
         options.addOption(labelsOption);
-        //
-        Option rcOption = new Option("r", "userc", false, "useRC=flag to indicate if the sequence (e.g. FASTA) had its reverse complement appended ("+USERC+")");
-        rcOption.setRequired(false);
-        options.addOption(rcOption);
         //
         Option minSizeOption = new Option("s", "minsize", true, "minsize=minimum number of nodes that a FR must contain to be considered interesting ("+MINSIZE+")");
         minSizeOption.setRequired(false);
@@ -333,7 +335,7 @@ public class FRFinder {
         }
 
         // parameter validation
-        if (!cmd.hasOption("dot") && !cmd.hasOption("json") && !cmd.hasOption("gfa")) {
+        if (!cmd.hasOption("inputprefix") && !cmd.hasOption("dot") && !cmd.hasOption("json") && !cmd.hasOption("gfa")) {
             System.err.println("You must specify a splitMEM-style DOT file plus FASTA (-d/--dot and -f/--fasta ), a vg JSON file (-j, --json) or a vg GFA file (--gfa)");
             System.exit(1);
             return;
@@ -351,9 +353,11 @@ public class FRFinder {
         String gfaFile = cmd.getOptionValue("gfa");
         String pathLabelsFile = cmd.getOptionValue("pathlabels");
 
-        // required parameters
-        double alpha = Double.parseDouble(cmd.getOptionValue("alpha"));
-        int kappa = Integer.parseInt(cmd.getOptionValue("kappa"));
+        // original run parameters
+        double alpha = 0.0;
+        int kappa = 0;
+        if (cmd.hasOption("alpha")) alpha = Double.parseDouble(cmd.getOptionValue("alpha"));
+        if (cmd.hasOption("kappa")) kappa = Integer.parseInt(cmd.getOptionValue("kappa"));
 
         // create a Graph from the dot+FASTA or JSON or GFA file
         Graph g = new Graph();
@@ -366,9 +370,6 @@ public class FRFinder {
             g.readVgJsonFile(jsonFile);
         } else if (gfaFile!=null) {
             g.readVgGfaFile(gfaFile);
-        } else {
-            System.err.println("ERROR: no DOT+FASTA or JSON or GFA provided.");
-            System.exit(1);
         }
 
         // if a labels file is given, append the labels to the path names
@@ -385,40 +386,52 @@ public class FRFinder {
             g.printPathSequences();
             return;
         }
-        
-        // instantiate the FRFinder with this Graph and required parameters
-        FRFinder frf = new FRFinder(g, alpha, kappa);
+
+        FRFinder frf;
+        boolean postProcess = false;
+        if (cmd.hasOption("inputprefix")) {
+            String inputPrefix = cmd.getOptionValue("inputprefix");
+            postProcess = true;
+            // defaults
+            int minSup = MINSUP;
+            int minSize = MINSIZE;
+            int minLen = MINLEN;
+            if (cmd.hasOption("minsup")) {
+                minSup = Integer.parseInt(cmd.getOptionValue("minsup"));
+            }
+            if (cmd.hasOption("minsize")) {
+                minSize = Integer.parseInt(cmd.getOptionValue("minsize"));
+            }
+            if (cmd.hasOption("minlen")) {
+                minLen = Integer.parseInt(cmd.getOptionValue("minlen"));
+            }
+            // instantiate the FRFinder from the saved files
+            frf = new FRFinder(inputPrefix, minSup, minSize, minLen);
+        } else { 
+            // instantiate the FRFinder with this Graph, alpha and kappa
+            frf = new FRFinder(g, alpha, kappa);
+            postProcess = false;
+            if (cmd.hasOption("casectrl")) {
+                frf.setCaseCtrl();
+            }
+        }
         
         // set optional FRFinder parameters
         if (cmd.hasOption("verbose")) frf.setVerbose();
         if (cmd.hasOption("debug")) frf.setDebug();
-        if (cmd.hasOption("userc")) frf.setUseRC();
-        if (cmd.hasOption("minsup")) {
-            frf.setMinSup(Integer.parseInt(cmd.getOptionValue("minsup")));
-        }
-        if (cmd.hasOption("maxsup")) {
-            frf.setMaxSup(Integer.parseInt(cmd.getOptionValue("maxsup")));
-        }
-        if (cmd.hasOption("minsize")) {
-            frf.setMinSize(Integer.parseInt(cmd.getOptionValue("minsize")));
-        }
-        if (cmd.hasOption("minlen")) {
-            frf.setMinLen(Integer.parseInt(cmd.getOptionValue("minlen")));
-        }
-        if (cmd.hasOption("casectrl")) {
-            frf.setCaseCtrl();
-        }
         if (cmd.hasOption("outputprefix")) {
             frf.setOutputPrefix(cmd.getOptionValue("outputprefix"));
         }
 
         // print out the parameters to stdout or outputPrefix+".params" if exists
         frf.printParameters();
-        
-        //////////////////
-        // Find the FRs //
-        //////////////////
-        frf.findFRs();
+
+        // run the requested job
+        if (postProcess) {
+            frf.postprocess();
+        } else {
+            frf.findFRs();
+        }
     }
 
     /**
@@ -464,7 +477,7 @@ public class FRFinder {
     }
 
     /**
-     * Print the path names and the count of subpaths for each FR, to stdout or outputPrefix.paths.txt.
+     * Print the path names and the count of subpaths for each FR, to stdout or outputPrefix.pathfrs.txt.
      * This can be used as input to a classification routine.
      */
     void printPathFRs() throws IOException {
@@ -474,7 +487,7 @@ public class FRFinder {
             out = System.out;
             printHeading("PATH FREQUENTED REGIONS");
         } else {
-            out = new PrintStream(outputPrefix+".paths.txt");
+            out = new PrintStream(getPathFRsFilename(outputPrefix));
         }
         // columns
         boolean first = true;
@@ -513,7 +526,7 @@ public class FRFinder {
             out = System.out;
             printHeading("PATH SVM RECORDS");
         } else {
-            out = new PrintStream(outputPrefix+".svm.txt");
+            out = new PrintStream(getPathFRsSVMFilename(outputPrefix));
         }
         // only rows, one per path
         for (Path path : graph.paths) {
@@ -543,52 +556,76 @@ public class FRFinder {
             return;
         }
         PrintStream out = null;
-        if (inputFile==null) {
-            // output from a findFRs run
-            if (outputPrefix==null) {
-                out = System.out;
-                printHeading("FREQUENTED REGIONS");
-            } else {
-                out = new PrintStream(outputPrefix+".frs.txt");
-            }
-            out.println(frequentedRegions.first().columnHeading());
-            for (FrequentedRegion fr : frequentedRegions) {
-                out.println(fr.toString());
-            }
+        if (outputPrefix==null) {
+            out = System.out;
+            printHeading("FREQUENTED REGIONS");
         } else {
-            // output from post-processing
-            if (outputPrefix==null) {
-                out = System.out;
-                printHeading("FREQUENTED REGIONS");
-            } else {
-                out = new PrintStream(outputPrefix+".frs.txt");
-            }
-            out.println(outputHeading);
-            for (FrequentedRegion fr : frequentedRegions) {
-                out.println(outputLines.get(fr.nodes));
-            }
+            out = new PrintStream(getFRsFilename(outputPrefix));
+        }
+        out.println(frequentedRegions.first().columnHeading());
+        for (FrequentedRegion fr : frequentedRegions) {
+            out.println(fr.summaryString());
         }
         if (outputPrefix!=null) out.close();
     }
 
     /**
-     * Read FR NodeSets from the output from a previous run.
-     * 0   1           2       3      4        5        6        7        ...
-     * FR  nodes       support avgLen label1.n label1.f label2.n label2.f ...
-     * 1   [5,7,15,33] 28      282    18       0.667    10       1.000    ...
+     * Print out the FRs along with their subpaths, strictly to an output file.
      */
-    void readFrequentedRegions(String inputFile) throws FileNotFoundException, IOException {
-        BufferedReader reader = new BufferedReader(new FileReader(inputFile));
+    void printFRSubpaths() throws IOException {
+        if (frequentedRegions.size()==0) {
+            System.err.println("NO FREQUENTED REGIONS!");
+            return;
+        }
+        if (outputPrefix==null) return;
+        PrintStream out = new PrintStream(getFRSubpathsFilename(outputPrefix));
+        for (FrequentedRegion fr : frequentedRegions) {
+            out.println(fr.summaryString());
+            out.println(fr.subpathsString());
+        }
+        if (outputPrefix!=null) out.close();
+    }
+
+    /**
+     * Read FRs from the output from a previous run.
+     * Assumes that alpha, kappa and graph are already initialized.
+     * [18,34]	70	299	54	16
+     * 509678.0.ctrl:[18,20,21,23,24,26,27,29,30,33,34]
+     * 628863.1.case:[18,20,21,23,24,26,27,29,30,33,34]
+     * etc.
+     */
+    void readFrequentedRegions() throws FileNotFoundException, IOException {
+        // do we have a Graph?
+        if (graph.nodes.size()==0) {
+            System.err.println("ERROR in readFrequentedRegions: graph has not been initialized.");
+            System.exit(1);
+        }
         frequentedRegions = new TreeSet<>();
-        outputLines = new TreeMap<>();
-        outputHeading = reader.readLine();
+        String frFilename = getFRSubpathsFilename(inputPrefix);
+        BufferedReader reader = new BufferedReader(new FileReader(frFilename));
         String line = null;
         while ((line=reader.readLine())!=null) {
             String[] fields = line.split("\t");
-            String nsString = fields[1];
-            NodeSet ns = new NodeSet(nsString);
-            outputLines.put(ns,line);
-            FrequentedRegion fr = new FrequentedRegion(ns);
+            NodeSet nodes = new NodeSet(fields[0]);
+            int support = Integer.parseInt(fields[1]);
+            double avgLength = Double.parseDouble(fields[2]);
+            Set<Path> subpaths = new HashSet<>();
+            for (int i=0; i<support; i++) {
+                line = reader.readLine();
+                String[] parts = line.split(":");
+                String pathFull = parts[0];
+                String nodeString = parts[1];
+                // split out the name, genotype, label
+                String[] nameParts = pathFull.split("\\.");
+                String name = nameParts[0];
+                int genotype = -1;
+                if (nameParts.length>1) genotype = Integer.parseInt(nameParts[1]);
+                String label = null;
+                if (nameParts.length>2) label = nameParts[2];
+                // add to the subpaths
+                subpaths.add(new Path(name, genotype, label, nodeString));
+            }
+            FrequentedRegion fr = new FrequentedRegion(graph, nodes, subpaths, alpha, kappa, support, avgLength);
             frequentedRegions.add(fr);
         }
     }
@@ -619,14 +656,14 @@ public class FRFinder {
      */
     public void printParameters() throws IOException {
         PrintStream out = null;
-        if (outputPrefix==null) {
+        if (outputPrefix!=null) {
+            String paramFile = getParamsFilename(outputPrefix);
+            out = new PrintStream(paramFile);
+        } else {
             out = System.out;
             printHeading("PARAMETERS");
-        } else {
-            // no heading for file output; append to output file
-            String paramFile = outputPrefix+".params.txt";
-            out = new PrintStream(paramFile);
         }
+        out.println("outputprefix"+"\t"+outputPrefix);
         // Graph
         if (graph!=null) {
             out.println("genotype"+"\t"+graph.genotype);
@@ -634,67 +671,119 @@ public class FRFinder {
             if (graph.gfaFile!=null) out.println("gfafile"+"\t"+graph.gfaFile);
             if (graph.dotFile!=null) out.println("dotfile"+"\t"+graph.dotFile);
             if (graph.fastaFile!=null) out.println("fastafile"+"\t"+graph.fastaFile);
+            if (graph.labelsFile!=null) out.println("pathlabels"+"\t"+graph.labelsFile);
         }
         // FRFinder
         out.println("alpha"+"\t"+alpha);
         out.println("kappa"+"\t"+kappa);
-        out.println("minsup"+"\t"+minSup);
-        out.println("maxsup"+"\t"+maxSup);
-        out.println("minsize"+"\t"+minSize);
-        out.println("minlen"+"\t"+minLen);
         out.println("casectrl"+"\t"+caseCtrl);
-        out.println("userc"+"\t"+useRC);
-        if (inputFile!=null) out.println("inputfile"+"\t"+inputFile);
-        if (outputPrefix!=null) out.println("outputprefix"+"\t"+outputPrefix);
+        if (inputPrefix!=null) {
+            // post-processing parameters
+            out.println("minsup"+"\t"+minSup);
+            out.println("minsize"+"\t"+minSize);
+            out.println("minlen"+"\t"+minLen);
+        }
     }
 
     /**
-     * Read in the parameters from a previous run, presuming inputFile is not null.
+     * Read in the parameters from a previous run.
      */
     void readParameters() throws FileNotFoundException, IOException {
-        if (inputFile==null) return;
-        String paramFile = inputFile+".params";
-        BufferedReader reader = new BufferedReader(new FileReader(paramFile));
+        String paramsFile = getParamsFilename(inputPrefix);
+        BufferedReader reader = new BufferedReader(new FileReader(paramsFile));
         String line = null;
         String jsonFile = null;
+        String gfaFile = null;
         String dotFile = null;
         String fastaFile = null;
+        String labelsFile = null;
         int genotype = Graph.GENOTYPE;
         while ((line=reader.readLine())!=null) {
             String[] parts = line.split("\t");
             if (parts[0].equals("jsonfile")) {
                 jsonFile = parts[1];
+            } else if (parts[0].equals("gfafile")) {
+                gfaFile = parts[1];
             } else if (parts[0].equals("dotFile")) {
                 dotFile = parts[1];
             } else if (parts[0].equals("fastafile")) {
                 fastaFile = parts[1];
+            } else if (parts[0].equals("pathlabels")) {
+                labelsFile = parts[1];
             } else if (parts[0].equals("genotype")) {
                 genotype = Integer.parseInt(parts[1]);
             } else if (parts[0].equals("alpha")) {
                 alpha = Double.parseDouble(parts[1]);
             } else if (parts[0].equals("kappa")) {
                 kappa = Integer.parseInt(parts[1]);
+            } else if (parts[0].equals("casectrl")) {
+                caseCtrl = Boolean.parseBoolean(parts[1]);
             } else if (parts[0].equals("minsup")) {
                 minSup = Integer.parseInt(parts[1]);
-            } else if (parts[0].equals("maxsup")) {
-                maxSup = Integer.parseInt(parts[1]);
             } else if (parts[0].equals("minsize")) {
                 minSize = Integer.parseInt(parts[1]);
             } else if (parts[0].equals("minlen")) {
                 minLen = Integer.parseInt(parts[1]);
-            } else if (parts[0].equals("userc")) {
-                useRC = Boolean.parseBoolean(parts[1]);
             }
             // load the Graph if we've got the files
             if (jsonFile!=null) {
                 graph = new Graph();
                 graph.genotype = genotype;
                 graph.readVgJsonFile(jsonFile);
+                if (labelsFile!=null) graph.readPathLabels(labelsFile);
+            } else if (gfaFile!=null) {
+                graph = new Graph();
+                graph.genotype = genotype;
+                graph.readVgGfaFile(gfaFile);
+                if (labelsFile!=null) graph.readPathLabels(labelsFile);
             } else if (dotFile!=null && fastaFile!=null) {
                 graph = new Graph();
                 graph.genotype = genotype;
                 graph.readSplitMEMDotFile(dotFile, fastaFile);
+                if (labelsFile!=null) graph.readPathLabels(labelsFile);
             }
         }
+    }
+
+    /**
+     * Form the FRs output filename
+     */
+    String getFRsFilename(String prefix) {
+        return prefix+".frs.txt";
+    }
+
+    /**
+     * Form the FRSubpaths output filename
+     */
+    String getFRSubpathsFilename(String prefix) {
+        return prefix+".subpaths.txt";
+    }
+
+    /**
+     * Form the pathFRs output filename
+     */
+    String getPathFRsFilename(String prefix) {
+        return prefix+".pathfrs.txt";
+    }
+
+    /**
+     * Form the SVM version of the pathFRs output filename
+     */
+    String getPathFRsSVMFilename(String prefix) {
+        return prefix+".svm.txt";
+    }
+
+    /**
+     * Form the parameters output filename
+     */
+    String getParamsFilename(String prefix) {
+        return prefix+".params.txt";
+    }
+
+    /**
+     * Form the new output prefix from the input prefix and post-processing parameters
+     */
+    String getOutputPrefix(String inputPrefix) {
+        return inputPrefix+"."+minSup+"."+minSize+"."+minLen;
     }
 }
