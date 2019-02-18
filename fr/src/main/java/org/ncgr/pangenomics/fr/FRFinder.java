@@ -10,7 +10,7 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.PrintStream;
-
+import java.text.DecimalFormat;
 import java.util.Collections;
 import java.util.List;
 import java.util.ArrayList;
@@ -38,6 +38,8 @@ import org.apache.commons.cli.ParseException;
  */
 public class FRFinder {
 
+    static DecimalFormat tf = new DecimalFormat("00"); // hours, minutes, seconds
+    
     // optional parameter defaults
     static int MINSUP = 1;
     static int MINSIZE = 1;
@@ -126,6 +128,7 @@ public class FRFinder {
         // build the FRs round by round
         int round = 0;
         boolean added = true;
+	long startTime = System.currentTimeMillis();
         while (added) {
             round++;
             added = false;
@@ -163,7 +166,18 @@ public class FRFinder {
 
         }
 
+	long duration = System.currentTimeMillis() - startTime;
+	long hours = (duration / 1000) / 60 / 60;
+	long minutes = (duration / 1000 / 60) % 60;
+        long seconds = (duration / 1000) % 60;
         System.out.println("Found "+frequentedRegions.size()+" FRs.");
+	System.out.println("Clock time: "+tf.format(hours)+":"+tf.format(minutes)+":"+tf.format(seconds));
+
+			   
+        // long minutes = (milliseconds / 1000) / 60;
+
+        // long seconds = (milliseconds / 1000);
+	
 
 	// final output
         printFrequentedRegions();
