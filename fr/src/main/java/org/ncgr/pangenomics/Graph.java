@@ -50,16 +50,14 @@ import org.apache.commons.cli.ParseException;
 public class Graph {
 
     // defaults
-    public static int GENOTYPE = -1;
+    public static int BOTH_GENOTYPES = -1;
     public static boolean VERBOSE = false;
-    public static boolean DEBUG = false;
 
     // output verbosity
     boolean verbose = VERBOSE;
-    boolean debug = DEBUG;
 
-    // genotype preference (-1 to append all genotypes)
-    public int genotype = GENOTYPE;
+    // genotype preference (default: load all genotypes)
+    public int genotype = BOTH_GENOTYPES;
 
     // input files
     public String dotFile;
@@ -67,7 +65,7 @@ public class Graph {
     public String jsonFile;
     public String gfaFile;
     public String labelsFile;
-    
+
     // the nodes contained in this graph, in the form of an id->Node map
     // (Redundant, since Node also contains id, but this allows quick retrieval on id)
     public TreeMap<Long,Node> nodes;
@@ -117,7 +115,7 @@ public class Graph {
         // The "_"-split pieces will therefore be:
         // 0:"", 1:"thread", 2:sample1, 3:sample2, L-4:sampleN, L-3:chr, L-2:genotype, L-1:idx where L is the number of pieces,
         // and sample contains N parts separated by "_".
-        // NOTE: with unphased calls, genotype 0 or 1 can have the ALT haplotype, so set genotype=-1 to keep both
+        // NOTE: with unphased calls, genotype 0 or 1 can have the ALT haplotype, so set genotype=BOTH_GENOTYPES to keep both
         Map<String,LinkedList<Node>> nodeListMap = new HashMap<>();
         for (Vg.Path vgPath : vgPaths) {
             String name = vgPath.getName();
@@ -129,7 +127,7 @@ public class Graph {
                 int gtype = Integer.parseInt(pieces[pieces.length-2]); // 0, 1, etc.
                 pathName += ":"+gtype; // store this way for now
                 // append this path fragment if appropriate
-                if (genotype==-1 || gtype==genotype) {
+                if (genotype==BOTH_GENOTYPES || gtype==genotype) {
                     LinkedList<Node> newNodeList = new LinkedList<>();
                     List<Vg.Mapping> vgMappingList = vgPath.getMappingList();
                     for (Vg.Mapping vgMapping : vgMappingList) {
@@ -216,7 +214,7 @@ public class Graph {
                     // append the genotype to pathName
                     pathName += ":"+gtype;
                     // build/append this path's node list
-                    if (genotype==-1 || gtype==genotype) {
+                    if (genotype==BOTH_GENOTYPES || gtype==genotype) {
                         LinkedList<Node> newNodeList = new LinkedList<>();
                         String[] nodeStrings = parts[2].split(","); // e.g. 27+,29+,30+
                         for (String nodeString : nodeStrings) {
@@ -394,21 +392,23 @@ public class Graph {
                     // sample = path name.genotype labeling
                     String[] parts = sample.split("\\.");
                     String sampleName = parts[0];
-                    int sampleGenotype = Integer.parseInt(parts[1]);
-                    if (sampleName.equals(path.name) && sampleGenotype==path.genotype) {
-                        path.setLabel(label);
-                        if (labelCounts.containsKey(label)) {
-                            int count = labelCounts.get(label);
-                            labelCounts.put(label, count+1);
-                        } else {
-                            labelCounts.put(label, 1);
+                    if (parts.length>1) {
+                        int sampleGenotype = Integer.parseInt(parts[1]);
+                        if (sampleName.equals(path.name) && sampleGenotype==path.genotype) {
+                            path.setLabel(label);
+                            if (labelCounts.containsKey(label)) {
+                                int count = labelCounts.get(label);
+                                labelCounts.put(label, count+1);
+                            } else {
+                                labelCounts.put(label, 1);
+                            }
                         }
                     }
                 }
             }
         }
         // verbosity
-        if (verbose) printLabelCounts();
+        if (verbose) printLabelCounts(System.out);
 
         // check that we've labeled all the paths
         boolean pathsAllLabeled = true;
@@ -427,12 +427,6 @@ public class Graph {
     public void setVerbose() {
         verbose = true;
     }
-    /**
-     * Set the debug flag.
-     */
-    public void setDebug() {
-	debug = true;
-    }
 
     /**
      * Print a delineating heading, for general use.
@@ -446,9 +440,19 @@ public class Graph {
     /**
      * Print out the nodes along with a k histogram.
      */
-    public void printNodes() {
+    public void printNodes(PrintStream out) {
+        if (out==System.out) printHeading("NODES");
+        for (Node node : nodes.values()) {
+            out.println(node.id+"\t"+node.sequence);
+        }
+    }
+
+    /**
+     * Print out a histogram of node sizes.
+     */
+    public void printNodeHistogram(PrintStream out) {
+        if (out==System.out) printHeading("k HISTOGRAM");
         Map<Integer,Integer> countMap = new TreeMap<>();
-        printHeading("NODES");
         for (Node node : nodes.values()) {
             int length = node.sequence.length();
             if (countMap.containsKey(length)) {
@@ -456,56 +460,52 @@ public class Graph {
             } else {
                 countMap.put(length, 1);
             }
-            System.out.println(node.id+"("+length+"):"+node.sequence);
         }
-        printHeading("k HISTOGRAM");
         for (int len : countMap.keySet()) {
             int counts = countMap.get(len);
-            System.out.print("length="+len+"\t("+counts+")\t");
-            for (int i=1; i<=counts; i++) System.out.print("X");
-            System.out.println("");
+            out.print("length="+len+"\t("+counts+")\t");
+            for (int i=1; i<=counts; i++) out.print("X");
+            out.println("");
         }
     }
 
     /**
      * Print the paths, labeled by pathName.
      */
-    public void printPaths() {
-        printHeading("PATHS");
+    public void printPaths(PrintStream out) {
+        if (out==System.out) printHeading("PATHS");
         for (Path path : paths) {
-            System.out.print(path.getNameAndLabel()+"("+path.sequence.length()+"):");
+            out.print(path.getNameGenotype()+"\t"+path.label+"\t"+path.sequence.length());
             for (Node node : path.nodes) {
-                System.out.print(" "+node.id);
+                out.print("\t"+node.id);
             }
-            System.out.println("");
+            out.println("");
         }
     }
 
     /**
      * Print out the node paths along with counts.
      */
-    public void printNodePaths() {
-        printHeading("NODE PATHS");
+    public void printNodePaths(PrintStream out) {
+        if (out==System.out) printHeading("NODE PATHS");
         for (Long nodeId : nodePaths.keySet()) {
             Set<Path> nPaths = nodePaths.get(nodeId);
-            String asterisk = " ";
-            if (nPaths.size()==paths.size()) asterisk="*"; // flag a node that is supported by ALL paths
-            System.out.print(asterisk+nodeId+"("+nPaths.size()+"):");
+            out.print(String.valueOf(nodeId));
             for (Path path : nPaths) {
-                System.out.print(" "+path.name);
+                out.print("\t"+path.getNameGenotype());
             }
-            System.out.println("");
+            out.println("");
         }
     }
 
     /**
-     * Print the sequences for each path, in FASTA style, labeled by path.name (and path.label if present).
+     * Print the sequences for each path, in FASTA format, labeled by path.name.genotype.
      */
-    public void printPathSequences() {
-        printHeading("PATH SEQUENCES");
+    public void printPathSequences(PrintStream out) {
+        if (out==System.out) printHeading("PATH SEQUENCES");
         for (Path path : paths) {
-            String heading = ">"+path.getNameAndLabel()+" ("+path.sequence.length()+")";
-            System.out.print(heading);
+            String heading = ">"+path.getNameGenotype()+" ("+path.sequence.length()+")";
+            out.print(heading);
             // add dots every 10 bases to the heading
             int h = 19;
             int m = 8;
@@ -519,52 +519,42 @@ public class Graph {
                 h = 29;
                 m = 7;
             }
-            for (int i=heading.length(); i<h; i++) System.out.print(" "); System.out.print(".");
+            for (int i=heading.length(); i<h; i++) out.print(" "); out.print(".");
             for (int n=0; n<m; n++) {
-                for (int i=0; i<9; i++) System.out.print(" "); System.out.print(".");
+                for (int i=0; i<9; i++) out.print(" "); out.print(".");
             }
-            System.out.println("");
+            out.println("");
             // print out the sequence, 100 chars to a line
             for (int i=1; i<=path.sequence.length(); i++) {
-                System.out.print(path.sequence.charAt((i-1)));
-                if (i%100==0) System.out.print("\n");
+                out.print(path.sequence.charAt((i-1)));
+                if (i%100==0) out.print("\n");
             }
-            System.out.println("");
+            out.println("");
         }
     }
 
     /**
      * Print the counts of paths per label.
      */
-    public void printLabelCounts() {
-        printHeading("LABEL COUNTS");
+    public void printLabelCounts(PrintStream out) {
+        if (out==System.out) printHeading("LABEL COUNTS");
         for (String label : labelCounts.keySet()) {
-            System.out.println(label+":"+labelCounts.get(label));
+            out.println(label+"\t"+labelCounts.get(label));
         }
     }
 
     /**
      * Print node participation by path, appropriate for PCA analysis.
-     * Prints to file if jsonFile or dotFile exist, otherwise stdout.
-     * Ignore nodes which are traversed by all paths - they dilute the PCA.
      */
-    public void printPcaData() throws FileNotFoundException, IOException {
-        PrintStream out = null;
-        if (jsonFile!=null) {
-            out = new PrintStream(jsonFile+".pca.txt");
-        } else if (dotFile!=null) {
-            out = new PrintStream(dotFile+".pca.txt");
-        } else {
-            out = System.out;
-        }
+    public void printPcaData(PrintStream out) throws FileNotFoundException, IOException {
         // header is paths
         boolean first = true;
         for (Path path : paths) {
             if (first) {
-                out.print("P"+path.name);
+                out.print(path.getNameGenotype());
                 first = false;
             } else {
-                out.print("\tP"+path.name);
+                out.print("\t"+path.getNameGenotype());
             }
             if (path.label!=null) out.print("."+path.label);
         }
@@ -584,6 +574,40 @@ public class Graph {
             }
             out.println("");
         }
+    }
+
+    /**
+     * Run all the Graph printing methods to files.
+     */
+    public void printAll(String outputPrefix) throws FileNotFoundException, IOException {
+        if (outputPrefix==null) return;
+        PrintStream labelCountsOut = new PrintStream(outputPrefix+".labelcounts.txt");
+        PrintStream nodesOut = new PrintStream(outputPrefix+".nodes.txt");
+        PrintStream nodeHistogramOut = new PrintStream(outputPrefix+".nodehistogram.txt");
+        PrintStream pathsOut = new PrintStream(outputPrefix+".paths.txt");
+        PrintStream nodePathsOut = new PrintStream(outputPrefix+".nodepaths.txt");
+        PrintStream pathSequencesOut = new PrintStream(outputPrefix+".pathsequences.fasta");
+        PrintStream pcaOut = new PrintStream(outputPrefix+".pathpca.txt");
+        printLabelCounts(labelCountsOut);
+        printNodes(nodesOut);
+        printNodeHistogram(nodeHistogramOut);
+        printPaths(pathsOut);
+        printNodePaths(nodePathsOut);
+        printPathSequences(pathSequencesOut);
+        printPcaData(pcaOut);
+    }
+
+    /**
+     * Run all the Graph printing methods to stdout.
+     */
+    public void printAll() throws FileNotFoundException, IOException {
+        printLabelCounts(System.out);
+        printNodes(System.out);
+        printNodeHistogram(System.out);
+        printPaths(System.out);
+        printNodePaths(System.out);
+        printPathSequences(System.out);
+        printPcaData(System.out);
     }
 
     /**
@@ -608,7 +632,7 @@ public class Graph {
         gfaOption.setRequired(false);
         options.addOption(gfaOption);
         //
-        Option genotypeOption = new Option("g", "genotype", true, "which genotype to include (0,1) from the JSON/GFA file; -1 to include all ("+GENOTYPE+")");
+        Option genotypeOption = new Option("g", "genotype", true, "which genotype to include (0,1) from the JSON/GFA file; "+BOTH_GENOTYPES+" to include both ("+BOTH_GENOTYPES+")");
         genotypeOption.setRequired(false);
         options.addOption(genotypeOption);
         //
@@ -620,13 +644,13 @@ public class Graph {
         labelsOption.setRequired(false);
         options.addOption(labelsOption);
         //
+        Option outputprefixOption = new Option("o", "outputprefix", true, "output file prefix (stdout)");
+        outputprefixOption.setRequired(false);
+        options.addOption(outputprefixOption);
+        //
         Option verboseOption = new Option("v", "verbose", false, "verbose output ("+VERBOSE+")");
         verboseOption.setRequired(false);
         options.addOption(verboseOption);
-        //
-        Option debugOption = new Option("do", "debug", false, "debug output ("+DEBUG+")");
-        debugOption.setRequired(false);
-        options.addOption(debugOption);
 
         try {
             cmd = parser.parse(options, args);
@@ -637,6 +661,13 @@ public class Graph {
             return;
         }
 
+        // none required, so spit out help if nothing supplied
+        if (cmd.getOptions().length==0) {
+            formatter.printHelp("Graph", options);
+            System.exit(1);
+            return;
+        }
+        
         // parameter validation
         if (!cmd.hasOption("dot") && !cmd.hasOption("json") && !cmd.hasOption("gfa")) {
             System.err.println("You must specify a splitMEM-style DOT file plus FASTA (-d/--dot and -f/--fasta ), a vg JSON file (-j, --json) or a vg GFA file (--gfa)");
@@ -659,7 +690,6 @@ public class Graph {
         // create a Graph from the dot+FASTA or JSON or GFA file
         Graph g = new Graph();
         if (cmd.hasOption("verbose")) g.setVerbose();
-        if (cmd.hasOption("debug")) g.setDebug();
         if (cmd.hasOption("genotype")) g.genotype = Integer.parseInt(cmd.getOptionValue("genotype"));
         if (dotFile!=null && fastaFile!=null) {
             g.readSplitMEMDotFile(dotFile, fastaFile);
@@ -672,17 +702,18 @@ public class Graph {
             System.exit(1);
         }
 
-        // if a labels file is given, append the labels to the path names
+        // if a labels file is given, add them to the paths
         if (pathLabelsFile!=null) {
             g.readPathLabels(pathLabelsFile);
         }
 
         // output
-        g.printNodes();
-        g.printPaths();
-        g.printNodePaths();
-        if (g.debug) g.printPathSequences();
-
-        g.printPcaData();
+        if (cmd.hasOption("outputprefix")) {
+            // files
+            g.printAll(cmd.getOptionValue("outputprefix"));
+        } else {
+            // stdout
+            g.printAll();
+        }
     }
 }

@@ -1,10 +1,14 @@
-## load a pair of FRFinder hdstudy files
+## load an FRFinder hdstudy file
 
-frs = read.table("hdstudy.frs.txt", header=TRUE)
+frs = read.table("hdstudy.frs.txt", header=TRUE, stringsAsFactors=FALSE)
 rownames(frs) = frs$FR
 frs$FR = NULL
 
-params = read.delim(file="hdstudy.params.txt", header=F)
+for (i in 1:length(rownames(frs))) {
+    frs$size[i] = length(strsplit(frs$nodes[i],",")[[1]])
+}
+
+params = read.delim(file="hdstudy.params.txt", header=FALSE, stringsAsFactors=FALSE)
 for (i in 1:length(rownames(params))) {
     if (params$V1[i]=="genotype") genotype = params$V2[i]
     if (params$V1[i]=="alpha") alpha = params$V2[i]
@@ -21,3 +25,7 @@ for (i in 1:length(rownames(params))) {
     if (params$V1[i]=="pathlabels") pathlabels = params$V2[i]
 }
 rm(params)
+
+labelcounts = read.delim(file="hdstudy.labelcounts.txt", header=FALSE, stringsAsFactors=FALSE, row.names=1)
+colnames(labelcounts) = c("count")
+    

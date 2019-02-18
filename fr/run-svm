@@ -13,16 +13,21 @@ GRIDOUT="$prefix.$minsup.$minsize.$minlen.svm.grid.txt"
 echo "-------------------------"
 echo "$prefix $minsup $minsize $minlen"
 
-# scale the full data
+## scale the full data
 java -cp "build/install/fr/lib/*" org.ncgr.svm.SvmScaler -s $RANGE $FULL > $FULLSCALE
 
-# run GridSearcher on the full scaled data to find optimum SVM parameters
+## run GridSearcher on the full scaled data to find optimum SVM parameters
 ARGS="-log2c -5,15,2 -log2g 3,-15,-2 -k 10"
 java -cp "build/install/fr/lib/*" org.ncgr.svm.GridSearcher $ARGS  $FULLSCALE > $GRIDOUT
 C=`tail -1 $GRIDOUT | awk '{ print $1; }'`
 gamma=`tail -1 $GRIDOUT | awk '{ print $2; }'`
 perc=`tail -1 $GRIDOUT | awk '{ print $3; }'`
 
-# cross validate on full dataset with the above parameters
+## cross validate on full dataset with the above parameters
 ARGS="-c $C -g $gamma -k 10"
 java -cp "build/install/fr/lib/*" org.ncgr.svm.SvmCrossValidator $ARGS $FULLSCALE
+
+## clean up
+rm $RANGE
+rm $FULLSCALE
+rm $GRIDOUT

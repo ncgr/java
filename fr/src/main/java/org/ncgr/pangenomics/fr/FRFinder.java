@@ -13,7 +13,7 @@ import java.io.PrintStream;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.LinkedList;
+import java.util.ArrayList;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.Set;
@@ -73,6 +73,12 @@ public class FRFinder {
         this.graph = graph;
         this.alpha = alpha;
         this.kappa = kappa;
+
+        if (verbose) {
+            graph.printNodes(System.out);
+            graph.printPaths(System.out);
+            graph.printNodePaths(System.out);
+        }
     }
 
     /**
@@ -92,12 +98,6 @@ public class FRFinder {
      * Find the frequented regions in this Graph.
      */
     public void findFRs() throws IOException {
-
-        if (verbose) {
-            graph.printNodes();
-            graph.printPaths();
-            graph.printNodePaths();
-        }
 
         // store the saved FRs in a TreeSet
         frequentedRegions = new TreeSet<>();
@@ -121,7 +121,7 @@ public class FRFinder {
         }
 
         // keep track of FRs we've already looked at
-        List<FrequentedRegion> usedFRs = new LinkedList<>();
+        Set<FrequentedRegion> usedFRs = new HashSet<>();
         
         // build the FRs round by round
         int round = 0;
@@ -140,8 +140,9 @@ public class FRFinder {
             // spin through FRs in a parallel manner
             syncFrequentedRegions.parallelStream().forEach((fr1) -> {
                     syncFrequentedRegions.parallelStream().forEach((fr2) -> {
+                            FRPair frpair = new FRPair(fr1,fr2);
                             if (!usedFRs.contains(fr1) && !usedFRs.contains(fr2) && fr2.compareTo(fr1)>0) {
-                                pbq.add(new FRPair(fr1,fr2));
+                                pbq.add(frpair);
                             }
                         });
                 });
@@ -169,6 +170,8 @@ public class FRFinder {
         printFRSubpaths();
         printPathFRs();
         printPathFRsSVM();
+
+        if (outputPrefix!=null) graph.printAll(outputPrefix);
     }
 
     /**
@@ -269,7 +272,7 @@ public class FRFinder {
         fastaOption.setRequired(false);
         options.addOption(fastaOption);
         //
-        Option genotypeOption = new Option("g", "genotype", true, "which genotype to include (0,1) from the input file; -1 to include all ("+Graph.GENOTYPE+")");
+        Option genotypeOption = new Option("g", "genotype", true, "which genotype to include (0,1) from the input file; "+Graph.BOTH_GENOTYPES+" to include all ("+Graph.BOTH_GENOTYPES+")");
         genotypeOption.setRequired(false);
         options.addOption(genotypeOption);
         //
@@ -317,10 +320,6 @@ public class FRFinder {
         debugOption.setRequired(false);
         options.addOption(debugOption);
         //
-        Option graphOnlyOption = new Option("go", "graphonly", false, "just read the graph and output, do not find FRs; for debuggery (false)");
-        graphOnlyOption.setRequired(false);
-        options.addOption(graphOnlyOption);
-        //
         Option caseCtrlOption = new Option("cc", "casectrl", false, "emphasize FRs that have large case vs. control support ("+CASE_CTRL+")");
         caseCtrlOption.setRequired(false);
         options.addOption(caseCtrlOption);
@@ -362,7 +361,6 @@ public class FRFinder {
         // create a Graph from the dot+FASTA or JSON or GFA file
         Graph g = new Graph();
         if (cmd.hasOption("verbose")) g.setVerbose();
-        if (cmd.hasOption("debug")) g.setDebug();
         if (cmd.hasOption("genotype")) g.genotype = Integer.parseInt(cmd.getOptionValue("genotype"));
         if (dotFile!=null && fastaFile!=null) {
             g.readSplitMEMDotFile(dotFile, fastaFile);
@@ -375,16 +373,6 @@ public class FRFinder {
         // if a labels file is given, append the labels to the path names
         if (pathLabelsFile!=null) {
             g.readPathLabels(pathLabelsFile);
-        }
-
-        // bail if we're just looking at the graph
-        if (cmd.hasOption("graphonly")) {
-            if (pathLabelsFile!=null) g.printLabelCounts();
-            g.printNodes();
-            g.printPaths();
-            g.printNodePaths();
-            g.printPathSequences();
-            return;
         }
 
         FRFinder frf;
@@ -447,6 +435,15 @@ public class FRFinder {
             this.fr2 = fr2;
             merged = FrequentedRegion.merge(fr1, fr2, graph, alpha, kappa);
         }
+        public boolean equals(Object o) {
+            FRPair that = (FRPair) o;
+            return equals(that);
+        }
+            
+        public boolean equals(FRPair that) {
+            return (this.fr1.equals(that.fr1) && this.fr2.equals(that.fr2)) ||
+                (this.fr1.equals(that.fr2) && this.fr2.equals(that.fr1));
+        }
         public int compareTo(FRPair that) {
             if (caseCtrl) {
                 // use distance from case=control line if different
@@ -481,15 +478,13 @@ public class FRFinder {
      * This can be used as input to a classification routine.
      */
     void printPathFRs() throws IOException {
-        PrintStream out = null;
-        // output from a findFRs run
+        PrintStream out = System.out;
         if (outputPrefix==null) {
-            out = System.out;
             printHeading("PATH FREQUENTED REGIONS");
         } else {
             out = new PrintStream(getPathFRsFilename(outputPrefix));
         }
-        // columns
+        // columns are paths
         boolean first = true;
         for (Path path : graph.paths) {
             if (first) {
@@ -497,13 +492,13 @@ public class FRFinder {
             } else {
                 out.print("\t");
             }
-            out.print(path.getNameAndLabel());
+            out.print(path.getNameGenotypeLabel());
         }
-        out.println("");        
-        // rows
+        out.println("");
+        // rows are FRs
         int c = 1;
         for (FrequentedRegion fr : frequentedRegions) {
-            out.print(c++);
+            out.print("FR"+(c++));
             for (Path path : graph.paths) {
                 out.print("\t"+fr.countSubpathsOf(path));
             }
@@ -520,10 +515,8 @@ public class FRFinder {
      * Where +1 corresponds to "case" and -1 corresponds to "ctrl" (0 otherwise).
      */
     void printPathFRsSVM() throws IOException {
-        PrintStream out = null;
-        // output from a findFRs run
+        PrintStream out = System.out;
         if (outputPrefix==null) {
-            out = System.out;
             printHeading("PATH SVM RECORDS");
         } else {
             out = new PrintStream(getPathFRsSVMFilename(outputPrefix));
@@ -555,9 +548,8 @@ public class FRFinder {
             System.err.println("NO FREQUENTED REGIONS!");
             return;
         }
-        PrintStream out = null;
+        PrintStream out = System.out;
         if (outputPrefix==null) {
-            out = System.out;
             printHeading("FREQUENTED REGIONS");
         } else {
             out = new PrintStream(getFRsFilename(outputPrefix));
@@ -655,13 +647,11 @@ public class FRFinder {
      * Print out the parameters, either to stdout or outputPrefix.params.txt
      */
     public void printParameters() throws IOException {
-        PrintStream out = null;
-        if (outputPrefix!=null) {
-            String paramFile = getParamsFilename(outputPrefix);
-            out = new PrintStream(paramFile);
-        } else {
-            out = System.out;
+        PrintStream out = System.out;
+        if (outputPrefix==null) {
             printHeading("PARAMETERS");
+        } else {
+            out = new PrintStream(getParamsFilename(outputPrefix));
         }
         out.println("outputprefix"+"\t"+outputPrefix);
         // Graph
@@ -685,6 +675,7 @@ public class FRFinder {
         }
     }
 
+
     /**
      * Read in the parameters from a previous run.
      */
@@ -697,7 +688,7 @@ public class FRFinder {
         String dotFile = null;
         String fastaFile = null;
         String labelsFile = null;
-        int genotype = Graph.GENOTYPE;
+        int genotype = Graph.BOTH_GENOTYPES;
         while ((line=reader.readLine())!=null) {
             String[] parts = line.split("\t");
             if (parts[0].equals("jsonfile")) {

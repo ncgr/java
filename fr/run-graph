@@ -1,11 +1,13 @@
 #!/bin/sh
-# -d,--dot <arg>          splitMEM DOT file (requires FASTA file)
-# -f,--fasta <arg>        FASTA file (requires DOT file)
-# -j,--json <arg>         vg JSON file
-# --gfa <arg>             vg GFA file
-# -g,--genotype <arg>     which genotype to include (0,1) from the input file; -1 to include all (-1)
-# -p,--pathlabels <arg>   tab-delimited file with pathname<tab>label
-# -v,--verbose            verbose output (false)
-# -do,--debug             debug output (false)
 
-java -server -cp "build/install/fr/lib/*" org.ncgr.pangenomics.Graph --json HDStudy/HTT.paths.json --pathlabels HDStudy/labels.txt --genotype -1
+# usage: Graph
+# -d,--dot <arg>            DOT file (requires FASTA file)
+# -f,--fasta <arg>          FASTA file (requires DOT file)
+# -g,--genotype <arg>       which genotype to include (0,1) from the JSON/GFA file; -1 to include all (-1)
+# -gfa,--gfa <arg>          GFA file
+# -j,--json <arg>           vg JSON file
+# -o,--outputprefix <arg>   output file prefix (stdout)
+# -p,--pathlabels <arg>     tab-delimited file with pathname<tab>label
+# -v,--verbose              verbose output (false)
+
+java -server -cp "build/install/fr/lib/*" org.ncgr.pangenomics.Graph --gfa HDStudy/HTT.400.paths.gfa --outputprefix hdstudy --pathlabels HDStudy/labels-genotypes.txt --genotype -1

@@ -130,10 +130,21 @@ public class Path implements Comparable<Path> {
     }
 
     /**
-     * Return the concated name, genotype and label of this path.
+     * Return the concated name and genotype of this path, if specific genotype.
      */
-    public String getNameAndLabel() {
-        String n = name+"."+genotype;
+    public String getNameGenotype() {
+        if (genotype==Graph.BOTH_GENOTYPES) {
+            return name;
+        } else {
+            return name+"."+genotype;
+        }
+    }
+
+    /**
+     * Return the concated name, genotype and, if present, label of this path.
+     */
+    public String getNameGenotypeLabel() {
+        String n = getNameGenotype();
         if (label!=null) n += "."+label;
         return n;
     }
@@ -209,7 +220,7 @@ public class Path implements Comparable<Path> {
      * Return a summary string.
      */
     public String toString() {
-        String s = getNameAndLabel();
+        String s = getNameGenotypeLabel();
         s += ":[";
         StringJoiner joiner = new StringJoiner(",");
         for (Node node : nodes) {
