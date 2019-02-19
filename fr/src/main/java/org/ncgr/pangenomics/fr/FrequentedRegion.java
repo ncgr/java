@@ -159,8 +159,10 @@ public class FrequentedRegion implements Comparable<FrequentedRegion> {
      */
     public String columnHeading() {
         String s = "nodes\tsupport\tavgLen";
-        for (String label : graph.labelCounts.keySet()) {
-            s += "\t"+label;
+        if (graph.labelCounts!=null) {
+            for (String label : graph.labelCounts.keySet()) {
+                s += "\t"+label;
+            }
         }
         return s;
     }

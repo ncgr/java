@@ -1,28 +1,27 @@
 #!/bin/sh
 
-# vg construct -r ecoli.ref.fa -v ecoli.pan3.vcf -f -m 1000 > ecoli.pan3.vg
-# vg view -g ecoli.pan3.vg > ecoli.pan3.vg.gfa
-# vg view -j ecoli.pan3.vg > ecoli.pan3.vg.json
-# vg view -d ecoli.pan3.vg > ecoli.pan3.vg.dot
-# dot -Tpdf ecoli.pan3.dot > ecoli.pan3.vg.pdf
+REF=ecoli.ref.fa
+VCF=ecoli.pan3.vcf.gz
+PREFIX=ecoli.pan3
 
 # build the graph
-vg construct -r ecoli.ref.fa -v ecoli.pan3.vcf.gz -a -f -m 1000 > ecoli.pan3.vg
+vg construct --reference $REF --vcf $VCF --alt-paths --flat-alts --node-max 1000 > $PREFIX.vg
 
 # build the GBWT index
-vg index -x ecoli.pan3.xg -G ecoli.pan3.gbwt -v ecoli.pan3.vcf.gz -g ecoli.pan3.gcsa ecoli.pan3.vg
+# NOTE: use --force-phasing to get single thread paths from a "forced" phase
+vg index --threads 64 --compact --xg-name $PREFIX.xg --gbwt-name $PREFIX.gbwt --force-phasing --vcf-phasing $VCF -g $PREFIX.gcsa $PREFIX.vg
 
 # extract the threads from the GBWT as vg Paths
-vg paths -x ecoli.pan3.xg -g ecoli.pan3.gbwt -V -q _thread_genome1 > genome1_paths.vg
-vg paths -x ecoli.pan3.xg -g ecoli.pan3.gbwt -V -q _thread_genome2 > genome2_paths.vg
-vg paths -x ecoli.pan3.xg -g ecoli.pan3.gbwt -V -q _thread_genome3 > genome3_paths.vg
+vg paths -x ecoli.pan3.xg -g ecoli.pan3.gbwt -V -q _thread_ecoli1 > ecoli1_paths.vg
+vg paths -x ecoli.pan3.xg -g ecoli.pan3.gbwt -V -q _thread_ecoli2 > ecoli2_paths.vg
+vg paths -x ecoli.pan3.xg -g ecoli.pan3.gbwt -V -q _thread_ecoli3 > ecoli3_paths.vg
 
-# To add those paths back to your ecoli.pan3. you can use cat
-cat ecoli.pan3.vg *_paths.vg > ecoli.pan3.paths.vg
+# now add those paths back to the vg
+cat $PREFIX.vg *_paths.vg > $PREFIX.paths.vg
 rm *_paths.vg
 
 # output some nice files
-vg view -g ecoli.pan3.paths.vg > ecoli.pan3.paths.gfa
-vg view -j ecoli.pan3.paths.vg > ecoli.pan3.paths.json
-vg view -d ecoli.pan3.paths.vg > ecoli.pan3.paths.dot
-dot -Tpdf ecoli.pan3.paths.dot > ecoli.pan3.paths.pdf
+vg view --threads 64 --gfa $PREFIX.paths.vg > $PREFIX.paths.gfa
+vg view --threads 64 --json $PREFIX.paths.vg > $PREFIX.paths.json
+vg view --threads 64 --dot $PREFIX.paths.vg > $PREFIX.paths.dot
+dot -Tpdf $PREFIX.paths.dot > $PREFIX.paths.pdf
