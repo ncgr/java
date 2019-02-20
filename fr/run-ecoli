@@ -21,7 +21,8 @@
 #  -go,--graphonly           just read the graph and output, do not find FRs; for debuggery (false)
 #  -v,--verbose              verbose output (false)
 #  -do,--debug               debug output (false)
+#  -bf,--bruteforce          find FRs comprehensively via brute force - testing only! (false)
 
-java -cp "build/install/fr/lib/*" org.ncgr.pangenomics.fr.FRFinder -gfa ecoli/ecoli.pan3.paths.gfa \
+java -cp "build/install/fr/lib/*" org.ncgr.pangenomics.fr.FRFinder  -gfa ecoli/ecoli.pan3.paths.gfa \
      --outputprefix ecoli \
-     --alpha 0.8 --kappa 2 --debug
+     --alpha 0.1 --kappa 3 --debug

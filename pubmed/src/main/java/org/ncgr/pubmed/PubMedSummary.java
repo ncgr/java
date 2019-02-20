@@ -76,67 +76,96 @@ public class PubMedSummary {
     public Map<String,String> references = new LinkedHashMap<String,String>();
 
     /**
-     * Get a summary of a PMID
+     * Get a summary of a PMID without an API key.
      */
     public PubMedSummary(int id) throws IOException, UnsupportedEncodingException, ParserConfigurationException, SAXException {
-
-        // "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi?db=pubmed&id=25283805"
-
-        // form URL
-        String url = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi?db=pubmed&id="+id;
-
-        // parse the URL response
-        DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
-        DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
-        Document doc = dBuilder.parse(url);
-        doc.getDocumentElement().normalize(); // recommended
-
-        // if article doesn't exist, response has ERROR tag
-        boolean exists = doc.getElementsByTagName("ERROR").item(0)==null;
-
-        // parse-o-rama
-        if (exists) parse(doc);
-        
+        search(id);
     }
 
     /**
-     * Get a summary of the first match to title (if exists).
+     * Get a summary of a PMID with an API key
+     */
+    public PubMedSummary(int id, String apiKey) throws IOException, UnsupportedEncodingException, ParserConfigurationException, SAXException {
+        search(id, apiKey);
+    }
+
+    /**
+     * Get a summary of the first match to title (if exists) without an API key.
      */
     public PubMedSummary(String title) throws IOException, UnsupportedEncodingException, ParserConfigurationException, SAXException {
+        search(title);
+    }
 
-        // form search URL
-        // "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=pubmed&term=An RNA-Seq based gene expression atlas of the common bean.[Title]"
-        String url = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=pubmed&term="+URLEncoder.encode(title,"UTF-8")+"[Title]";
+    /**
+     * Get a summary of the first match to title (if exists) with an API key.
+     */
+    public PubMedSummary(String title, String apiKey) throws IOException, UnsupportedEncodingException, ParserConfigurationException, SAXException {
+        search(title, apiKey);
+    }
 
+    /**
+     * Search given an id.
+     */
+    void search(int id) throws IOException, UnsupportedEncodingException, ParserConfigurationException, SAXException {
+        // URL without API key
+        String url = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi?db=pubmed&id="+id;
         // parse the URL response
         DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
         DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
         Document doc = dBuilder.parse(url);
         doc.getDocumentElement().normalize(); // recommended
+        // if article doesn't exist, response has ERROR tag
+        boolean exists = doc.getElementsByTagName("ERROR").item(0)==null;
+        // parse-o-rama
+        if (exists) parse(doc);
+    }
 
+    /**
+     * Search given an id and API key.
+     */
+    void search(int id, String apiKey) throws IOException, UnsupportedEncodingException, ParserConfigurationException, SAXException {
+        // URL with API key
+        String url = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi?db=pubmed&api_key="+apiKey+"&id="+id;
+        // parse the URL response
+        DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
+        DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
+        Document doc = dBuilder.parse(url);
+        doc.getDocumentElement().normalize(); // recommended
+        // if article doesn't exist, response has ERROR tag
+        boolean exists = doc.getElementsByTagName("ERROR").item(0)==null;
+        // parse-o-rama
+        if (exists) parse(doc);
+    }
+
+    /**
+     * Search for a title without an API key.
+     */
+    void search(String title) throws IOException, UnsupportedEncodingException, ParserConfigurationException, SAXException {
+        // URL without API key
+        String searchUrl = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=pubmed&term="+URLEncoder.encode(title,"UTF-8")+"[Title]";
+        // parse the URL response
+        DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
+        DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
+        Document doc = dBuilder.parse(searchUrl);
+        doc.getDocumentElement().normalize(); // recommended
         // if article exists, count>0
         Node countNode = doc.getElementsByTagName("Count").item(0);
         int count = Integer.parseInt(countNode.getTextContent());
-        
         int id = 0;
         if (count>0) {
             Node idNode = doc.getElementsByTagName("Id").item(0);
             id = Integer.parseInt(idNode.getTextContent());
         }
-
         if (id>0) {
-            // form summary URL
-            url = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi?db=pubmed&id="+id;
-
+            // summary URL without API key
+            String summaryUrl = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi?db=pubmed&id="+id;
             // parse the URL response
             dbFactory = DocumentBuilderFactory.newInstance();
             dBuilder = dbFactory.newDocumentBuilder();
-            doc = dBuilder.parse(url);
+            doc = dBuilder.parse(summaryUrl);
             doc.getDocumentElement().normalize(); // recommended
-
             // if article doesn't exist, response has ERROR tag
             boolean exists = doc.getElementsByTagName("ERROR").item(0)==null;
-
             // parse, then check for title similarity
             if (exists) {
                 parse(doc);
@@ -149,9 +178,50 @@ public class PubMedSummary {
                 }
             }
         }
-
     }
 
+    /**
+     * Search for a title with an API key.
+     */
+    void search(String title, String apiKey) throws IOException, UnsupportedEncodingException, ParserConfigurationException, SAXException {
+        // URL without API key
+        String searchUrl = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=pubmed&api_key="+apiKey+"&term="+URLEncoder.encode(title,"UTF-8")+"[Title]";
+        // parse the URL response
+        DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
+        DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
+        Document doc = dBuilder.parse(searchUrl);
+        doc.getDocumentElement().normalize(); // recommended
+        // if article exists, count>0
+        Node countNode = doc.getElementsByTagName("Count").item(0);
+        int count = Integer.parseInt(countNode.getTextContent());
+        int id = 0;
+        if (count>0) {
+            Node idNode = doc.getElementsByTagName("Id").item(0);
+            id = Integer.parseInt(idNode.getTextContent());
+        }
+        if (id>0) {
+            // summary URL without API key
+            String summaryUrl = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi?db=pubmed&api_key="+apiKey+"&id="+id;
+            // parse the URL response
+            dbFactory = DocumentBuilderFactory.newInstance();
+            dBuilder = dbFactory.newDocumentBuilder();
+            doc = dBuilder.parse(summaryUrl);
+            doc.getDocumentElement().normalize(); // recommended
+            // if article doesn't exist, response has ERROR tag
+            boolean exists = doc.getElementsByTagName("ERROR").item(0)==null;
+            // parse, then check for title similarity
+            if (exists) {
+                parse(doc);
+                // similar titles?
+                LevenshteinDistance distance = new LevenshteinDistance();
+                int dist = distance.apply(title.toLowerCase(), this.title.toLowerCase());
+                if (dist>MAX_LEVENSHTEIN_DISTANCE) {
+                    // set the PMID=0 to indicate not found, leave rest of fields populated
+                    this.id = 0;
+                }
+            }
+        }
+    }
 
     /**
      * Parse a document into instance variables.

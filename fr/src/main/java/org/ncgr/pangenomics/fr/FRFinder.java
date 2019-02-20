@@ -47,6 +47,7 @@ public class FRFinder {
     static boolean CASE_CTRL = false;
     static boolean VERBOSE = false;
     static boolean DEBUG = false;
+    static boolean BRUTE_FORCE = false;
     
     // required parameters, no defaults; set in constructor
     Graph graph;  // the Graph we're analyzing
@@ -60,6 +61,9 @@ public class FRFinder {
     int minSize = MINSIZE; // minimum size: minimum number of de Bruijn nodes (fr.nodes.size()) that an FR must contain to be considered interesting
     int minLen = MINLEN;   // minimum average length of a frequented region's subpath sequences (fr.avgLength) to be considered interesting
     boolean caseCtrl = CASE_CTRL; // emphasize FRs that have large case/control support
+    boolean bruteForce = BRUTE_FORCE; // find FRs comprehensively with brute force, not using heuristic approach from paper; for testing only!
+
+    // I/O
     String outputPrefix; // output file prefix
 
     // the FRs, sorted for convenience
@@ -84,13 +88,10 @@ public class FRFinder {
     }
 
     /**
-     * Construct with the output from a previous run, applying the requested post-processing filters
+     * Construct with the output from a previous run. Be sure to set minSup, minSize, minLen filters as needed before running postprocess().
      */
-    public FRFinder(String inputPrefix, int minSup, int minSize, int minLen) throws FileNotFoundException, IOException {
+    public FRFinder(String inputPrefix) throws FileNotFoundException, IOException {
         this.inputPrefix = inputPrefix;
-        this.minSup = minSup;
-        this.minSize = minSize;
-        this.minLen = minLen;
         outputPrefix = getOutputPrefix(inputPrefix);
         readParameters();
         readFrequentedRegions();
@@ -126,44 +127,77 @@ public class FRFinder {
         Set<FrequentedRegion> usedFRs = new HashSet<>();
         
         // build the FRs round by round
-        int round = 0;
-        boolean added = true;
 	long startTime = System.currentTimeMillis();
-        while (added) {
-            round++;
-            added = false;
 
-            // gently suggest garbage collection
-            System.gc();
-
-            // put FR pairs into a PriorityBlockingQueue which sorts them by decreasing interest (defined by the FRPair comparator)
-            PriorityBlockingQueue<FRPair> pbq = new PriorityBlockingQueue<>();
-
-            ////////////////////////////////////////
-            // spin through FRs in a parallel manner
-            syncFrequentedRegions.parallelStream().forEach((fr1) -> {
-                    syncFrequentedRegions.parallelStream().forEach((fr2) -> {
-                            FRPair frpair = new FRPair(fr1,fr2);
-                            if (!usedFRs.contains(fr1) && !usedFRs.contains(fr2) && fr2.compareTo(fr1)>0) {
-                                pbq.add(frpair);
-                            }
-                        });
-                });
-            ////////////////////////////////////////
-            
-            // add our new FR
-            if (pbq.size()>0) {
-                FRPair frpair = pbq.peek();
-                if (frpair.merged.support>0) {
-                    added = true;
-                    usedFRs.add(frpair.fr1);
-                    usedFRs.add(frpair.fr2);
-                    syncFrequentedRegions.add(frpair.merged);
-                    frequentedRegions.add(frpair.merged);
-                    System.out.println(round+":"+frpair.fr1.nodes+frpair.fr2.nodes+"\t"+frpair.merged.summaryString());
+        if (bruteForce) {
+            boolean added = true;
+            int round = 0;
+            while (added) {
+                round++;
+                added = false;
+                // gently suggest garbage collection
+                System.gc();
+                // put the current FRs and filtered FRs into synchronized Sets
+                Set<FrequentedRegion> syncNewFRs = Collections.synchronizedSet(new HashSet<>());
+                Set<FrequentedRegion> syncFilteredFRs = Collections.synchronizedSet(new HashSet<>());
+                PriorityBlockingQueue<FRPair> pbq = new PriorityBlockingQueue<>();
+                int oldSize = syncFrequentedRegions.size();
+                ////////////////////////////////////////
+                // spin through FRs in a parallel manner
+                syncFrequentedRegions.parallelStream().forEach((fr1) -> {
+                        syncFrequentedRegions.parallelStream().forEach((fr2) -> {
+                                FRPair frpair = new FRPair(fr1,fr2);
+                                syncNewFRs.add(frpair.merged);
+                                if (!syncFrequentedRegions.contains(frpair.merged) &&
+                                    frpair.merged.support>=minSup &&
+                                    frpair.merged.avgLength>=minLen &&
+                                    frpair.merged.nodes.size()>=minSize) {
+                                    syncFilteredFRs.add(frpair.merged);
+                                }
+                            });
+                    });
+                ////////////////////////////////////////
+                syncFrequentedRegions.addAll(syncNewFRs);
+                added = syncNewFRs.size()>0;
+                if (syncFilteredFRs.size()>0) {
+                    frequentedRegions.addAll(syncFilteredFRs);
+                    System.out.println(round+":"+syncFilteredFRs.size()+" FRs added.");
                 }
             }
-
+        } else {
+            boolean added = true;
+            int round = 0;
+            while (added) {
+                round++;
+                added = false;
+                // gently suggest garbage collection
+                System.gc();
+                // put FR pairs into a PriorityBlockingQueue which sorts them by decreasing interest (defined by the FRPair comparator)
+                PriorityBlockingQueue<FRPair> pbq = new PriorityBlockingQueue<>();
+                ////////////////////////////////////////
+                // spin through FRs in a parallel manner
+                syncFrequentedRegions.parallelStream().forEach((fr1) -> {
+                        syncFrequentedRegions.parallelStream().forEach((fr2) -> {
+                                FRPair frpair = new FRPair(fr1,fr2);
+                                if (!usedFRs.contains(fr1) && !usedFRs.contains(fr2) && fr2.compareTo(fr1)>0) {
+                                    pbq.add(frpair);
+                                }
+                            });
+                    });
+                ////////////////////////////////////////
+                // add our new FR
+                if (pbq.size()>0) {
+                    FRPair frpair = pbq.peek();
+                    if (frpair.merged.support>0) {
+                        added = true;
+                        usedFRs.add(frpair.fr1);
+                        usedFRs.add(frpair.fr2);
+                        syncFrequentedRegions.add(frpair.merged);
+                        frequentedRegions.add(frpair.merged);
+                        System.out.println(round+":"+frpair.fr1.nodes+frpair.fr2.nodes+"\t"+frpair.merged.summaryString());
+                    }
+                }
+            }
         }
 
 	long duration = System.currentTimeMillis() - startTime;
@@ -173,18 +207,8 @@ public class FRFinder {
         System.out.println("Found "+frequentedRegions.size()+" FRs.");
 	System.out.println("Clock time: "+tf.format(hours)+":"+tf.format(minutes)+":"+tf.format(seconds));
 
-			   
-        // long minutes = (milliseconds / 1000) / 60;
-
-        // long seconds = (milliseconds / 1000);
-	
-
 	// final output
-        printFrequentedRegions();
-        printFRSubpaths();
-        printPathFRs();
-        printPathFRsSVM();
-
+        printAll();
         if (outputPrefix!=null) graph.printAll(outputPrefix);
     }
 
@@ -247,6 +271,12 @@ public class FRFinder {
     public void setDebug() {
         this.debug = true;
     }
+    public void setCaseCtrl() {
+        this.caseCtrl = true;
+    }
+    public void setBruteForce() {
+        this.bruteForce = true;
+    }
     public void setMinSup(int minSup) {
         this.minSup = minSup;
     }
@@ -255,9 +285,6 @@ public class FRFinder {
     }
     public void setMinLen(int minLen) {
         this.minLen = minLen;
-    }
-    public void setCaseCtrl() {
-        this.caseCtrl = true;
     }
     public void setOutputPrefix(String outputPrefix) {
         this.outputPrefix = outputPrefix;
@@ -337,6 +364,10 @@ public class FRFinder {
         Option caseCtrlOption = new Option("cc", "casectrl", false, "emphasize FRs that have large case vs. control support ("+CASE_CTRL+")");
         caseCtrlOption.setRequired(false);
         options.addOption(caseCtrlOption);
+        //
+        Option bruteForceOption = new Option("bf", "bruteforce", false, "find FRs comprehensively via brute force - testing only! ("+BRUTE_FORCE+")");
+        bruteForceOption.setRequired(false);
+        options.addOption(bruteForceOption);
 
         try {
             cmd = parser.parse(options, args);
@@ -347,6 +378,12 @@ public class FRFinder {
             return;
         }
 
+        if (cmd.getOptions().length==0) {
+            formatter.printHelp("FRFinder", options);
+            System.exit(1);
+            return;
+        }
+        
         // parameter validation
         if (!cmd.hasOption("inputprefix") && !cmd.hasOption("dot") && !cmd.hasOption("json") && !cmd.hasOption("gfa")) {
             System.err.println("You must specify a splitMEM-style DOT file plus FASTA (-d/--dot and -f/--fasta ), a vg JSON file (-j, --json) or a vg GFA file (--gfa)");
@@ -389,26 +426,31 @@ public class FRFinder {
             g.readPathLabels(pathLabelsFile);
         }
 
+        // filters
+        int minSup = MINSUP;
+        int minSize = MINSIZE;
+        int minLen = MINLEN;
+        if (cmd.hasOption("minsup")) {
+            minSup = Integer.parseInt(cmd.getOptionValue("minsup"));
+        }
+        if (cmd.hasOption("minsize")) {
+            minSize = Integer.parseInt(cmd.getOptionValue("minsize"));
+        }
+        if (cmd.hasOption("minlen")) {
+            minLen = Integer.parseInt(cmd.getOptionValue("minlen"));
+        }
+        
         FRFinder frf;
         boolean postProcess = false;
         if (cmd.hasOption("inputprefix")) {
             String inputPrefix = cmd.getOptionValue("inputprefix");
             postProcess = true;
-            // defaults
-            int minSup = MINSUP;
-            int minSize = MINSIZE;
-            int minLen = MINLEN;
-            if (cmd.hasOption("minsup")) {
-                minSup = Integer.parseInt(cmd.getOptionValue("minsup"));
-            }
-            if (cmd.hasOption("minsize")) {
-                minSize = Integer.parseInt(cmd.getOptionValue("minsize"));
-            }
-            if (cmd.hasOption("minlen")) {
-                minLen = Integer.parseInt(cmd.getOptionValue("minlen"));
-            }
             // instantiate the FRFinder from the saved files
-            frf = new FRFinder(inputPrefix, minSup, minSize, minLen);
+            frf = new FRFinder(inputPrefix);
+            // apply the desired filters
+            frf.setMinSup(minSup);
+            frf.setMinSize(minSize);
+            frf.setMinLen(minLen);
         } else { 
             // instantiate the FRFinder with this Graph, alpha and kappa
             frf = new FRFinder(g, alpha, kappa);
@@ -416,6 +458,13 @@ public class FRFinder {
             if (cmd.hasOption("casectrl")) {
                 frf.setCaseCtrl();
             }
+            if (cmd.hasOption("bruteforce")) {
+                frf.setBruteForce();
+            }
+            // these are not used by normal method, which saves all FRs
+            frf.setMinSup(minSup);
+            frf.setMinSize(minSize);
+            frf.setMinLen(minLen);
         }
         
         // set optional FRFinder parameters
@@ -689,6 +738,15 @@ public class FRFinder {
         }
     }
 
+    /**
+     * Print all output.
+     */
+    void printAll() throws FileNotFoundException, IOException {
+        printFrequentedRegions();
+        printFRSubpaths();
+        printPathFRs();
+        printPathFRsSVM();
+    }
 
     /**
      * Read in the parameters from a previous run.
