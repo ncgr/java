@@ -173,10 +173,11 @@ public class FRFinder {
                 PriorityBlockingQueue<FRPair> pbq = new PriorityBlockingQueue<>();
                 ////////////////////////////////////////
                 // spin through FRs in a parallel manner
+                // NOTE: fr1>=fr2 compare to stay above diagonal costs same time as running both sides!
                 syncFrequentedRegions.parallelStream().forEach((fr1) -> {
                         syncFrequentedRegions.parallelStream().forEach((fr2) -> {
                                 FRPair frpair = new FRPair(fr1,fr2);
-                                if (!usedFRs.contains(fr1) && !usedFRs.contains(fr2) && fr1.compareTo(fr2)>=0) {
+                                if (!usedFRs.contains(fr1) && !usedFRs.contains(fr2)) {
                                     pbq.add(frpair);
                                 }
                             });
