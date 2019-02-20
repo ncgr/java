@@ -1,11 +1,15 @@
-## load a schiz study FR output
+## load an FRFinder schiz file
 
-schiz = read.table("schiz.out", header=TRUE)
+frs = read.table("schiz.frs.txt", header=TRUE, stringsAsFactors=FALSE)
+rownames(frs) = frs$FR
+frs$FR = NULL
 
-params = read.delim(file="schiz.out.params", header=F)
+for (i in 1:length(rownames(frs))) {
+    frs$size[i] = length(strsplit(frs$nodes[i],",")[[1]])
+}
+
+params = read.delim(file="schiz.params.txt", header=FALSE, stringsAsFactors=FALSE)
 for (i in 1:length(rownames(params))) {
-    if (params$V1[i]=="json") json = params$V2[i]
-    if (params$V1[i]=="pathlabels") pathlabels = params$V2[i]
     if (params$V1[i]=="genotype") genotype = params$V2[i]
     if (params$V1[i]=="alpha") alpha = params$V2[i]
     if (params$V1[i]=="kappa") kappa = params$V2[i]
@@ -13,6 +17,14 @@ for (i in 1:length(rownames(params))) {
     if (params$V1[i]=="maxsup") maxsup = params$V2[i]
     if (params$V1[i]=="minsize") minsize = params$V2[i]
     if (params$V1[i]=="minlen") minlen = params$V2[i]
-    if (params$V1[i]=="nrounds") nrounds = params$V2[i]
+    if (params$V1[i]=="casectrl") casectrl = params$V2[i]
+    if (params$V1[i]=="jsonfile") jsonfile = params$V2[i]
+    if (params$V1[i]=="gfafile") gfafile = params$V2[i]
+    if (params$V1[i]=="dotfile") dotfile = params$V2[i]
+    if (params$V1[i]=="fastafile") fastafile = params$V2[i]
+    if (params$V1[i]=="pathlabels") pathlabels = params$V2[i]
 }
 rm(params)
+
+labelcounts = read.delim(file="schiz.labelcounts.txt", header=FALSE, stringsAsFactors=FALSE, row.names=1)
+colnames(labelcounts) = c("count")
