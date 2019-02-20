@@ -25,9 +25,9 @@ colors = array(dim=length(rownames(pca$rotation)))
 for (i in 1:length(rownames(pca$rotation))) {
     labels[i] = rownames(pca$rotation)[i]
     if (grepl("case", labels[i])) {
-        colors[i] = "darkgreen"
-    } else if (grepl("ctrl", labels[i])) {
         colors[i] = "darkred"
+    } else if (grepl("ctrl", labels[i])) {
+        colors[i] = "darkgreen"
     } else {
         colors[i] = "gray";
     }
