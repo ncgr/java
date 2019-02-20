@@ -179,7 +179,7 @@ public class FRFinder {
                 syncFrequentedRegions.parallelStream().forEach((fr1) -> {
                         syncFrequentedRegions.parallelStream().forEach((fr2) -> {
                                 FRPair frpair = new FRPair(fr1,fr2);
-                                if (!usedFRs.contains(fr1) && !usedFRs.contains(fr2) && fr2.compareTo(fr1)>0) {
+                                if (!usedFRs.contains(fr1) && !usedFRs.contains(fr2)) {
                                     pbq.add(frpair);
                                 }
                             });

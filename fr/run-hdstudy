@@ -23,31 +23,31 @@
 #  -do,--debug               debug output (false)
 
 ## initial run
-java -server -cp "build/install/fr/lib/*" org.ncgr.pangenomics.fr.FRFinder --gfa HDStudy/HTT.400.paths.gfa  \
+java -server -cp "build/install/fr/lib/*" org.ncgr.pangenomics.fr.FRFinder --gfa HDStudy/HTT.1k.paths.gfa  \
      --pathlabels HDStudy/labels-genotypes.txt --outputprefix hdstudy \
-     --alpha 0.6 --kappa 21 --debug ## --casectrl
+     --alpha 0.6 --kappa 21 --debug --casectrl
 
-## post-process with various minsup, minsize, minlen
-echo "-----------------------------------"
-java -server -cp "build/install/fr/lib/*" org.ncgr.pangenomics.fr.FRFinder --debug --inputprefix hdstudy --minsup 1  --minsize 1  --minlen 99
-java -server -cp "build/install/fr/lib/*" org.ncgr.pangenomics.fr.FRFinder --debug --inputprefix hdstudy --minsup 1  --minsize 5  --minlen 99
-java -server -cp "build/install/fr/lib/*" org.ncgr.pangenomics.fr.FRFinder --debug --inputprefix hdstudy --minsup 1  --minsize 10 --minlen 99
-java -server -cp "build/install/fr/lib/*" org.ncgr.pangenomics.fr.FRFinder --debug --inputprefix hdstudy --minsup 10 --minsize 1  --minlen 99
-java -server -cp "build/install/fr/lib/*" org.ncgr.pangenomics.fr.FRFinder --debug --inputprefix hdstudy --minsup 20 --minsize 1  --minlen 99
-java -server -cp "build/install/fr/lib/*" org.ncgr.pangenomics.fr.FRFinder --debug --inputprefix hdstudy --minsup 30 --minsize 1  --minlen 99
-java -server -cp "build/install/fr/lib/*" org.ncgr.pangenomics.fr.FRFinder --debug --inputprefix hdstudy --minsup 40 --minsize 1  --minlen 99
-java -server -cp "build/install/fr/lib/*" org.ncgr.pangenomics.fr.FRFinder --debug --inputprefix hdstudy --minsup 50 --minsize 1  --minlen 99
-java -server -cp "build/install/fr/lib/*" org.ncgr.pangenomics.fr.FRFinder --debug --inputprefix hdstudy --minsup 60 --minsize 1  --minlen 99
-java -server -cp "build/install/fr/lib/*" org.ncgr.pangenomics.fr.FRFinder --debug --inputprefix hdstudy --minsup 70 --minsize 1  --minlen 99
+# ## post-process with various minsup, minsize, minlen
+# echo "-----------------------------------"
+# java -server -cp "build/install/fr/lib/*" org.ncgr.pangenomics.fr.FRFinder --debug --inputprefix hdstudy --minsup 1  --minsize 1  --minlen 99
+# java -server -cp "build/install/fr/lib/*" org.ncgr.pangenomics.fr.FRFinder --debug --inputprefix hdstudy --minsup 1  --minsize 5  --minlen 99
+# java -server -cp "build/install/fr/lib/*" org.ncgr.pangenomics.fr.FRFinder --debug --inputprefix hdstudy --minsup 1  --minsize 10 --minlen 99
+# java -server -cp "build/install/fr/lib/*" org.ncgr.pangenomics.fr.FRFinder --debug --inputprefix hdstudy --minsup 10 --minsize 1  --minlen 99
+# java -server -cp "build/install/fr/lib/*" org.ncgr.pangenomics.fr.FRFinder --debug --inputprefix hdstudy --minsup 20 --minsize 1  --minlen 99
+# java -server -cp "build/install/fr/lib/*" org.ncgr.pangenomics.fr.FRFinder --debug --inputprefix hdstudy --minsup 30 --minsize 1  --minlen 99
+# java -server -cp "build/install/fr/lib/*" org.ncgr.pangenomics.fr.FRFinder --debug --inputprefix hdstudy --minsup 40 --minsize 1  --minlen 99
+# java -server -cp "build/install/fr/lib/*" org.ncgr.pangenomics.fr.FRFinder --debug --inputprefix hdstudy --minsup 50 --minsize 1  --minlen 99
+# java -server -cp "build/install/fr/lib/*" org.ncgr.pangenomics.fr.FRFinder --debug --inputprefix hdstudy --minsup 60 --minsize 1  --minlen 99
+# java -server -cp "build/install/fr/lib/*" org.ncgr.pangenomics.fr.FRFinder --debug --inputprefix hdstudy --minsup 70 --minsize 1  --minlen 99
 
-## run SVM
-./run-svm hdstudy 1 1 99
-./run-svm hdstudy 1 5 99
-./run-svm hdstudy 1 10 99
-./run-svm hdstudy 10 1 99
-./run-svm hdstudy 20 1 99
-./run-svm hdstudy 30 1 99
-./run-svm hdstudy 40 1 99
-./run-svm hdstudy 50 1 99
-./run-svm hdstudy 60 1 99
-./run-svm hdstudy 70 1 99
+# ## run SVM
+# ./run-svm hdstudy 1 1 99
+# ./run-svm hdstudy 1 5 99
+# ./run-svm hdstudy 1 10 99
+# ./run-svm hdstudy 10 1 99
+# ./run-svm hdstudy 20 1 99
+# ./run-svm hdstudy 30 1 99
+# ./run-svm hdstudy 40 1 99
+# ./run-svm hdstudy 50 1 99
+# ./run-svm hdstudy 60 1 99
+# ./run-svm hdstudy 70 1 99

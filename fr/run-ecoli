@@ -25,4 +25,4 @@
 
 java -cp "build/install/fr/lib/*" org.ncgr.pangenomics.fr.FRFinder  -gfa ecoli/ecoli.pan3.paths.gfa \
      --outputprefix ecoli \
-     --alpha 0.1 --kappa 3 --debug
+     --alpha 0.5 --kappa 2 --debug
