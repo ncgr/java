@@ -3,6 +3,7 @@ results-*
 FR-*
 HDStudy
 Schiz
+SCA
 .gradle
 build
 buildOutputCleanup
@@ -12,13 +13,6 @@ mods
 *.lock
 *.log
 *.bin
-*.test.*
-*.train.*
-*.range
-*.scale
-*.model
-*.predict
 *.png
 *.fai
 *.dotfastaPos.txt
-*.lcp
