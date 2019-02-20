@@ -105,10 +105,8 @@ public class FRFinder {
         // store the saved FRs in a TreeSet
         frequentedRegions = new TreeSet<>();
         
-        // back the studied FRs with a synchronizedSet
+        // store the studied FRs in a synchronized TreeSet initialized with single-node FRs
         Set<FrequentedRegion> syncFrequentedRegions = Collections.synchronizedSet(new TreeSet<>());
-        
-        // create initial single-node FRs
         for (Node node : graph.nodes.values()) {
             NodeSet c = new NodeSet();
             c.add(node);
@@ -178,7 +176,7 @@ public class FRFinder {
                 syncFrequentedRegions.parallelStream().forEach((fr1) -> {
                         syncFrequentedRegions.parallelStream().forEach((fr2) -> {
                                 FRPair frpair = new FRPair(fr1,fr2);
-                                if (!usedFRs.contains(fr1) && !usedFRs.contains(fr2) && !frequentedRegions.contains(frpair.merged)) {
+                                if (!usedFRs.contains(fr1) && !usedFRs.contains(fr2) && fr1.compareTo(fr2)>=0) {
                                     pbq.add(frpair);
                                 }
                             });

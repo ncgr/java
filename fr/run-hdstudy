@@ -23,7 +23,7 @@
 #  -do,--debug               debug output (false)
 
 ## initial run
-java -server -cp "build/install/fr/lib/*" org.ncgr.pangenomics.fr.FRFinder --gfa HDStudy/HTT.1k.paths.gfa  \
+java -server -cp "build/install/fr/lib/*" org.ncgr.pangenomics.fr.FRFinder --gfa HDStudy/HTT.3k.paths.gfa  \
      --pathlabels HDStudy/labels-genotypes.txt --outputprefix hdstudy \
      --alpha 0.6 --kappa 21 --debug --casectrl
 
