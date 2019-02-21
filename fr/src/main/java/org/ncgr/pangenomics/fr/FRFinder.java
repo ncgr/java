@@ -143,7 +143,7 @@ public class FRFinder {
                 // spin through FRs in a parallel manner
                 syncFrequentedRegions.parallelStream().forEach((fr1) -> {
                         syncFrequentedRegions.parallelStream().forEach((fr2) -> {
-                                FRPair frpair = new FRPair(fr1,fr2);
+                                FRPair frpair = new FRPair(fr1, fr2, graph, alpha, kappa, caseCtrl);
                                 syncNewFRs.add(frpair.merged);
                                 if (!syncFrequentedRegions.contains(frpair.merged) &&
                                     frpair.merged.support>=minSup &&
@@ -176,7 +176,7 @@ public class FRFinder {
                 // NOTE: fr1>=fr2 compare to stay above diagonal costs same time as running both sides!
                 syncFrequentedRegions.parallelStream().forEach((fr1) -> {
                         syncFrequentedRegions.parallelStream().forEach((fr2) -> {
-                                FRPair frpair = new FRPair(fr1,fr2);
+                                FRPair frpair = new FRPair(fr1, fr2, graph, alpha, kappa, caseCtrl);
                                 if (!usedFRs.contains(fr1) && !usedFRs.contains(fr2)) {
                                     pbq.add(frpair);
                                 }
@@ -480,48 +480,6 @@ public class FRFinder {
             frf.postprocess();
         } else {
             frf.findFRs();
-        }
-    }
-
-    /**
-     * Contains a pair of FRs for storage in the PriorityBlockingQueue with a comparator to decide which FRs "win".
-     * This is where one implements weighting for certain FR characteristics.
-     */
-    class FRPair implements Comparable<FRPair> {
-        FrequentedRegion fr1;
-        FrequentedRegion fr2;
-        FrequentedRegion merged;
-        FRPair(FrequentedRegion fr1, FrequentedRegion fr2) {
-            this.fr1 = fr1;
-            this.fr2 = fr2;
-            merged = FrequentedRegion.merge(fr1, fr2, graph, alpha, kappa);
-        }
-        public boolean equals(Object o) {
-            FRPair that = (FRPair) o;
-            return equals(that);
-        }
-            
-        public boolean equals(FRPair that) {
-            return (this.fr1.equals(that.fr1) && this.fr2.equals(that.fr2)) ||
-                (this.fr1.equals(that.fr2) && this.fr2.equals(that.fr1));
-        }
-        public int compareTo(FRPair that) {
-            if (caseCtrl) {
-                // use distance from case=control line if different
-                int thisDistance = Math.abs(this.merged.getLabelCount("case")-this.merged.getLabelCount("ctrl"));
-                int thatDistance = Math.abs(that.merged.getLabelCount("case")-that.merged.getLabelCount("ctrl"));
-                if (thisDistance!=thatDistance) {
-                    return Integer.compare(thatDistance, thisDistance);
-                }
-            }
-            // default: support then avgLength then size
-            if (that.merged.support!=this.merged.support) {
-                return Integer.compare(that.merged.support, this.merged.support);
-            } else if (that.merged.avgLength!=this.merged.avgLength) {
-                return Double.compare(that.merged.avgLength, this.merged.avgLength);
-            } else {
-                return Integer.compare(that.merged.nodes.size(), this.merged.nodes.size());
-            }
         }
     }
 

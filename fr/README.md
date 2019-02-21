@@ -1,64 +1,38 @@
-# org.ncgr.pangenomics.fr
-This repository contains FRFinder, an NCGR refactor of the original frequented regions Java code written at Montana State by Brendan Mumey, as well as other
-classes for working with frequented regions.
+# org.ncgr.pangenomics and org.ncgr.pangenomics.fr
+This directory contains some basic utility classes for working with pan-genomic graphs, as well as FRFinder, an implementation of the algorithm described in the paper
+```
+Cleary, et al., "Exploring Frequented Regions in Pan-Genomic Graphs", IEEE/ACM Trans Comput Biol Bioinform. 2018 Aug 9. PMID:30106690 DOI:10.1109/TCBB.2018.2864564
+```
+along with classes that support that project.
      
 ## Building
 The project is set up with dependencies managed with the [Gradle build tool](https://gradle.org/). To build the distribution, simply run
 ```
-$ ./gradlew assembleDist
+$ ./gradlew installDist
 ```
-This will create a distribution tarball `build/distributions/fr.tar`. The default main class is set in build.gradle as `mainClassName = "Main"`.
+This will create a distribution under `build/install` that is used by the various run scripts.
 
-# Main
-Main is simply a packageless main class to run the various apps. See the scripts for usage.
+# org.ncgr.pangenomics.Graph
+Graph stores a pan-genomic graph, with methods for reading it in from files and various output methods. There is a `main` class for simply reading in a graph and printing
+out its details.
 
-# FRFinder
-FRFinder is a Java implementation of the Frequented Regions algorithm presented at the ACM BCB 2017 conference: "Exploring Frequented Regions in Pan-Genoimc Graphs".
-A _Frequented Region_ (FR) is a region in a pan-genome de Bruijn graph that is frequently traversed by a subset of the genome paths in the graph.
-A path that contributes to an FR being frequent is called a _supporting path_. The algorithm works by iteratively constructing FRs via hierarchical aglomerative
-clustering and then traversing the hierarchy and selecting nodes that qualify as clusters according to the given parameters. These are output as "interesting" FRs, or iFRs.
+# org.ncgr.pangenomics.Path
+Path encapsulates a path through a Graph, along with its full sequence.
 
-## Parameters
-FRFinder has two required parameters: `alpha` and `kappa`.
-`alpha` is the fraction of a supporting strain's sequence that actually supports the FR; alternatively, `1-alpha` is the fraction of inserted sequence.
-This is referred to as the _penetrance_.
-`kappa` is maximum insertion length (measured in base-pairs) that any supporting path may have.
-This is referred to as the _maximum insertion_.
+# org.ncgr.pangenomics.Node
+Node encapsulates a node in a Graph: its id (a long) and its sequence.
 
-Additionally, there are two optional parameters: `minsup` and `minsize`.
-`minsup` is the minimum number of genome paths that must meet the other parameters in order for a region to be considered frequent.
-This is referred to as the _minimum support_.
-`minsize` is the minimum size (measured in de Bruijn nodes) that an FR that meets the other parameters must be in order to be considered frequent.
-This is referred to as the _minimum size_.
+# org.ncgr.pangenomics.NodeSet
+NodeSet encapsulates a set of nodes in a Graph. NodeSet implements Comparable, based on content. There is a method `merge()` for merging two NodeSets.
+(These are called "node clusters" in the paper above, but since I've implemented it as an extension of TreeSet, I've used "set").
 
-It is too early in the project to recommend explicit parameters, but typical values for
-`alpha` are in the range 0.6 - 0.9 and typical values for `kappa` are between 0 - 3000.
+# org.ncgr.pangenomics.fr.FrequentedRegion
+Frequented Region represents a cluster of nodes (NodeSet) along with the supporting subpaths of the full set of Paths in a Graph.
 
-## De Bruijn Graphs
-FRFinder consumes de Bruijn graphs in the `dot` file format.
-A `dot` file representation of a pan-genome De Bruijn graph can be constructed from a `fasta` using the one of the programs presented in the following works:
-* "SplitMEM: a graphical algorithm for pan-genome analysis with suffix skips"
-* "Efficient Construction of a Compressed de Bruijn Graph for Pan-Genome Analysis"
+# org.ncgr.pangenomics.fr.FRFinder
+FRFinder contains a `main()` method for finding FRs based on a bunch of parameters, using the `findFRs()` method,
+along with a `postprocess()` method for filtering the results of an FR search.
 
-## Output
-FRFinder produces output in several files.  The files are stored in an output directory that is named based on the input .dot and .fasta files used.  The following files types are produced:
+# org.ncgr.pangenomics.fr.FRPair
+FRPair is a utility class that contains two FRs and the result of merging them, and is used in a PriorityQueue in `FRFinder.findFRs()`.
 
-`.bed` : this file indicates the supporting subpath segments found for each FR in [bed](https://genome.ucsc.edu/FAQ/FAQformat.html#format1) format
-
-`.dist.txt` : this file lists the support and average supporing path length of each FR
-
-`.frs.txt` : this file lists the De Bruijn nodes that comprise each FR.
-
-`.frpaths.txt` : this lists the FRs each fasta sequence passes through as it traverses the DB graph.
-
-`.frs.txt` : this file lists the De Bruijn nodes that comprise each FR.
-
-`.csfr.txt` : this file lists, for each fasta seqence, the frequency counts of all FRs that occured in the sequence
-
-## Test Input
-The sample directory contains a small E.coli pangenome consisting of three strains:
-
-`sample/ecoli.pan3.dot` : a dot file constructed for a simple ecoli test file (K = 10)
-`sample/ecoli.pan3.fa` : the corresponding fasta sequence file
-
-The script `run-test` will build the app, run it against these files, and check that it produces the correct output.

@@ -27,27 +27,27 @@ java -server -cp "build/install/fr/lib/*" org.ncgr.pangenomics.fr.FRFinder --gfa
      --pathlabels SCA/labels.txt --outputprefix sca \
      --alpha 0.6 --kappa 1 --debug --casectrl
 
-# ## post-process with various minsup, minsize, minlen
-# echo "-----------------------------------"
-# java -server -cp "build/install/fr/lib/*" org.ncgr.pangenomics.fr.FRFinder --debug --inputprefix sca --minsup 1  --minsize 1  --minlen 99
-# java -server -cp "build/install/fr/lib/*" org.ncgr.pangenomics.fr.FRFinder --debug --inputprefix sca --minsup 1  --minsize 5  --minlen 99
-# java -server -cp "build/install/fr/lib/*" org.ncgr.pangenomics.fr.FRFinder --debug --inputprefix sca --minsup 1  --minsize 10 --minlen 99
-# java -server -cp "build/install/fr/lib/*" org.ncgr.pangenomics.fr.FRFinder --debug --inputprefix sca --minsup 10 --minsize 1  --minlen 99
-# java -server -cp "build/install/fr/lib/*" org.ncgr.pangenomics.fr.FRFinder --debug --inputprefix sca --minsup 20 --minsize 1  --minlen 99
-# java -server -cp "build/install/fr/lib/*" org.ncgr.pangenomics.fr.FRFinder --debug --inputprefix sca --minsup 30 --minsize 1  --minlen 99
-# java -server -cp "build/install/fr/lib/*" org.ncgr.pangenomics.fr.FRFinder --debug --inputprefix sca --minsup 40 --minsize 1  --minlen 99
-# java -server -cp "build/install/fr/lib/*" org.ncgr.pangenomics.fr.FRFinder --debug --inputprefix sca --minsup 50 --minsize 1  --minlen 99
-# java -server -cp "build/install/fr/lib/*" org.ncgr.pangenomics.fr.FRFinder --debug --inputprefix sca --minsup 60 --minsize 1  --minlen 99
-# java -server -cp "build/install/fr/lib/*" org.ncgr.pangenomics.fr.FRFinder --debug --inputprefix sca --minsup 70 --minsize 1  --minlen 99
+## post-process with various minsup, minsize, minlen
+echo "-----------------------------------"
+java -server -cp "build/install/fr/lib/*" org.ncgr.pangenomics.fr.FRFinder --debug --inputprefix sca --minsup 1  --minsize 1  --minlen 99
+java -server -cp "build/install/fr/lib/*" org.ncgr.pangenomics.fr.FRFinder --debug --inputprefix sca --minsup 1  --minsize 5  --minlen 99
+java -server -cp "build/install/fr/lib/*" org.ncgr.pangenomics.fr.FRFinder --debug --inputprefix sca --minsup 1  --minsize 10 --minlen 99
+java -server -cp "build/install/fr/lib/*" org.ncgr.pangenomics.fr.FRFinder --debug --inputprefix sca --minsup 10 --minsize 1  --minlen 99
+java -server -cp "build/install/fr/lib/*" org.ncgr.pangenomics.fr.FRFinder --debug --inputprefix sca --minsup 20 --minsize 1  --minlen 99
+java -server -cp "build/install/fr/lib/*" org.ncgr.pangenomics.fr.FRFinder --debug --inputprefix sca --minsup 30 --minsize 1  --minlen 99
+java -server -cp "build/install/fr/lib/*" org.ncgr.pangenomics.fr.FRFinder --debug --inputprefix sca --minsup 40 --minsize 1  --minlen 99
+java -server -cp "build/install/fr/lib/*" org.ncgr.pangenomics.fr.FRFinder --debug --inputprefix sca --minsup 50 --minsize 1  --minlen 99
+java -server -cp "build/install/fr/lib/*" org.ncgr.pangenomics.fr.FRFinder --debug --inputprefix sca --minsup 60 --minsize 1  --minlen 99
+java -server -cp "build/install/fr/lib/*" org.ncgr.pangenomics.fr.FRFinder --debug --inputprefix sca --minsup 70 --minsize 1  --minlen 99
 
-# ## run SVM
-# ./run-svm sca 1 1 99
-# ./run-svm sca 1 5 99
-# ./run-svm sca 1 10 99
-# ./run-svm sca 10 1 99
-# ./run-svm sca 20 1 99
-# ./run-svm sca 30 1 99
-# ./run-svm sca 40 1 99
-# ./run-svm sca 50 1 99
-# ./run-svm sca 60 1 99
-# ./run-svm sca 70 1 99
+## run SVM
+./run-svm sca 1 1 99
+./run-svm sca 1 5 99
+./run-svm sca 1 10 99
+./run-svm sca 10 1 99
+./run-svm sca 20 1 99
+./run-svm sca 30 1 99
+./run-svm sca 40 1 99
+./run-svm sca 50 1 99
+./run-svm sca 60 1 99
+./run-svm sca 70 1 99
