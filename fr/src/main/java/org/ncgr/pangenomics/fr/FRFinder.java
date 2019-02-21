@@ -11,6 +11,7 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.text.DecimalFormat;
+import java.time.ZonedDateTime;
 import java.util.Collections;
 import java.util.List;
 import java.util.ArrayList;
@@ -38,8 +39,6 @@ import org.apache.commons.cli.ParseException;
  */
 public class FRFinder {
 
-    static DecimalFormat tf = new DecimalFormat("00"); // hours, minutes, seconds
-    
     // optional parameter defaults
     static int MINSUP = 1;
     static int MINSIZE = 1;
@@ -66,11 +65,13 @@ public class FRFinder {
     // I/O
     String outputPrefix; // output file prefix
 
+    // post-processing
+    String inputPrefix;
+
     // the FRs, sorted for convenience
     TreeSet<FrequentedRegion> frequentedRegions;
 
-    // post-processing
-    String inputPrefix;
+    long clockTime;
 
     /**
      * Construct with a populated Graph and required parameters
@@ -198,12 +199,9 @@ public class FRFinder {
             }
         }
 
-	long duration = System.currentTimeMillis() - startTime;
-	long hours = (duration / 1000) / 60 / 60;
-	long minutes = (duration / 1000 / 60) % 60;
-        long seconds = (duration / 1000) % 60;
+	clockTime = System.currentTimeMillis() - startTime;
         System.out.println("Found "+frequentedRegions.size()+" FRs.");
-	System.out.println("Clock time: "+tf.format(hours)+":"+tf.format(minutes)+":"+tf.format(seconds));
+	System.out.println("Clock time: "+formatTime(clockTime));
 
 	// final output
         printAll();
@@ -472,15 +470,15 @@ public class FRFinder {
             frf.setOutputPrefix(cmd.getOptionValue("outputprefix"));
         }
 
-        // print out the parameters to stdout or outputPrefix+".params" if exists
-        frf.printParameters();
-
         // run the requested job
         if (postProcess) {
             frf.postprocess();
         } else {
             frf.findFRs();
         }
+
+        // print out the parameters to stdout or outputPrefix+".params" if exists
+        frf.printParameters();
     }
 
     /**
@@ -692,6 +690,9 @@ public class FRFinder {
             out.println("minsize"+"\t"+minSize);
             out.println("minlen"+"\t"+minLen);
         }
+        // runtime stuff
+        out.println("date"+"\t"+ZonedDateTime.now().toString());
+        out.println("clocktime"+"\t"+formatTime(clockTime));
     }
 
     /**
@@ -804,5 +805,16 @@ public class FRFinder {
      */
     String getOutputPrefix(String inputPrefix) {
         return inputPrefix+"."+minSup+"."+minSize+"."+minLen;
+    }
+
+    /**
+     * Format a time duration given in milliseconds.
+     */
+    public static String formatTime(long millis) {
+        DecimalFormat tf = new DecimalFormat("00"); // hours, minutes, seconds
+        long hours = (millis / 1000) / 60 / 60;
+	long minutes = (millis / 1000 / 60) % 60;
+        long seconds = (millis / 1000) % 60;
+	return tf.format(hours)+":"+tf.format(minutes)+":"+tf.format(seconds);
     }
 }

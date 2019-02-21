@@ -14,6 +14,11 @@ require(RColorBrewer)
 ##     coord_fixed(ratio=1) +
 ##     labs(x="PC1", y="PC2")
 
+## params location
+xfrac = 0.55
+yfrac = 0.2
+dyfrac = 0.04
+
 ## NOT FANCY
 num = length(colnames(pca$rotation))
 
@@ -37,17 +42,18 @@ for (i in (num-1):1) {
     xlabel = paste("PC",i,  " ",round(summary(pca)$importance["Proportion of Variance",i]*100,1),"% of variance", sep="")
     ylabel = paste("PC",i+1," ",round(summary(pca)$importance["Proportion of Variance",i+1]*100,1),"% of variance", sep="")
     plot(pca$rotation[,i], pca$rotation[,i+1], xlab=xlabel, ylab=ylabel, pch=20, cex=1.2, col=colors)
-    title(main=paste("alpha=",alpha," kappa=",kappa," case/ctrl=",casectrl," labels=",pathlabels, sep=""), cex.main=0.9)
+    title(main=paste(outputprefix,": alpha=",alpha," kappa=",kappa," case/ctrl=",casectrl, sep=""), cex.main=0.9)
     ## colors!
     points(pca$rotation[,i], pca$rotation[,i+1], xlab=xlabel, ylab=ylabel, pch=20, col=colors)
     text(pca$rotation[,i], pca$rotation[,i+1], labels, pos=1, col=colors, cex=0.5)
-    xmin = par()$usr[1]
-    xmax = par()$usr[2]
-    ymin = par()$usr[3]
-    ymax = par()$usr[4]
-    xtext = xmax-(xmax-xmin)*0.3
-    dytext = (ymax-ymin)*0.05
-    text(xtext, ymax-dytext, paste(labelcounts["case",1]," case paths"), pos=4)
-    text(xtext, ymax-dytext*2, paste(labelcounts["ctrl",1]," ctrl paths"), pos=4)
-    text(xtext, ymax-dytext*3, paste(length(frs$nodes),"FRs"), pos=4)
+    source("params.R")
+    ## xmin = par()$usr[1]
+    ## xmax = par()$usr[2]
+    ## ymin = par()$usr[3]
+    ## ymax = par()$usr[4]
+    ## xtext = xmax-(xmax-xmin)*0.3
+    ## dytext = (ymax-ymin)*0.05
+    ## text(xtext, ymax-dytext, paste(labelcounts["case",1]," case paths"), pos=4)
+    ## text(xtext, ymax-dytext*2, paste(labelcounts["ctrl",1]," ctrl paths"), pos=4)
+    ## text(xtext, ymax-dytext*3, paste(length(frs$nodes),"FRs"), pos=4)
 }
