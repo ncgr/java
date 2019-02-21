@@ -93,7 +93,6 @@ public class FRFinder {
      */
     public FRFinder(String inputPrefix) throws FileNotFoundException, IOException {
         this.inputPrefix = inputPrefix;
-        outputPrefix = getOutputPrefix(inputPrefix);
         readParameters();
         readFrequentedRegions();
     }
@@ -204,8 +203,10 @@ public class FRFinder {
 	System.out.println("Clock time: "+formatTime(clockTime));
 
 	// final output
-        printAll();
-        if (outputPrefix!=null) graph.printAll(outputPrefix);
+	if (frequentedRegions.size()>0) {
+	    printAll();
+	    if (outputPrefix!=null) graph.printAll(outputPrefix);
+	}
     }
 
     /**
@@ -237,11 +238,13 @@ public class FRFinder {
             if (passes) filteredFRs.add(fr);
             if (verbose) System.out.println(fr.summaryString()+reason);
         }
-        System.out.println(filteredFRs.size()+" FRs passed minSup="+minSup+", minLen="+minLen+", minSize="+minSize);
+        System.out.println(filteredFRs.size()+" FRs passed minSup="+minSup+", minSize="+minSize+", minLen="+minLen);
 	// output the filtered FRs and SVM data
         frequentedRegions = filteredFRs;
-        printFrequentedRegions();
-        printPathFRsSVM();
+	if (frequentedRegions.size()>0) {
+	    printFrequentedRegions();
+	    printPathFRsSVM();
+	}
     }
 
     public double getAlpha() {
@@ -447,6 +450,8 @@ public class FRFinder {
             frf.setMinSup(minSup);
             frf.setMinSize(minSize);
             frf.setMinLen(minLen);
+	    // set the outputPrefix, which depends on the above being set
+	    frf.setOutputPrefix(frf.getOutputPrefix(inputPrefix));
         } else { 
             // instantiate the FRFinder with this Graph, alpha and kappa
             frf = new FRFinder(g, alpha, kappa);
@@ -476,9 +481,6 @@ public class FRFinder {
         } else {
             frf.findFRs();
         }
-
-        // print out the parameters to stdout or outputPrefix+".params" if exists
-        frf.printParameters();
     }
 
     /**
@@ -699,6 +701,7 @@ public class FRFinder {
      * Print all output.
      */
     void printAll() throws FileNotFoundException, IOException {
+        printParameters();
         printFrequentedRegions();
         printFRSubpaths();
         printPathFRs();

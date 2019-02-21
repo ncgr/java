@@ -2,6 +2,11 @@
 ## plot FR case vs control support
 ##
 
+## params location
+xfrac = 0.55
+yfrac = 0.2
+dyfrac = 0.04
+
 plot(frs$ctrl, frs$case,
      xlim=c(0,max(frs$ctrl)), ylim=c(0,max(frs$case)),
      xlab="ctrl sample support",  ylab="case sample support",

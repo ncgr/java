@@ -81,11 +81,17 @@ public class SvmCrossValidator {
     /**
      * Perform the cross validation.
      */
-    public void run() throws IOException {
+    public void run() {
         double[] target = new double[prob.l];
         double sumv = 0.0, sumy = 0.0, sumvv = 0.0, sumyy = 0.0, sumvy = 0.0;
         // run it
-        svm.svm_cross_validation(prob, param, nrFold, target);
+	try {
+	    svm.svm_cross_validation(prob, param, nrFold, target);
+	} catch (Exception e) {
+	    // soft-ish crash
+	    System.err.println(e.getMessage());
+	    System.exit(1);
+	}
         if (param.svm_type == svm_parameter.EPSILON_SVR || param.svm_type == svm_parameter.NU_SVR) {
             // regression results
             for (int i=0; i<prob.l; i++) {
@@ -312,8 +318,8 @@ public class SvmCrossValidator {
         // instantiate
         SvmCrossValidator svc = new SvmCrossValidator(param, nrFold, inputFilename);
 
-        // run 
-        svc.run();
+        // run
+	svc.run();
 
         // some final output
         if (svc.param.svm_type==svm_parameter.EPSILON_SVR || svc.param.svm_type== svm_parameter.NU_SVR) {

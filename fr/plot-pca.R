@@ -5,6 +5,11 @@
 require(ggplot2)
 require(RColorBrewer)
 
+## params location
+xfrac = 0.55
+yfrac = 0.2
+dyfrac = 0.04
+
 ## FANCY
 ## theta = seq(0,2*pi,length.out = 100)
 ## circle = data.frame(x = cos(theta), y = sin(theta))
@@ -13,11 +18,6 @@ require(RColorBrewer)
 ## p + geom_text(data=loadings, mapping=aes(x=PC1, y=PC2, label=.names, colour=.names)) +
 ##     coord_fixed(ratio=1) +
 ##     labs(x="PC1", y="PC2")
-
-## params location
-xfrac = 0.55
-yfrac = 0.2
-dyfrac = 0.04
 
 ## NOT FANCY
 num = length(colnames(pca$rotation))
