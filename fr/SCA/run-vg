@@ -1,0 +1,74 @@
+#!/bin/sh
+
+REF=hs37d5.11.fa
+VCF=HBB.vcf.gz
+
+## the entire HBB gene
+PREFIX=HBB
+REGION=11:5246696-5248301
+
+# build the graph
+echo "vg construct --threads 64 --reference $REF --vcf $VCF --region $REGION --alt-paths --flat-alts --node-max 1000 > $PREFIX.vg"
+vg construct --threads 64 --reference $REF --vcf $VCF --region $REGION --alt-paths --flat-alts --node-max 1000 > $PREFIX.vg
+
+# build the GBWT index
+# NOTE: use --force-phasing to get single thread paths from a "forced" phase
+echo "vg index --threads 64 --compact --xg-name $PREFIX.xg --gbwt-name $PREFIX.gbwt --force-phasing --vcf-phasing $VCF -g $PREFIX.gcsa $PREFIX.vg"
+vg index --threads 64 --compact --xg-name $PREFIX.xg --gbwt-name $PREFIX.gbwt --vcf-phasing $VCF -g $PREFIX.gcsa $PREFIX.vg
+
+# extract the threads from the GBWT as vg Paths
+echo "vg paths --xg $PREFIX.xg --gbwt $PREFIX.gbwt --extract-vg --threads-by _thread_[sample] > [sample]_paths.vg"
+
+## 20 cases cooked from 1000G
+vg paths --xg $PREFIX.xg --gbwt $PREFIX.gbwt --extract-vg --threads-by _thread_HG00096 > HG00096_paths.vg
+vg paths --xg $PREFIX.xg --gbwt $PREFIX.gbwt --extract-vg --threads-by _thread_HG00097 > HG00097_paths.vg
+vg paths --xg $PREFIX.xg --gbwt $PREFIX.gbwt --extract-vg --threads-by _thread_HG00099 > HG00099_paths.vg
+vg paths --xg $PREFIX.xg --gbwt $PREFIX.gbwt --extract-vg --threads-by _thread_HG00100 > HG00100_paths.vg
+vg paths --xg $PREFIX.xg --gbwt $PREFIX.gbwt --extract-vg --threads-by _thread_HG00101 > HG00101_paths.vg
+vg paths --xg $PREFIX.xg --gbwt $PREFIX.gbwt --extract-vg --threads-by _thread_HG00102 > HG00102_paths.vg
+vg paths --xg $PREFIX.xg --gbwt $PREFIX.gbwt --extract-vg --threads-by _thread_HG00103 > HG00103_paths.vg
+vg paths --xg $PREFIX.xg --gbwt $PREFIX.gbwt --extract-vg --threads-by _thread_HG00105 > HG00105_paths.vg
+vg paths --xg $PREFIX.xg --gbwt $PREFIX.gbwt --extract-vg --threads-by _thread_HG00106 > HG00106_paths.vg
+vg paths --xg $PREFIX.xg --gbwt $PREFIX.gbwt --extract-vg --threads-by _thread_HG00107 > HG00107_paths.vg
+vg paths --xg $PREFIX.xg --gbwt $PREFIX.gbwt --extract-vg --threads-by _thread_HG00108 > HG00108_paths.vg
+vg paths --xg $PREFIX.xg --gbwt $PREFIX.gbwt --extract-vg --threads-by _thread_HG00109 > HG00109_paths.vg
+vg paths --xg $PREFIX.xg --gbwt $PREFIX.gbwt --extract-vg --threads-by _thread_HG00110 > HG00110_paths.vg
+vg paths --xg $PREFIX.xg --gbwt $PREFIX.gbwt --extract-vg --threads-by _thread_HG00111 > HG00111_paths.vg
+vg paths --xg $PREFIX.xg --gbwt $PREFIX.gbwt --extract-vg --threads-by _thread_HG00112 > HG00112_paths.vg
+vg paths --xg $PREFIX.xg --gbwt $PREFIX.gbwt --extract-vg --threads-by _thread_HG00113 > HG00113_paths.vg
+vg paths --xg $PREFIX.xg --gbwt $PREFIX.gbwt --extract-vg --threads-by _thread_HG00114 > HG00114_paths.vg
+vg paths --xg $PREFIX.xg --gbwt $PREFIX.gbwt --extract-vg --threads-by _thread_HG00115 > HG00115_paths.vg
+vg paths --xg $PREFIX.xg --gbwt $PREFIX.gbwt --extract-vg --threads-by _thread_HG00116 > HG00116_paths.vg
+vg paths --xg $PREFIX.xg --gbwt $PREFIX.gbwt --extract-vg --threads-by _thread_HG00117 > HG00117_paths.vg
+
+## 20 controls from 1000G
+vg paths --xg $PREFIX.xg --gbwt $PREFIX.gbwt --extract-vg --threads-by _thread_HG00118 > HG00118_paths.vg
+vg paths --xg $PREFIX.xg --gbwt $PREFIX.gbwt --extract-vg --threads-by _thread_HG00119 > HG00119_paths.vg
+vg paths --xg $PREFIX.xg --gbwt $PREFIX.gbwt --extract-vg --threads-by _thread_HG00120 > HG00120_paths.vg
+vg paths --xg $PREFIX.xg --gbwt $PREFIX.gbwt --extract-vg --threads-by _thread_HG00121 > HG00121_paths.vg
+vg paths --xg $PREFIX.xg --gbwt $PREFIX.gbwt --extract-vg --threads-by _thread_HG00122 > HG00122_paths.vg
+vg paths --xg $PREFIX.xg --gbwt $PREFIX.gbwt --extract-vg --threads-by _thread_HG00123 > HG00123_paths.vg
+vg paths --xg $PREFIX.xg --gbwt $PREFIX.gbwt --extract-vg --threads-by _thread_HG00125 > HG00125_paths.vg
+vg paths --xg $PREFIX.xg --gbwt $PREFIX.gbwt --extract-vg --threads-by _thread_HG00126 > HG00126_paths.vg
+vg paths --xg $PREFIX.xg --gbwt $PREFIX.gbwt --extract-vg --threads-by _thread_HG00127 > HG00127_paths.vg
+vg paths --xg $PREFIX.xg --gbwt $PREFIX.gbwt --extract-vg --threads-by _thread_HG00128 > HG00128_paths.vg
+vg paths --xg $PREFIX.xg --gbwt $PREFIX.gbwt --extract-vg --threads-by _thread_HG00129 > HG00129_paths.vg
+vg paths --xg $PREFIX.xg --gbwt $PREFIX.gbwt --extract-vg --threads-by _thread_HG00130 > HG00130_paths.vg
+vg paths --xg $PREFIX.xg --gbwt $PREFIX.gbwt --extract-vg --threads-by _thread_HG00131 > HG00131_paths.vg
+vg paths --xg $PREFIX.xg --gbwt $PREFIX.gbwt --extract-vg --threads-by _thread_HG00132 > HG00132_paths.vg
+vg paths --xg $PREFIX.xg --gbwt $PREFIX.gbwt --extract-vg --threads-by _thread_HG00133 > HG00133_paths.vg
+vg paths --xg $PREFIX.xg --gbwt $PREFIX.gbwt --extract-vg --threads-by _thread_HG00136 > HG00136_paths.vg
+vg paths --xg $PREFIX.xg --gbwt $PREFIX.gbwt --extract-vg --threads-by _thread_HG00137 > HG00137_paths.vg
+vg paths --xg $PREFIX.xg --gbwt $PREFIX.gbwt --extract-vg --threads-by _thread_HG00138 > HG00138_paths.vg
+vg paths --xg $PREFIX.xg --gbwt $PREFIX.gbwt --extract-vg --threads-by _thread_HG00139 > HG00139_paths.vg
+vg paths --xg $PREFIX.xg --gbwt $PREFIX.gbwt --extract-vg --threads-by _thread_HG00140 > HG00140_paths.vg
+
+# now add those paths back to the vg
+cat $PREFIX.vg *_paths.vg > $PREFIX.paths.vg
+rm *_paths.vg
+
+# output some nice files
+vg view --threads 64 --gfa $PREFIX.paths.vg > $PREFIX.paths.gfa
+vg view --threads 64 --json $PREFIX.paths.vg > $PREFIX.paths.json
+vg view --threads 64 --dot $PREFIX.paths.vg > $PREFIX.paths.dot
+dot -Tpdf $PREFIX.paths.dot > $PREFIX.paths.pdf

@@ -25,7 +25,7 @@
 ## initial run
 java -server -cp "build/install/fr/lib/*" org.ncgr.pangenomics.fr.FRFinder --gfa SCA/HBB.paths.gfa  \
      --pathlabels SCA/labels.txt --outputprefix sca \
-     --alpha 0.6 --kappa 1 --debug --casectrl
+     --alpha 0.6 --kappa 1 --debug # --casectrl
 
 ## post-process with various minsup, minsize, minlen
 echo "-----------------------------------"
