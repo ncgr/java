@@ -26,6 +26,8 @@
 alpha=$1
 kappa=$2
 
+rm -f scd.*
+
 echo "********** alpha=$alpha kappa=$kappa **********"
 
 java -server -cp "build/install/fr/lib/*" org.ncgr.pangenomics.fr.FRFinder --gfa SCD/HBB.paths.gfa  \

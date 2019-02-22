@@ -3,6 +3,7 @@
 prefix=$1
 
 ## remove files from a previous run
+rm -f $prefix.0.*.txt
 rm -f $prefix.1.*.txt
 rm -f $prefix.2.*.txt
 rm -f $prefix.3.*.txt
@@ -18,13 +19,13 @@ rm -f $prefix.70.*.txt
 rm -f $prefix.80.*.txt
 
 ## post-process with a range of minsup, minsize, minlen
-java -server -cp "build/install/fr/lib/*" org.ncgr.pangenomics.fr.FRFinder --debug --inputprefix $prefix --minsup 1 --minsize 1 --minlen 1
-java -server -cp "build/install/fr/lib/*" org.ncgr.pangenomics.fr.FRFinder --debug --inputprefix $prefix --minsup 1 --minsize 1 --minlen 2
-java -server -cp "build/install/fr/lib/*" org.ncgr.pangenomics.fr.FRFinder --debug --inputprefix $prefix --minsup 1 --minsize 1 --minlen 3
-java -server -cp "build/install/fr/lib/*" org.ncgr.pangenomics.fr.FRFinder --debug --inputprefix $prefix --minsup 1 --minsize 1 --minlen 100
+java -server -cp "build/install/fr/lib/*" org.ncgr.pangenomics.fr.FRFinder --debug --inputprefix $prefix --minsup 0   --minsize 0 --minlen 0
+java -server -cp "build/install/fr/lib/*" org.ncgr.pangenomics.fr.FRFinder --debug --inputprefix $prefix --minsup 20  --minsize 1 --minlen 1
+java -server -cp "build/install/fr/lib/*" org.ncgr.pangenomics.fr.FRFinder --debug --inputprefix $prefix --minsup 40  --minsize 1 --minlen 1
+java -server -cp "build/install/fr/lib/*" org.ncgr.pangenomics.fr.FRFinder --debug --inputprefix $prefix --minsup 130 --minsize 1 --minlen 1
 
 ## run SVM on the above
-./run-svm $prefix 1 1 1
-./run-svm $prefix 1 1 2
-./run-svm $prefix 1 1 3
-./run-svm $prefix 1 1 100
+./run-svm $prefix 0   0 0
+./run-svm $prefix 20  1 1
+./run-svm $prefix 40  1 1
+./run-svm $prefix 130 1 1
