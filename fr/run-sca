@@ -22,8 +22,13 @@
 #  -v,--verbose              verbose output (false)
 #  -do,--debug               debug output (false)
 
-## initial run
+## supply alpha and kappa at invocation
+alpha=$1
+kappa=$2
+
+echo "alpha=$alpha kappa=$kappa"
+
 java -server -cp "build/install/fr/lib/*" org.ncgr.pangenomics.fr.FRFinder --gfa SCA/HBB.paths.gfa  \
      --pathlabels SCA/labels.txt --outputprefix sca \
-     --alpha 1.0 --kappa 0 --debug --casectrl
+     --alpha $alpha --kappa $kappa --debug --casectrl
 

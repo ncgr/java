@@ -22,9 +22,9 @@ text(frs$ctrl,
      cex=0.4, pos=1, offset=0.4, col="gray"
      )
 
-lines(c(0,labelcounts["ctrl",1]),c(0,labelcounts["case",1]), col="lightgray")
+lines(c(0,labelcounts["ctrl",1]*2),c(0,labelcounts["case",1]*2), col="lightgray")
 
-for (i in seq(5,100,by=5)) {
+for (i in seq(5,200,by=5)) {
     lines(c(0,i),  c(i,0), col="lightgray", lty=2)
 }
 

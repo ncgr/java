@@ -42,7 +42,7 @@ public class FRFinder {
     // optional parameter defaults
     static int MINSUP = 1;
     static int MINSIZE = 1;
-    static int MINLEN = 1;
+    static double MINLEN = 1.0;
     static boolean CASE_CTRL = false;
     static boolean VERBOSE = false;
     static boolean DEBUG = false;
@@ -58,7 +58,7 @@ public class FRFinder {
     boolean debug = DEBUG;
     int minSup = MINSUP;   // minimum support: minimum number of genome paths (fr.support) for an FR to be considered interesting
     int minSize = MINSIZE; // minimum size: minimum number of de Bruijn nodes (fr.nodes.size()) that an FR must contain to be considered interesting
-    int minLen = MINLEN;   // minimum average length of a frequented region's subpath sequences (fr.avgLength) to be considered interesting
+    double minLen = MINLEN;   // minimum average length of a frequented region's subpath sequences (fr.avgLength) to be considered interesting
     boolean caseCtrl = CASE_CTRL; // emphasize FRs that have large case/control support
     boolean bruteForce = BRUTE_FORCE; // find FRs comprehensively with brute force, not using heuristic approach from paper; for testing only!
 
@@ -177,7 +177,7 @@ public class FRFinder {
                 syncFrequentedRegions.parallelStream().forEach((fr1) -> {
                         syncFrequentedRegions.parallelStream().forEach((fr2) -> {
                                 FRPair frpair = new FRPair(fr1, fr2, graph, alpha, kappa, caseCtrl);
-                                if (!usedFRs.contains(fr1) && !usedFRs.contains(fr2)) {
+                                if (!usedFRs.contains(fr1) && !usedFRs.contains(fr2) && !syncFrequentedRegions.contains(frpair.merged)) {
                                     pbq.add(frpair);
                                 }
                             });
@@ -223,17 +223,17 @@ public class FRFinder {
             } else {
                 reason += " SUPPORT";
             }
-            if (fr.avgLength<minLen) {
-                passes = false;
-                reason += " avgLength";
-            } else {
-                reason += " AVGLENGTH";
-            }
             if (fr.nodes.size()<minSize) {
                 passes = false;
                 reason += " size";
             } else {
                 reason += " SIZE";
+            }
+            if (fr.avgLength<minLen) {
+                passes = false;
+                reason += " avgLength";
+            } else {
+                reason += " AVGLENGTH";
             }
             if (passes) filteredFRs.add(fr);
             if (verbose) System.out.println(fr.summaryString()+reason);
@@ -259,7 +259,7 @@ public class FRFinder {
     public int getMinSize() {
         return minSize;
     }
-    public int getMinLen() {
+    public double getMinLen() {
         return minLen;
     }
 
@@ -282,7 +282,7 @@ public class FRFinder {
     public void setMinSize(int minSize) {
         this.minSize = minSize;
     }
-    public void setMinLen(int minLen) {
+    public void setMinLen(double minLen) {
         this.minLen = minLen;
     }
     public void setOutputPrefix(String outputPrefix) {
@@ -428,7 +428,7 @@ public class FRFinder {
         // filters
         int minSup = MINSUP;
         int minSize = MINSIZE;
-        int minLen = MINLEN;
+        double minLen = MINLEN;
         if (cmd.hasOption("minsup")) {
             minSup = Integer.parseInt(cmd.getOptionValue("minsup"));
         }
@@ -436,7 +436,7 @@ public class FRFinder {
             minSize = Integer.parseInt(cmd.getOptionValue("minsize"));
         }
         if (cmd.hasOption("minlen")) {
-            minLen = Integer.parseInt(cmd.getOptionValue("minlen"));
+            minLen = Double.parseDouble(cmd.getOptionValue("minlen"));
         }
         
         FRFinder frf;
@@ -746,7 +746,7 @@ public class FRFinder {
             } else if (parts[0].equals("minsize")) {
                 minSize = Integer.parseInt(parts[1]);
             } else if (parts[0].equals("minlen")) {
-                minLen = Integer.parseInt(parts[1]);
+                minLen = Double.parseDouble(parts[1]);
             }
             // load the Graph if we've got the files
             if (jsonFile!=null) {
@@ -807,7 +807,7 @@ public class FRFinder {
      * Form the new output prefix from the input prefix and post-processing parameters
      */
     String getOutputPrefix(String inputPrefix) {
-        return inputPrefix+"."+minSup+"."+minSize+"."+minLen;
+        return inputPrefix+"."+minSup+"."+minSize+"."+(int)minLen;
     }
 
     /**
