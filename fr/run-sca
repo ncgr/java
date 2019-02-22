@@ -26,7 +26,7 @@
 alpha=$1
 kappa=$2
 
-echo "alpha=$alpha kappa=$kappa"
+echo "********** alpha=$alpha kappa=$kappa **********"
 
 java -server -cp "build/install/fr/lib/*" org.ncgr.pangenomics.fr.FRFinder --gfa SCA/HBB.paths.gfa  \
      --pathlabels SCA/labels.txt --outputprefix sca \

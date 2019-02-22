@@ -23,6 +23,13 @@
 #  -do,--debug               debug output (false)
 #  -bf,--bruteforce          find FRs comprehensively via brute force - testing only! (false)
 
+alpha=$1
+kappa=$2
+
+rm -f ecoli.*
+
+echo "********** alpha=$alpha kappa=$kappa **********"
+
 java -cp "build/install/fr/lib/*" org.ncgr.pangenomics.fr.FRFinder  -gfa ecoli/ecoli.pan3.paths.gfa \
      --outputprefix ecoli \
-     --alpha 0.2 --kappa 3 --debug
+     --alpha $alpha --kappa $kappa --debug

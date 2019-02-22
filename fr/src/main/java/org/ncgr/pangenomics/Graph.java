@@ -581,33 +581,37 @@ public class Graph {
      */
     public void printAll(String outputPrefix) throws FileNotFoundException, IOException {
         if (outputPrefix==null) return;
-        PrintStream labelCountsOut = new PrintStream(outputPrefix+".labelcounts.txt");
         PrintStream nodesOut = new PrintStream(outputPrefix+".nodes.txt");
         PrintStream nodeHistogramOut = new PrintStream(outputPrefix+".nodehistogram.txt");
         PrintStream pathsOut = new PrintStream(outputPrefix+".paths.txt");
         PrintStream nodePathsOut = new PrintStream(outputPrefix+".nodepaths.txt");
         PrintStream pathSequencesOut = new PrintStream(outputPrefix+".pathsequences.fasta");
         PrintStream pcaOut = new PrintStream(outputPrefix+".pathpca.txt");
-        if (labelCounts!=null) printLabelCounts(labelCountsOut);
         printNodes(nodesOut);
         printNodeHistogram(nodeHistogramOut);
         printPaths(pathsOut);
         printNodePaths(nodePathsOut);
         printPathSequences(pathSequencesOut);
         printPcaData(pcaOut);
+        if (labelCounts!=null && labelCounts.size()>0) {
+            PrintStream labelCountsOut = new PrintStream(outputPrefix+".labelcounts.txt");
+            printLabelCounts(labelCountsOut);
+        }
     }
 
     /**
      * Run all the Graph printing methods to stdout.
      */
     public void printAll() throws FileNotFoundException, IOException {
-        if (labelCounts!=null) printLabelCounts(System.out);
         printNodes(System.out);
         printNodeHistogram(System.out);
         printPaths(System.out);
         printNodePaths(System.out);
         printPathSequences(System.out);
         printPcaData(System.out);
+        if (labelCounts!=null && labelCounts.size()>0) {
+            printLabelCounts(System.out);
+        }
     }
 
     /**

@@ -25,6 +25,8 @@
 alpha=$1
 kappa=$2
 
+echo "********** alpha=$alpha kappa=$kappa **********"
+
 java -server -cp "build/install/fr/lib/*" org.ncgr.pangenomics.fr.FRFinder --gfa HD/HTT.10k.paths.gfa  \
      --pathlabels HD/labels.txt --outputprefix hd \
      --alpha $alpha --kappa $kappa --debug --casectrl

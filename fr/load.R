@@ -3,14 +3,15 @@
 ## prefix must be set
 ##
 
+## FRs
 frs = read.table(paste(prefix,".frs.txt",sep=""), header=TRUE, stringsAsFactors=FALSE)
 rownames(frs) = frs$FR
 frs$FR = NULL
-
 for (i in 1:length(rownames(frs))) {
     frs$size[i] = length(strsplit(frs$nodes[i],",")[[1]])
 }
 
+## parameters
 params = read.delim(file=paste(prefix,".params.txt",sep=""), header=FALSE, stringsAsFactors=FALSE)
 for (i in 1:length(rownames(params))) {
     if (params$V1[i]=="genotype") genotype = params$V2[i]
@@ -32,10 +33,15 @@ for (i in 1:length(rownames(params))) {
 }
 rm(params)
 
-labelcounts = read.delim(file=paste(prefix,".labelcounts.txt",sep=""), header=FALSE, stringsAsFactors=FALSE, row.names=1)
-colnames(labelcounts) = c("count")
-
-
+## path FRs
 pathfrs = read.table(file=paste(prefix,".pathfrs.txt",sep=""), stringsAsFactors=FALSE, check.names=FALSE)
 pca = prcomp(pathfrs, center=TRUE, scale.=FALSE)
+
+## label counts (if exists)
+labelFile = paste(prefix,".labelcounts.txt",sep="")
+labelsExist = file.exists(labelFile)
+if (labelsExist) {
+    labelcounts = read.delim(file=labelFile, header=FALSE, stringsAsFactors=FALSE, row.names=1)
+    colnames(labelcounts) = c("count")
+}
 

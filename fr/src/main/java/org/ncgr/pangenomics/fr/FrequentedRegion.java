@@ -159,7 +159,7 @@ public class FrequentedRegion implements Comparable<FrequentedRegion> {
      */
     public String columnHeading() {
         String s = "nodes\tsupport\tavgLen";
-        if (graph.labelCounts!=null) {
+        if (graph.labelCounts!=null && graph.labelCounts.size()>0) {
             for (String label : graph.labelCounts.keySet()) {
                 s += "\t"+label;
             }
@@ -195,18 +195,18 @@ public class FrequentedRegion implements Comparable<FrequentedRegion> {
      * Return a string summary of this frequented region.
      */
     public String summaryString() {
-        // count the support per label if present
-        Map<String,Integer> labelCounts = new TreeMap<>();
-        for (Path subpath : subpaths) {
-            if (subpath.label!=null) {
-                if (!labelCounts.containsKey(subpath.label)) {
-                    labelCounts.put(subpath.label, getLabelCount(subpath.label));
+        String s = nodes.toString()+"\t"+support+"\t"+df.format(avgLength);
+        // show label support if available
+        if (graph.labelCounts!=null && graph.labelCounts.size()>0) {
+            // count the support per label
+            Map<String,Integer> labelCounts = new TreeMap<>();
+            for (Path subpath : subpaths) {
+                if (subpath.label!=null) {
+                    if (!labelCounts.containsKey(subpath.label)) {
+                        labelCounts.put(subpath.label, getLabelCount(subpath.label));
+                    }
                 }
             }
-        }
-        String s = nodes.toString()+"\t"+support+"\t"+df.format(avgLength);
-        // show labels (fractions) if available
-        if (graph.labelCounts!=null && graph.labelCounts.size()>0) {
             for (String label : graph.labelCounts.keySet()) {
                 if (labelCounts.containsKey(label)) {
                     s += "\t"+labelCounts.get(label);

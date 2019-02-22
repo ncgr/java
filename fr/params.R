@@ -13,7 +13,9 @@ ytext = ymin + (ymax-ymin)*yfrac
 dytext = (ymax-ymin)*dyfrac
 
 text(xtext, ytext-dytext*0, gfafile, pos=4)
-text(xtext, ytext-dytext*1, pathlabels, pos=4)
-text(xtext, ytext-dytext*2, paste(labelcounts["case",1]," case paths"), pos=4)
-text(xtext, ytext-dytext*3, paste(labelcounts["ctrl",1]," ctrl paths"), pos=4)
-text(xtext, ytext-dytext*4, paste(length(frs$nodes),"FRs"), pos=4)
+text(xtext, ytext-dytext*1, paste(length(frs$nodes),"FRs"), pos=4)
+if (labelsExist) {
+    text(xtext, ytext-dytext*2, pathlabels, pos=4)
+    text(xtext, ytext-dytext*3, paste(labelcounts["case",1]," case paths"), pos=4)
+    text(xtext, ytext-dytext*4, paste(labelcounts["ctrl",1]," ctrl paths"), pos=4)
+    }

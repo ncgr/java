@@ -22,20 +22,22 @@ dyfrac = 0.04
 ## NOT FANCY
 num = length(colnames(pca$rotation))
 
-## colors = brewer.pal(12,"Set3")
-
-## case/control labels and colors
-labels = array(dim=length(rownames(pca$rotation)))
-colors = array(dim=length(rownames(pca$rotation)))
-for (i in 1:length(rownames(pca$rotation))) {
-    labels[i] = rownames(pca$rotation)[i]
-    if (grepl("case", labels[i])) {
-        colors[i] = "darkred"
-    } else if (grepl("ctrl", labels[i])) {
-        colors[i] = "darkgreen"
-    } else {
-        colors[i] = "gray";
+if (labelsExist) {
+    ## case/control labels and colors
+    labels = array(dim=length(rownames(pca$rotation)))
+    colors = array(dim=length(rownames(pca$rotation)))
+    for (i in 1:length(rownames(pca$rotation))) {
+        labels[i] = rownames(pca$rotation)[i]
+        if (grepl("case", labels[i])) {
+            colors[i] = "darkred"
+        } else if (grepl("ctrl", labels[i])) {
+            colors[i] = "darkgreen"
+        } else {
+            colors[i] = "gray";
+        }
     }
+} else {
+    colors = brewer.pal(12,"Set3")
 }
 
 for (i in (num-1):1) {
@@ -47,13 +49,4 @@ for (i in (num-1):1) {
     points(pca$rotation[,i], pca$rotation[,i+1], xlab=xlabel, ylab=ylabel, pch=20, col=colors)
     text(pca$rotation[,i], pca$rotation[,i+1], labels, pos=1, col=colors, cex=0.5)
     source("params.R")
-    ## xmin = par()$usr[1]
-    ## xmax = par()$usr[2]
-    ## ymin = par()$usr[3]
-    ## ymax = par()$usr[4]
-    ## xtext = xmax-(xmax-xmin)*0.3
-    ## dytext = (ymax-ymin)*0.05
-    ## text(xtext, ymax-dytext, paste(labelcounts["case",1]," case paths"), pos=4)
-    ## text(xtext, ymax-dytext*2, paste(labelcounts["ctrl",1]," ctrl paths"), pos=4)
-    ## text(xtext, ymax-dytext*3, paste(length(frs$nodes),"FRs"), pos=4)
 }
