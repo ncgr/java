@@ -6,8 +6,8 @@
 # -u <arg>   x scaling upper limit [+1]
 # -y <arg>   y scaling limits yLower,yUpper [no y scaling]
 
-TRAIN="hdstudy.svm.txt"
-TRAINRANGE="hdstudy.svm.range.txt"
-TRAINSCALE="hdstudy.svm.scale.txt"
+TRAIN="hd.svm.txt"
+TRAINRANGE="hd.svm.range.txt"
+TRAINSCALE="hd.svm.scale.txt"
 
 java -cp "build/install/fr/lib/*" org.ncgr.svm.SvmScaler -s $TRAINRANGE $TRAIN > $TRAINSCALE

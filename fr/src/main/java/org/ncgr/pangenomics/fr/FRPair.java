@@ -39,12 +39,10 @@ public class FRPair implements Comparable<FRPair> {
      */
     public int compareTo(FRPair that) {
         if (caseCtrl) {
-            // |case support - control support| then default
+            // |case support - control support| ONLY
             int thisDistance = Math.abs(this.merged.getLabelCount("case")-this.merged.getLabelCount("ctrl"));
             int thatDistance = Math.abs(that.merged.getLabelCount("case")-that.merged.getLabelCount("ctrl"));
-            if (thisDistance!=thatDistance) {
-                return Integer.compare(thatDistance, thisDistance);
-	    }
+	    return Integer.compare(thatDistance, thisDistance);
         }
         // default: total support then avgLength then size
         if (that.merged.support!=this.merged.support) {

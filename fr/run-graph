@@ -10,4 +10,4 @@
 # -p,--pathlabels <arg>     tab-delimited file with pathname<tab>label
 # -v,--verbose              verbose output (false)
 
-java -server -cp "build/install/fr/lib/*" org.ncgr.pangenomics.Graph --gfa HDStudy/HTT.400.paths.gfa --outputprefix hdstudy --pathlabels HDStudy/labels-genotypes.txt --genotype -1
+java -server -cp "build/install/fr/lib/*" org.ncgr.pangenomics.Graph --gfa HD/HTT.400.paths.gfa --outputprefix hd --pathlabels HD/labels-genotypes.txt --genotype -1
