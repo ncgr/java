@@ -54,39 +54,23 @@ public class NodeSet extends TreeSet<Node> implements Comparable <NodeSet> {
      * Equality if exactly the same nodes.
      */
     public boolean equals(NodeSet that) {
-        if (this.size()!=that.size()) {
-            return false;
-        } else {
-            Node thisNode = this.first();
-            Node thatNode = that.first();
-            while (thisNode.equals(thatNode)) {
-                if (this.higher(thisNode)==null) {
-                    return true;
-                } else {
-                    thisNode = this.higher(thisNode);
-                    thatNode = that.higher(thatNode);
-                }
-            }
-            return false;
-        }
+        return this.containsAll(that) && that.containsAll(this);
     }
 
     /**
-     * Compare based on tree depth, then initial node id.
+     * Compare based on size, then node IDs, one by one.
      */
     public int compareTo(NodeSet that) {
         if (this.equals(that)) {
             return 0;
+        } else if (this.size()!=that.size()) {
+            return this.size() - that.size();
         } else {
             Node thisNode = this.first();
             Node thatNode = that.first();
             while (thisNode.equals(thatNode)) {
-                if (this.higher(thisNode)==null || that.higher(thatNode)==null) {
-                    return Integer.compare(this.size(), that.size());
-                } else {
-                    thisNode = this.higher(thisNode);
-                    thatNode = that.higher(thatNode);
-                }
+                thisNode = this.higher(thisNode);
+                thatNode = that.higher(thatNode);
             }
             return thisNode.compareTo(thatNode);
         }
