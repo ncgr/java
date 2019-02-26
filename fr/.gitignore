@@ -7,12 +7,11 @@ Schiz
 build
 buildOutputCleanup
 mods
-*.fasta
+*.pathsequences.fasta
 *.lock
 *.log
 *.bin
 *.png
-*.fai
 *.dotfastaPos.txt
 *.frs.txt
 *.labelcounts.txt

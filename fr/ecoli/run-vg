@@ -12,9 +12,9 @@ vg construct --reference $REF --vcf $VCF --alt-paths --flat-alts --node-max 1000
 vg index --threads 64 --compact --xg-name $PREFIX.xg --gbwt-name $PREFIX.gbwt --force-phasing --vcf-phasing $VCF -g $PREFIX.gcsa $PREFIX.vg
 
 # extract the threads from the GBWT as vg Paths
-vg paths -x ecoli.pan3.xg -g ecoli.pan3.gbwt -V -q _thread_ecoli1 > ecoli1_paths.vg
-vg paths -x ecoli.pan3.xg -g ecoli.pan3.gbwt -V -q _thread_ecoli2 > ecoli2_paths.vg
-vg paths -x ecoli.pan3.xg -g ecoli.pan3.gbwt -V -q _thread_ecoli3 > ecoli3_paths.vg
+vg paths -x $PREFIX.xg -g $PREFIX.gbwt -V -q _thread_ecoli1 > ecoli1_paths.vg
+vg paths -x $PREFIX.xg -g $PREFIX.gbwt -V -q _thread_ecoli2 > ecoli2_paths.vg
+vg paths -x $PREFIX.xg -g $PREFIX.gbwt -V -q _thread_ecoli3 > ecoli3_paths.vg
 
 # now add those paths back to the vg
 cat $PREFIX.vg *_paths.vg > $PREFIX.paths.vg

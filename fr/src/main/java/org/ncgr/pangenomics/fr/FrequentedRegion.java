@@ -195,23 +195,26 @@ public class FrequentedRegion implements Comparable<FrequentedRegion> {
      * Return a string summary of this frequented region.
      */
     public String summaryString() {
-        String s = nodes.toString()+"\t"+support+"\t"+df.format(avgLength);
-        // show label support if available
-        if (graph.labelCounts!=null && graph.labelCounts.size()>0) {
-            // count the support per label
-            Map<String,Integer> labelCounts = new TreeMap<>();
-            for (Path subpath : subpaths) {
-                if (subpath.label!=null) {
-                    if (!labelCounts.containsKey(subpath.label)) {
-                        labelCounts.put(subpath.label, getLabelCount(subpath.label));
+        String s = nodes.toString()+"\t"+support;
+        if (support>0) {
+            s += "\t"+df.format(avgLength);
+            // show label support if available
+            if (graph.labelCounts!=null && graph.labelCounts.size()>0) {
+                // count the support per label
+                Map<String,Integer> labelCounts = new TreeMap<>();
+                for (Path subpath : subpaths) {
+                    if (subpath.label!=null) {
+                        if (!labelCounts.containsKey(subpath.label)) {
+                            labelCounts.put(subpath.label, getLabelCount(subpath.label));
+                        }
                     }
                 }
-            }
-            for (String label : graph.labelCounts.keySet()) {
-                if (labelCounts.containsKey(label)) {
-                    s += "\t"+labelCounts.get(label);
-                } else {
-                    s += "\t"+0;
+                for (String label : graph.labelCounts.keySet()) {
+                    if (labelCounts.containsKey(label)) {
+                        s += "\t"+labelCounts.get(label);
+                    } else {
+                        s += "\t"+0;
+                    }
                 }
             }
         }

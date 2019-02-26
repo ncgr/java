@@ -17,6 +17,7 @@ import java.util.List;
 import java.util.ArrayList;
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.PriorityQueue;
 import java.util.Set;
 import java.util.HashSet;
 import java.util.TreeSet;
@@ -47,6 +48,7 @@ public class FRFinder {
     static boolean VERBOSE = false;
     static boolean DEBUG = false;
     static boolean BRUTE_FORCE = false;
+    static boolean SERIAL = false;
     
     // required parameters, no defaults; set in constructor
     Graph graph;  // the Graph we're analyzing
@@ -61,6 +63,7 @@ public class FRFinder {
     double minLen = MINLEN;   // minimum average length of a frequented region's subpath sequences (fr.avgLength) to be considered interesting
     boolean caseCtrl = CASE_CTRL; // emphasize FRs that have large case/control support
     boolean bruteForce = BRUTE_FORCE; // find FRs comprehensively with brute force, not using heuristic approach from paper; for testing only!
+    boolean serial = SERIAL; // serial processing for demos or experiments
 
     // I/O
     String outputPrefix; // output file prefix
@@ -125,50 +128,66 @@ public class FRFinder {
         
         // build the FRs round by round
 	long startTime = System.currentTimeMillis();
-
-        if (bruteForce) {
-            boolean added = true;
-            int round = 0;
-            while (added) {
-                round++;
-                added = false;
-                // gently suggest garbage collection
-                System.gc();
-                // put the current FRs and filtered FRs into synchronized Sets
-                Set<FrequentedRegion> syncNewFRs = Collections.synchronizedSet(new HashSet<>());
-                Set<FrequentedRegion> syncFilteredFRs = Collections.synchronizedSet(new HashSet<>());
-                PriorityBlockingQueue<FRPair> pbq = new PriorityBlockingQueue<>();
-                int oldSize = syncFrequentedRegions.size();
-                ////////////////////////////////////////
-                // spin through FRs in a parallel manner
-                syncFrequentedRegions.parallelStream().forEach((fr1) -> {
-                        syncFrequentedRegions.parallelStream().forEach((fr2) -> {
-                                FRPair frpair = new FRPair(fr1, fr2, graph, alpha, kappa, caseCtrl);
-                                syncNewFRs.add(frpair.merged);
-                                if (!syncFrequentedRegions.contains(frpair.merged) &&
-                                    frpair.merged.support>=minSup &&
-                                    frpair.merged.avgLength>=minLen &&
-                                    frpair.merged.nodes.size()>=minSize) {
-                                    syncFilteredFRs.add(frpair.merged);
-                                }
-                            });
-                    });
-                ////////////////////////////////////////
-                syncFrequentedRegions.addAll(syncNewFRs);
-                added = syncNewFRs.size()>0;
-                if (syncFilteredFRs.size()>0) {
-                    frequentedRegions.addAll(syncFilteredFRs);
-                    System.out.println(round+":"+syncFilteredFRs.size()+" FRs added.");
+        boolean added = true;
+        int round = 0;
+        while (added) {
+            round++;
+            added = false;
+            // gently suggest garbage collection
+            System.gc();
+            if (bruteForce) {
+                // no heurism, for demo purposes
+                Set<FrequentedRegion> loopFRs = new HashSet<>();
+                int oldSize = frequentedRegions.size();
+                for (FrequentedRegion fr1 : syncFrequentedRegions) {
+                    for (FrequentedRegion fr2 : syncFrequentedRegions) {
+                        if (fr1.compareTo(fr2)>0) {
+                            FRPair frpair = new FRPair(fr1, fr2, graph, alpha, kappa, caseCtrl);
+                            loopFRs.add(frpair.merged);
+                            if (!frequentedRegions.contains(frpair.merged) &&
+                                frpair.merged.support>0 &&
+                                frpair.merged.support>=minSup &&
+                                frpair.merged.nodes.size()>=minSize &&
+                                frpair.merged.avgLength>=minLen) {
+                                frequentedRegions.add(frpair.merged);
+                                System.out.println(fr1.nodes.toString()+fr2.nodes.toString()+":"+frpair.merged.summaryString());
+                            }
+                        }
+                    }
                 }
-            }
-        } else {
-            boolean added = true;
-            int round = 0;
-            while (added) {
-                round++;
-                added = false;
-                // gently suggest garbage collection
-                System.gc();
+                added = loopFRs.size()>0;
+                syncFrequentedRegions.addAll(loopFRs);
+                System.out.println(round+":"+(frequentedRegions.size()-oldSize)+" FRs added.");
+            } else if (serial) {
+                // serial processing with extra output for demo purposes or other experiments
+                // put FR pairs into a PriorityQueue which sorts them by decreasing interest (defined by the FRPair comparator)
+                PriorityQueue<FRPair> pq = new PriorityQueue<>();
+                // spin through FRs in a serial manner
+                for (FrequentedRegion fr1 : syncFrequentedRegions) {
+                    for (FrequentedRegion fr2 : syncFrequentedRegions) {
+                        if (fr2.compareTo(fr1)>=0) {
+                            FRPair frpair = new FRPair(fr1, fr2, graph, alpha, kappa, caseCtrl);
+                            if (!usedFRs.contains(fr1) && !usedFRs.contains(fr2) && !frequentedRegions.contains(frpair.merged)) {
+                                System.out.println(fr1.nodes.toString()+fr2.nodes.toString()+":"+frpair.merged.summaryString());
+                                pq.add(frpair);
+                            }
+                        }
+                    }
+                }
+                // add our new FR
+                if (pq.size()>0) {
+                    FRPair frpair = pq.peek();
+                    if (frpair.merged.support>0) {
+                        added = true;
+                        usedFRs.add(frpair.fr1);
+                        usedFRs.add(frpair.fr2);
+                        syncFrequentedRegions.add(frpair.merged);
+                        frequentedRegions.add(frpair.merged);
+                        System.out.println(round+":"+frpair.fr1.nodes+frpair.fr2.nodes+"\t"+frpair.merged.summaryString());
+                    }
+                }
+            } else {
+                // default: parallel processing
                 // put FR pairs into a PriorityBlockingQueue which sorts them by decreasing interest (defined by the FRPair comparator)
                 PriorityBlockingQueue<FRPair> pbq = new PriorityBlockingQueue<>();
                 ////////////////////////////////////////
@@ -176,9 +195,11 @@ public class FRFinder {
                 // NOTE: fr1>=fr2 compare to stay above diagonal costs same time as running both sides!
                 syncFrequentedRegions.parallelStream().forEach((fr1) -> {
                         syncFrequentedRegions.parallelStream().forEach((fr2) -> {
-                                FRPair frpair = new FRPair(fr1, fr2, graph, alpha, kappa, caseCtrl);
-                                if (!usedFRs.contains(fr1) && !usedFRs.contains(fr2) && !syncFrequentedRegions.contains(frpair.merged)) {
-                                    pbq.add(frpair);
+                                if (fr2.compareTo(fr1)>=0) {
+                                    FRPair frpair = new FRPair(fr1, fr2, graph, alpha, kappa, caseCtrl);
+                                    if (!usedFRs.contains(fr1) && !usedFRs.contains(fr2) && !frequentedRegions.contains(frpair.merged)) {
+                                        pbq.add(frpair);
+                                    }
                                 }
                             });
                     });
@@ -201,7 +222,7 @@ public class FRFinder {
 	clockTime = System.currentTimeMillis() - startTime;
         System.out.println("Found "+frequentedRegions.size()+" FRs.");
 	System.out.println("Clock time: "+formatTime(clockTime));
-
+        
 	// final output
 	if (frequentedRegions.size()>0) {
 	    printAll();
@@ -275,6 +296,9 @@ public class FRFinder {
     }
     public void setBruteForce() {
         this.bruteForce = true;
+    }
+    public void setSerial() {
+        this.serial = true;
     }
     public void setMinSup(int minSup) {
         this.minSup = minSup;
@@ -367,6 +391,10 @@ public class FRFinder {
         Option bruteForceOption = new Option("bf", "bruteforce", false, "find FRs comprehensively via brute force - testing only! ("+BRUTE_FORCE+")");
         bruteForceOption.setRequired(false);
         options.addOption(bruteForceOption);
+        //
+        Option serialOption = new Option("bf", "serial", false, "find FRs serially for testing/experiments ("+SERIAL+")");
+        serialOption.setRequired(false);
+        options.addOption(serialOption);
 
         try {
             cmd = parser.parse(options, args);
@@ -461,6 +489,8 @@ public class FRFinder {
             }
             if (cmd.hasOption("bruteforce")) {
                 frf.setBruteForce();
+            } else if (cmd.hasOption("serial")) {
+                frf.setSerial();
             }
             // these are not used by normal method, which saves all FRs
             frf.setMinSup(minSup);
