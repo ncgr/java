@@ -35,7 +35,7 @@ then
     gamma=`tail -1 $GRIDOUT | awk '{ print $2; }'`
     perc=`tail -1 $GRIDOUT | awk '{ print $3; }'`
 
-    ARGS="-c $C -g $gamma -k 10"
+    ARGS="-c $C -g $gamma -k 5"
     java -cp "build/install/fr/lib/*" org.ncgr.svm.SvmCrossValidator $ARGS $FULLSCALE
 fi
 
