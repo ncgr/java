@@ -1,3 +1,0 @@
-FR,size,support,avg length
-fr-0,4,6,137
-fr-1,17,3,1000

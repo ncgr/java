@@ -1,2 +1,0 @@
-#!/bin/sh
-java -cp build/install/fr/lib/fr.jar:build/install/fr/lib/commons-io-2.6.jar:build/install/fr/lib/commons-exec-1.3.jar:build/install/fr/lib/slf4j-api-1.7.25.jar:build/install/fr/lib/graphviz-java-0.8.0.jar GraphVizJava $1
