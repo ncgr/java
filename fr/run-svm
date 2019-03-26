@@ -1,0 +1,34 @@
+#!/bin/sh
+
+k=10
+
+SVMROOT=$1
+
+FULL="$SVMROOT.svm.txt"
+RANGE="$SVMROOT.svm.range.txt"
+FULLSCALE="$SVMROOT.svm.scale.txt"
+GRIDOUT="$SVMROOT.svm.grid.txt"
+
+## scale the full data (if exists)
+if [ -s $FULL ]
+then
+    java -cp "build/install/fr/lib/*" org.ncgr.svm.SvmScaler -s $RANGE $FULL > $FULLSCALE
+fi
+
+## run GridSearcher on the full scaled data (if exists) to find optimum SVM parameters
+if [ -s $FULLSCALE ]
+then
+    ARGS="-log2c -5,15,2 -log2g 3,-15,-2 -k $k"
+    java -cp "build/install/fr/lib/*" org.ncgr.svm.GridSearcher $ARGS $FULLSCALE > $GRIDOUT
+fi
+
+## cross validate on full dataset with the above parameters
+if [ -s $GRIDOUT ]
+then
+    C=`tail -1 $GRIDOUT | awk '{ print $1; }'`
+    gamma=`tail -1 $GRIDOUT | awk '{ print $2; }'`
+    perc=`tail -1 $GRIDOUT | awk '{ print $3; }'`
+
+    ARGS="-c $C -g $gamma -k $k"
+    java -cp "build/install/fr/lib/*" org.ncgr.svm.SvmCrossValidator $ARGS $FULLSCALE
+fi

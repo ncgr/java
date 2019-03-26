@@ -1,0 +1,31 @@
+#!/bin/sh
+# usage: FRFinder
+#  -a,--alpha <arg>          alpha=penetrance, fraction of a supporting path's sequence that supports the FR (required)
+#  -bf,--bruteforce          find FRs comprehensively via brute force - testing only! (false)
+#  -cc,--casectrl            emphasize FRs that have large case vs. control support (false)
+#  -d,--dot <arg>            splitMEM DOT file (requires FASTA file)
+#  -do,--debug               debug output (false)
+#  -f,--fasta <arg>          FASTA file (requires DOT file)
+#  -g,--genotype <arg>       which genotype to include (0,1) from the input file; -1 to include all (-1)
+#  -gfa,--gfa <arg>          GFA file
+#  -i,--inputprefix <arg>    input file prefix for further processing
+#  -j,--json <arg>           vg JSON file
+#  -k,--kappa <arg>          kappa=maximum insertion length that any supporting path may have (required)
+#  -l,--minlen <arg>         minlen=minimum allowed average length (bp) of an FR's subpaths (1.0)
+#  -m,--minsup <arg>         minsup=minimum number of supporting paths for a region to be considered interesting (1)
+#  -o,--outputprefix <arg>   output file prefix (stdout)
+#  -p,--pathlabels <arg>     tab-delimited file with pathname<tab>label
+#  -s,--minsize <arg>        minsize=minimum number of nodes that a FR must contain to be considered interesting (1)
+#  -sr,--serial              find FRs serially for testing/experiments (false)
+#  -v,--verbose              verbose output (false)
+
+## supply prefix, alpha and kappa at invocation
+prefix=$1
+alpha=$2
+kappa=$3
+
+echo "# $prefix alpha=$alpha kappa=$kappa"
+
+java -server -cp "build/install/fr/lib/*" org.ncgr.pangenomics.fr.FRFinder --gfa HD/$prefix.paths.gfa  \
+     --pathlabels HD/labels.txt --outputprefix $prefix-$alpha-$kappa \
+     --alpha $alpha --kappa $kappa --debug --casectrl # --bruteforce --minsup 1 --minsize 1 --minlen 1

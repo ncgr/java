@@ -1,0 +1,15 @@
+#!/bin/sh
+## usage: Graph
+## -d,--dot <arg>            splitMEM DOT file (requires FASTA file)
+## -f,--fasta <arg>          FASTA file (requires DOT file)
+## -g,--gfa <arg>            vg GFA file
+## -gt,--genotype <arg>      which genotype to include (0,1) from the JSON/GFA file; -1 to include both (-1)
+## -j,--json <arg>           vg JSON file
+## -o,--outputprefix <arg>   output file prefix (stdout)
+## -p,--pathlabels <arg>     tab-delimited file containing one pathname<tab>label per line
+## -v,--verbose              verbose output (false)
+
+dir=$1
+prefix=$2
+
+java -server -cp "build/install/fr/lib/*" org.ncgr.pangenomics.Graph --gfa $dir/$prefix.paths.gfa --outputprefix $dir.$prefix --pathlabels $dir/labels.txt 

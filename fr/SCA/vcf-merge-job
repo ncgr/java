@@ -1,0 +1,103 @@
+#!/bin/sh
+# About: Merges VCF files by position, creating multi-sample VCFs from fewer-sample VCFs.
+#    The tool requires bgzipped and tabix indexed VCF files on input. (E.g. bgzip file.vcf; tabix -p vcf file.vcf.gz)
+#    If you need to concatenate VCFs (e.g. files split by chromosome), look at vcf-concat instead.
+# Usage: vcf-merge [OPTIONS] file1.vcf file2.vcf.gz ... > out.vcf
+# Options:
+#    -c, --collapse <snps|indels|both|any|none>      treat as identical sites with differing alleles [any]
+#    -d, --remove-duplicates                         If there should be two consecutive rows with the same chr:pos, print only the first one.
+#    -H, --vcf-header <file>                         Use the provided VCF header
+#    -h, -?, --help                                  This help message.
+#    -r, --regions <list|file>                       Do only the given regions (comma-separated list or one region per line in a file).
+#    -R, --ref-for-missing <string>                  Use the REF allele instead of the default missing genotype. Because it is not obvious
+#                                                        what ploidy should be used, a user-defined string is used instead (e.g. 0/0).
+#    -s, --silent                                    Try to be a bit more silent, no warnings about duplicate lines.
+#    -t, --trim-ALTs                                 If set, redundant ALTs will be removed
+
+## 20 cases
+# HG00096
+# HG00097
+# HG00099
+# HG00100
+# HG00101
+# HG00102
+# HG00103
+# HG00105
+# HG00106
+# HG00107
+# HG00108
+# HG00109
+# HG00110
+# HG00111
+# HG00112
+# HG00113
+# HG00114
+# HG00115
+# HG00116
+# HG00117
+## 20 controls
+# HG00118
+# HG00119
+# HG00120
+# HG00121
+# HG00122
+# HG00123
+# HG00125
+# HG00126
+# HG00127
+# HG00128
+# HG00129
+# HG00130
+# HG00131
+# HG00132
+# HG00133
+# HG00136
+# HG00137
+# HG00138
+# HG00139
+# HG00140
+
+vcf-merge -R "0/0"  \
+	  VCF/HG00096.recode.vcf.gz \
+	  VCF/HG00097.recode.vcf.gz \
+	  VCF/HG00099.recode.vcf.gz \
+	  VCF/HG00100.recode.vcf.gz \
+	  VCF/HG00101.recode.vcf.gz \
+	  VCF/HG00102.recode.vcf.gz \
+	  VCF/HG00103.recode.vcf.gz \
+	  VCF/HG00105.recode.vcf.gz \
+	  VCF/HG00106.recode.vcf.gz \
+	  VCF/HG00107.recode.vcf.gz \
+	  VCF/HG00108.recode.vcf.gz \
+	  VCF/HG00109.recode.vcf.gz \
+	  VCF/HG00110.recode.vcf.gz \
+	  VCF/HG00111.recode.vcf.gz \
+	  VCF/HG00112.recode.vcf.gz \
+	  VCF/HG00113.recode.vcf.gz \
+	  VCF/HG00114.recode.vcf.gz \
+	  VCF/HG00115.recode.vcf.gz \
+	  VCF/HG00116.recode.vcf.gz \
+	  VCF/HG00117.recode.vcf.gz \
+	  VCF/HG00118.recode.vcf.gz \
+	  VCF/HG00119.recode.vcf.gz \
+	  VCF/HG00120.recode.vcf.gz \
+	  VCF/HG00121.recode.vcf.gz \
+	  VCF/HG00122.recode.vcf.gz \
+	  VCF/HG00123.recode.vcf.gz \
+	  VCF/HG00125.recode.vcf.gz \
+	  VCF/HG00126.recode.vcf.gz \
+	  VCF/HG00127.recode.vcf.gz \
+	  VCF/HG00128.recode.vcf.gz \
+	  VCF/HG00129.recode.vcf.gz \
+	  VCF/HG00130.recode.vcf.gz \
+	  VCF/HG00131.recode.vcf.gz \
+	  VCF/HG00132.recode.vcf.gz \
+	  VCF/HG00133.recode.vcf.gz \
+	  VCF/HG00136.recode.vcf.gz \
+	  VCF/HG00137.recode.vcf.gz \
+	  VCF/HG00138.recode.vcf.gz \
+	  VCF/HG00139.recode.vcf.gz \
+	  VCF/HG00140.recode.vcf.gz \
+	  > HBB.10k.vcf
+
+vcf2tbi HBB.10k.vcf

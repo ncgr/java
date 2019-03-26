@@ -1,0 +1,22 @@
+#!/bin/sh
+
+graph=$1
+
+for alpha in 0.2 0.5 0.8 1.0
+do
+    for kappa in 0 1 2 3 12 48 192 768
+    do
+        prefix="$graph-$alpha-$kappa"
+        for minsup in 1 2 4 10 20 50 100
+        do
+            for minsize in 1 2 4 10 20 50 100
+            do
+                for minlen in 1 2 4 10 20 50 100 500
+                do
+                    ./run-post $prefix $minsup $minsize $minlen
+                done
+            done
+        done
+    done
+done
+

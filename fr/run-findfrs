@@ -1,0 +1,47 @@
+#!/bin/sh
+# Run B Mumey's original FindFRs routine
+#
+# FindFRs 2.0, last rev. 7-June-20$MINSUP8, copyright 20$MINSIZE8
+# required options: d, f, a, k
+#  -a,--alpha <arg>     alpha parameter
+#  -d,--dot <arg>       dot file
+#  -f,--fasta <arg>     fasta file
+#  -k,--kappa <arg>     kappa parameter
+#  -l,--minlen <arg>    minlen parameter
+#  -m,--minsup <arg>    minsup parameter
+#  -r,--rc              rc flag
+#  -z,--minsize <arg>   minsize parameter
+
+ALPHA=0.1
+KAPPA=51
+MINSUP=2
+MINSIZE=1
+
+# HDStudy/HTT.dot HDStudy/HTT.k15.dot  HDStudy/HTT.k30.dot  HDStudy/HTT.k60.dot HDStudy/HTT.k120.dot
+
+java -cp "lib/FindFRs.jar:build/install/fr/lib/*" findFRs.FindFRs --alpha $ALPHA --kappa $KAPPA --minsup $MINSUP --minsize $MINSIZE --fasta HDStudy/HTT.fasta --dot HDStudy/HTT.dot
+java -cp "lib/FindFRs.jar:build/install/fr/lib/*" findFRs.FindFRs --alpha $ALPHA --kappa $KAPPA --minsup $MINSUP --minsize $MINSIZE --fasta HDStudy/HTT.fasta --dot HDStudy/HTT.k15.dot
+java -cp "lib/FindFRs.jar:build/install/fr/lib/*" findFRs.FindFRs --alpha $ALPHA --kappa $KAPPA --minsup $MINSUP --minsize $MINSIZE --fasta HDStudy/HTT.fasta --dot HDStudy/HTT.k30.dot
+java -cp "lib/FindFRs.jar:build/install/fr/lib/*" findFRs.FindFRs --alpha $ALPHA --kappa $KAPPA --minsup $MINSUP --minsize $MINSIZE --fasta HDStudy/HTT.fasta --dot HDStudy/HTT.k60.dot
+java -cp "lib/FindFRs.jar:build/install/fr/lib/*" findFRs.FindFRs --alpha $ALPHA --kappa $KAPPA --minsup $MINSUP --minsize $MINSIZE --fasta HDStudy/HTT.fasta --dot HDStudy/HTT.k120.dot
+
+echo "------------"
+echo "- splitMEM -"
+echo "------------"
+cat results-HTT.dot-HTT.fasta/HTT.dot-HTT.fasta-a$ALPHA-kp$KAPPA-sup$MINSUP-sz$MINSIZE.csfr.txt
+echo "-----------"
+echo "--- k15 ---"
+echo "-----------"
+cat results-HTT.k15.dot-HTT.fasta/HTT.k15.dot-HTT.fasta-a$ALPHA-kp$KAPPA-sup$MINSUP-sz$MINSIZE.csfr.txt
+echo "-----------"
+echo "--- k30 ---"
+echo "-----------"
+cat results-HTT.k30.dot-HTT.fasta/HTT.k30.dot-HTT.fasta-a$ALPHA-kp$KAPPA-sup$MINSUP-sz$MINSIZE.csfr.txt
+echo "-----------"
+echo "--- k60 ---"
+echo "-----------"
+cat results-HTT.k60.dot-HTT.fasta/HTT.k60.dot-HTT.fasta-a$ALPHA-kp$KAPPA-sup$MINSUP-sz$MINSIZE.csfr.txt
+echo "------------"
+echo "--- k120 ---"
+echo "------------"
+cat results-HTT.k120.dot-HTT.fasta/HTT.k120.dot-HTT.fasta-a$ALPHA-kp$KAPPA-sup$MINSUP-sz$MINSIZE.csfr.txt

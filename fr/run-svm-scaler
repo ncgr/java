@@ -1,0 +1,13 @@
+#!/bin/sh
+# usage: SvmScaler
+# -l <arg>   x scaling lower limit [-1]
+# -r <arg>   filename to read scaling parameters from
+# -s <arg>   filename to save scaling parameters to
+# -u <arg>   x scaling upper limit [+1]
+# -y <arg>   y scaling limits yLower,yUpper [no y scaling]
+
+TRAIN="hd.svm.txt"
+TRAINRANGE="hd.svm.range.txt"
+TRAINSCALE="hd.svm.scale.txt"
+
+java -cp "build/install/fr/lib/*" org.ncgr.svm.SvmScaler -s $TRAINRANGE $TRAIN > $TRAINSCALE

@@ -1,0 +1,3 @@
+#!/bin/sh
+java -cp build/install/fr/lib/fr.jar:build/install/fr/lib/protobuf-java-3.6.1.jar:build/install/fr/lib/protobuf-java-util-3.6.1.jar:build/install/fr/lib/gson-2.7.jar \
+       	VgJsonReader HD/HTT.paths.json
