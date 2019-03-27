@@ -7,6 +7,7 @@ minlen=$4
 
 FRFILE="$prefix.frs.txt"
 SVMROOT="$prefix-$minsup.$minsize.$minlen"
+SVMFRFILE="$SVMROOT.frs.txt"
 
 if [ -s $FRFILE ]
 then
@@ -15,11 +16,13 @@ then
     java -server -cp "build/install/fr/lib/*" org.ncgr.pangenomics.fr.FRFinder --debug --inputprefix $prefix --minsup $minsup --minsize $minsize --minlen $minlen
     
     ## run SVM
-
-    for i in 1 2 3
-    do
-	./run-svm $SVMROOT > "$SVMROOT-$i.crossvalidation.txt"
-    done
+    if [ -s $SVMFRFILE ]
+    then
+        for i in 1 2 3
+        do
+	    ./run-svm $SVMROOT > "$SVMROOT-$i.crossvalidation.txt"
+        done
+    fi
     
     ## clean up
     rm -f "$SVMROOT.frs.txt"
