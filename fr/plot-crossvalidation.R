@@ -8,9 +8,9 @@ library(RColorBrewer)
 colors = brewer.pal(4, "Dark2")
 
 if (requireHomozygous) {
-    merge = "HOM:CASE call correct IFF both case paths called CASE"
+    mergeMode = "HOM mode: CASE call correct IFF both case paths called CASE"
 } else {
-    merge = "HET:CASE call correct IF either case path called CASE"
+    mergeMode = "HET mode: CASE call correct IF either case path called CASE"
 }
 
 plot(results$FPR[results$alpha==0.2], results$TPR[results$alpha==0.2],
@@ -33,16 +33,14 @@ points(results$FPR[results$alpha==1.0], results$TPR[results$alpha==1.0],
        )
 
 title(main=paste("study:",study," ",
-                 "graph:",results$graph[1]," ",
-                 merge,
+                 "graph:",results$graph[1],
                  "\n",
-                 "alpha:[",min(results$alpha),",",max(results$alpha),"] ",
-                 "kappa:[",min(results$kappa),",",max(results$kappa),"] ",
-                 "minsup:[",min(results$minsup),",",max(results$minsup),"] ",
-                 "minsize:[",min(results$minsize),",",max(results$minsize),"] ",
-                 "minlen:[",min(results$minlen),",",max(results$minlen),"]",
+                 cases," case paths; ",controls," control paths; ",
+                 length(results$FPR)," SVM cross-comparisons",
+                 "\n",
+                 mergeMode,
                  sep=""),
-      cex.main=0.8
+      cex.main=1.0
       )
 
 lines(c(0,1), c(0,1), lty=2)
@@ -54,6 +52,24 @@ legend(x="bottomright",
                 expression(paste(alpha,"=1.0",sep=""))),
        pch=1, col=colors, pt.cex=c(0.4, 0.6, 0.8, 1.0)
        )
+
+alphaValueString = 
+
+legend(x="bottomleft",
+       legend=c(
+           paste("alpha: ", capture.output(cat(alphaValues,sep=",")), sep=""),
+           paste("kappa: ", capture.output(cat(kappaValues,sep=",")), sep=""),
+           paste("minsup: ", capture.output(cat(minsupValues,sep=",")), sep=""),
+           paste("minsize: ", capture.output(cat(minsizeValues,sep=",")), sep=""),
+           paste("minlen: ", capture.output(cat(minlenValues,sep=",")), sep="")
+       ),
+       bty="n",
+       pt.cex=0
+       )
+                 ## "\n",
+                 ## "kappa=",capture.output(cat(kappaValues)),
+                 ## "\n",
+
 
 ## legend(x, y = NULL, legend, fill = NULL, col = par("col"),
 ##        border = "black", lty, lwd, pch,
