@@ -279,6 +279,7 @@ public class FRFinder {
 	if (frequentedRegions.size()>0) {
 	    printFrequentedRegions();
 	    printPathFRsSVM();
+            printPathFRsARFF();
 	}
     }
 
@@ -571,10 +572,13 @@ public class FRFinder {
     }
 
     /**
-     * Print the path FR support for SVM analysis. Lines are like:
+     * Print the labeled path FR support for SVM analysis. Lines are like:
+     *
      * path1.0 case 1:1 2:1 3:1 4:0 ...
      * path1.1 case 1:0 2:0 3:0 4:1 ...
      * path2.0 ctrl 1:0 2:1 3:0 4:2 ...
+     *
+     * which is similar, but not identical to, the SVMlight format.
      */
     void printPathFRsSVM() throws IOException {
         PrintStream out = System.out;
@@ -596,6 +600,56 @@ public class FRFinder {
                 out.print("\t"+c+":"+fr.countSubpathsOf(path));
             }
             out.println("");
+        }
+        if (outputPrefix!=null) out.close();
+    }
+
+    /**
+     * Print the (unlabeled) path FR support in ARFF format.
+     *
+     * @RELATION iris
+
+     * @ATTRIBUTE sepallength  NUMERIC
+     * @ATTRIBUTE sepalwidth   NUMERIC
+     * @ATTRIBUTE petallength  NUMERIC
+     * @ATTRIBUTE petalwidth   NUMERIC
+     * @ATTRIBUTE class        {Iris-setosa,Iris-versicolor,Iris-virginica}
+     
+     * @DATA
+     * 5.1,3.5,1.4,0.2,Iris-setosa
+     * 4.9,3.0,1.4,0.2,Iris-virginica
+     * 4.7,3.2,1.3,0.2,Iris-versicolor
+     * 4.6,3.1,1.5,0.2,Iris-setosa
+     * 5.0,3.6,1.4,0.2,Iris-viginica
+     */
+    void printPathFRsARFF() throws IOException {
+        PrintStream out = System.out;
+        if (outputPrefix==null) {
+            out.println("@RELATION frs");
+        } else {
+            out = new PrintStream(getPathFRsARFFFilename(outputPrefix));
+            out.println("@RELATION "+outputPrefix);
+            out.println("");
+        }
+        // attributes: each FR is a numeric labeled FRn
+        int c = 0;
+        for (FrequentedRegion fr : frequentedRegions) {
+            c++;
+            String frLabel = "FR"+c;
+            out.println("@ATTRIBUTE "+frLabel+" NUMERIC");
+        }
+        // add the class attribute
+        out.println("@ATTRIBUTE class {case,ctrl}");
+        out.println("");
+        // data
+        out.println("@DATA");
+        for (Path path : graph.paths) {
+            c = 0;
+            for (FrequentedRegion fr : frequentedRegions) {
+                c++;
+                out.print(fr.countSubpathsOf(path)+",");
+            }
+            out.println(path.label);
         }
         if (outputPrefix!=null) out.close();
     }
@@ -824,6 +878,13 @@ public class FRFinder {
      */
     String getPathFRsSVMFilename(String prefix) {
         return prefix+".svm.txt";
+    }
+
+    /**
+     * Form the ARFF version of the pathFRs output filename
+     */
+    String getPathFRsARFFFilename(String prefix) {
+        return prefix+".arff";
     }
 
     /**

@@ -25,4 +25,5 @@ buildOutputCleanup
 *.subpaths.txt
 *.svm.txt
 *.svm.*.txt
+*.arff
 *.crossvalidation.txt

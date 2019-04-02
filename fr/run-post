@@ -26,6 +26,7 @@ then
     
     ## clean up
     rm -f "$SVMROOT.frs.txt"
+#    rm -f "$SVMROOT.arff"
     rm -f "$SVMROOT.svm.txt"
     rm -f "$SVMROOT.svm.range.txt"
     rm -f "$SVMROOT.svm.scale.txt"

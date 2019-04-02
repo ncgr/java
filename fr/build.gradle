@@ -52,6 +52,9 @@ dependencies {
     // http://dev.davidsoergel.com/nexus/content/repositories/releases
     compile group: 'edu.berkeley.compbio', name: 'jlibsvm', version: '0.911'
 
+    // https://mvnrepository.com/artifact/nz.ac.waikato.cms.weka/weka-dev
+    compile group: 'nz.ac.waikato.cms.weka', name: 'weka-dev', version: '3.9.3'
+
 }
 
 // In this section you declare where to find the dependencies of your project
