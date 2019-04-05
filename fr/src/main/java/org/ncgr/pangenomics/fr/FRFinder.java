@@ -608,7 +608,8 @@ public class FRFinder {
      * Print the (unlabeled) path FR support in ARFF format.
      *
      * @RELATION iris
-
+     *
+     * @ATTRIBUTE ID           STRING
      * @ATTRIBUTE sepallength  NUMERIC
      * @ATTRIBUTE sepalwidth   NUMERIC
      * @ATTRIBUTE petallength  NUMERIC
@@ -631,6 +632,8 @@ public class FRFinder {
             out.println("@RELATION "+outputPrefix);
             out.println("");
         }
+        // attributes: path ID
+        out.println("@ATTRIBUTE ID STRING");
         // attributes: each FR is a numeric labeled FRn
         int c = 0;
         for (FrequentedRegion fr : frequentedRegions) {
@@ -644,6 +647,7 @@ public class FRFinder {
         // data
         out.println("@DATA");
         for (Path path : graph.paths) {
+            out.print(path.getNameGenotype()+",");
             c = 0;
             for (FrequentedRegion fr : frequentedRegions) {
                 c++;

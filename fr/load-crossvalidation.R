@@ -47,6 +47,7 @@ for (alpha in alphaValues) {
                             C = as.numeric(parts[3])
                             gamma = as.numeric(parts[4])
                             nrFold = as.numeric(parts[5])
+                            ## cases and controls are PATH counts, not sample counts!
                             cases = as.numeric(parts[6])
                             controls = as.numeric(parts[7])
                             ## read data to merge the path calls per sample
@@ -81,7 +82,7 @@ for (alpha in alphaValues) {
                                             correct = correct && correct0
                                         }
                                     }
-                                    ## increment the case/control failure counts
+                                    ## increment the case/control failure counts per SAMPLE
                                     if (!correct) {
                                         if (label=="case") {
                                             caseFails = caseFails + 1
@@ -96,8 +97,8 @@ for (alpha in alphaValues) {
                                 }
                             }
                             ## standard classifier rates
-                            TPR = (cases-caseFails)/cases
-                            FPR = (controlFails)/controls
+                            TPR = (cases/2-caseFails)/(cases/2)
+                            FPR = (controlFails)/(controls/2)
                             ## append to the results dataframe
                             df = data.frame(graph=graph, alpha=as.numeric(alpha), kappa=kappa,
                                             minsup=minsup, minsize=minsize, minlen=minlen,

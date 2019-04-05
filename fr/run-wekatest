@@ -1,2 +1,2 @@
 #!/bin/sh
-java -server -cp "build/install/fr/lib/*" WekaTest
+java -server -cp "build/install/fr/lib/*" WekaTest $1

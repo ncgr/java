@@ -27,8 +27,7 @@ public class WekaTest {
         return inputReader;
     }
  
-    public static Evaluation classify(Classifier model,
-                                      Instances trainingSet, Instances testingSet) throws Exception {
+    public static Evaluation classify(Classifier model, Instances trainingSet, Instances testingSet) throws Exception {
         Evaluation evaluation = new Evaluation(trainingSet);
  
         model.buildClassifier(trainingSet);
@@ -62,10 +61,14 @@ public class WekaTest {
     }
  
     public static void main(String[] args) throws Exception {
-        // DEBUG
-        BufferedReader datafile = readDataFile("test.arff");
+
+        String arffFile = args[0];
+        BufferedReader datafile = readDataFile(arffFile);
  
         Instances data = new Instances(datafile);
+        // remove the ID attribute
+        data.deleteAttributeAt(0);
+        // set the class attribute index
         data.setClassIndex(data.numAttributes() - 1);
  
         // Do 10-split cross validation
