@@ -17,6 +17,9 @@ minsupValues = c(1,2,4,10,20,50,100)
 minsizeValues = c(1,2,4,10,20,50,100)
 minlenValues = c(1,2,4,10,20,50,100,500)
 
+alphaValues = c("0.2")
+kappaValues = c(3)
+
 ## our resulting data frame
 results = data.frame(graph=character(), alpha=numeric(), kappa=numeric(),
                      minsup=numeric(), minsize=numeric(), minlen=numeric(), 
