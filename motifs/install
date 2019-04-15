@@ -1,0 +1,2 @@
+#!/bin/sh
+sudo cp build/install/ncgr-motifs/lib/* /var/lib/tomcat/webapps/motifs/WEB-INF/lib/
