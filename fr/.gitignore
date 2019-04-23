@@ -14,6 +14,7 @@ buildOutputCleanup
 *.pdf
 *.dotfastaPos.txt
 *.frs.txt
+*.save.txt
 *.labelcounts.txt
 *.nodehistogram.txt
 *.nodepaths.txt

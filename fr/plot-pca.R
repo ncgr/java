@@ -2,6 +2,7 @@
 ## plot PCA loadings given a prcomp output object
 ##
 
+require(stringr)
 require(ggplot2)
 require(RColorBrewer)
 
@@ -27,13 +28,14 @@ if (labelsExist) {
     labels = array(dim=length(rownames(pca$rotation)))
     colors = array(dim=length(rownames(pca$rotation)))
     for (i in 1:length(rownames(pca$rotation))) {
-        labels[i] = rownames(pca$rotation)[i]
-        if (grepl("case", labels[i])) {
+        casestart = str_locate_all(pattern='case', rownames(pca$rotation))[[i]][1]
+        ctrlstart = str_locate_all(pattern='ctrl', rownames(pca$rotation))[[i]][1] 
+        if (!is.na(casestart)) {
             colors[i] = "darkred"
-        } else if (grepl("ctrl", labels[i])) {
+            labels[i] = substring(rownames(pca$rotation)[i], 1, casestart-2)
+        } else if (!is.na(ctrlstart)) {
             colors[i] = "darkgreen"
-        } else {
-            colors[i] = "gray";
+            labels[i] = substring(rownames(pca$rotation)[i], 1, ctrlstart-2)
         }
     }
 } else {

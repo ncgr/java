@@ -49,6 +49,7 @@ public class FRFinder {
     static boolean DEBUG = false;
     static boolean BRUTE_FORCE = false;
     static boolean SERIAL = false;
+    static boolean RESUME = false;
     
     // required parameters, no defaults; set in constructor
     Graph graph;  // the Graph we're analyzing
@@ -64,6 +65,12 @@ public class FRFinder {
     boolean caseCtrl = CASE_CTRL; // emphasize FRs that have large case/control support
     boolean bruteForce = BRUTE_FORCE; // find FRs comprehensively with brute force, not using heuristic approach from paper; for testing only!
     boolean serial = SERIAL; // serial processing for demos or experiments
+    boolean resume = RESUME; // resume from a previous run
+
+    // save files
+    String SYNC_FREQUENTED_REGIONS_SAVE = "syncFrequentedRegions.save.txt";
+    String USED_FRS_SAVE = "usedFRs.save.txt";
+    String FREQUENTED_REGIONS_SAVE = "frequentedRegions.save.txt";
 
     // I/O
     String outputPrefix; // output file prefix
@@ -110,29 +117,60 @@ public class FRFinder {
 
         // store the saved FRs in a TreeSet
         frequentedRegions = new TreeSet<>();
-        
-        // store the studied FRs in a synchronized TreeSet initialized with single-node FRs
-        Set<FrequentedRegion> syncFrequentedRegions = Collections.synchronizedSet(new TreeSet<>());
-        for (Node node : graph.nodes.values()) {
-            NodeSet c = new NodeSet();
-            c.add(node);
-            Set<Path> s = new HashSet<>();
-            for (Path p : graph.paths) {
-                Set<Path> support = FrequentedRegion.computeSupport(c, p, alpha, kappa);
-                s.addAll(support);
-            }
-            if (s.size()>0) {
-                syncFrequentedRegions.add(new FrequentedRegion(graph, c, s, alpha, kappa));
-            }
-        }
 
         // keep track of FRs we've already looked at
         Set<FrequentedRegion> usedFRs = new HashSet<>();
+        
+        // store the studied FRs in a synchronized TreeSet
+        Set<FrequentedRegion> syncFrequentedRegions = Collections.synchronizedSet(new TreeSet<>());
+
+        // just a counter
+        int round = 0;
+
+        if (resume) {
+            System.out.println("# resuming from previous run");
+            String line = null;
+            // frequentedRegions
+            BufferedReader frReader = new BufferedReader(new FileReader(FREQUENTED_REGIONS_SAVE));
+            while ((line=frReader.readLine())!=null) {
+                String[] parts = line.split("\t");
+                NodeSet nodes = new NodeSet(parts[0]);
+                frequentedRegions.add(new FrequentedRegion(graph, nodes, alpha, kappa));
+                round++;
+            }
+            // syncFrequentedRegions
+            BufferedReader sfrReader = new BufferedReader(new FileReader(SYNC_FREQUENTED_REGIONS_SAVE));
+            while ((line=sfrReader.readLine())!=null) {
+                String[] parts = line.split("\t");
+                NodeSet nodes = new NodeSet(parts[0]);
+                syncFrequentedRegions.add(new FrequentedRegion(graph, nodes, alpha, kappa));
+            }
+            // usedFRs
+            BufferedReader usedFRsReader = new BufferedReader(new FileReader(USED_FRS_SAVE));
+            while ((line=usedFRsReader.readLine())!=null) {
+                String[] parts = line.split("\t");
+                NodeSet nodes = new NodeSet(parts[0]);
+                usedFRs.add(new FrequentedRegion(graph, nodes, alpha, kappa));
+            }
+        } else {
+            // initialize syncFrequentedRegions with single-node FRs
+            for (Node node : graph.nodes.values()) {
+                NodeSet c = new NodeSet();
+                c.add(node);
+                Set<Path> s = new HashSet<>();
+                for (Path p : graph.paths) {
+                    Set<Path> support = FrequentedRegion.computeSupport(c, p, alpha, kappa);
+                    s.addAll(support);
+                }
+                if (s.size()>0) {
+                    syncFrequentedRegions.add(new FrequentedRegion(graph, c, s, alpha, kappa));
+                }
+            }
+        }
 
         // build the FRs round by round
 	long startTime = System.currentTimeMillis();
         boolean added = true;
-        int round = 0;
         while (added) {
             round++;
             added = false;
@@ -228,6 +266,27 @@ public class FRFinder {
                     }
                 }
             }
+
+            // output current state for continuation if aborted
+            // [8,72]	219	1.00	136	83
+            // syncFrequentedRegions
+            PrintStream sfrOut = new PrintStream(SYNC_FREQUENTED_REGIONS_SAVE);
+            for (FrequentedRegion fr : syncFrequentedRegions) {
+                sfrOut.println(fr.toString());
+            }
+            sfrOut.close();
+            // usedFRs
+            PrintStream usedFRsOut = new PrintStream(USED_FRS_SAVE);
+            for (FrequentedRegion fr : usedFRs) {
+                usedFRsOut.println(fr.toString());
+            }
+            usedFRsOut.close();
+            // frequentedRegions
+            PrintStream frOut = new PrintStream(FREQUENTED_REGIONS_SAVE);
+            for (FrequentedRegion fr : frequentedRegions) {
+                frOut.println(fr.toString());
+            }
+            frOut.close();
         }
 
 	clockTime = System.currentTimeMillis() - startTime;
@@ -314,6 +373,9 @@ public class FRFinder {
     }
     public void setSerial() {
         this.serial = true;
+    }
+    public void setResume() {
+        this.resume = true;
     }
     public void setMinSup(int minSup) {
         this.minSup = minSup;
@@ -410,6 +472,10 @@ public class FRFinder {
         Option serialOption = new Option("sr", "serial", false, "find FRs serially for testing/experiments ("+SERIAL+")");
         serialOption.setRequired(false);
         options.addOption(serialOption);
+        //
+        Option resumeOption = new Option("r", "resume", false, "resume from a previous run ("+RESUME+")");
+        resumeOption.setRequired(false);
+        options.addOption(resumeOption);
 
         try {
             cmd = parser.parse(options, args);
@@ -519,6 +585,10 @@ public class FRFinder {
         if (cmd.hasOption("outputprefix")) {
             frf.setOutputPrefix(cmd.getOptionValue("outputprefix"));
         }
+
+        // tell findFRs to load saved data if resume requested
+        boolean resume = false;
+        if (cmd.hasOption("resume")) frf.setResume();
 
         // run the requested job
         if (postProcess) {
