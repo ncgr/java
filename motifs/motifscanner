@@ -1,1 +1,2 @@
-java -cp classes:lib/postgresql.jar:lib/ncgr-db.jar org.ncgr.motifs.MotifScanner $1
+#!/bin/sh
+java -server -cp "build/install/ncgr-motifs/lib/*" org.ncgr.motifs.MotifScanner $1
