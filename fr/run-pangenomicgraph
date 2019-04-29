@@ -1,0 +1,12 @@
+#!/bin/sh
+## usage: PangenomicGraph
+## -g,--gfa <arg>            vg GFA file
+## -gt,--genotype <arg>      which genotype to include (0,1) from the JSON/GFA file; -1 to include both (-1)
+## -o,--outputprefix <arg>   output file prefix (stdout)
+## -p,--pathlabels <arg>     tab-delimited file containing one pathname<tab>label per line
+## -v,--verbose              verbose output (false)
+
+dir=$1
+prefix=$2
+
+java -server -cp "build/install/fr/lib/*" org.ncgr.jgraph.PangenomicGraph --verbose --gfa $dir/$prefix.paths.gfa --outputprefix $dir.$prefix --pathlabels $dir/labels.txt 

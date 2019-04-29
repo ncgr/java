@@ -185,7 +185,7 @@ public class Path implements Comparable<Path> {
      * Return the subpath inclusively between the two given nodes (empty if one of the nodes is not present in this path).
      * @param nl the "left" node
      * @param nr the "right" node
-     * @returns the Path inclusively between nl and nr
+     * @return the Path inclusively between nl and nr
      */
     public Path subpath(Node nl, Node nr) {
         LinkedList<Node> subnodes = new LinkedList<>();
@@ -215,7 +215,7 @@ public class Path implements Comparable<Path> {
      * Return the subsequence inclusively between the two given nodes (empty String if one of the nodes is not present in this path).
      * @param nl the "left" node
      * @param nr the "right" node
-     * @returns the subsequence inclusively between nl and nr
+     * @return the subsequence inclusively between nl and nr
      */
     public String subsequence(Node nl, Node nr) {
         if (!nodes.contains(nl) || !nodes.contains(nr)) return "";
@@ -226,7 +226,7 @@ public class Path implements Comparable<Path> {
      * Return the length of this path's sequence exclusively between the two given nodes (0 if one of the nodes is not in this path, or if nl=nr).
      * @param nl the "left" node
      * @param nr the "right" node
-     * @returns the length of this path's sequence exclusively between nl and nr
+     * @return the length of this path's sequence exclusively between nl and nr
      */
     public int gap(Node nl, Node nr) {
         if (!nodes.contains(nl) || !nodes.contains(nr)) {

@@ -3,7 +3,8 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 
 import weka.classifiers.Classifier;
-import weka.classifiers.Evaluation;
+import weka.classifiers.evaluation.Evaluation;
+import weka.classifiers.evaluation.Prediction;
 import weka.classifiers.evaluation.NominalPrediction;
 import weka.classifiers.rules.DecisionTable;
 import weka.classifiers.rules.PART;
@@ -91,7 +92,7 @@ public class WekaTest {
         for (int j = 0; j < models.length; j++) {
  
             // Collect every group of predictions for current model in a FastVector
-            FastVector predictions = new FastVector();
+            FastVector<Prediction> predictions = new FastVector<>();
  
             // For each training-testing split pair, train and test the classifier
             for (int i = 0; i < trainingSplits.length; i++) {
