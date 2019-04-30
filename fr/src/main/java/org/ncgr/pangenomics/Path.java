@@ -1,9 +1,6 @@
 package org.ncgr.pangenomics;
 
-import java.util.LinkedList;
-import java.util.Set;
-import java.util.HashSet;
-import java.util.StringJoiner;
+import java.util.*;
 
 /**
  * Encapsulates a path through a Graph, along with its full sequence.
@@ -17,12 +14,12 @@ public class Path implements Comparable<Path> {
     public int genotype;            // the genotype assigned to the path (0/1)
     public String label;            // an optional label, like "+1", "-1", "case", "control", "M", "F"
     public String sequence;         // this path's full sequence
-    public LinkedList<Node> nodes;  // the ordered list of nodes that this path travels
+    public List<Node> nodes;  // the ordered list of nodes that this path travels
 
     /**
      * Construct given a path name, genotype and a list of nodes (minimum requirement)
      */
-    public Path(String name, int genotype, LinkedList<Node> nodes) {
+    public Path(String name, int genotype, List<Node> nodes) {
         this.name = name;
         this.genotype = genotype;
         this.nodes = nodes;
@@ -32,7 +29,7 @@ public class Path implements Comparable<Path> {
     /**
      * Construct given a path name, genotype, label and a list of nodes
      */
-    public Path(String name, int genotype, String label, LinkedList<Node> nodes) {
+    public Path(String name, int genotype, String label, List<Node> nodes) {
         this.name = name;
         this.genotype = genotype;
         this.label = label;
@@ -110,10 +107,10 @@ public class Path implements Comparable<Path> {
     }
 
     /**
-     * Return a LinkedList of node IDs.
+     * Return a List of node IDs.
      */
-    public LinkedList<Long> getNodeIds() {
-        LinkedList<Long> nodeIds = new LinkedList<>();
+    public List<Long> getNodeIds() {
+        List<Long> nodeIds = new LinkedList<>();
         for (Node node : nodes) nodeIds.add(node.id);
         return nodeIds;
     }
@@ -188,7 +185,7 @@ public class Path implements Comparable<Path> {
      * @return the Path inclusively between nl and nr
      */
     public Path subpath(Node nl, Node nr) {
-        LinkedList<Node> subnodes = new LinkedList<>();
+        List<Node> subnodes = new LinkedList<>();
         if (nodes.contains(nl) && nodes.contains(nr)) {
             if (nl.equals(nr)) {
                 subnodes.add(nl);

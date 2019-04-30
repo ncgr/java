@@ -33,11 +33,13 @@ public class PangenomicGraphDemo extends JApplet {
     // genotype preference (default: load all genotypes)
     public int genotype = BOTH_GENOTYPES;
 
-    private JGraphXAdapter<Node,Edge> jgxAdapter;
-    private PangenomicGraph pg;
+    // the PangenomicGraph
+    public PangenomicGraph pg;
 
-    // setter
-    public void setGraph(PangenomicGraph pg) {
+    /**
+     * Construct given a PangenomicGraph.
+     */
+    public PangenomicGraphDemo(PangenomicGraph pg) {
         this.pg = pg;
     }
 
@@ -98,27 +100,21 @@ public class PangenomicGraphDemo extends JApplet {
         }
         
         // files
-        String gfaFile = cmd.getOptionValue("gfa");
-        String pathLabelsFile = cmd.getOptionValue("pathlabels");
+        File gfaFile = new File(cmd.getOptionValue("gfa"));
+        File pathLabelsFile = new File(cmd.getOptionValue("pathlabels"));
 
         // create a PangenomicGraph from a GFA file
-        PangenomicGraphDemo pgd = new PangenomicGraphDemo();
         PangenomicGraph pg = new PangenomicGraph();
-        pgd.setGraph(pg);
         if (cmd.hasOption("verbose")) pg.setVerbose();
-        if (cmd.hasOption("genotype")) pg.genotype = Integer.parseInt(cmd.getOptionValue("genotype"));
-        if (gfaFile!=null) {
-            // pg.readVgGfaFile(gfaFile);
-        } else {
-            System.err.println("ERROR: no GFA provided.");
-            System.exit(1);
-        }
-
+        if (cmd.hasOption("genotype")) pg.setGenotype(Integer.parseInt(cmd.getOptionValue("genotype")));
+        pg.importGFA(gfaFile);
+        
         // if a labels file is given, add them to the paths
         if (pathLabelsFile!=null) {
             pg.readPathLabels(pathLabelsFile);
         }
         
+        PangenomicGraphDemo pgd = new PangenomicGraphDemo(pg);
         pgd.init();
 
         JFrame frame = new JFrame();
@@ -132,7 +128,7 @@ public class PangenomicGraphDemo extends JApplet {
     @Override
     public void init() {
         // create a visualization using JGraph, via an adapter
-        jgxAdapter = new JGraphXAdapter<>(pg);
+        JGraphXAdapter<Node,Edge> jgxAdapter = new JGraphXAdapter<>(pg);
 
         setPreferredSize(DEFAULT_SIZE);
         mxGraphComponent component = new mxGraphComponent(jgxAdapter);

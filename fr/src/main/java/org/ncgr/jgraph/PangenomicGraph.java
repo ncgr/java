@@ -1,6 +1,5 @@
 package org.ncgr.jgraph;
 
-import org.ncgr.pangenomics.Path;
 import org.ncgr.pangenomics.Node;
 
 import java.io.*;
@@ -28,21 +27,13 @@ public class PangenomicGraph extends DirectedMultigraph<Node,Edge> {
     boolean verbose = VERBOSE;
 
     // genotype preference (default: load all genotypes)
-    public int genotype = BOTH_GENOTYPES;
-
-    // input files
-    public String gfaFile;
-    public String labelsFile;
-
-    // the nodes contained in this graph, in the form of an id->Node map
-    // (Redundant, since Node also contains id, but this allows quick retrieval on id)
-    public TreeMap<Long,Node> nodes;
+    int genotype = BOTH_GENOTYPES;
 
     // each Path provides the ordered list of nodes that it traverses, along with its full sequence
-    public TreeSet<Path> paths; // (ordered simply for convenience)
+    public TreeSet<PathWalk> paths; // (ordered simply for convenience)
     
     // maps a Node to a set of Paths that traverse it
-    public TreeMap<Long,Set<Path>> nodePaths; // keyed and ordered by Node Id (for convenience)
+    // public TreeMap<Long,Set<Path>> nodePaths; // keyed and ordered by Node Id (for convenience)
 
     // maps a path label to a count of paths that have that label
     public Map<String,Integer> labelCounts; // keyed by label
@@ -52,11 +43,21 @@ public class PangenomicGraph extends DirectedMultigraph<Node,Edge> {
      */
     public PangenomicGraph() {
         super(Edge.class);
-        nodes = new TreeMap<>();
         paths = new TreeSet<>();
-        nodePaths = new TreeMap<>();
+        // nodePaths = new TreeMap<>();
         labelCounts = new TreeMap<>();
     }
+
+    /**
+     * Import from a GFA file.
+     */
+    public void importGFA(File gfaFile) {
+        GFAImporter importer = new GFAImporter();
+        if (verbose) importer.setVerbose();
+        importer.setGenotype(genotype);
+        importer.importGraph(this, gfaFile);
+    }
+
 
     /**
      * Return the long 1-based nodeId associated with the given MutableNode.
@@ -84,33 +85,32 @@ public class PangenomicGraph extends DirectedMultigraph<Node,Edge> {
     /**
      * Build the path sequences - just calls Path.buildSequence() for each path.
      */
-    void buildPathSequences() {
-        for (Path path : paths) {
-            path.buildSequence();
-        }
-    }
+    // void buildPathSequences() {
+    //     for (Path path : paths) {
+    //         path.buildSequence();
+    //     }
+    // }
 
     /**
      * Find node paths: the set of paths that run through each node.
      */
-    void buildNodePaths() {
-        // init empty paths for each node
-        for (Long nodeId : nodes.keySet()) {
-            nodePaths.put(nodeId, new TreeSet<Path>());
-        }
-        // now load the paths
-        for (Path path : paths) {
-            for (Node node : path.nodes) {
-                nodePaths.get(node.id).add(path);
-            }
-        }
-    }
+    // void buildNodePaths() {
+    //     // init empty paths for each node
+    //     for (Long nodeId : nodes.keySet()) {
+    //         nodePaths.put(nodeId, new TreeSet<Path>());
+    //     }
+    //     // now load the paths
+    //     for (Path path : paths) {
+    //         for (Node node : path.getNodes()) {
+    //             nodePaths.get(node.id).add(path);
+    //         }
+    //     }
+    // }
 
     /**
      * Read path labels from a tab-delimited file. Comment lines start with #.
      */
-    public void readPathLabels(String labelsFile) throws FileNotFoundException, IOException {
-        this.labelsFile = labelsFile;
+    public void readPathLabels(File labelsFile) throws FileNotFoundException, IOException {
         labelCounts = new TreeMap<>();
         BufferedReader reader = new BufferedReader(new FileReader(labelsFile));
         String line = null;
@@ -124,7 +124,7 @@ public class PangenomicGraph extends DirectedMultigraph<Node,Edge> {
             }
         }
         // find the labels for path names (which may have .genotype suffix)
-        for (Path path : paths) {
+        for (PathWalk path : paths) {
             for (String sample : labels.keySet()) {
                 String label = labels.get(sample); 
                 if (sample.equals(path.name)) {
@@ -142,7 +142,7 @@ public class PangenomicGraph extends DirectedMultigraph<Node,Edge> {
                     String sampleName = parts[0];
                     if (parts.length>1) {
                         int sampleGenotype = Integer.parseInt(parts[1]);
-                        if (sampleName.equals(path.name) && sampleGenotype==path.genotype) {
+                        if (sampleName.equals(path.name) && sampleGenotype==path.getGenotype()) {
                             path.setLabel(label);
                             if (labelCounts.containsKey(label)) {
                                 int count = labelCounts.get(label);
@@ -160,8 +160,8 @@ public class PangenomicGraph extends DirectedMultigraph<Node,Edge> {
 
         // check that we've labeled all the paths
         boolean pathsAllLabeled = true;
-        for (Path path : paths) {
-            if (path.label==null) {
+        for (PathWalk path : paths) {
+            if (path.getLabel()==null) {
                 pathsAllLabeled = false;
                 System.err.println("ERROR: the path "+path.name+" has no label in the labels file.");
             }
@@ -174,6 +174,17 @@ public class PangenomicGraph extends DirectedMultigraph<Node,Edge> {
      */
     public void setVerbose() {
         verbose = true;
+    }
+
+    /**
+     * Set the genotype preference: -1=both; 0 and 1
+     */
+    public void setGenotype(int g) throws IllegalArgumentException {
+        if (g<-1 || g>1) {
+            throw new IllegalArgumentException("genotype value must be -1 (both), 0, or 1.");
+        } else {
+            genotype = g;
+        }
     }
 
     /**
@@ -223,9 +234,9 @@ public class PangenomicGraph extends DirectedMultigraph<Node,Edge> {
      */
     public void printPaths(PrintStream out) {
         if (out==System.out) printHeading("PATHS");
-        for (Path path : paths) {
-            out.print(path.getNameGenotype()+"\t"+path.label+"\t"+path.sequence.length());
-            for (Node node : path.nodes) {
+        for (PathWalk path : paths) {
+            out.print(path.getNameGenotype()+"\t"+path.getLabel()+"\t"+path.sequence.length());
+            for (Node node : path.getNodes()) {
                 out.print("\t"+node.id);
             }
             out.println("");
@@ -305,7 +316,7 @@ public class PangenomicGraph extends DirectedMultigraph<Node,Edge> {
     //         } else {
     //             out.print("\t"+path.getNameGenotype());
     //         }
-    //         if (path.label!=null) out.print("."+path.label);
+    //         if (path.getLabel()!=null) out.print("."+path.getLabel());
     //     }
     //     out.println("");
 
@@ -315,7 +326,7 @@ public class PangenomicGraph extends DirectedMultigraph<Node,Edge> {
     //         Set<Path> nPaths = nodePaths.get(nodeId);
     //         out.print("N"+nodeId);
     //         for (Path path : paths) {
-    //             if (path.nodes.contains(node)) {
+    //             if (path.getNodes().contains(node)) {
     //                 out.print("\t1");
     //             } else {
     //                 out.print("\t0");
@@ -417,23 +428,18 @@ public class PangenomicGraph extends DirectedMultigraph<Node,Edge> {
         }
         
         // files
-        String gfaFile = cmd.getOptionValue("gfa");
-        String pathLabelsFile = cmd.getOptionValue("pathlabels");
+        File gfaFile = new File(cmd.getOptionValue("gfa"));
+        File labelsFile = new File(cmd.getOptionValue("pathlabels"));
 
         // create a PangenomicGraph from a GFA file
         PangenomicGraph pg = new PangenomicGraph();
         if (cmd.hasOption("verbose")) pg.setVerbose();
-        if (cmd.hasOption("genotype")) pg.genotype = Integer.parseInt(cmd.getOptionValue("genotype"));
-        if (gfaFile!=null) {
-            // pg.readVgGfaFile(gfaFile);
-        } else {
-            System.err.println("ERROR: no GFA provided.");
-            System.exit(1);
-        }
+        if (cmd.hasOption("genotype")) pg.setGenotype(Integer.parseInt(cmd.getOptionValue("genotype")));
+        pg.importGFA(gfaFile);
 
         // if a labels file is given, add them to the paths
-        if (pathLabelsFile!=null) {
-            pg.readPathLabels(pathLabelsFile);
+        if (labelsFile!=null) {
+            pg.readPathLabels(labelsFile);
         }
 
         // output
