@@ -10,40 +10,48 @@ import org.jgrapht.graph.DefaultEdge;
  */
 class Edge extends DefaultEdge {
     
-    private Path path;    // the Path to which this edge belongs
+    private PathWalk path;    // the path to which this edge belongs
 
     /**
      * Construct an edge from a path it belongs to.
      *
-     * @param path the Path to which this edge belongs
+     * @param path the PathWalk to which this edge belongs
      * 
      */
-    public Edge(Path path) { 
+    public Edge(PathWalk path) { 
         this.path = path;
     }
 
     /**
      * Get the path name associated with this edge.
-     * @return name the name of the path to which this edge belongs
+     * @return the name of the path to which this edge belongs
      */
     public String getName() {
-        return path.name;
+        return path.getName();
     }
     
     /**
      * Get the path label associated with this edge.
-     * @return label the label of the path to which this edge belongs (e.g. "case" or "ctrl")
+     * @return the label of the path to which this edge belongs (e.g. "case" or "ctrl")
      */
     public String getLabel() {
-        return path.label;
+        return path.getLabel();
     }
 
     /**
      * Get the path genotype associated with this edge.
-     * @return genotype the genotype of the path to which this edge belongs (usually 0 or 1)
+     * @return the genotype of the path to which this edge belongs (usually 0 or 1)
      */
     public int getGenotype() {
-        return path.genotype;
+        return path.getGenotype();
+    }
+
+    /**
+     * get the path name and genotype associated with this edge.
+     * @return the name and genotype of the path
+     */
+    public String getNameGenotype() {
+        return path.getNameGenotype();
     }
     
     /**
@@ -51,6 +59,6 @@ class Edge extends DefaultEdge {
      */
     @Override
     public String toString() {
-        return getSource()+":"+path.name+"."+path.genotype+":"+getTarget();
+        return getSource()+":"+getNameGenotype()+":"+getTarget();
     }
 }

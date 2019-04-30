@@ -7,14 +7,13 @@ import java.io.*;
 import java.util.*;
 
 import org.ncgr.pangenomics.Node;
-import org.ncgr.pangenomics.Path;
 
 /**
  * Importer for GFA files as output from vg view --gfa.
  *
  * @author Sam Hokin
  */
-public class GFAImporter implements GraphImporter {
+public class GFAImporter implements GraphImporter<Node,Edge> {
 
     // genotype preference (default: load all genotypes)
     public static int BOTH_GENOTYPES = -1;
@@ -23,10 +22,16 @@ public class GFAImporter implements GraphImporter {
     // verbosity flag
     private boolean verbose = false;
 
+    // we keep track of the genomic paths here since it's the only place we follow them
+    TreeSet<PathWalk> paths;
+
     /**
      * Import a Graph from a GFA file.
+     *
+     * @param g the graph to load
+     * @param file the GFA file
      */
-    public void importGraph(Graph g, File file) {
+    public void importGraph(Graph<Node,Edge> g, File file) {
         if (verbose) System.out.println("Reading GFA file: "+file.getName());
         try {
             FileReader reader = new FileReader(file);
@@ -38,14 +43,22 @@ public class GFAImporter implements GraphImporter {
     }
 
     /**
-     * Import a Graph from a Reader attached to a GFA file.
+     * http://gfa-spec.github.io/GFA-spec/GFA1.html
+     *
+     * Paths are assumed to be on a single P line per genotype:
+     * P	_thread_714413_4_0_0	1+,3+,4+,17+,18+,20+,21+,...,83+,85+,86+	42M,1M,153M,...,1M,85M,1M,161M
+     * P	_thread_714413_4_1_0	1+,3+,4+,6+,18+,20+,21+,....,83+,85+,86+	42M,1M,153M,...,1M,85M,1M,161M
+     *
+     * NOTE: with unphased calls, genotype 0 is the ALT genotype (presuming vg index --force-phasing was used).
+     * 
+     * @param g the graph to load
+     * @param reader the reader attached to the GFA file
      */
-    @SuppressWarnings("unchecked")
-    public void importGraph(Graph g, Reader reader) {
+    public void importGraph(Graph<Node,Edge> g, Reader reader) {
         if (verbose) System.out.println("Reading GFA file.");
         TreeMap<Long,Node> nodes = new TreeMap<>();
         Map<String,LinkedList<Node>> nodeListMap = new HashMap<>();
-        TreeSet<PathWalk> paths = new TreeSet<>(); // (ordered simply for convenience)
+        paths = new TreeSet<>(); // (ordered simply for convenience)
         try {
             BufferedReader br = new BufferedReader(reader);
             String line = null;
@@ -117,25 +130,31 @@ public class GFAImporter implements GraphImporter {
             paths.add(new PathWalk(g, nodeList, name, genotype));
         }
 
-        // // build the path-labeled graph edges from the paths
-        // for (PathWalk path : paths) {
-        //     boolean first = true;
-        //     Node lastNode = null;
-        //     for (Node node : path.nodes) {
-        //         if (first) {
-        //             first = false;
-        //         } else {
-        //             g.addEdge(lastNode, node, new Edge(path));
-        //         }
-        //         lastNode = node;
-        //     }
-        // }
+        // build the path-labeled graph edges from the paths
+        for (PathWalk path : paths) {
+            boolean first = true;
+            Node lastNode = null;
+            for (Node node : path.getNodes()) {
+                if (first) {
+                    first = false;
+                } else {
+                    g.addEdge(lastNode, node, new Edge(path));
+                }
+                lastNode = node;
+            }
+        }
 
         // build the path sequences from their nodes (populated above)
-        // buildPathSequences();
+        buildPathSequences();
+    }
 
-        // build the node paths
-        // buildNodePaths();
+    /**
+     * Build the path sequences - just calls PathWalk.buildSequence() for each path.
+     */
+    void buildPathSequences() {
+        for (PathWalk path : paths) {
+            path.buildSequence();
+        }
     }
 
     /**
@@ -157,28 +176,9 @@ public class GFAImporter implements GraphImporter {
     }
 
     /**
-     *
-     * http://gfa-spec.github.io/GFA-spec/GFA1.html
-     *
-     * Paths are assumed to be on a single P line per genotype:
-     * P	_thread_714413_4_0_0	1+,3+,4+,17+,18+,20+,21+,...,83+,85+,86+	42M,1M,153M,...,1M,85M,1M,161M
-     * P	_thread_714413_4_1_0	1+,3+,4+,6+,18+,20+,21+,....,83+,85+,86+	42M,1M,153M,...,1M,85M,1M,161M
-     *
-     * NOTE: with unphased calls, genotype 0 is the ALT genotype (presuming vg index --force-phasing was used).
-     * 
-     * @param gfaFile the full path name of the GFA file to parse
+     * Get the paths.
      */
-    // public void readVgGfaFile(String gfaFile) throws IOException {
-    //     this.gfaFile = gfaFile;
-    //     if (verbose) System.out.println("Reading GFA file: "+gfaFile);
-    //     // store the node lists by path name so we can update them
-    //     Map<String,LinkedList<Node>> nodeListMap = new HashMap<>();
-    //     BufferedReader reader = null;
-    //     try {
-    //         reader = new BufferedReader(new FileReader(gfaFile));
-    //     } catch (FileNotFoundException e) {
-    //         System.err.println(e);
-    //         System.exit(1);
-    //     }
-    
+    public TreeSet<PathWalk> getPaths() {
+        return paths;
+    }
 }

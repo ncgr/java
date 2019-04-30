@@ -132,7 +132,7 @@ public class FrequentedRegion implements Comparable<FrequentedRegion> {
         int totalLength = 0;
         for (Path subpath : subpaths) {
             for (Node node : subpath.nodes) {
-                totalLength += node.sequence.length();
+                totalLength += node.getSequence().length();
             }
         }
         avgLength = (double)totalLength/(double)subpaths.size();

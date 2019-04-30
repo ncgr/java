@@ -13,17 +13,16 @@ import org.ncgr.pangenomics.Path;
  *
  * @author Sam Hokin
  */
-public class PathWalk extends GraphWalk implements Comparable<PathWalk> {
+public class PathWalk extends GraphWalk<Node,Edge> implements Comparable<PathWalk> {
 
-    String name;     // the name identifying this path, a sample or individual
-    int genotype;    // the genotype identifier for this path: 0 or 1
-    String label;    // an optional label, like "+1", "-1", "case", "control", "M", "F"
-    String sequence; // this path's full genomic sequence
+    private String name;     // the name identifying this path, a sample or individual
+    private int genotype;    // the genotype identifier for this path: 0 or 1
+    private String label;    // an optional label, like "+1", "-1", "case", "control", "M", "F"
+    private String sequence; // this path's full genomic sequence
 
     /**
      * Creates a walk defined by a sequence of nodes; weight=1.0.
      */
-    @SuppressWarnings("unchecked")
     PathWalk(Graph<Node,Edge> graph, List<Node> nodeList) {
         super(graph, nodeList, 1.0);
     }
@@ -31,7 +30,6 @@ public class PathWalk extends GraphWalk implements Comparable<PathWalk> {
     /**
      * Creates a walk defined by a sequence of edges; weight=1.0.
      */
-    @SuppressWarnings("unchecked")
     PathWalk(Graph<Node,Edge> graph, Node startNode, Node endNode, List<Edge> edgeList) {
         super(graph, startNode, endNode, edgeList, 1.0);
     }
@@ -39,7 +37,6 @@ public class PathWalk extends GraphWalk implements Comparable<PathWalk> {
     /**
      * Creates a walk defined by both a sequence of edges and a sequence of nodes; weight=1.0.
      */
-    @SuppressWarnings("unchecked")
     PathWalk(Graph<Node,Edge> graph, Node startNode, Node endNode, List<Node> nodeList, List<Edge> edgeList) {
         super(graph, startNode, endNode, nodeList, edgeList, 1.0);
     }
@@ -47,7 +44,6 @@ public class PathWalk extends GraphWalk implements Comparable<PathWalk> {
     /**
      * Creates a walk defined by a list of nodes as well as identifying info; weight=1.0.
      */
-    @SuppressWarnings("unchecked")
     PathWalk(Graph<Node,Edge> graph, List<Node> nodeList, String name, int genotype) {
         super(graph, nodeList, 1.0);
         this.name = name;
@@ -88,9 +84,23 @@ public class PathWalk extends GraphWalk implements Comparable<PathWalk> {
             if (thisNodes.size()!=thatNodes.size()) {
                 return thisNodes.size() - thatNodes.size();
             } else {
-                return (int)(thisNodes.get(0).id - thatNodes.get(0).id);
+                return (int)(thisNodes.get(0).getId() - thatNodes.get(0).getId());
             }
         }
+    }
+
+    /**
+     * Set the name.
+     */
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    /**
+     * Get the name.
+     */
+    public String getName() {
+        return name;
     }
 
     /**
@@ -122,6 +132,20 @@ public class PathWalk extends GraphWalk implements Comparable<PathWalk> {
     }
 
     /**
+     * Set the sequence.
+     */
+    public void setSequence() {
+        this.sequence = sequence;
+    }
+
+    /**
+     * Get the sequence.
+     */
+    public String getSequence() {
+        return sequence;
+    }
+
+    /**
      * Return the concated name and genotype of this path, if specific genotype.
      */
     public String getNameGenotype() {
@@ -144,10 +168,18 @@ public class PathWalk extends GraphWalk implements Comparable<PathWalk> {
     /**
      * Return the nodes that this path traverses.
      */
-    @SuppressWarnings("unchecked")
     public List<Node> getNodes() {
         return (List<Node>) getVertexList();
     }
 
+    /**
+     * Build this path's sequence from its list of nodes.
+     */
+    public void buildSequence() {
+        sequence = "";
+        for (Node node : getNodes()) {
+            sequence += node.getSequence();
+        }
+    }
 }
 
