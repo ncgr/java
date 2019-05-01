@@ -1,40 +1,24 @@
 package org.ncgr.pangenomics.fr;
 
-import org.ncgr.pangenomics.Graph;
+import org.ncgr.jgraph.PangenomicGraph;
+import org.ncgr.jgraph.PathWalk;
 import org.ncgr.pangenomics.Node;
 import org.ncgr.pangenomics.NodeSet;
-import org.ncgr.pangenomics.Path;
 
-import java.io.BufferedReader;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
-import java.io.IOException;
-import java.io.PrintStream;
+import java.io.*;
+import java.util.*;
+import java.util.concurrent.PriorityBlockingQueue;
 import java.text.DecimalFormat;
 import java.time.ZonedDateTime;
-import java.util.Collections;
-import java.util.List;
-import java.util.ArrayList;
-import java.util.Map;
-import java.util.TreeMap;
-import java.util.PriorityQueue;
-import java.util.Set;
-import java.util.HashSet;
-import java.util.TreeSet;
-import java.util.concurrent.PriorityBlockingQueue;
 
-import org.apache.commons.cli.CommandLine;
-import org.apache.commons.cli.CommandLineParser;
-import org.apache.commons.cli.DefaultParser;
-import org.apache.commons.cli.HelpFormatter;
-import org.apache.commons.cli.Option;
-import org.apache.commons.cli.Options;
-import org.apache.commons.cli.ParseException;
+import org.apache.commons.cli.*;
 
 /**
- * Finds frequented regions in a Graph.
+ * Finds frequented regions in a pan-genomic graph.
  *
- * See Cleary, et al., "Exploring Frequented Regions in Pan-Genomic Graphs", IEEE/ACM Trans Comput Biol Bioinform. 2018 Aug 9. PMID:30106690 DOI:10.1109/TCBB.2018.2864564
+ * See Cleary, et al., "Exploring Frequented Regions in Pan-Genomic Graphs",
+ * IEEE/ACM Trans Comput Biol Bioinform. 2018 Aug 9.
+ * PMID:30106690 DOI:10.1109/TCBB.2018.2864564
  *
  * @author Sam Hokin
  */
@@ -52,7 +36,7 @@ public class FRFinder {
     static boolean RESUME = false;
     
     // required parameters, no defaults; set in constructor
-    Graph graph;  // the Graph we're analyzing
+    PangenomicGraph graph;  // the Graph we're analyzing
     double alpha; // penetrance: the fraction of a supporting strain's sequence that actually supports the FR; alternatively, `1-alpha` is the fraction of inserted sequence
     int kappa;    // maximum insertion: the maximum insertion length (measured in bp) that any supporting path may have
  
@@ -86,7 +70,7 @@ public class FRFinder {
     /**
      * Construct with a populated Graph and required parameters
      */
-    public FRFinder(Graph graph, double alpha, int kappa) {
+    public FRFinder(PangenomicGraph graph, double alpha, int kappa) {
         this.graph = graph;
         this.alpha = alpha;
         this.kappa = kappa;
@@ -105,9 +89,9 @@ public class FRFinder {
      * Find the frequented regions in this Graph.
      */
     public void findFRs() throws IOException {
-	System.out.println("# graph has "+graph.nodes.size()+" nodes and "+graph.paths.size()+" paths");
-        if (graph.labelCounts.get("case")!=null && graph.labelCounts.get("ctrl")!=null) {
-            System.out.println("# graph has "+graph.labelCounts.get("case")+" case paths and "+graph.labelCounts.get("ctrl")+" ctrl paths");
+	System.out.println("# graph has "+graph.vertexSet().size()+" nodes and "+graph.getPaths().size()+" paths");
+        if (graph.getLabelCounts().get("case")!=null && graph.getLabelCounts().get("ctrl")!=null) {
+            System.out.println("# graph has "+graph.getLabelCounts().get("case")+" case paths and "+graph.getLabelCounts().get("ctrl")+" ctrl paths");
         }
         if (verbose) {
             graph.printNodes(System.out);
@@ -508,30 +492,30 @@ public class FRFinder {
         String dotFile = cmd.getOptionValue("dot");
         String fastaFile = cmd.getOptionValue("fasta");
         String jsonFile = cmd.getOptionValue("json");
-        String gfaFile = cmd.getOptionValue("gfa");
-        String pathLabelsFile = cmd.getOptionValue("pathlabels");
+        // String gfaFile = cmd.getOptionValue("gfa");
+        // String pathLabelsFile = cmd.getOptionValue("pathlabels");
 
-        // original run parameters
+        // assume GFA file
+        File gfaFile = new File(cmd.getOptionValue("gfa"));
+
+        // assume path labels file
+        File labelsFile = new File(cmd.getOptionValue("pathlabels"));
+
+        // run parameters
         double alpha = 0.0;
         int kappa = 0;
         if (cmd.hasOption("alpha")) alpha = Double.parseDouble(cmd.getOptionValue("alpha"));
         if (cmd.hasOption("kappa")) kappa = Integer.parseInt(cmd.getOptionValue("kappa"));
 
-        // create a Graph from the dot+FASTA or JSON or GFA file
-        Graph g = new Graph();
-        if (cmd.hasOption("verbose")) g.setVerbose();
-        if (cmd.hasOption("genotype")) g.genotype = Integer.parseInt(cmd.getOptionValue("genotype"));
-        if (dotFile!=null && fastaFile!=null) {
-            g.readSplitMEMDotFile(dotFile, fastaFile);
-        } else if (jsonFile!=null) {
-            g.readVgJsonFile(jsonFile);
-        } else if (gfaFile!=null) {
-            g.readVgGfaFile(gfaFile);
-        }
+        // create a PangenomicGraph from a GFA file
+        PangenomicGraph pg = new PangenomicGraph();
+        if (cmd.hasOption("verbose")) pg.setVerbose();
+        if (cmd.hasOption("genotype")) pg.setGenotype(Integer.parseInt(cmd.getOptionValue("genotype")));
+        pg.importGFA(gfaFile);
 
-        // if a labels file is given, append the labels to the path names
-        if (pathLabelsFile!=null) {
-            g.readPathLabels(pathLabelsFile);
+        // if a labels file is given, add them to the paths
+        if (labelsFile!=null) {
+            pg.readPathLabels(labelsFile);
         }
 
         // filters
@@ -564,7 +548,7 @@ public class FRFinder {
         } else { 
             // instantiate the FRFinder with this Graph, alpha and kappa
             postProcess = false;
-            frf = new FRFinder(g, alpha, kappa);
+            frf = new FRFinder(pg, alpha, kappa);
             if (cmd.hasOption("casectrl")) {
                 frf.setCaseCtrl();
             }
@@ -612,33 +596,33 @@ public class FRFinder {
      * This can be used as input to a classification routine.
      */
     void printPathFRs() throws IOException {
-        PrintStream out = System.out;
-        if (outputPrefix==null) {
-            printHeading("PATH FREQUENTED REGIONS");
-        } else {
-            out = new PrintStream(getPathFRsFilename(outputPrefix));
-        }
-        // columns are paths
-        boolean first = true;
-        for (Path path : graph.paths) {
-            if (first) {
-                first = false;
-            } else {
-                out.print("\t");
-            }
-            out.print(path.getNameGenotypeLabel());
-        }
-        out.println("");
-        // rows are FRs
-        int c = 1;
-        for (FrequentedRegion fr : frequentedRegions) {
-            out.print("FR"+(c++));
-            for (Path path : graph.paths) {
-                out.print("\t"+fr.countSubpathsOf(path));
-            }
-            out.println("");
-        }
-        if (outputPrefix!=null) out.close();
+    //     PrintStream out = System.out;
+    //     if (outputPrefix==null) {
+    //         printHeading("PATH FREQUENTED REGIONS");
+    //     } else {
+    //         out = new PrintStream(getPathFRsFilename(outputPrefix));
+    //     }
+    //     // columns are paths
+    //     boolean first = true;
+    //     for (Path path : graph.paths) {
+    //         if (first) {
+    //             first = false;
+    //         } else {
+    //             out.print("\t");
+    //         }
+    //         out.print(path.getNameGenotypeLabel());
+    //     }
+    //     out.println("");
+    //     // rows are FRs
+    //     int c = 1;
+    //     for (FrequentedRegion fr : frequentedRegions) {
+    //         out.print("FR"+(c++));
+    //         for (Path path : graph.paths) {
+    //             out.print("\t"+fr.countSubpathsOf(path));
+    //         }
+    //         out.println("");
+    //     }
+    //     if (outputPrefix!=null) out.close();
     }
 
     /**
@@ -651,27 +635,27 @@ public class FRFinder {
      * which is similar, but not identical to, the SVMlight format.
      */
     void printPathFRsSVM() throws IOException {
-        PrintStream out = System.out;
-        if (outputPrefix==null) {
-            printHeading("PATH SVM RECORDS");
-        } else {
-            out = new PrintStream(getPathFRsSVMFilename(outputPrefix));
-        }
-        // only rows, one per path
-        for (Path path : graph.paths) {
-            out.print(path.getNameGenotype());
-            // TODO: update these to strings along with fixing the SVM code to handle strings
-            String group = "";
-            if (path.label!=null) group = path.label;
-            out.print("\t"+group);
-            int c = 0;
-            for (FrequentedRegion fr : frequentedRegions) {
-                c++;
-                out.print("\t"+c+":"+fr.countSubpathsOf(path));
-            }
-            out.println("");
-        }
-        if (outputPrefix!=null) out.close();
+        // PrintStream out = System.out;
+        // if (outputPrefix==null) {
+        //     printHeading("PATH SVM RECORDS");
+        // } else {
+        //     out = new PrintStream(getPathFRsSVMFilename(outputPrefix));
+        // }
+        // // only rows, one per path
+        // for (Path path : graph.paths) {
+        //     out.print(path.getNameGenotype());
+        //     // TODO: update these to strings along with fixing the SVM code to handle strings
+        //     String group = "";
+        //     if (path.label!=null) group = path.label;
+        //     out.print("\t"+group);
+        //     int c = 0;
+        //     for (FrequentedRegion fr : frequentedRegions) {
+        //         c++;
+        //         out.print("\t"+c+":"+fr.countSubpathsOf(path));
+        //     }
+        //     out.println("");
+        // }
+        // if (outputPrefix!=null) out.close();
     }
 
     /**
@@ -694,76 +678,76 @@ public class FRFinder {
      * 5.0,3.6,1.4,0.2,Iris-viginica
      */
     void printPathFRsARFF() throws IOException {
-        PrintStream out = System.out;
-        if (outputPrefix==null) {
-            out.println("@RELATION frs");
-        } else {
-            out = new PrintStream(getPathFRsARFFFilename(outputPrefix));
-            out.println("@RELATION "+outputPrefix);
-            out.println("");
-        }
-        // attributes: path ID
-        out.println("@ATTRIBUTE ID STRING");
-        // attributes: each FR is a numeric labeled FRn
-        int c = 0;
-        for (FrequentedRegion fr : frequentedRegions) {
-            c++;
-            String frLabel = "FR"+c;
-            out.println("@ATTRIBUTE "+frLabel+" NUMERIC");
-        }
-        // add the class attribute
-        out.println("@ATTRIBUTE class {case,ctrl}");
-        out.println("");
-        // data
-        out.println("@DATA");
-        for (Path path : graph.paths) {
-            out.print(path.getNameGenotype()+",");
-            c = 0;
-            for (FrequentedRegion fr : frequentedRegions) {
-                c++;
-                out.print(fr.countSubpathsOf(path)+",");
-            }
-            out.println(path.label);
-        }
-        if (outputPrefix!=null) out.close();
+        // PrintStream out = System.out;
+        // if (outputPrefix==null) {
+        //     out.println("@RELATION frs");
+        // } else {
+        //     out = new PrintStream(getPathFRsARFFFilename(outputPrefix));
+        //     out.println("@RELATION "+outputPrefix);
+        //     out.println("");
+        // }
+        // // attributes: path ID
+        // out.println("@ATTRIBUTE ID STRING");
+        // // attributes: each FR is a numeric labeled FRn
+        // int c = 0;
+        // for (FrequentedRegion fr : frequentedRegions) {
+        //     c++;
+        //     String frLabel = "FR"+c;
+        //     out.println("@ATTRIBUTE "+frLabel+" NUMERIC");
+        // }
+        // // add the class attribute
+        // out.println("@ATTRIBUTE class {case,ctrl}");
+        // out.println("");
+        // // data
+        // out.println("@DATA");
+        // for (Path path : graph.paths) {
+        //     out.print(path.getNameGenotype()+",");
+        //     c = 0;
+        //     for (FrequentedRegion fr : frequentedRegions) {
+        //         c++;
+        //         out.print(fr.countSubpathsOf(path)+",");
+        //     }
+        //     out.println(path.label);
+        // }
+        // if (outputPrefix!=null) out.close();
     }
     
     /**
      * Print out the FRs, either to stdout or outputPrefix.frs.txt
      */
     void printFrequentedRegions() throws IOException {
-        if (frequentedRegions.size()==0) {
-            System.err.println("NO FREQUENTED REGIONS!");
-            return;
-        }
-        PrintStream out = System.out;
-        if (outputPrefix==null) {
-            printHeading("FREQUENTED REGIONS");
-        } else {
-            out = new PrintStream(getFRsFilename(outputPrefix));
-        }
-        out.println(frequentedRegions.first().columnHeading());
-        for (FrequentedRegion fr : frequentedRegions) {
-            out.println(fr.toString());
-        }
-        if (outputPrefix!=null) out.close();
+        // if (frequentedRegions.size()==0) {
+        //     System.err.println("NO FREQUENTED REGIONS!");
+        //     return;
+        // }
+        // PrintStream out = System.out;
+        // if (outputPrefix==null) {
+        //     printHeading("FREQUENTED REGIONS");
+        // } else {
+        //     out = new PrintStream(getFRsFilename(outputPrefix));
+        // }
+        // out.println(frequentedRegions.first().columnHeading());
+        // for (FrequentedRegion fr : frequentedRegions) {
+        //     out.println(fr.toString());
+        // }
+        // if (outputPrefix!=null) out.close();
     }
 
     /**
      * Print out the FRs along with their subpaths, strictly to an output file.
      */
     void printFRSubpaths() throws IOException {
-        if (frequentedRegions.size()==0) {
-            System.err.println("NO FREQUENTED REGIONS!");
-            return;
-        }
-        if (outputPrefix==null) return;
-        PrintStream out = new PrintStream(getFRSubpathsFilename(outputPrefix));
-        for (FrequentedRegion fr : frequentedRegions) {
-            out.println(fr.toString());
-            out.println(fr.subpathsString());
-        }
-        if (outputPrefix!=null) out.close();
+        // if (frequentedRegions.size()==0) {
+        //     System.err.println("NO FREQUENTED REGIONS!");
+        //     return;
+        // }
+        // if (outputPrefix==null) return;
+        // PrintStream out = new PrintStream(getFRSubpathsFilename(outputPrefix));
+        // for (FrequentedRegion fr : frequentedRegions) {
+        //     out.println(fr.toString());
+        //     out.println(fr.subpathsString());
+        // }
+        // if (outputPrefix!=null) out.close();
     }
 
     /**
@@ -775,155 +759,155 @@ public class FRFinder {
      * etc.
      */
     void readFrequentedRegions() throws FileNotFoundException, IOException {
-        // do we have a Graph?
-        if (graph.nodes.size()==0) {
-            System.err.println("ERROR in readFrequentedRegions: graph has not been initialized.");
-            System.exit(1);
-        }
-        frequentedRegions = new TreeSet<>();
-        String frFilename = getFRSubpathsFilename(inputPrefix);
-        BufferedReader reader = new BufferedReader(new FileReader(frFilename));
-        String line = null;
-        while ((line=reader.readLine())!=null) {
-            String[] fields = line.split("\t");
-            NodeSet nodes = new NodeSet(fields[0]);
-            int support = Integer.parseInt(fields[1]);
-            double avgLength = Double.parseDouble(fields[2]);
-            Set<Path> subpaths = new HashSet<>();
-            for (int i=0; i<support; i++) {
-                line = reader.readLine();
-                String[] parts = line.split(":");
-                String pathFull = parts[0];
-                String nodeString = parts[1];
-                // split out the name, genotype, label
-                String[] nameParts = pathFull.split("\\.");
-                String name = nameParts[0];
-                int genotype = -1;
-                if (nameParts.length>1) genotype = Integer.parseInt(nameParts[1]);
-                String label = null;
-                if (nameParts.length>2) label = nameParts[2];
-                // add to the subpaths
-                subpaths.add(new Path(name, genotype, label, nodeString));
-            }
-            FrequentedRegion fr = new FrequentedRegion(graph, nodes, subpaths, alpha, kappa, support, avgLength);
-            frequentedRegions.add(fr);
-        }
+        // // do we have a Graph?
+        // if (graph.nodes.size()==0) {
+        //     System.err.println("ERROR in readFrequentedRegions: graph has not been initialized.");
+        //     System.exit(1);
+        // }
+        // frequentedRegions = new TreeSet<>();
+        // String frFilename = getFRSubpathsFilename(inputPrefix);
+        // BufferedReader reader = new BufferedReader(new FileReader(frFilename));
+        // String line = null;
+        // while ((line=reader.readLine())!=null) {
+        //     String[] fields = line.split("\t");
+        //     NodeSet nodes = new NodeSet(fields[0]);
+        //     int support = Integer.parseInt(fields[1]);
+        //     double avgLength = Double.parseDouble(fields[2]);
+        //     Set<Path> subpaths = new HashSet<>();
+        //     for (int i=0; i<support; i++) {
+        //         line = reader.readLine();
+        //         String[] parts = line.split(":");
+        //         String pathFull = parts[0];
+        //         String nodeString = parts[1];
+        //         // split out the name, genotype, label
+        //         String[] nameParts = pathFull.split("\\.");
+        //         String name = nameParts[0];
+        //         int genotype = -1;
+        //         if (nameParts.length>1) genotype = Integer.parseInt(nameParts[1]);
+        //         String label = null;
+        //         if (nameParts.length>2) label = nameParts[2];
+        //         // add to the subpaths
+        //         subpaths.add(new Path(name, genotype, label, nodeString));
+        //     }
+        //     FrequentedRegion fr = new FrequentedRegion(graph, nodes, subpaths, alpha, kappa, support, avgLength);
+        //     frequentedRegions.add(fr);
+        // }
     }
 
     /**
      * Print a crude histogram of FR node sizes.
      */
     public void printFRHistogram() {
-        Map<Integer,Integer> countMap = new TreeMap<>();
-        int maxSize = 0;
-        for (FrequentedRegion fr : frequentedRegions) {
-            if (fr.nodes.size()>maxSize) maxSize = fr.nodes.size();
-            if (countMap.containsKey(fr.nodes.size())) {
-                int count = countMap.get(fr.nodes.size());
-                count++;
-                countMap.put(fr.nodes.size(), count);
-            } else {
-                countMap.put(fr.nodes.size(), 1);
-            }
-        }
-        for (int num : countMap.keySet()) {
-            System.out.println("FR node size (#):"+num+" ("+countMap.get(num)+")");
-        }
+        // Map<Integer,Integer> countMap = new TreeMap<>();
+        // int maxSize = 0;
+        // for (FrequentedRegion fr : frequentedRegions) {
+        //     if (fr.nodes.size()>maxSize) maxSize = fr.nodes.size();
+        //     if (countMap.containsKey(fr.nodes.size())) {
+        //         int count = countMap.get(fr.nodes.size());
+        //         count++;
+        //         countMap.put(fr.nodes.size(), count);
+        //     } else {
+        //         countMap.put(fr.nodes.size(), 1);
+        //     }
+        // }
+        // for (int num : countMap.keySet()) {
+        //     System.out.println("FR node size (#):"+num+" ("+countMap.get(num)+")");
+        // }
     }
 
     /**
      * Print out the parameters, either to stdout or outputPrefix.params.txt
      */
     public void printParameters() throws IOException {
-        PrintStream out = System.out;
-        if (outputPrefix==null) {
-            printHeading("PARAMETERS");
-        } else {
-            out = new PrintStream(getParamsFilename(outputPrefix));
-        }
-        out.println("outputprefix"+"\t"+outputPrefix);
-        // Graph
-        if (graph!=null) {
-            out.println("genotype"+"\t"+graph.genotype);
-            if (graph.jsonFile!=null) out.println("jsonfile"+"\t"+graph.jsonFile);
-            if (graph.gfaFile!=null) out.println("gfafile"+"\t"+graph.gfaFile);
-            if (graph.dotFile!=null) out.println("dotfile"+"\t"+graph.dotFile);
-            if (graph.fastaFile!=null) out.println("fastafile"+"\t"+graph.fastaFile);
-            if (graph.labelsFile!=null) out.println("pathlabels"+"\t"+graph.labelsFile);
-        }
-        // FRFinder
-        out.println("alpha"+"\t"+alpha);
-        out.println("kappa"+"\t"+kappa);
-        out.println("casectrl"+"\t"+caseCtrl);
-        if (inputPrefix!=null) {
-            // post-processing parameters
-            out.println("minsup"+"\t"+minSup);
-            out.println("minsize"+"\t"+minSize);
-            out.println("minlen"+"\t"+minLen);
-        }
-        // runtime stuff
-        out.println("date"+"\t"+ZonedDateTime.now().toString());
-        out.println("clocktime"+"\t"+formatTime(clockTime));
+        // PrintStream out = System.out;
+        // if (outputPrefix==null) {
+        //     printHeading("PARAMETERS");
+        // } else {
+        //     out = new PrintStream(getParamsFilename(outputPrefix));
+        // }
+        // out.println("outputprefix"+"\t"+outputPrefix);
+        // // Graph
+        // if (graph!=null) {
+        //     out.println("genotype"+"\t"+graph.genotype);
+        //     if (graph.jsonFile!=null) out.println("jsonfile"+"\t"+graph.jsonFile);
+        //     if (graph.gfaFile!=null) out.println("gfafile"+"\t"+graph.gfaFile);
+        //     if (graph.dotFile!=null) out.println("dotfile"+"\t"+graph.dotFile);
+        //     if (graph.fastaFile!=null) out.println("fastafile"+"\t"+graph.fastaFile);
+        //     if (graph.labelsFile!=null) out.println("pathlabels"+"\t"+graph.labelsFile);
+        // }
+        // // FRFinder
+        // out.println("alpha"+"\t"+alpha);
+        // out.println("kappa"+"\t"+kappa);
+        // out.println("casectrl"+"\t"+caseCtrl);
+        // if (inputPrefix!=null) {
+        //     // post-processing parameters
+        //     out.println("minsup"+"\t"+minSup);
+        //     out.println("minsize"+"\t"+minSize);
+        //     out.println("minlen"+"\t"+minLen);
+        // }
+        // // runtime stuff
+        // out.println("date"+"\t"+ZonedDateTime.now().toString());
+        // out.println("clocktime"+"\t"+formatTime(clockTime));
     }
 
     /**
      * Read in the parameters from a previous run.
      */
     void readParameters() throws FileNotFoundException, IOException {
-        String paramsFile = getParamsFilename(inputPrefix);
-        BufferedReader reader = new BufferedReader(new FileReader(paramsFile));
-        String line = null;
-        String jsonFile = null;
-        String gfaFile = null;
-        String dotFile = null;
-        String fastaFile = null;
-        String labelsFile = null;
-        int genotype = Graph.BOTH_GENOTYPES;
-        while ((line=reader.readLine())!=null) {
-            String[] parts = line.split("\t");
-            if (parts[0].equals("jsonfile")) {
-                jsonFile = parts[1];
-            } else if (parts[0].equals("gfafile")) {
-                gfaFile = parts[1];
-            } else if (parts[0].equals("dotFile")) {
-                dotFile = parts[1];
-            } else if (parts[0].equals("fastafile")) {
-                fastaFile = parts[1];
-            } else if (parts[0].equals("pathlabels")) {
-                labelsFile = parts[1];
-            } else if (parts[0].equals("genotype")) {
-                genotype = Integer.parseInt(parts[1]);
-            } else if (parts[0].equals("alpha")) {
-                alpha = Double.parseDouble(parts[1]);
-            } else if (parts[0].equals("kappa")) {
-                kappa = Integer.parseInt(parts[1]);
-            } else if (parts[0].equals("casectrl")) {
-                caseCtrl = Boolean.parseBoolean(parts[1]);
-            } else if (parts[0].equals("minsup")) {
-                minSup = Integer.parseInt(parts[1]);
-            } else if (parts[0].equals("minsize")) {
-                minSize = Integer.parseInt(parts[1]);
-            } else if (parts[0].equals("minlen")) {
-                minLen = Double.parseDouble(parts[1]);
-            }
-            // load the Graph if we've got the files
-            if (jsonFile!=null) {
-                graph = new Graph();
-                graph.genotype = genotype;
-                graph.readVgJsonFile(jsonFile);
-                if (labelsFile!=null) graph.readPathLabels(labelsFile);
-            } else if (gfaFile!=null) {
-                graph = new Graph();
-                graph.genotype = genotype;
-                graph.readVgGfaFile(gfaFile);
-                if (labelsFile!=null) graph.readPathLabels(labelsFile);
-            } else if (dotFile!=null && fastaFile!=null) {
-                graph = new Graph();
-                graph.genotype = genotype;
-                graph.readSplitMEMDotFile(dotFile, fastaFile);
-                if (labelsFile!=null) graph.readPathLabels(labelsFile);
-            }
-        }
+        // String paramsFile = getParamsFilename(inputPrefix);
+        // BufferedReader reader = new BufferedReader(new FileReader(paramsFile));
+        // String line = null;
+        // String jsonFile = null;
+        // String gfaFile = null;
+        // String dotFile = null;
+        // String fastaFile = null;
+        // String labelsFile = null;
+        // int genotype = Graph.BOTH_GENOTYPES;
+        // while ((line=reader.readLine())!=null) {
+        //     String[] parts = line.split("\t");
+        //     if (parts[0].equals("jsonfile")) {
+        //         jsonFile = parts[1];
+        //     } else if (parts[0].equals("gfafile")) {
+        //         gfaFile = parts[1];
+        //     } else if (parts[0].equals("dotFile")) {
+        //         dotFile = parts[1];
+        //     } else if (parts[0].equals("fastafile")) {
+        //         fastaFile = parts[1];
+        //     } else if (parts[0].equals("pathlabels")) {
+        //         labelsFile = parts[1];
+        //     } else if (parts[0].equals("genotype")) {
+        //         genotype = Integer.parseInt(parts[1]);
+        //     } else if (parts[0].equals("alpha")) {
+        //         alpha = Double.parseDouble(parts[1]);
+        //     } else if (parts[0].equals("kappa")) {
+        //         kappa = Integer.parseInt(parts[1]);
+        //     } else if (parts[0].equals("casectrl")) {
+        //         caseCtrl = Boolean.parseBoolean(parts[1]);
+        //     } else if (parts[0].equals("minsup")) {
+        //         minSup = Integer.parseInt(parts[1]);
+        //     } else if (parts[0].equals("minsize")) {
+        //         minSize = Integer.parseInt(parts[1]);
+        //     } else if (parts[0].equals("minlen")) {
+        //         minLen = Double.parseDouble(parts[1]);
+        //     }
+        //     // load the Graph if we've got the files
+        //     if (jsonFile!=null) {
+        //         graph = new Graph();
+        //         graph.genotype = genotype;
+        //         graph.readVgJsonFile(jsonFile);
+        //         if (labelsFile!=null) graph.readPathLabels(labelsFile);
+        //     } else if (gfaFile!=null) {
+        //         graph = new Graph();
+        //         graph.genotype = genotype;
+        //         graph.readVgGfaFile(gfaFile);
+        //         if (labelsFile!=null) graph.readPathLabels(labelsFile);
+        //     } else if (dotFile!=null && fastaFile!=null) {
+        //         graph = new Graph();
+        //         graph.genotype = genotype;
+        //         graph.readSplitMEMDotFile(dotFile, fastaFile);
+        //         if (labelsFile!=null) graph.readPathLabels(labelsFile);
+        //     }
+        // }
     }
 
     /**

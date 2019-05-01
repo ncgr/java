@@ -1,6 +1,7 @@
 package org.ncgr.pangenomics.fr;
 
-import org.ncgr.pangenomics.Graph;
+import org.ncgr.jgraph.PangenomicGraph;
+import org.ncgr.jgraph.PathWalk;
 
 /**
  * Container for a pair of FrequentedRegions and their merged result with a comparator for ranking it.
@@ -10,7 +11,7 @@ public class FRPair implements Comparable<FRPair> {
 
     FrequentedRegion fr1;
     FrequentedRegion fr2;
-    Graph graph;
+    PangenomicGraph graph;
     double alpha;
     int kappa;
     boolean caseCtrl;
@@ -18,7 +19,7 @@ public class FRPair implements Comparable<FRPair> {
     int size;
     double avgLength;
     
-    FRPair(FrequentedRegion fr1, FrequentedRegion fr2, Graph graph, double alpha, int kappa, boolean caseCtrl) {
+    FRPair(FrequentedRegion fr1, FrequentedRegion fr2, PangenomicGraph graph, double alpha, int kappa, boolean caseCtrl) {
         this.fr1 = fr1;
         this.fr2 = fr2;
         this.graph = graph;

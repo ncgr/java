@@ -55,7 +55,6 @@ public class GFAImporter implements GraphImporter<Node,Edge> {
      * @param reader the reader attached to the GFA file
      */
     public void importGraph(Graph<Node,Edge> g, Reader reader) {
-        if (verbose) System.out.println("Reading GFA file.");
         TreeMap<Long,Node> nodes = new TreeMap<>();
         Map<String,LinkedList<Node>> nodeListMap = new HashMap<>();
         paths = new TreeSet<>(); // (ordered simply for convenience)

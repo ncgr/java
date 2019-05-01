@@ -1,9 +1,9 @@
 package org.ncgr.pangenomics.fr;
 
-import org.ncgr.pangenomics.Graph;
+import org.ncgr.jgraph.PangenomicGraph;
+import org.ncgr.jgraph.PathWalk;
 import org.ncgr.pangenomics.Node;
 import org.ncgr.pangenomics.NodeSet;
-import org.ncgr.pangenomics.Path;
 
 import java.text.DecimalFormat;
 
@@ -25,14 +25,14 @@ public class FrequentedRegion implements Comparable<FrequentedRegion> {
     // static utility stuff
     static DecimalFormat df = new DecimalFormat("0.00");
     
-    // the Graph that this FrequentedRegion belongs to
-    Graph graph;
+    // the PangenomicGraph that this FrequentedRegion belongs to
+    PangenomicGraph graph;
 
     // the set of Nodes that encompass this FR
     NodeSet nodes;
     
     // the subpaths, identified by their originating path name and label, that start and end on this FR's nodes
-    Set<Path> subpaths;
+    Set<PathWalk> subpaths;
     
     // the subpath support of this FR
     int support = 0;
@@ -46,14 +46,14 @@ public class FrequentedRegion implements Comparable<FrequentedRegion> {
     // a subpath must satisfy the requirement that its contiguous nodes that do NOT belong in this.nodes have total sequence length no larger than kappa
     int kappa;
 
-    // the Graph's case and control path counts
+    // the PangenomicGraph's case and control path counts
     int casePaths;
     int ctrlPaths;
 
     /**
-     * Construct given a Graph, NodeSet and alpha and kappa filter parameters.
+     * Construct given a PangenomicGraph, NodeSet and alpha and kappa filter parameters.
      */
-    FrequentedRegion(Graph graph, NodeSet nodes, double alpha, int kappa) {
+    FrequentedRegion(PangenomicGraph graph, NodeSet nodes, double alpha, int kappa) {
         this.graph = graph;
         this.nodes = nodes;
         this.alpha = alpha;
@@ -70,9 +70,9 @@ public class FrequentedRegion implements Comparable<FrequentedRegion> {
     }
 
     /**
-     * Construct given a Graph, NodeSet and Subpaths
+     * Construct given a PangenomicGraph, NodeSet and Subpaths
      */
-    FrequentedRegion(Graph graph, NodeSet nodes, Set<Path> subpaths, double alpha, int kappa) {
+    FrequentedRegion(PangenomicGraph graph, NodeSet nodes, Set<PathWalk> subpaths, double alpha, int kappa) {
         this.graph = graph;
         this.nodes = nodes;
         this.subpaths = subpaths;
@@ -87,9 +87,9 @@ public class FrequentedRegion implements Comparable<FrequentedRegion> {
     }
 
     /**
-     * Construct given a Graph, NodeSet and Subpaths and already known support and avgLength
+     * Construct given a PangenomicGraph, NodeSet and Subpaths and already known support and avgLength
      */
-    FrequentedRegion(Graph graph, NodeSet nodes, Set<Path> subpaths, double alpha, int kappa, int support, double avgLength) {
+    FrequentedRegion(PangenomicGraph graph, NodeSet nodes, Set<PathWalk> subpaths, double alpha, int kappa, int support, double avgLength) {
         this.graph = graph;
         this.nodes = nodes;
         this.subpaths = subpaths;
@@ -130,7 +130,7 @@ public class FrequentedRegion implements Comparable<FrequentedRegion> {
      */
     void updateAvgLength() {
         int totalLength = 0;
-        for (Path subpath : subpaths) {
+        for (PathWalk subpath : subpaths) {
             for (Node node : subpath.nodes) {
                 totalLength += node.getSequence().length();
             }
@@ -143,7 +143,7 @@ public class FrequentedRegion implements Comparable<FrequentedRegion> {
      */
     void updateSubpaths() {
         subpaths = new HashSet<>();
-        for (Path p : graph.paths) {
+        for (PathWalk p : graph.paths) {
             subpaths.addAll(computeSupport(nodes, p, alpha, kappa));
         }
     }
@@ -188,7 +188,7 @@ public class FrequentedRegion implements Comparable<FrequentedRegion> {
      */
     public int getLabelCount(String label) {
         int count = 0;
-        for (Path subpath : subpaths) {
+        for (PathWalk subpath : subpaths) {
             if (subpath.label!=null && subpath.label.equals(label)) count++;
         }
         return count;
@@ -199,7 +199,7 @@ public class FrequentedRegion implements Comparable<FrequentedRegion> {
      */
     public int getLabelGenotypeCount(String label, int genotype) {
         int count = 0;
-        for (Path subpath : subpaths) {
+        for (PathWalk subpath : subpaths) {
             if (subpath.label!=null) {
                 if (subpath.label.equals(label) && subpath.genotype==genotype) count++;
             }
@@ -226,7 +226,7 @@ public class FrequentedRegion implements Comparable<FrequentedRegion> {
             if (graph.labelCounts.size()>0) {
                 // count the support per label
                 Map<String,Integer> labelCounts = new TreeMap<>();
-                for (Path subpath : subpaths) {
+                for (PathWalk subpath : subpaths) {
                     if (subpath.label!=null) {
                         if (!labelCounts.containsKey(subpath.label)) {
                             labelCounts.put(subpath.label, getLabelCount(subpath.label));
@@ -251,7 +251,7 @@ public class FrequentedRegion implements Comparable<FrequentedRegion> {
     public String subpathsString() {
         String s = "";
         boolean first = true;
-        for (Path sp : subpaths) {
+        for (PathWalk sp : subpaths) {
             if (first) {
                 first = false;
             } else {
@@ -263,15 +263,15 @@ public class FrequentedRegion implements Comparable<FrequentedRegion> {
     }
 
     /**
-     * Algorithm 1 from Cleary, et al. generates the supporting path segments for the given NodeSet c and and Path p.
+     * Algorithm 1 from Cleary, et al. generates the supporting path segments for the given NodeSet c and and PathWalk p.
      * @param c the NodeSet, or cluster C as it's called in Algorithm 1
-     * @param p the Path for which we want the set of supporting paths
+     * @param p the PathWalk for which we want the set of supporting paths
      * @param alpha the penetrance parameter
      * @param kappa the insertion parameter
      * @returns the set of supporting path segments
      */
-    static Set<Path> computeSupport(NodeSet c, Path p, double alpha, int kappa) {
-        Set<Path> s = new HashSet<>();
+    static Set<PathWalk> computeSupport(NodeSet c, PathWalk p, double alpha, int kappa) {
+        Set<PathWalk> s = new HashSet<>();
         // m = the list of p's nodes that are in c
         LinkedList<Node> m = new LinkedList<>();
         for (Node n : p.nodes) {
@@ -289,7 +289,7 @@ public class FrequentedRegion implements Comparable<FrequentedRegion> {
                 nr = m.get(i);
             }
             if ((i-start+1)>=alpha*c.size()) {
-                Path subpath = p.subpath(nl,nr);
+                PathWalk subpath = p.subpath(nl,nr);
                 if (subpath.nodes.size()==0) {
                     System.err.println("ERROR: subpath.nodes.size()=0; p="+p+" nl="+nl+" nr="+nr);
                 } else {
@@ -307,27 +307,27 @@ public class FrequentedRegion implements Comparable<FrequentedRegion> {
      * @param fr2 the "right FR (represented by (C_R,S_R) in the paper)
      * @returns the set of supporting path segments
      */
-    static FrequentedRegion merge(FrequentedRegion fr1, FrequentedRegion fr2, Graph graph, double alpha, int kappa) {
+    static FrequentedRegion merge(FrequentedRegion fr1, FrequentedRegion fr2, PangenomicGraph graph, double alpha, int kappa) {
         NodeSet c = NodeSet.merge(fr1.nodes, fr2.nodes);
         return new FrequentedRegion(graph, c, alpha, kappa);
     }
 
     /**
-     * Return true if this FR contains a subpath which belongs to the given Path.
+     * Return true if this FR contains a subpath which belongs to the given PathWalk.
      */
-    public boolean containsSubpathOf(Path path) {
-        for (Path sp : subpaths) {
+    public boolean containsSubpathOf(PathWalk path) {
+        for (PathWalk sp : subpaths) {
             if (sp.equals(path)) return true;
         }
         return false;
     }
 
     /**
-     * Return a count of subpaths of FR that belong to the given Path.
+     * Return a count of subpaths of FR that belong to the given PathWalk.
      */
-    public int countSubpathsOf(Path path) {
+    public int countSubpathsOf(PathWalk path) {
         int count = 0;
-        for (Path sp : subpaths) {
+        for (PathWalk sp : subpaths) {
             if (sp.name.equals(path.name) && sp.genotype==path.genotype) count++;
         }
         return count;
@@ -349,7 +349,7 @@ public class FrequentedRegion implements Comparable<FrequentedRegion> {
      */
     public int labelCount(String label) {
         int count = 0;
-        for (Path sp : subpaths) {
+        for (PathWalk sp : subpaths) {
             if (sp.label.equals(label)) count++;
         }
         return count;

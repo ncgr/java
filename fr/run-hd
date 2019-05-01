@@ -27,5 +27,5 @@ kappa=$3
 echo "# $prefix alpha=$alpha kappa=$kappa"
 
 java -server -cp "build/install/fr/lib/*" org.ncgr.pangenomics.fr.FRFinder --gfa HD/$prefix.paths.gfa  \
-     --pathlabels HD/labels.txt --outputprefix $prefix-$alpha-$kappa \
+     --pathlabels HD/labels.txt --outputprefix $prefix-$alpha-$kappa --verbose \
      --alpha $alpha --kappa $kappa --debug --casectrl # --bruteforce --minsup 1 --minsize 1 --minlen 1
