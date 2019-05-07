@@ -181,5 +181,62 @@ public class PathWalk extends GraphWalk<Node,Edge> implements Comparable<PathWal
             sequence += node.getSequence();
         }
     }
+
+    /**
+     * Return the length of this path's sequence exclusively between the two given nodes (0 if one of the nodes is not in this path, or if nl=nr).
+     * @param nl the "left" node
+     * @param nr the "right" node
+     * @return the length of this path's sequence exclusively between nl and nr
+     */
+    public int gap(Node nl, Node nr) {
+        if (!getNodes().contains(nl) || !getNodes().contains(nr)) {
+            return 0;
+        } else if (nl.equals(nr)) {
+            return 0;
+        } else {
+            return subsequence(nl,nr).length() - nl.getSequence().length() - nr.getSequence().length();
+        }
+    }
+
+    /**
+     * Return the subsequence inclusively between the two given nodes (empty String if one of the nodes is not present in this path).
+     * @param nl the "left" node
+     * @param nr the "right" node
+     * @return the subsequence inclusively between nl and nr
+     */
+    public String subsequence(Node nl, Node nr) {
+        if (!getNodes().contains(nl) || !getNodes().contains(nr)) return "";
+        return subpath(nl,nr).sequence;
+    }
+
+    /**
+     * Return the subpath inclusively between the two given nodes (empty if one of the nodes is not present in this path).
+     * @param nl the "left" node
+     * @param nr the "right" node
+     * @return the PathWalk inclusively between nl and nr
+     */
+    public PathWalk subpath(Node nl, Node nr) {
+        List<Node> subnodes = new LinkedList<>();
+        if (getNodes().contains(nl) && getNodes().contains(nr)) {
+            if (nl.equals(nr)) {
+                subnodes.add(nl);
+            } else {
+                boolean started = false;
+                boolean finished = false;
+                for (Node node : getNodes()) {
+                    if (!started && node.equals(nl)) {
+                        started = true;
+                        subnodes.add(node);
+                    } else if (node.equals(nr) && !finished) {
+                        subnodes.add(node);
+                        finished = true;
+                    } else if (started && !finished) {
+                        subnodes.add(node);
+                    }
+                }
+            }
+        }
+        return new PathWalk(this.graph, subnodes, name, genotype);
+    }
 }
 

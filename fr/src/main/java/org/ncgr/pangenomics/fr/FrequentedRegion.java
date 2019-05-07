@@ -58,9 +58,9 @@ public class FrequentedRegion implements Comparable<FrequentedRegion> {
         this.nodes = nodes;
         this.alpha = alpha;
         this.kappa = kappa;
-        if (graph.labelCounts.get("case")!=null && graph.labelCounts.get("ctrl")!=null) {
-            this.casePaths = graph.labelCounts.get("case");
-            this.ctrlPaths = graph.labelCounts.get("ctrl");
+        if (graph.getLabelCounts().get("case")!=null && graph.getLabelCounts().get("ctrl")!=null) {
+            this.casePaths = graph.getLabelCounts().get("case");
+            this.ctrlPaths = graph.getLabelCounts().get("ctrl");
         }
         // compute the subpaths, average length, support, etc.
         this.nodes.update();
@@ -78,9 +78,9 @@ public class FrequentedRegion implements Comparable<FrequentedRegion> {
         this.subpaths = subpaths;
         this.alpha = alpha;
         this.kappa = kappa;
-        if (graph.labelCounts.get("case")!=null && graph.labelCounts.get("ctrl")!=null) {
-            this.casePaths = graph.labelCounts.get("case");
-            this.ctrlPaths = graph.labelCounts.get("ctrl");
+        if (graph.getLabelCounts().get("case")!=null && graph.getLabelCounts().get("ctrl")!=null) {
+            this.casePaths = graph.getLabelCounts().get("case");
+            this.ctrlPaths = graph.getLabelCounts().get("ctrl");
         }
         updateSupport();
         updateAvgLength();
@@ -97,9 +97,9 @@ public class FrequentedRegion implements Comparable<FrequentedRegion> {
         this.kappa = kappa;
         this.support = support;
         this.avgLength = avgLength;
-        if (graph.labelCounts.get("case")!=null && graph.labelCounts.get("ctrl")!=null) {
-            this.casePaths = graph.labelCounts.get("case");
-            this.ctrlPaths = graph.labelCounts.get("ctrl");
+        if (graph.getLabelCounts().get("case")!=null && graph.getLabelCounts().get("ctrl")!=null) {
+            this.casePaths = graph.getLabelCounts().get("case");
+            this.ctrlPaths = graph.getLabelCounts().get("ctrl");
         }
     }
 
@@ -131,7 +131,7 @@ public class FrequentedRegion implements Comparable<FrequentedRegion> {
     void updateAvgLength() {
         int totalLength = 0;
         for (PathWalk subpath : subpaths) {
-            for (Node node : subpath.nodes) {
+            for (Node node : subpath.getNodes()) {
                 totalLength += node.getSequence().length();
             }
         }
@@ -143,7 +143,7 @@ public class FrequentedRegion implements Comparable<FrequentedRegion> {
      */
     void updateSubpaths() {
         subpaths = new HashSet<>();
-        for (PathWalk p : graph.paths) {
+        for (PathWalk p : graph.getPaths()) {
             subpaths.addAll(computeSupport(nodes, p, alpha, kappa));
         }
     }
@@ -175,8 +175,8 @@ public class FrequentedRegion implements Comparable<FrequentedRegion> {
      */
     public String columnHeading() {
         String s = "nodes\tsupport\tavgLen";
-        if (graph.labelCounts.size()>0) {
-            for (String label : graph.labelCounts.keySet()) {
+        if (graph.getLabelCounts().size()>0) {
+            for (String label : graph.getLabelCounts().keySet()) {
                 s += "\t"+label;
             }
         }
@@ -189,7 +189,7 @@ public class FrequentedRegion implements Comparable<FrequentedRegion> {
     public int getLabelCount(String label) {
         int count = 0;
         for (PathWalk subpath : subpaths) {
-            if (subpath.label!=null && subpath.label.equals(label)) count++;
+            if (subpath.getLabel()!=null && subpath.getLabel().equals(label)) count++;
         }
         return count;
     }
@@ -200,8 +200,8 @@ public class FrequentedRegion implements Comparable<FrequentedRegion> {
     public int getLabelGenotypeCount(String label, int genotype) {
         int count = 0;
         for (PathWalk subpath : subpaths) {
-            if (subpath.label!=null) {
-                if (subpath.label.equals(label) && subpath.genotype==genotype) count++;
+            if (subpath.getLabel()!=null) {
+                if (subpath.getLabel().equals(label) && subpath.getGenotype()==genotype) count++;
             }
         }
         return count;
@@ -223,17 +223,17 @@ public class FrequentedRegion implements Comparable<FrequentedRegion> {
         if (support>0) {
             s += "\t"+df.format(avgLength);
             // show label support if available
-            if (graph.labelCounts.size()>0) {
+            if (graph.getLabelCounts().size()>0) {
                 // count the support per label
                 Map<String,Integer> labelCounts = new TreeMap<>();
                 for (PathWalk subpath : subpaths) {
-                    if (subpath.label!=null) {
-                        if (!labelCounts.containsKey(subpath.label)) {
-                            labelCounts.put(subpath.label, getLabelCount(subpath.label));
+                    if (subpath.getLabel()!=null) {
+                        if (!labelCounts.containsKey(subpath.getLabel())) {
+                            labelCounts.put(subpath.getLabel(), getLabelCount(subpath.getLabel()));
                         }
                     }
                 }
-                for (String label : graph.labelCounts.keySet()) {
+                for (String label : graph.getLabelCounts().keySet()) {
                     if (labelCounts.containsKey(label)) {
                         s += "\t"+labelCounts.get(label);
                     } else {
@@ -274,7 +274,7 @@ public class FrequentedRegion implements Comparable<FrequentedRegion> {
         Set<PathWalk> s = new HashSet<>();
         // m = the list of p's nodes that are in c
         LinkedList<Node> m = new LinkedList<>();
-        for (Node n : p.nodes) {
+        for (Node n : p.getNodes()) {
             if (c.contains(n)) m.add(n);
         }
         // find subpaths that satisfy alpha, kappa criteria
@@ -290,8 +290,8 @@ public class FrequentedRegion implements Comparable<FrequentedRegion> {
             }
             if ((i-start+1)>=alpha*c.size()) {
                 PathWalk subpath = p.subpath(nl,nr);
-                if (subpath.nodes.size()==0) {
-                    System.err.println("ERROR: subpath.nodes.size()=0; p="+p+" nl="+nl+" nr="+nr);
+                if (subpath.getNodes().size()==0) {
+                    System.err.println("ERROR: subpath.getNodes().size()=0; p="+p+" nl="+nl+" nr="+nr);
                 } else {
                     s.add(subpath);
                 }
@@ -328,7 +328,7 @@ public class FrequentedRegion implements Comparable<FrequentedRegion> {
     public int countSubpathsOf(PathWalk path) {
         int count = 0;
         for (PathWalk sp : subpaths) {
-            if (sp.name.equals(path.name) && sp.genotype==path.genotype) count++;
+            if (sp.getName().equals(path.getName()) && sp.getGenotype()==path.getGenotype()) count++;
         }
         return count;
     }
@@ -350,7 +350,7 @@ public class FrequentedRegion implements Comparable<FrequentedRegion> {
     public int labelCount(String label) {
         int count = 0;
         for (PathWalk sp : subpaths) {
-            if (sp.label.equals(label)) count++;
+            if (sp.getLabel().equals(label)) count++;
         }
         return count;
     }

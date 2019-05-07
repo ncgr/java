@@ -168,6 +168,13 @@ public class PangenomicGraph extends DirectedMultigraph<Node,Edge> {
     }
 
     /**
+     * Just a synonym for vertexSet().
+     */
+    public Set<Node> getNodes() {
+        return vertexSet();
+    }
+
+    /**
      * Get this graph's paths.
      */
     public TreeSet<PathWalk> getPaths() {

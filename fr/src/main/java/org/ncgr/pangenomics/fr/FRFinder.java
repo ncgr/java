@@ -138,12 +138,12 @@ public class FRFinder {
             }
         } else {
             // initialize syncFrequentedRegions with single-node FRs
-            for (Node node : graph.nodes.values()) {
+            for (Node node : graph.getNodes()) {
                 NodeSet c = new NodeSet();
                 c.add(node);
-                Set<Path> s = new HashSet<>();
-                for (Path p : graph.paths) {
-                    Set<Path> support = FrequentedRegion.computeSupport(c, p, alpha, kappa);
+                Set<PathWalk> s = new HashSet<>();
+                for (PathWalk p : graph.getPaths()) {
+                    Set<PathWalk> support = FrequentedRegion.computeSupport(c, p, alpha, kappa);
                     s.addAll(support);
                 }
                 if (s.size()>0) {
@@ -397,7 +397,7 @@ public class FRFinder {
         fastaOption.setRequired(false);
         options.addOption(fastaOption);
         //
-        Option genotypeOption = new Option("g", "genotype", true, "which genotype to include (0,1) from the input file; "+Graph.BOTH_GENOTYPES+" to include all ("+Graph.BOTH_GENOTYPES+")");
+        Option genotypeOption = new Option("g", "genotype", true, "which genotype to include (0,1) from the input file; "+PangenomicGraph.BOTH_GENOTYPES+" to include all ("+PangenomicGraph.BOTH_GENOTYPES+")");
         genotypeOption.setRequired(false);
         options.addOption(genotypeOption);
         //
@@ -604,7 +604,7 @@ public class FRFinder {
     //     }
     //     // columns are paths
     //     boolean first = true;
-    //     for (Path path : graph.paths) {
+    //     for (PathWalk path : graph.getPaths()) {
     //         if (first) {
     //             first = false;
     //         } else {
@@ -617,7 +617,7 @@ public class FRFinder {
     //     int c = 1;
     //     for (FrequentedRegion fr : frequentedRegions) {
     //         out.print("FR"+(c++));
-    //         for (Path path : graph.paths) {
+    //         for (PathWalk path : graph.getPaths()) {
     //             out.print("\t"+fr.countSubpathsOf(path));
     //         }
     //         out.println("");
@@ -642,7 +642,7 @@ public class FRFinder {
         //     out = new PrintStream(getPathFRsSVMFilename(outputPrefix));
         // }
         // // only rows, one per path
-        // for (Path path : graph.paths) {
+        // for (PathWalk path : graph.getPaths()) {
         //     out.print(path.getNameGenotype());
         //     // TODO: update these to strings along with fixing the SVM code to handle strings
         //     String group = "";
@@ -700,7 +700,7 @@ public class FRFinder {
         // out.println("");
         // // data
         // out.println("@DATA");
-        // for (Path path : graph.paths) {
+        // for (PathWalk path : graph.getPaths()) {
         //     out.print(path.getNameGenotype()+",");
         //     c = 0;
         //     for (FrequentedRegion fr : frequentedRegions) {
@@ -760,7 +760,7 @@ public class FRFinder {
      */
     void readFrequentedRegions() throws FileNotFoundException, IOException {
         // // do we have a Graph?
-        // if (graph.nodes.size()==0) {
+        // if (graph.getNodes().size()==0) {
         //     System.err.println("ERROR in readFrequentedRegions: graph has not been initialized.");
         //     System.exit(1);
         // }
@@ -773,7 +773,7 @@ public class FRFinder {
         //     NodeSet nodes = new NodeSet(fields[0]);
         //     int support = Integer.parseInt(fields[1]);
         //     double avgLength = Double.parseDouble(fields[2]);
-        //     Set<Path> subpaths = new HashSet<>();
+        //     Set<PathWalk> subpaths = new HashSet<>();
         //     for (int i=0; i<support; i++) {
         //         line = reader.readLine();
         //         String[] parts = line.split(":");
@@ -862,7 +862,7 @@ public class FRFinder {
         // String dotFile = null;
         // String fastaFile = null;
         // String labelsFile = null;
-        // int genotype = Graph.BOTH_GENOTYPES;
+        // int genotype = PangenomicGraph.BOTH_GENOTYPES;
         // while ((line=reader.readLine())!=null) {
         //     String[] parts = line.split("\t");
         //     if (parts[0].equals("jsonfile")) {
