@@ -8,7 +8,7 @@ import org.jgrapht.graph.DefaultEdge;
  * Graph edge labeled with the path name, genotype and label.
  * It contains a source Node and target Node.
  */
-class Edge extends DefaultEdge {
+public class Edge extends DefaultEdge {
     
     private PathWalk path;    // the path to which this edge belongs
 
