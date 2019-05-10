@@ -40,7 +40,7 @@ public class FrequentedRegion implements Comparable<FrequentedRegion> {
     // the average length of the subpath sequences
     double avgLength;
 
-    // a subpath must satisfy the requirement that it traverses at least alpha*nodes.size()
+    // a subpath must satisfy the requirement that it traverses at least a fraction alpha of this.nodes
     double alpha;
 
     // a subpath must satisfy the requirement that its contiguous nodes that do NOT belong in this.nodes have total sequence length no larger than kappa
@@ -299,17 +299,6 @@ public class FrequentedRegion implements Comparable<FrequentedRegion> {
             start = i + 1;
         }
         return s;
-    }
-
-    /**
-     * Algorithm 2 from Cleary, et al. returns the supporting path segments for the given merge of FRs.
-     * @param fr1 the "left" FR (represented by (C_L,S_L) in the paper)
-     * @param fr2 the "right FR (represented by (C_R,S_R) in the paper)
-     * @returns the set of supporting path segments
-     */
-    static FrequentedRegion merge(FrequentedRegion fr1, FrequentedRegion fr2, PangenomicGraph graph, double alpha, int kappa) {
-        NodeSet c = NodeSet.merge(fr1.nodes, fr2.nodes);
-        return new FrequentedRegion(graph, c, alpha, kappa);
     }
 
     /**

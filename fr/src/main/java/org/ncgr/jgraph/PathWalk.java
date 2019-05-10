@@ -194,6 +194,16 @@ public class PathWalk extends GraphWalk<Node,Edge> implements Comparable<PathWal
         } else if (nl.equals(nr)) {
             return 0;
         } else {
+            // DEBUG
+            if (subsequence(nl,nr)==null) {
+                System.err.println("subsequence("+nl.toString()+","+nr.toString()+")=null");
+                System.err.println("subpath="+subpath(nl,nr));
+                System.err.println("subpath.sequence="+subpath(nl,nr).sequence);
+                System.exit(1);
+            }
+            int sublength = subsequence(nl,nr).length();
+            int nllength = nl.getSequence().length();
+            int nrlength = nr.getSequence().length();
             return subsequence(nl,nr).length() - nl.getSequence().length() - nr.getSequence().length();
         }
     }

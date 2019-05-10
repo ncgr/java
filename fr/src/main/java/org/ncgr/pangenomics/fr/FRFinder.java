@@ -195,25 +195,25 @@ public class FRFinder {
                     for (FrequentedRegion fr2 : syncFrequentedRegions) {
                         if (fr2.compareTo(fr1)>=0 && !usedFRs.contains(fr1) && !usedFRs.contains(fr2)) {
                             FRPair frpair = new FRPair(fr1, fr2, graph, alpha, kappa, caseCtrl);
-                            // boolean analyze = !frequentedRegions.contains(frpair.merged);
-                            // if (analyze) {
-                            //     System.out.println(fr1.nodes.toString()+fr2.nodes.toString()+":"+frpair.merged.toString());
-                            //     pq.add(frpair);
-                            // }
+                            boolean analyze = !frequentedRegions.contains(frpair.merged);
+                            if (analyze) {
+                                System.out.println(fr1.nodes.toString()+fr2.nodes.toString()+":"+frpair.merged.toString());
+                                pq.add(frpair);
+                            }
                         }
                     }
                 }
                 // add our new FR
                 if (pq.size()>0) {
                     FRPair frpair = pq.peek();
-                    // if (frpair.merged.support>0) {
-                    //     added = true;
-                    //     usedFRs.add(frpair.fr1);
-                    //     usedFRs.add(frpair.fr2);
-                    //     syncFrequentedRegions.add(frpair.merged);
-                    //     frequentedRegions.add(frpair.merged);
-                    //     System.out.println(round+":"+frpair.fr1.nodes+frpair.fr2.nodes+"\t"+frpair.merged.toString());
-                    // }
+                    if (frpair.merged.support>0) {
+                        added = true;
+                        usedFRs.add(frpair.fr1);
+                        usedFRs.add(frpair.fr2);
+                        syncFrequentedRegions.add(frpair.merged);
+                        frequentedRegions.add(frpair.merged);
+                        System.out.println(round+":"+frpair.fr1.nodes+frpair.fr2.nodes+"\t"+frpair.merged.toString());
+                    }
                 }
             } else {
                 // default: parallel processing

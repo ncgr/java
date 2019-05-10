@@ -1,7 +1,16 @@
 package org.ncgr.pangenomics.fr;
 
+import java.util.List;
+
+import org.ncgr.jgraph.Edge;
 import org.ncgr.jgraph.PangenomicGraph;
 import org.ncgr.jgraph.PathWalk;
+
+import org.ncgr.pangenomics.Node;
+import org.ncgr.pangenomics.NodeSet;
+
+import org.jgrapht.GraphPath;
+import org.jgrapht.alg.shortestpath.DijkstraShortestPath;
 
 /**
  * Container for a pair of FrequentedRegions and their merged result with a comparator for ranking it.
@@ -18,6 +27,8 @@ public class FRPair implements Comparable<FRPair> {
     int support;
     int size;
     double avgLength;
+
+    FrequentedRegion merged;
     
     FRPair(FrequentedRegion fr1, FrequentedRegion fr2, PangenomicGraph graph, double alpha, int kappa, boolean caseCtrl) {
         this.fr1 = fr1;
@@ -26,15 +37,42 @@ public class FRPair implements Comparable<FRPair> {
         this.alpha = alpha;
         this.kappa = kappa;
         this.caseCtrl = caseCtrl;
-        // calculate support without merging!
+        // we should calculate support without merging!
         support = 0;
+        // DEBUG
+        merged = merge();
+        if (!fr1.equals(fr2)) {
+            System.out.println(fr1.nodes.toString()+fr2.nodes.toString());
+            DijkstraShortestPath<Node,Edge> dsp = new DijkstraShortestPath<Node,Edge>(graph);
+            int minMissing = Integer.MAX_VALUE;
+            for (Node n1 : fr1.nodes) {
+                for (Node n2 : fr2.nodes) {
+                    if (!n1.equals(n2)) {
+                        GraphPath<Node,Edge> path = dsp.getPath(n1, n2);
+                        if (path!=null) {
+                            List<Node> nodeList = path.getVertexList();
+                            int missing = 0;
+                            System.out.print(n1.getId()+"-"+n2.getId()+":");
+                            for (Node n : nodeList) {
+                                if (!fr1.nodes.contains(n) && !fr2.nodes.contains(n)) missing++;
+                                System.out.print(" "+n.getId());
+                            }
+                            System.out.println(" missing="+missing);
+                            if (missing<minMissing) minMissing = missing;
+                        }
+                    }
+                }
+            }
+            System.out.println("MIN MISSING="+minMissing);
+        }
     }
 
     /**
-     * Return the result of merging this pair of FRs.
+     * Algorithm 2 from Cleary, et al. returns the supporting path segments for the given merge of FRs.
+     * @returns the set of supporting path segments
      */
     public FrequentedRegion merge() {
-        return FrequentedRegion.merge(fr1, fr2, graph, alpha, kappa);
+        return new FrequentedRegion(graph, NodeSet.merge(fr1.nodes,fr2.nodes), alpha, kappa);
     }
     
     /**
