@@ -42,7 +42,7 @@ public class FRPair implements Comparable<FRPair> {
         // DEBUG
         merged = merge();
         if (!fr1.equals(fr2)) {
-            System.out.println(fr1.nodes.toString()+fr2.nodes.toString());
+            System.out.print(fr1.nodes.toString()+fr2.nodes.toString());
             DijkstraShortestPath<Node,Edge> dsp = new DijkstraShortestPath<Node,Edge>(graph);
             int minMissing = Integer.MAX_VALUE;
             for (Node n1 : fr1.nodes) {
@@ -52,18 +52,18 @@ public class FRPair implements Comparable<FRPair> {
                         if (path!=null) {
                             List<Node> nodeList = path.getVertexList();
                             int missing = 0;
-                            System.out.print(n1.getId()+"-"+n2.getId()+":");
+                            // System.out.print(n1.toString()+"-"+n2.toString()+":");
                             for (Node n : nodeList) {
                                 if (!fr1.nodes.contains(n) && !fr2.nodes.contains(n)) missing++;
-                                System.out.print(" "+n.getId());
+                                // System.out.print(" "+n.toString());
                             }
-                            System.out.println(" missing="+missing);
+                            // System.out.println(" missing="+missing);
                             if (missing<minMissing) minMissing = missing;
                         }
                     }
                 }
             }
-            System.out.println("MIN MISSING="+minMissing);
+            System.out.println(":minMissing="+minMissing);
         }
     }
 
@@ -92,11 +92,11 @@ public class FRPair implements Comparable<FRPair> {
      */
     public int compareTo(FRPair that) {
         if (this.equals(that)) return 0;
-        // if (caseCtrl) {
-        //     int thisDifference = this.merged.caseControlDifference();
-        //     int thatDifference = that.merged.caseControlDifference();
-        //     if (thisDifference!=thatDifference) return thatDifference - thisDifference;
-        // }
+        if (caseCtrl) {
+            int thisDifference = this.merged.caseControlDifference();
+            int thatDifference = that.merged.caseControlDifference();
+            if (thisDifference!=thatDifference) return thatDifference - thisDifference;
+        }
         // default: total support then avgLength then size
         if (that.support!=this.support) {
             return Integer.compare(that.support, this.support);

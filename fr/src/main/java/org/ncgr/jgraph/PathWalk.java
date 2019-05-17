@@ -25,6 +25,7 @@ public class PathWalk extends GraphWalk<Node,Edge> implements Comparable<PathWal
      */
     PathWalk(Graph<Node,Edge> graph, List<Node> nodeList) {
         super(graph, nodeList, 1.0);
+        buildSequence();
     }
 
     /**
@@ -32,6 +33,7 @@ public class PathWalk extends GraphWalk<Node,Edge> implements Comparable<PathWal
      */
     PathWalk(Graph<Node,Edge> graph, Node startNode, Node endNode, List<Edge> edgeList) {
         super(graph, startNode, endNode, edgeList, 1.0);
+        buildSequence();
     }
 
     /**
@@ -39,6 +41,7 @@ public class PathWalk extends GraphWalk<Node,Edge> implements Comparable<PathWal
      */
     PathWalk(Graph<Node,Edge> graph, Node startNode, Node endNode, List<Node> nodeList, List<Edge> edgeList) {
         super(graph, startNode, endNode, nodeList, edgeList, 1.0);
+        buildSequence();
     }
 
     /**
@@ -48,6 +51,7 @@ public class PathWalk extends GraphWalk<Node,Edge> implements Comparable<PathWal
         super(graph, nodeList, 1.0);
         this.name = name;
         this.genotype = genotype;
+        buildSequence();
     }
 
     /**
@@ -132,13 +136,6 @@ public class PathWalk extends GraphWalk<Node,Edge> implements Comparable<PathWal
     }
 
     /**
-     * Set the sequence.
-     */
-    public void setSequence() {
-        this.sequence = sequence;
-    }
-
-    /**
      * Get the sequence.
      */
     public String getSequence() {
@@ -194,8 +191,8 @@ public class PathWalk extends GraphWalk<Node,Edge> implements Comparable<PathWal
         } else if (nl.equals(nr)) {
             return 0;
         } else {
-            // DEBUG
             if (subsequence(nl,nr)==null) {
+                System.err.println("ERROR:");
                 System.err.println("subsequence("+nl.toString()+","+nr.toString()+")=null");
                 System.err.println("subpath="+subpath(nl,nr));
                 System.err.println("subpath.sequence="+subpath(nl,nr).sequence);

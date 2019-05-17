@@ -10,6 +10,12 @@ study = readline(prompt="Study (ex. SCD): ")
 graph = readline(prompt="Graph (ex. HBB): ")
 requireHomozygous = as.logical(readline(prompt="Require homozygous calls (TRUE/FALSE): "))
 
+if (requireHomozygous) {
+    mergeMode = "HOM mode: sample is called CASE iff both paths are called CASE"
+} else {
+    mergeMode = "HET mode: sample is called CASE if at least ONE path is called CASE"
+}   
+
 ## standard
 alphaValues = c("0.2","0.5","0.8","1.0")
 kappaValues = c(0,1,2,3,12,48,192,768)
@@ -17,15 +23,16 @@ minsupValues = c(1,2,4,10,20,50,100)
 minsizeValues = c(1,2,4,10,20,50,100)
 minlenValues = c(1,2,4,10,20,50,100,500)
 
-alphaValues = c("0.2")
-kappaValues = c(3)
+## single alpha, kappa 
+#alphaValues = c("0.2")
+#kappaValues = c(3)
 
 ## our resulting data frame
 results = data.frame(graph=character(), alpha=numeric(), kappa=numeric(),
                      minsup=numeric(), minsize=numeric(), minlen=numeric(), 
                      maxIndex=numeric(), C=numeric(), gamma=numeric(), nrFold=numeric(),
                      cases=numeric(), controls=numeric(), caseFails=numeric(), controlFails=numeric(),
-                     TPR=numeric(), FPR=numeric())
+                     TPR=numeric(), FPR=numeric(), precision=numeric(), recall=numeric(), MCC=numeric())
 
 ## loop through all the files, adding to results
 for (alpha in alphaValues) {
@@ -99,15 +106,24 @@ for (alpha in alphaValues) {
                                     correct0 = correct
                                 }
                             }
-                            ## standard classifier rates
-                            TPR = (cases/2-caseFails)/(cases/2)
-                            FPR = (controlFails)/(controls/2)
+                            ## standard classifier rates for samples, not paths
+                            caseSamples = cases/2
+                            controlSamples = controls/2
+                            TP = caseSamples - caseFails
+                            FP = controlFails
+                            TN = controlSamples - controlFails
+                            FN = caseFails
+                            TPR = TP/caseSamples
+                            FPR = FP/controlSamples
+                            precision = TP/(TP+FP)
+                            recall = TP/(TP+FN)
+                            MCC = (TP*TN-FP*FN)/sqrt((TP+FP)*(TP+FN)*(TN+FP)*(TN+FN))
                             ## append to the results dataframe
                             df = data.frame(graph=graph, alpha=as.numeric(alpha), kappa=kappa,
                                             minsup=minsup, minsize=minsize, minlen=minlen,
                                             maxIndex=maxIndex, C=C, gamma=gamma, nrFold=nrFold,
                                             cases=cases, controls=controls, caseFails=caseFails, controlFails=controlFails,
-                                            TPR=TPR, FPR=FPR)
+                                            TPR=TPR, FPR=FPR, precision=precision, recall=recall, MCC=MCC)
                             results = rbind(results, df)
                         }
                     }
