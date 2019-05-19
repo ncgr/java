@@ -200,25 +200,27 @@ public class FRFinder {
                 for (FrequentedRegion fr1 : syncFrequentedRegions) {
                     for (FrequentedRegion fr2 : syncFrequentedRegions) {
                         if (fr2.compareTo(fr1)>=0 && !usedFRs.contains(fr1) && !usedFRs.contains(fr2)) {
-                            NodeSet mergedNodes = NodeSet.merge(fr1.nodes, fr2.nodes);
-                            if (rejectedNodeSets.contains(mergedNodes.toString())) {
+                            // no merge or rejection test here
+                            FRPair frpair = new FRPair(fr1, fr2, graph, alpha, kappa, caseCtrl);
+                            String nodesKey = frpair.nodes.toString();
+                            if (rejectedNodeSets.contains(nodesKey)) {
                                 // do nothing
-                            } else if (acceptedFRPairs.containsKey(mergedNodes.toString())) {
-                                // used stored FRPair
-                                FRPair frpair = acceptedFRPairs.get(mergedNodes.toString());
+                            } else if (acceptedFRPairs.containsKey(nodesKey)) {
+                                // use stored FRPair
+                                frpair = acceptedFRPairs.get(nodesKey);
                                 if (!frequentedRegions.contains(frpair.merged)) {
                                     pq.add(frpair);
                                 }
                             } else {
-                                // create new FRPair
-                                FRPair frpair = new FRPair(fr1, fr2, graph, alpha, kappa, caseCtrl);
+                                // see if this pair is rejected
+                                frpair.computeRejection();
                                 if (frpair.alphaReject) {
                                     // add to rejected set
-                                    rejectedNodeSets.add(mergedNodes.toString());
+                                    rejectedNodeSets.add(nodesKey);
                                 } else {
                                     // merge and add to accepted set
                                     frpair.merge();
-                                    acceptedFRPairs.put(mergedNodes.toString(), frpair);
+                                    acceptedFRPairs.put(nodesKey, frpair);
                                     pq.add(frpair);
                                 }
                             }
@@ -244,44 +246,45 @@ public class FRFinder {
             } else {
                 // default: parallel processing
                 // put FR pairs into a PriorityBlockingQueue which sorts them by decreasing interest (defined by the FRPair comparator)
-                PriorityBlockingQueue<FRPair> pbq = new PriorityBlockingQueue<>();
+                PriorityBlockingQueue<FRPair> pq = new PriorityBlockingQueue<>();
                 ////////////////////////////////////////
                 // spin through FRs in a parallel manner
                 syncFrequentedRegions.parallelStream().forEach((fr1) -> {
                         syncFrequentedRegions.parallelStream().forEach((fr2) -> {
                                 if (fr2.compareTo(fr1)>=0 && !usedFRs.contains(fr1) && !usedFRs.contains(fr2)) {
 
-
-                                    NodeSet mergedNodes = NodeSet.merge(fr1.nodes, fr2.nodes);
-                                    if (rejectedNodeSets.contains(mergedNodes.toString())) {
+                                    // no merge or rejection test here
+                                    FRPair frpair = new FRPair(fr1, fr2, graph, alpha, kappa, caseCtrl);
+                                    String nodesKey = frpair.nodes.toString();
+                                    if (rejectedNodeSets.contains(nodesKey)) {
                                         // do nothing
-                                    } else if (acceptedFRPairs.containsKey(mergedNodes.toString())) {
-                                        // used stored FRPair
-                                        FRPair frpair = acceptedFRPairs.get(mergedNodes.toString());
+                                    } else if (acceptedFRPairs.containsKey(nodesKey)) {
+                                        // use stored FRPair
+                                        frpair = acceptedFRPairs.get(nodesKey);
                                         if (!frequentedRegions.contains(frpair.merged)) {
-                                            pbq.add(frpair);
+                                            pq.add(frpair);
                                         }
                                     } else {
-                                        // create new FRPair
-                                        FRPair frpair = new FRPair(fr1, fr2, graph, alpha, kappa, caseCtrl);
+                                        // see if this pair is rejected
+                                        frpair.computeRejection();
                                         if (frpair.alphaReject) {
                                             // add to rejected set
-                                            rejectedNodeSets.add(mergedNodes.toString());
+                                            rejectedNodeSets.add(nodesKey);
                                         } else {
                                             // merge and add to accepted set
                                             frpair.merge();
-                                            acceptedFRPairs.put(mergedNodes.toString(), frpair);
-                                            pbq.add(frpair);
+                                            acceptedFRPairs.put(nodesKey, frpair);
+                                            pq.add(frpair);
                                         }
                                     }
-
+                                    
                                 }
                             });
                     });
                 ////////////////////////////////////////
                 // add our new FR
-                if (pbq.size()>0) {
-                    FRPair frpair = pbq.peek();
+                if (pq.size()>0) {
+                    FRPair frpair = pq.peek();
                     if (caseCtrl) {
                         added = frpair.merged.caseControlDifference()>0;
                     } else {
