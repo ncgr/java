@@ -203,7 +203,7 @@ public class PangenomicGraph extends DirectedMultigraph<Node,Edge> {
     public void printNodes(PrintStream out) {
         if (out==System.out) printHeading("NODES");
         for (Node n : vertexSet()) {
-            System.out.println(n.getId()+"\t"+n.getSequence());
+            out.println(n.getId()+"\t"+n.getSequence());
         }
     }
 

@@ -108,6 +108,12 @@ public class FRFinder {
         // store the studied FRs in a synchronized TreeSet
         Set<FrequentedRegion> syncFrequentedRegions = Collections.synchronizedSet(new TreeSet<>());
 
+        // rejected NodeSets, so we don't bother scanning them more than once
+        Set<String> rejectedNodeSets = new HashSet<>();
+
+        // accepted FRPairs so we don't merge them more than once
+        Map<String,FRPair> acceptedFRPairs = new HashMap<>();
+
         // just a counter
         int round = 0;
 
@@ -194,21 +200,40 @@ public class FRFinder {
                 for (FrequentedRegion fr1 : syncFrequentedRegions) {
                     for (FrequentedRegion fr2 : syncFrequentedRegions) {
                         if (fr2.compareTo(fr1)>=0 && !usedFRs.contains(fr1) && !usedFRs.contains(fr2)) {
-                            FRPair frpair = new FRPair(fr1, fr2, graph, alpha, kappa, caseCtrl);
-                            boolean analyze = !frequentedRegions.contains(frpair.merged);
-                            if (analyze) {
-                                // System.out.println(fr1.nodes.toString()+fr2.nodes.toString()+":"+frpair.merged.toString());
-                                pq.add(frpair);
+                            NodeSet mergedNodes = NodeSet.merge(fr1.nodes, fr2.nodes);
+                            if (rejectedNodeSets.contains(mergedNodes.toString())) {
+                                // do nothing
+                            } else if (acceptedFRPairs.containsKey(mergedNodes.toString())) {
+                                // used stored FRPair
+                                FRPair frpair = acceptedFRPairs.get(mergedNodes.toString());
+                                if (!frequentedRegions.contains(frpair.merged)) {
+                                    pq.add(frpair);
+                                }
+                            } else {
+                                // create new FRPair
+                                FRPair frpair = new FRPair(fr1, fr2, graph, alpha, kappa, caseCtrl);
+                                if (frpair.alphaReject) {
+                                    // add to rejected set
+                                    rejectedNodeSets.add(mergedNodes.toString());
+                                } else {
+                                    // merge and add to accepted set
+                                    frpair.merge();
+                                    acceptedFRPairs.put(mergedNodes.toString(), frpair);
+                                    pq.add(frpair);
+                                }
                             }
                         }
                     }
                 }
                 // add our new FR
-                // DEBUG using straight support, not caseControl
                 if (pq.size()>0) {
                     FRPair frpair = pq.peek();
-                    if (frpair.merged.support>0) {
-                        added = true;
+                    if (caseCtrl) {
+                        added = frpair.merged.caseControlDifference()>0;
+                    } else {
+                        added = frpair.merged.support>0;
+                    }
+                    if (added) {
                         usedFRs.add(frpair.fr1);
                         usedFRs.add(frpair.fr2);
                         syncFrequentedRegions.add(frpair.merged);
@@ -225,11 +250,31 @@ public class FRFinder {
                 syncFrequentedRegions.parallelStream().forEach((fr1) -> {
                         syncFrequentedRegions.parallelStream().forEach((fr2) -> {
                                 if (fr2.compareTo(fr1)>=0 && !usedFRs.contains(fr1) && !usedFRs.contains(fr2)) {
-                                    FRPair frpair = new FRPair(fr1, fr2, graph, alpha, kappa, caseCtrl);
-                                    boolean analyze = !frequentedRegions.contains(frpair.merged);
-                                    if (analyze) {
-                                        pbq.add(frpair);
+
+
+                                    NodeSet mergedNodes = NodeSet.merge(fr1.nodes, fr2.nodes);
+                                    if (rejectedNodeSets.contains(mergedNodes.toString())) {
+                                        // do nothing
+                                    } else if (acceptedFRPairs.containsKey(mergedNodes.toString())) {
+                                        // used stored FRPair
+                                        FRPair frpair = acceptedFRPairs.get(mergedNodes.toString());
+                                        if (!frequentedRegions.contains(frpair.merged)) {
+                                            pbq.add(frpair);
+                                        }
+                                    } else {
+                                        // create new FRPair
+                                        FRPair frpair = new FRPair(fr1, fr2, graph, alpha, kappa, caseCtrl);
+                                        if (frpair.alphaReject) {
+                                            // add to rejected set
+                                            rejectedNodeSets.add(mergedNodes.toString());
+                                        } else {
+                                            // merge and add to accepted set
+                                            frpair.merge();
+                                            acceptedFRPairs.put(mergedNodes.toString(), frpair);
+                                            pbq.add(frpair);
+                                        }
                                     }
+
                                 }
                             });
                     });
@@ -717,38 +762,38 @@ public class FRFinder {
      * Print out the FRs, either to stdout or outputPrefix.frs.txt
      */
     void printFrequentedRegions() throws IOException {
-        // if (frequentedRegions.size()==0) {
-        //     System.err.println("NO FREQUENTED REGIONS!");
-        //     return;
-        // }
-        // PrintStream out = System.out;
-        // if (outputPrefix==null) {
-        //     printHeading("FREQUENTED REGIONS");
-        // } else {
-        //     out = new PrintStream(getFRsFilename(outputPrefix));
-        // }
-        // out.println(frequentedRegions.first().columnHeading());
-        // for (FrequentedRegion fr : frequentedRegions) {
-        //     out.println(fr.toString());
-        // }
-        // if (outputPrefix!=null) out.close();
+        if (frequentedRegions.size()==0) {
+            System.err.println("NO FREQUENTED REGIONS!");
+            return;
+        }
+        PrintStream out = System.out;
+        if (outputPrefix==null) {
+            printHeading("FREQUENTED REGIONS");
+        } else {
+            out = new PrintStream(getFRsFilename(outputPrefix));
+        }
+        out.println(frequentedRegions.first().columnHeading());
+        for (FrequentedRegion fr : frequentedRegions) {
+            out.println(fr.toString());
+        }
+        if (outputPrefix!=null) out.close();
     }
 
     /**
      * Print out the FRs along with their subpaths, strictly to an output file.
      */
     void printFRSubpaths() throws IOException {
-        // if (frequentedRegions.size()==0) {
-        //     System.err.println("NO FREQUENTED REGIONS!");
-        //     return;
-        // }
-        // if (outputPrefix==null) return;
-        // PrintStream out = new PrintStream(getFRSubpathsFilename(outputPrefix));
-        // for (FrequentedRegion fr : frequentedRegions) {
-        //     out.println(fr.toString());
-        //     out.println(fr.subpathsString());
-        // }
-        // if (outputPrefix!=null) out.close();
+        if (frequentedRegions.size()==0) {
+            System.err.println("NO FREQUENTED REGIONS!");
+            return;
+        }
+        if (outputPrefix==null) return;
+        PrintStream out = new PrintStream(getFRSubpathsFilename(outputPrefix));
+        for (FrequentedRegion fr : frequentedRegions) {
+            out.println(fr.toString());
+            out.println(fr.subpathsString());
+        }
+        if (outputPrefix!=null) out.close();
     }
 
     /**
@@ -788,7 +833,7 @@ public class FRFinder {
         //         String label = null;
         //         if (nameParts.length>2) label = nameParts[2];
         //         // add to the subpaths
-        //         subpaths.add(new Path(name, genotype, label, nodeString));
+        //         subpaths.add(new PathWalk(name, genotype, label, nodeString));
         //     }
         //     FrequentedRegion fr = new FrequentedRegion(graph, nodes, subpaths, alpha, kappa, support, avgLength);
         //     frequentedRegions.add(fr);
@@ -799,21 +844,21 @@ public class FRFinder {
      * Print a crude histogram of FR node sizes.
      */
     public void printFRHistogram() {
-        // Map<Integer,Integer> countMap = new TreeMap<>();
-        // int maxSize = 0;
-        // for (FrequentedRegion fr : frequentedRegions) {
-        //     if (fr.nodes.size()>maxSize) maxSize = fr.nodes.size();
-        //     if (countMap.containsKey(fr.nodes.size())) {
-        //         int count = countMap.get(fr.nodes.size());
-        //         count++;
-        //         countMap.put(fr.nodes.size(), count);
-        //     } else {
-        //         countMap.put(fr.nodes.size(), 1);
-        //     }
-        // }
-        // for (int num : countMap.keySet()) {
-        //     System.out.println("FR node size (#):"+num+" ("+countMap.get(num)+")");
-        // }
+        Map<Integer,Integer> countMap = new TreeMap<>();
+        int maxSize = 0;
+        for (FrequentedRegion fr : frequentedRegions) {
+            if (fr.nodes.size()>maxSize) maxSize = fr.nodes.size();
+            if (countMap.containsKey(fr.nodes.size())) {
+                int count = countMap.get(fr.nodes.size());
+                count++;
+                countMap.put(fr.nodes.size(), count);
+            } else {
+                countMap.put(fr.nodes.size(), 1);
+            }
+        }
+        for (int num : countMap.keySet()) {
+            System.out.println("FR node size (#):"+num+" ("+countMap.get(num)+")");
+        }
     }
 
     /**

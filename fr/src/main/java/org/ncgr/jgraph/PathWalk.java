@@ -20,6 +20,8 @@ public class PathWalk extends GraphWalk<Node,Edge> implements Comparable<PathWal
     private String label;    // an optional label, like "+1", "-1", "case", "control", "M", "F"
     private String sequence; // this path's full genomic sequence
 
+    private Map<String,Integer> gaps = new HashMap<>(); // keep track of gaps already computed
+
     /**
      * Creates a walk defined by a sequence of nodes; weight=1.0.
      */
@@ -55,23 +57,47 @@ public class PathWalk extends GraphWalk<Node,Edge> implements Comparable<PathWal
     }
 
     /**
+     * Creates a walk defined by a list of nodes as well as identifying info; weight=1.0.
+     */
+    PathWalk(Graph<Node,Edge> graph, List<Node> nodeList, String name, int genotype, String label) {
+        super(graph, nodeList, 1.0);
+        this.name = name;
+        this.genotype = genotype;
+        this.label = label;
+        buildSequence();
+    }
+
+    /**
+     * Do we need to implement equals(Object)?
+     */
+    public boolean equals(Object o) {
+        PathWalk that = (PathWalk) o;
+        return this.equals(that);
+    }
+    
+    /**
      * Two paths are equal if they have the same name and genotype and traverse the same nodes.
      */
     public boolean equals(PathWalk that) {
-        if (!this.name.equals(that.name)) {
-            return false;
-        } else if (this.genotype!=that.genotype) {
-            return false;
-        } else {
-            List<Node> thisNodes = this.getNodes();
-            List<Node> thatNodes = that.getNodes();
-            for (int i=0; i<thisNodes.size(); i++) {
-                if (!thisNodes.get(i).equals(thatNodes.get(i))) {
-                    return false;
-                }
-            }
-            return true;
-        }
+        return this.toString().equals(that.toString());
+        // if (!this.name.equals(that.name)) {
+        //     return false;
+        // } else if (this.genotype!=that.genotype) {
+        //     return false;
+        // } else {
+        //     List<Node> thisNodes = this.getNodes();
+        //     List<Node> thatNodes = that.getNodes();
+        //     if (thisNodes.size()!=thatNodes.size()) {
+        //         return false;
+        //     } else {
+        //         for (int i=0; i<thisNodes.size(); i++) {
+        //             if (!thisNodes.get(i).equals(thatNodes.get(i))) {
+        //                 return false;
+        //             }
+        //         }
+        //         return true;
+        //     }
+        // }
     }
 
     /**
@@ -163,7 +189,7 @@ public class PathWalk extends GraphWalk<Node,Edge> implements Comparable<PathWal
     }
 
     /**
-     * Return the nodes that this path traverses.
+     * Return the nodes that this path traverses, in order of traversal.
      */
     public List<Node> getNodes() {
         return (List<Node>) getVertexList();
@@ -186,22 +212,20 @@ public class PathWalk extends GraphWalk<Node,Edge> implements Comparable<PathWal
      * @return the length of this path's sequence exclusively between nl and nr
      */
     public int gap(Node nl, Node nr) {
-        if (!getNodes().contains(nl) || !getNodes().contains(nr)) {
+        String key = nl.toString()+"-"+nr.toString();
+        if (gaps.containsKey(key)) {
+            return gaps.get(key);
+        } else if (!getNodes().contains(nl) || !getNodes().contains(nr)) {
             return 0;
         } else if (nl.equals(nr)) {
             return 0;
         } else {
-            if (subsequence(nl,nr)==null) {
-                System.err.println("ERROR:");
-                System.err.println("subsequence("+nl.toString()+","+nr.toString()+")=null");
-                System.err.println("subpath="+subpath(nl,nr));
-                System.err.println("subpath.sequence="+subpath(nl,nr).sequence);
-                System.exit(1);
-            }
             int sublength = subsequence(nl,nr).length();
             int nllength = nl.getSequence().length();
             int nrlength = nr.getSequence().length();
-            return subsequence(nl,nr).length() - nl.getSequence().length() - nr.getSequence().length();
+            int gap = sublength - nllength - nrlength;
+            gaps.put(key, gap);
+            return gap;
         }
     }
 
@@ -243,7 +267,22 @@ public class PathWalk extends GraphWalk<Node,Edge> implements Comparable<PathWal
                 }
             }
         }
-        return new PathWalk(this.graph, subnodes, name, genotype);
+        return new PathWalk(this.graph, subnodes, name, genotype, label);
+    }
+
+    /**
+     * Return a summary string.
+     */
+    public String toString() {
+        String s = getNameGenotypeLabel();
+        s += ":[";
+        StringJoiner joiner = new StringJoiner(",");
+        for (Node node : getNodes()) {
+            joiner.add(String.valueOf(node.getId()));
+        }
+        s += joiner.toString();
+        s += "]";
+        return s;
     }
 }
 

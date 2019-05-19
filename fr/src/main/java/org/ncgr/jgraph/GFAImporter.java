@@ -126,7 +126,8 @@ public class GFAImporter implements GraphImporter<Node,Edge> {
             String[] parts = pathName.split(":"); // separate out the genotype
             String name = parts[0];
             int genotype = Integer.parseInt(parts[1]);
-            paths.add(new PathWalk(g, nodeList, name, genotype));
+            PathWalk path = new PathWalk(g, nodeList, name, genotype);
+            paths.add(path);
         }
 
         // build the path-labeled graph edges from the paths

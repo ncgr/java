@@ -24,11 +24,11 @@ public class FRPair implements Comparable<FRPair> {
     double alpha;
     int kappa;
     boolean caseCtrl;
-    int support;
-    int size;
-    double avgLength;
 
+    NodeSet nodes;
     FrequentedRegion merged;
+
+    boolean alphaReject;
     
     FRPair(FrequentedRegion fr1, FrequentedRegion fr2, PangenomicGraph graph, double alpha, int kappa, boolean caseCtrl) {
         this.fr1 = fr1;
@@ -37,50 +37,56 @@ public class FRPair implements Comparable<FRPair> {
         this.alpha = alpha;
         this.kappa = kappa;
         this.caseCtrl = caseCtrl;
-        // we should calculate support without merging!
-        support = 0;
-        // DEBUG
-        merged = merge();
-        if (!fr1.equals(fr2)) {
-            System.out.print(fr1.nodes.toString()+fr2.nodes.toString());
+
+        nodes = NodeSet.merge(fr1.nodes, fr2.nodes);
+        
+        if (fr1.equals(fr2)) {
+            merged = fr1;
+        } else {
+            //
+            // Can we calculate merged support without merging???
+            //
+            // System.out.print(fr1.nodes.toString()+fr2.nodes.toString());
             DijkstraShortestPath<Node,Edge> dsp = new DijkstraShortestPath<Node,Edge>(graph);
             int minMissing = Integer.MAX_VALUE;
-            for (Node n1 : fr1.nodes) {
-                for (Node n2 : fr2.nodes) {
-                    if (!n1.equals(n2)) {
+            for (Node n1 : nodes) {
+                for (Node n2 : nodes) {
+                    if (n1.getId()<n2.getId()) {
                         GraphPath<Node,Edge> path = dsp.getPath(n1, n2);
                         if (path!=null) {
                             List<Node> nodeList = path.getVertexList();
                             int missing = 0;
                             // System.out.print(n1.toString()+"-"+n2.toString()+":");
                             for (Node n : nodeList) {
-                                if (!fr1.nodes.contains(n) && !fr2.nodes.contains(n)) missing++;
-                                // System.out.print(" "+n.toString());
+                                if (!nodes.contains(n)) {
+                                    missing++;
+                                    // System.out.print(" "+n.toString());
+                                }
                             }
-                            // System.out.println(" missing="+missing);
+                            // System.out.print(" missing="+missing+";");
                             if (missing<minMissing) minMissing = missing;
                         }
                     }
                 }
             }
-            System.out.println(":minMissing="+minMissing);
+            alphaReject = minMissing > (int)(alpha*nodes.size());
+            // System.out.println("min(missing)="+minMissing+" alphaReject="+alphaReject);
         }
     }
-
+    
     /**
      * Algorithm 2 from Cleary, et al. returns the supporting path segments for the given merge of FRs.
      * @returns the set of supporting path segments
      */
-    public FrequentedRegion merge() {
-        return new FrequentedRegion(graph, NodeSet.merge(fr1.nodes,fr2.nodes), alpha, kappa);
+    public void merge() {
+        merged = new FrequentedRegion(graph, NodeSet.merge(fr1.nodes,fr2.nodes), alpha, kappa);
     }
-    
+
     /**
      * Two FRPairs are equal if their components are equal.
      */
     public boolean equals(FRPair that) {
-        return (this.fr1.equals(that.fr1) && this.fr2.equals(that.fr2)) ||
-            (this.fr1.equals(that.fr2) && this.fr2.equals(that.fr1));
+        return (this.fr1.equals(that.fr1) && this.fr2.equals(that.fr2)) || (this.fr1.equals(that.fr2) && this.fr2.equals(that.fr1));
     }
 
     /**
@@ -98,12 +104,20 @@ public class FRPair implements Comparable<FRPair> {
             if (thisDifference!=thatDifference) return thatDifference - thisDifference;
         }
         // default: total support then avgLength then size
-        if (that.support!=this.support) {
-            return Integer.compare(that.support, this.support);
-        } else if (that.avgLength!=this.avgLength) {
-            return Double.compare(that.avgLength, this.avgLength);
+        if (that.merged.support!=this.merged.support) {
+            return Integer.compare(that.merged.support, this.merged.support);
+        } else if (that.merged.avgLength!=this.merged.avgLength) {
+            return Double.compare(that.merged.avgLength, this.merged.avgLength);
         } else {
-            return Integer.compare(that.size, this.size);
+            return Integer.compare(that.merged.nodes.size(), this.merged.nodes.size());
         }
+    }
+
+    /**
+     * Reader-friendly string summary.
+     */
+    public String toString() {
+        return nodes.toString();
+        // return "fr1="+fr1.toString()+";fr2="+fr2.toString()+";merged.support="+merged.support+";merged.avgLength="+merged.avgLength+";merged.nodes.size="+merged.nodes.size();
     }
 }

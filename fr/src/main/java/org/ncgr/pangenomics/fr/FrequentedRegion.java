@@ -144,7 +144,8 @@ public class FrequentedRegion implements Comparable<FrequentedRegion> {
     void updateSubpaths() {
         subpaths = new HashSet<>();
         for (PathWalk p : graph.getPaths()) {
-            subpaths.addAll(computeSupport(nodes, p, alpha, kappa));
+            Set<PathWalk> supportPaths = computeSupport(nodes, p, alpha, kappa);
+            subpaths.addAll(supportPaths);
         }
     }
 
