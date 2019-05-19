@@ -109,10 +109,10 @@ public class FRFinder {
         Set<FrequentedRegion> syncFrequentedRegions = Collections.synchronizedSet(new TreeSet<>());
 
         // rejected NodeSets, so we don't bother scanning them more than once
-        Set<String> rejectedNodeSets = new HashSet<>();
+        Set<String> rejectedNodeSets = Collections.synchronizedSet(new HashSet<>());
 
         // accepted FRPairs so we don't merge them more than once
-        Map<String,FRPair> acceptedFRPairs = new HashMap<>();
+        Map<String,FRPair> acceptedFRPairs = Collections.synchronizedMap(new HashMap<>());
 
         // just a counter
         int round = 0;
