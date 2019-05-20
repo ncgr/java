@@ -1,6 +1,7 @@
 package org.ncgr.pangenomics.fr;
 
 import java.util.List;
+import java.util.LinkedList;
 
 import org.ncgr.jgraph.Edge;
 import org.ncgr.jgraph.PangenomicGraph;
@@ -49,7 +50,6 @@ public class FRPair implements Comparable<FRPair> {
         // defaults
         alphaReject = false;
         if (nodes.size()>1) {
-            // System.out.print(fr1.nodes.toString()+fr2.nodes.toString());
             DijkstraShortestPath<Node,Edge> dsp = new DijkstraShortestPath<Node,Edge>(graph);
             int minMissing = Integer.MAX_VALUE;
             for (Node n1 : nodes) {
@@ -57,21 +57,18 @@ public class FRPair implements Comparable<FRPair> {
                     if (n1.getId()<n2.getId()) {
                         GraphPath<Node,Edge> path = dsp.getPath(n1, n2);
                         if (path!=null) {
-                            int missing = 0;
+                            List<Node> missingNodes = new LinkedList<>();
                             for (Node n : path.getVertexList()) {
                                 if (!nodes.contains(n)) {
-                                    missing++;
-                                    // System.out.print(" "+n.toString());
+                                    missingNodes.add(n);
                                 }
                             }
-                            // System.out.print(" missing="+missing+";");
-                            if (missing<minMissing) minMissing = missing;
+                            if (missingNodes.size()<minMissing) minMissing = missingNodes.size();
                         }
                     }
                 }
             }
             alphaReject = minMissing>(int)(alpha*nodes.size());
-            // System.out.println("min(missing)="+minMissing+" alphaReject="+alphaReject);
         }
     }
     
