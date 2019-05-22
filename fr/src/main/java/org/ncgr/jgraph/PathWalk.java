@@ -6,7 +6,7 @@ import org.jgrapht.graph.*;
 import java.util.*;
 
 import org.ncgr.pangenomics.Node;
-import org.ncgr.pangenomics.Path;
+import org.ncgr.pangenomics.NodeSet;
 
 /**
  * An extension of GraphWalk to provide a genomic path through the graph.
@@ -206,13 +206,14 @@ public class PathWalk extends GraphWalk<Node,Edge> implements Comparable<PathWal
     }
 
     /**
-     * Return the length of this path's sequence exclusively between the two given nodes (0 if one of the nodes is not in this path, or if nl=nr).
+     * Return the length of this path's sequence exclusively between the two given nodes (0 if one of the nodes is not in this path, or if nl=nr),
+     * associated with nodes that are NOT in the given NodeSet.
      * @param nl the "left" node
      * @param nr the "right" node
      * @return the length of this path's sequence exclusively between nl and nr
      */
-    public int gap(Node nl, Node nr) {
-        String key = nl.toString()+"-"+nr.toString();
+    public int gap(Node nl, Node nr, NodeSet nodes) {
+        String key = nl.toString()+"-"+nr.toString()+nodes.toString();
         if (gaps.containsKey(key)) {
             return gaps.get(key);
         } else if (!getNodes().contains(nl) || !getNodes().contains(nr)) {
@@ -220,10 +221,19 @@ public class PathWalk extends GraphWalk<Node,Edge> implements Comparable<PathWal
         } else if (nl.equals(nr)) {
             return 0;
         } else {
-            int sublength = subsequence(nl,nr).length();
-            int nllength = nl.getSequence().length();
-            int nrlength = nr.getSequence().length();
-            int gap = sublength - nllength - nrlength;
+            int gap = 0;
+            int thisGap = 0;
+            PathWalk subpath = subpath(nl,nr);
+            for (Node n : subpath.getNodes()) {
+                if (nodes.contains(n)) {
+                    // reset and save previous gap if large
+                    if (thisGap>gap) gap = thisGap;
+                    thisGap = 0;
+                } else {
+                    // increment gap
+                    thisGap += n.getSequence().length();
+                }
+            }
             gaps.put(key, gap);
             return gap;
         }
@@ -271,6 +281,26 @@ public class PathWalk extends GraphWalk<Node,Edge> implements Comparable<PathWal
     }
 
     /**
+     * Return true if the given PathWalk represents a subpath of this PathWalk.
+     * @param path the path to be compared with this one
+     * @return true if path is a subpath of this
+     */
+    public boolean contains(PathWalk path) {
+        List<Node> thisNodes = this.getNodes();
+        List<Node> pathNodes = path.getNodes();
+        boolean match = false;
+        for (Node m : pathNodes) {
+            if (!match && thisNodes.contains(m)) {
+                match = true;
+            } else if (match && !thisNodes.contains(m)) {
+                match = false;
+                break;
+            }
+        }
+        return match;
+    }
+
+    /**
      * Return a summary string.
      */
     public String toString() {
@@ -284,5 +314,56 @@ public class PathWalk extends GraphWalk<Node,Edge> implements Comparable<PathWal
         s += "]";
         return s;
     }
+
+    /**
+     * Algorithm 1 from Cleary, et al. generates the supporting path segments of this path for the given NodeSet and alpha and kappa parameters.
+     * @param nodes the NodeSet, or cluster C as it's called in Algorithm 1
+     * @param alpha the penetrance parameter
+     * @param kappa the insertion parameter
+     * @returns the set of supporting path segments
+     */
+    public Set<PathWalk> computeSupport(NodeSet nodes, double alpha, int kappa) {
+        Set<PathWalk> s = new HashSet<>();
+        // m = the list of p's nodes that are in c
+        LinkedList<Node> m = new LinkedList<>();
+        for (Node n : getNodes()) {
+            if (nodes.contains(n)) m.add(n);
+        }
+
+        // find maximal subpaths
+        for (int i=0; i<m.size(); i++) {
+            Node nl = m.get(i);
+            Node nr = null;
+            int num = 0;
+            for (int j=i; j<m.size(); j++) {
+                if (gap(nl, m.get(j), nodes)>kappa) {
+                    // kappa rejection
+                    break;
+                }
+                nr = m.get(j);
+                num = j - i + 1;
+            }
+            PathWalk subpath = subpath(nl,nr);
+            // is this a subpath of an already counted subpath?
+            boolean ignore = false;
+            for (PathWalk checkpath : s) {
+                if (checkpath.contains(subpath)) {
+                    ignore = true;
+                    break;
+                }
+            }
+            if (!ignore) {
+                if (num>=alpha*nodes.size()) {
+                    if (subpath.getNodes().size()==0) {
+                        System.err.println("ERROR: subpath.getNodes().size()=0; path="+this.toString()+" nl="+nl+" nr="+nr);
+                    } else {
+                        s.add(subpath);
+                    }
+                }
+            }
+        }
+        return s;
+    }
+
 }
 

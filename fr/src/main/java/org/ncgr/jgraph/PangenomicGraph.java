@@ -31,6 +31,9 @@ public class PangenomicGraph extends DirectedMultigraph<Node,Edge> {
 
     // the GFA file that holds this graph
     File gfaFile;
+
+    // the file holding the labels for each path (typically "case" and "control")
+    File labelsFile;
     
     // each Path provides the ordered list of nodes that it traverses, along with its full sequence
     TreeSet<PathWalk> paths; // (ordered simply for convenience)
@@ -64,6 +67,28 @@ public class PangenomicGraph extends DirectedMultigraph<Node,Edge> {
     }
 
     /**
+     * Return the GFA filename.
+     */
+    public String getGFAFilename() {
+        if (gfaFile==null) {
+            return null;
+        } else {
+            return gfaFile.getName();
+        }
+    }
+
+    /**
+     * Return the path labels filename.
+     */
+    public String getPathLabelsFilename() {
+        if (labelsFile==null) {
+            return null;
+        } else {
+            return labelsFile.getName();
+        }
+    }
+
+    /**
      * Return true if this and that PangenomicGraph come from the same file.
      */
     public boolean equals(PangenomicGraph that) {
@@ -94,6 +119,7 @@ public class PangenomicGraph extends DirectedMultigraph<Node,Edge> {
      * Read path labels from a tab-delimited file. Comment lines start with #.
      */
     public void readPathLabels(File labelsFile) throws FileNotFoundException, IOException {
+        this.labelsFile = labelsFile;
         labelCounts = new TreeMap<>();
         BufferedReader reader = new BufferedReader(new FileReader(labelsFile));
         String line = null;
@@ -165,6 +191,13 @@ public class PangenomicGraph extends DirectedMultigraph<Node,Edge> {
         } else {
             genotype = g;
         }
+    }
+
+    /**
+     * Return the genotype preference: -1=both; 0 and 1
+     */
+    public int getGenotype() {
+        return genotype;
     }
 
     /**

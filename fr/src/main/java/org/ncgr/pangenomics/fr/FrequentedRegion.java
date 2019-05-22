@@ -144,7 +144,7 @@ public class FrequentedRegion implements Comparable<FrequentedRegion> {
     void updateSubpaths() {
         subpaths = new HashSet<>();
         for (PathWalk p : graph.getPaths()) {
-            Set<PathWalk> supportPaths = computeSupport(nodes, p, alpha, kappa);
+            Set<PathWalk> supportPaths = p.computeSupport(nodes, alpha, kappa);
             subpaths.addAll(supportPaths);
         }
     }
@@ -259,45 +259,6 @@ public class FrequentedRegion implements Comparable<FrequentedRegion> {
                 s += "\n";
             }
             s += sp.toString();
-        }
-        return s;
-    }
-
-    /**
-     * Algorithm 1 from Cleary, et al. generates the supporting path segments for the given NodeSet c and and PathWalk p.
-     * @param c the NodeSet, or cluster C as it's called in Algorithm 1
-     * @param p the PathWalk for which we want the set of supporting paths
-     * @param alpha the penetrance parameter
-     * @param kappa the insertion parameter
-     * @returns the set of supporting path segments
-     */
-    static Set<PathWalk> computeSupport(NodeSet c, PathWalk p, double alpha, int kappa) {
-        Set<PathWalk> s = new HashSet<>();
-        // m = the list of p's nodes that are in c
-        LinkedList<Node> m = new LinkedList<>();
-        for (Node n : p.getNodes()) {
-            if (c.contains(n)) m.add(n);
-        }
-        // find subpaths that satisfy alpha, kappa criteria
-        int start = 0;
-        while (start<m.size()) {
-            int i = start;
-            Node nl = m.get(i);
-            Node nr = nl;
-            while ((i<m.size()-1)) {
-                if (p.gap(nl,m.get(i+1))>kappa) break;
-                i = i + 1;
-                nr = m.get(i);
-            }
-            if ((i-start+1)>=alpha*c.size()) {
-                PathWalk subpath = p.subpath(nl,nr);
-                if (subpath.getNodes().size()==0) {
-                    System.err.println("ERROR: subpath.getNodes().size()=0; p="+p+" nl="+nl+" nr="+nr);
-                } else {
-                    s.add(subpath);
-                }
-            }
-            start = i + 1;
         }
         return s;
     }

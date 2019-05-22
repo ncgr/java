@@ -152,7 +152,7 @@ public class FRFinder {
                 c.add(node);
                 Set<PathWalk> s = new HashSet<>();
                 for (PathWalk p : graph.getPaths()) {
-                    Set<PathWalk> support = FrequentedRegion.computeSupport(c, p, alpha, kappa);
+                    Set<PathWalk> support = p.computeSupport(c, alpha, kappa);
                     s.addAll(support);
                 }
                 if (s.size()>0) {
@@ -687,27 +687,27 @@ public class FRFinder {
      * which is similar, but not identical to, the SVMlight format.
      */
     void printPathFRsSVM() throws IOException {
-        // PrintStream out = System.out;
-        // if (outputPrefix==null) {
-        //     printHeading("PATH SVM RECORDS");
-        // } else {
-        //     out = new PrintStream(getPathFRsSVMFilename(outputPrefix));
-        // }
-        // // only rows, one per path
-        // for (PathWalk path : graph.getPaths()) {
-        //     out.print(path.getNameGenotype());
-        //     // TODO: update these to strings along with fixing the SVM code to handle strings
-        //     String group = "";
-        //     if (path.label!=null) group = path.label;
-        //     out.print("\t"+group);
-        //     int c = 0;
-        //     for (FrequentedRegion fr : frequentedRegions) {
-        //         c++;
-        //         out.print("\t"+c+":"+fr.countSubpathsOf(path));
-        //     }
-        //     out.println("");
-        // }
-        // if (outputPrefix!=null) out.close();
+        PrintStream out = System.out;
+        if (outputPrefix==null) {
+            printHeading("PATH SVM RECORDS");
+        } else {
+            out = new PrintStream(getPathFRsSVMFilename(outputPrefix));
+        }
+        // only rows, one per path
+        for (PathWalk path : graph.getPaths()) {
+            out.print(path.getNameGenotype());
+            // TODO: update these to strings along with fixing the SVM code to handle strings
+            String group = "";
+            if (path.getLabel()!=null) group = path.getLabel();
+            out.print("\t"+group);
+            int c = 0;
+            for (FrequentedRegion fr : frequentedRegions) {
+                c++;
+                out.print("\t"+c+":"+fr.countSubpathsOf(path));
+            }
+            out.println("");
+        }
+        if (outputPrefix!=null) out.close();
     }
 
     /**
@@ -730,38 +730,38 @@ public class FRFinder {
      * 5.0,3.6,1.4,0.2,Iris-viginica
      */
     void printPathFRsARFF() throws IOException {
-        // PrintStream out = System.out;
-        // if (outputPrefix==null) {
-        //     out.println("@RELATION frs");
-        // } else {
-        //     out = new PrintStream(getPathFRsARFFFilename(outputPrefix));
-        //     out.println("@RELATION "+outputPrefix);
-        //     out.println("");
-        // }
-        // // attributes: path ID
-        // out.println("@ATTRIBUTE ID STRING");
-        // // attributes: each FR is a numeric labeled FRn
-        // int c = 0;
-        // for (FrequentedRegion fr : frequentedRegions) {
-        //     c++;
-        //     String frLabel = "FR"+c;
-        //     out.println("@ATTRIBUTE "+frLabel+" NUMERIC");
-        // }
-        // // add the class attribute
-        // out.println("@ATTRIBUTE class {case,ctrl}");
-        // out.println("");
-        // // data
-        // out.println("@DATA");
-        // for (PathWalk path : graph.getPaths()) {
-        //     out.print(path.getNameGenotype()+",");
-        //     c = 0;
-        //     for (FrequentedRegion fr : frequentedRegions) {
-        //         c++;
-        //         out.print(fr.countSubpathsOf(path)+",");
-        //     }
-        //     out.println(path.label);
-        // }
-        // if (outputPrefix!=null) out.close();
+        PrintStream out = System.out;
+        if (outputPrefix==null) {
+            out.println("@RELATION frs");
+        } else {
+            out = new PrintStream(getPathFRsARFFFilename(outputPrefix));
+            out.println("@RELATION "+outputPrefix);
+            out.println("");
+        }
+        // attributes: path ID
+        out.println("@ATTRIBUTE ID STRING");
+        // attributes: each FR is a numeric labeled FRn
+        int c = 0;
+        for (FrequentedRegion fr : frequentedRegions) {
+            c++;
+            String frLabel = "FR"+c;
+            out.println("@ATTRIBUTE "+frLabel+" NUMERIC");
+        }
+        // add the class attribute
+        out.println("@ATTRIBUTE class {case,ctrl}");
+        out.println("");
+        // data
+        out.println("@DATA");
+        for (PathWalk path : graph.getPaths()) {
+            out.print(path.getNameGenotype()+",");
+            c = 0;
+            for (FrequentedRegion fr : frequentedRegions) {
+                c++;
+                out.print(fr.countSubpathsOf(path)+",");
+            }
+            out.println(path.getLabel());
+        }
+        if (outputPrefix!=null) out.close();
     }
     
     /**
@@ -803,50 +803,6 @@ public class FRFinder {
     }
 
     /**
-     * Read FRs from the output from a previous run.
-     * Assumes that alpha, kappa and graph are already initialized.
-     * [18,34]	70	299	54	16
-     * 509678.0.ctrl:[18,20,21,23,24,26,27,29,30,33,34]
-     * 628863.1.case:[18,20,21,23,24,26,27,29,30,33,34]
-     * etc.
-     */
-    void readFrequentedRegions() throws FileNotFoundException, IOException {
-        // // do we have a Graph?
-        // if (graph.getNodes().size()==0) {
-        //     System.err.println("ERROR in readFrequentedRegions: graph has not been initialized.");
-        //     System.exit(1);
-        // }
-        // frequentedRegions = new TreeSet<>();
-        // String frFilename = getFRSubpathsFilename(inputPrefix);
-        // BufferedReader reader = new BufferedReader(new FileReader(frFilename));
-        // String line = null;
-        // while ((line=reader.readLine())!=null) {
-        //     String[] fields = line.split("\t");
-        //     NodeSet nodes = new NodeSet(fields[0]);
-        //     int support = Integer.parseInt(fields[1]);
-        //     double avgLength = Double.parseDouble(fields[2]);
-        //     Set<PathWalk> subpaths = new HashSet<>();
-        //     for (int i=0; i<support; i++) {
-        //         line = reader.readLine();
-        //         String[] parts = line.split(":");
-        //         String pathFull = parts[0];
-        //         String nodeString = parts[1];
-        //         // split out the name, genotype, label
-        //         String[] nameParts = pathFull.split("\\.");
-        //         String name = nameParts[0];
-        //         int genotype = -1;
-        //         if (nameParts.length>1) genotype = Integer.parseInt(nameParts[1]);
-        //         String label = null;
-        //         if (nameParts.length>2) label = nameParts[2];
-        //         // add to the subpaths
-        //         subpaths.add(new PathWalk(name, genotype, label, nodeString));
-        //     }
-        //     FrequentedRegion fr = new FrequentedRegion(graph, nodes, subpaths, alpha, kappa, support, avgLength);
-        //     frequentedRegions.add(fr);
-        // }
-    }
-
-    /**
      * Print a crude histogram of FR node sizes.
      */
     public void printFRHistogram() {
@@ -871,35 +827,35 @@ public class FRFinder {
      * Print out the parameters, either to stdout or outputPrefix.params.txt
      */
     public void printParameters() throws IOException {
-        // PrintStream out = System.out;
-        // if (outputPrefix==null) {
-        //     printHeading("PARAMETERS");
-        // } else {
-        //     out = new PrintStream(getParamsFilename(outputPrefix));
-        // }
-        // out.println("outputprefix"+"\t"+outputPrefix);
-        // // Graph
-        // if (graph!=null) {
-        //     out.println("genotype"+"\t"+graph.genotype);
-        //     if (graph.jsonFile!=null) out.println("jsonfile"+"\t"+graph.jsonFile);
-        //     if (graph.gfaFile!=null) out.println("gfafile"+"\t"+graph.gfaFile);
-        //     if (graph.dotFile!=null) out.println("dotfile"+"\t"+graph.dotFile);
-        //     if (graph.fastaFile!=null) out.println("fastafile"+"\t"+graph.fastaFile);
-        //     if (graph.labelsFile!=null) out.println("pathlabels"+"\t"+graph.labelsFile);
-        // }
-        // // FRFinder
-        // out.println("alpha"+"\t"+alpha);
-        // out.println("kappa"+"\t"+kappa);
-        // out.println("casectrl"+"\t"+caseCtrl);
-        // if (inputPrefix!=null) {
-        //     // post-processing parameters
-        //     out.println("minsup"+"\t"+minSup);
-        //     out.println("minsize"+"\t"+minSize);
-        //     out.println("minlen"+"\t"+minLen);
-        // }
-        // // runtime stuff
-        // out.println("date"+"\t"+ZonedDateTime.now().toString());
-        // out.println("clocktime"+"\t"+formatTime(clockTime));
+        PrintStream out = System.out;
+        if (outputPrefix==null) {
+            printHeading("PARAMETERS");
+        } else {
+            out = new PrintStream(getParamsFilename(outputPrefix));
+        }
+        out.println("outputprefix"+"\t"+outputPrefix);
+        // Graph
+        if (graph!=null) {
+            out.println("genotype"+"\t"+graph.getGenotype());
+            if (graph.getGFAFilename()!=null) out.println("gfafile"+"\t"+graph.getGFAFilename());
+            if (graph.getPathLabelsFilename()!=null) out.println("pathlabels"+"\t"+graph.getPathLabelsFilename());
+            // if (graph.jsonFile!=null) out.println("jsonfile"+"\t"+graph.jsonFile);
+            // if (graph.dotFile!=null) out.println("dotfile"+"\t"+graph.dotFile);
+            // if (graph.fastaFile!=null) out.println("fastafile"+"\t"+graph.fastaFile);
+        }
+        // FRFinder
+        out.println("alpha"+"\t"+alpha);
+        out.println("kappa"+"\t"+kappa);
+        out.println("casectrl"+"\t"+caseCtrl);
+        if (inputPrefix!=null) {
+            // post-processing parameters
+            out.println("minsup"+"\t"+minSup);
+            out.println("minsize"+"\t"+minSize);
+            out.println("minlen"+"\t"+minLen);
+        }
+        // runtime stuff
+        out.println("date"+"\t"+ZonedDateTime.now().toString());
+        out.println("clocktime"+"\t"+formatTime(clockTime));
     }
 
     /**
@@ -959,6 +915,50 @@ public class FRFinder {
         //         graph.readSplitMEMDotFile(dotFile, fastaFile);
         //         if (labelsFile!=null) graph.readPathLabels(labelsFile);
         //     }
+        // }
+    }
+
+    /**
+     * Read FRs from the output from a previous run.
+     * Assumes that alpha, kappa and graph are already initialized.
+     * [18,34]	70	299	54	16
+     * 509678.0.ctrl:[18,20,21,23,24,26,27,29,30,33,34]
+     * 628863.1.case:[18,20,21,23,24,26,27,29,30,33,34]
+     * etc.
+     */
+    void readFrequentedRegions() throws FileNotFoundException, IOException {
+        // // do we have a Graph?
+        // if (graph.getNodes().size()==0) {
+        //     System.err.println("ERROR in readFrequentedRegions: graph has not been initialized.");
+        //     System.exit(1);
+        // }
+        // frequentedRegions = new TreeSet<>();
+        // String frFilename = getFRSubpathsFilename(inputPrefix);
+        // BufferedReader reader = new BufferedReader(new FileReader(frFilename));
+        // String line = null;
+        // while ((line=reader.readLine())!=null) {
+        //     String[] fields = line.split("\t");
+        //     NodeSet nodes = new NodeSet(fields[0]);
+        //     int support = Integer.parseInt(fields[1]);
+        //     double avgLength = Double.parseDouble(fields[2]);
+        //     Set<PathWalk> subpaths = new HashSet<>();
+        //     for (int i=0; i<support; i++) {
+        //         line = reader.readLine();
+        //         String[] parts = line.split(":");
+        //         String pathFull = parts[0];
+        //         String nodeString = parts[1];
+        //         // split out the name, genotype, label
+        //         String[] nameParts = pathFull.split("\\.");
+        //         String name = nameParts[0];
+        //         int genotype = -1;
+        //         if (nameParts.length>1) genotype = Integer.parseInt(nameParts[1]);
+        //         String label = null;
+        //         if (nameParts.length>2) label = nameParts[2];
+        //         // add to the subpaths
+        //         subpaths.add(new PathWalk(name, genotype, label, nodeString));
+        //     }
+        //     FrequentedRegion fr = new FrequentedRegion(graph, nodes, subpaths, alpha, kappa, support, avgLength);
+        //     frequentedRegions.add(fr);
         // }
     }
 

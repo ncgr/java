@@ -55,10 +55,12 @@ public class FRPair implements Comparable<FRPair> {
             for (Node n1 : nodes) {
                 for (Node n2 : nodes) {
                     if (n1.getId()<n2.getId()) {
-                        GraphPath<Node,Edge> path = dsp.getPath(n1, n2);
-                        if (path!=null) {
+                        GraphPath<Node,Edge> subpath = dsp.getPath(n1, n2);
+                        if (subpath==null) {
+                            // do nothing
+                        } else {
                             List<Node> missingNodes = new LinkedList<>();
-                            for (Node n : path.getVertexList()) {
+                            for (Node n : subpath.getVertexList()) {
                                 if (!nodes.contains(n)) {
                                     missingNodes.add(n);
                                 }
