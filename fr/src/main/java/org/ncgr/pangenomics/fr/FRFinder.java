@@ -342,6 +342,8 @@ public class FRFinder {
      * Post-process a set of FRs for given minSup, minLen and minSize.
      */
     public void postprocess() throws FileNotFoundException, IOException {
+        // DEBUG
+        System.out.println("Running postprocess()");
         TreeSet<FrequentedRegion> filteredFRs = new TreeSet<>();
         for (FrequentedRegion fr : frequentedRegions) {
             boolean passes = true;
@@ -543,13 +545,14 @@ public class FRFinder {
         String dotFile = cmd.getOptionValue("dot");
         String fastaFile = cmd.getOptionValue("fasta");
         String jsonFile = cmd.getOptionValue("json");
-        // String gfaFile = cmd.getOptionValue("gfa");
+        // String gfaFilename = cmd.getOptionValue("gfa");
         // String pathLabelsFile = cmd.getOptionValue("pathlabels");
 
-        // assume GFA file
-        File gfaFile = new File(cmd.getOptionValue("gfa"));
+        // GFA file
+        File gfaFile = null;
+        if (cmd.hasOption("gfa")) gfaFile = new File(cmd.getOptionValue("gfa"));
 
-        // assume path labels file
+        // path labels file
         File labelsFile = null;
         if (cmd.hasOption("pathlabels")) labelsFile = new File(cmd.getOptionValue("pathlabels"));
 
@@ -558,17 +561,6 @@ public class FRFinder {
         int kappa = 0;
         if (cmd.hasOption("alpha")) alpha = Double.parseDouble(cmd.getOptionValue("alpha"));
         if (cmd.hasOption("kappa")) kappa = Integer.parseInt(cmd.getOptionValue("kappa"));
-
-        // create a PangenomicGraph from a GFA file
-        PangenomicGraph pg = new PangenomicGraph();
-        if (cmd.hasOption("verbose")) pg.setVerbose();
-        if (cmd.hasOption("genotype")) pg.setGenotype(Integer.parseInt(cmd.getOptionValue("genotype")));
-        pg.importGFA(gfaFile);
-
-        // if a labels file is given, add them to the paths
-        if (labelsFile!=null) {
-            pg.readPathLabels(labelsFile);
-        }
 
         // filters
         int minSup = MINSUP;
@@ -584,7 +576,7 @@ public class FRFinder {
             minLen = Double.parseDouble(cmd.getOptionValue("minlen"));
         }
         
-        FRFinder frf;
+        FRFinder frf = null;
         boolean postProcess = false;
         if (cmd.hasOption("inputprefix")) {
             postProcess = true;
@@ -597,7 +589,16 @@ public class FRFinder {
             frf.setMinLen(minLen);
 	    // set the outputPrefix, which depends on the above being set
 	    frf.setOutputPrefix(frf.getOutputPrefix(inputPrefix));
-        } else { 
+        } else if (gfaFile!=null) { 
+            // create a PangenomicGraph from a GFA file
+            PangenomicGraph pg = new PangenomicGraph();
+            if (cmd.hasOption("verbose")) pg.setVerbose();
+            if (cmd.hasOption("genotype")) pg.setGenotype(Integer.parseInt(cmd.getOptionValue("genotype")));
+            pg.importGFA(gfaFile);
+            // if a labels file is given, add them to the paths
+            if (labelsFile!=null) {
+                pg.readPathLabels(labelsFile);
+            }
             // instantiate the FRFinder with this Graph, alpha and kappa
             postProcess = false;
             frf = new FRFinder(pg, alpha, kappa);
@@ -862,60 +863,62 @@ public class FRFinder {
      * Read in the parameters from a previous run.
      */
     void readParameters() throws FileNotFoundException, IOException {
-        // String paramsFile = getParamsFilename(inputPrefix);
-        // BufferedReader reader = new BufferedReader(new FileReader(paramsFile));
-        // String line = null;
-        // String jsonFile = null;
-        // String gfaFile = null;
-        // String dotFile = null;
-        // String fastaFile = null;
-        // String labelsFile = null;
-        // int genotype = PangenomicGraph.BOTH_GENOTYPES;
-        // while ((line=reader.readLine())!=null) {
-        //     String[] parts = line.split("\t");
-        //     if (parts[0].equals("jsonfile")) {
-        //         jsonFile = parts[1];
-        //     } else if (parts[0].equals("gfafile")) {
-        //         gfaFile = parts[1];
-        //     } else if (parts[0].equals("dotFile")) {
-        //         dotFile = parts[1];
-        //     } else if (parts[0].equals("fastafile")) {
-        //         fastaFile = parts[1];
-        //     } else if (parts[0].equals("pathlabels")) {
-        //         labelsFile = parts[1];
-        //     } else if (parts[0].equals("genotype")) {
-        //         genotype = Integer.parseInt(parts[1]);
-        //     } else if (parts[0].equals("alpha")) {
-        //         alpha = Double.parseDouble(parts[1]);
-        //     } else if (parts[0].equals("kappa")) {
-        //         kappa = Integer.parseInt(parts[1]);
-        //     } else if (parts[0].equals("casectrl")) {
-        //         caseCtrl = Boolean.parseBoolean(parts[1]);
-        //     } else if (parts[0].equals("minsup")) {
-        //         minSup = Integer.parseInt(parts[1]);
-        //     } else if (parts[0].equals("minsize")) {
-        //         minSize = Integer.parseInt(parts[1]);
-        //     } else if (parts[0].equals("minlen")) {
-        //         minLen = Double.parseDouble(parts[1]);
-        //     }
-        //     // load the Graph if we've got the files
-        //     if (jsonFile!=null) {
-        //         graph = new Graph();
-        //         graph.genotype = genotype;
-        //         graph.readVgJsonFile(jsonFile);
-        //         if (labelsFile!=null) graph.readPathLabels(labelsFile);
-        //     } else if (gfaFile!=null) {
-        //         graph = new Graph();
-        //         graph.genotype = genotype;
-        //         graph.readVgGfaFile(gfaFile);
-        //         if (labelsFile!=null) graph.readPathLabels(labelsFile);
-        //     } else if (dotFile!=null && fastaFile!=null) {
-        //         graph = new Graph();
-        //         graph.genotype = genotype;
-        //         graph.readSplitMEMDotFile(dotFile, fastaFile);
-        //         if (labelsFile!=null) graph.readPathLabels(labelsFile);
-        //     }
-        // }
+        String paramsFile = getParamsFilename(inputPrefix);
+        BufferedReader reader = new BufferedReader(new FileReader(paramsFile));
+        String line = null;
+        String jsonFile = null;
+        String gfaFilename = null;
+        String dotFile = null;
+        String fastaFile = null;
+        String labelsFilename = null;
+        int genotype = PangenomicGraph.BOTH_GENOTYPES;
+        while ((line=reader.readLine())!=null) {
+            String[] parts = line.split("\t");
+            if (parts[0].equals("jsonfile")) {
+                jsonFile = parts[1];
+            } else if (parts[0].equals("gfafile")) {
+                gfaFilename = parts[1];
+            } else if (parts[0].equals("dotFile")) {
+                dotFile = parts[1];
+            } else if (parts[0].equals("fastafile")) {
+                fastaFile = parts[1];
+            } else if (parts[0].equals("pathlabels")) {
+                labelsFilename = parts[1];
+            } else if (parts[0].equals("genotype")) {
+                genotype = Integer.parseInt(parts[1]);
+            } else if (parts[0].equals("alpha")) {
+                alpha = Double.parseDouble(parts[1]);
+            } else if (parts[0].equals("kappa")) {
+                kappa = Integer.parseInt(parts[1]);
+            } else if (parts[0].equals("casectrl")) {
+                caseCtrl = Boolean.parseBoolean(parts[1]);
+            } else if (parts[0].equals("minsup")) {
+                minSup = Integer.parseInt(parts[1]);
+            } else if (parts[0].equals("minsize")) {
+                minSize = Integer.parseInt(parts[1]);
+            } else if (parts[0].equals("minlen")) {
+                minLen = Double.parseDouble(parts[1]);
+            }
+        }
+        // load the Graph if we've got the files
+        if (jsonFile!=null) {
+            // graph = new Graph();
+            // graph.genotype = genotype;
+            // graph.readVgJsonFile(jsonFile);
+            // if (labelsFilename!=null) graph.readPathLabels(labelsFilename);
+        } else if (gfaFilename!=null) {
+            File gfaFile = new File(gfaFilename);
+            System.out.println("Reading graph from "+gfaFile.getPath());
+            graph = new PangenomicGraph();
+            graph.importGFA(gfaFile);
+            graph.setGenotype(genotype);
+            if (labelsFilename!=null) graph.readPathLabels(new File(labelsFilename));
+        } else if (dotFile!=null && fastaFile!=null) {
+            // graph = new Graph();
+            // graph.genotype = genotype;
+            // graph.readSplitMEMDotFile(dotFile, fastaFile);
+            // if (labelsFilename!=null) graph.readPathLabels(labelsFilename);
+        }
     }
 
     /**
@@ -927,39 +930,44 @@ public class FRFinder {
      * etc.
      */
     void readFrequentedRegions() throws FileNotFoundException, IOException {
-        // // do we have a Graph?
-        // if (graph.getNodes().size()==0) {
-        //     System.err.println("ERROR in readFrequentedRegions: graph has not been initialized.");
-        //     System.exit(1);
-        // }
-        // frequentedRegions = new TreeSet<>();
-        // String frFilename = getFRSubpathsFilename(inputPrefix);
-        // BufferedReader reader = new BufferedReader(new FileReader(frFilename));
-        // String line = null;
-        // while ((line=reader.readLine())!=null) {
-        //     String[] fields = line.split("\t");
-        //     NodeSet nodes = new NodeSet(fields[0]);
-        //     int support = Integer.parseInt(fields[1]);
-        //     double avgLength = Double.parseDouble(fields[2]);
-        //     Set<PathWalk> subpaths = new HashSet<>();
-        //     for (int i=0; i<support; i++) {
-        //         line = reader.readLine();
-        //         String[] parts = line.split(":");
-        //         String pathFull = parts[0];
-        //         String nodeString = parts[1];
-        //         // split out the name, genotype, label
-        //         String[] nameParts = pathFull.split("\\.");
-        //         String name = nameParts[0];
-        //         int genotype = -1;
-        //         if (nameParts.length>1) genotype = Integer.parseInt(nameParts[1]);
-        //         String label = null;
-        //         if (nameParts.length>2) label = nameParts[2];
-        //         // add to the subpaths
-        //         subpaths.add(new PathWalk(name, genotype, label, nodeString));
-        //     }
-        //     FrequentedRegion fr = new FrequentedRegion(graph, nodes, subpaths, alpha, kappa, support, avgLength);
-        //     frequentedRegions.add(fr);
-        // }
+        // do we have a Graph?
+        if (graph.getNodes().size()==0) {
+            System.err.println("ERROR in readFrequentedRegions: graph has not been initialized.");
+            System.exit(1);
+        }
+        frequentedRegions = new TreeSet<>();
+        String frFilename = getFRSubpathsFilename(inputPrefix);
+        BufferedReader reader = new BufferedReader(new FileReader(frFilename));
+        String line = null;
+        while ((line=reader.readLine())!=null) {
+            String[] fields = line.split("\t");
+            NodeSet nodes = new NodeSet(fields[0]);
+            int support = Integer.parseInt(fields[1]);
+            double avgLength = Double.parseDouble(fields[2]);
+            Set<PathWalk> subpaths = new HashSet<>();
+            for (int i=0; i<support; i++) {
+                line = reader.readLine();
+                String[] parts = line.split(":");
+                String pathFull = parts[0];
+                String nodeString = parts[1];
+                // split out the name, genotype, label, nodes
+                String[] nameParts = pathFull.split("\\.");
+                String name = nameParts[0];
+                int genotype = -1;
+                if (nameParts.length>1) genotype = Integer.parseInt(nameParts[1]);
+                String label = null;
+                if (nameParts.length>2) label = nameParts[2];
+                List<Node> subNodes = new LinkedList<>();
+                String[] nodesAsStrings = nodeString.replace("[","").replace("]","").split(",");
+                for (String nodeAsString : nodesAsStrings) {
+                    subNodes.add(new Node(Long.parseLong(nodeAsString)));
+                }
+                // add to the subpaths
+                subpaths.add(new PathWalk(graph, subNodes, name, genotype, label));
+            }
+            FrequentedRegion fr = new FrequentedRegion(graph, nodes, subpaths, alpha, kappa, support, avgLength);
+            frequentedRegions.add(fr);
+        }
     }
 
     /**

@@ -25,7 +25,7 @@ public class PathWalk extends GraphWalk<Node,Edge> implements Comparable<PathWal
     /**
      * Creates a walk defined by a sequence of nodes; weight=1.0.
      */
-    PathWalk(Graph<Node,Edge> graph, List<Node> nodeList) {
+    public PathWalk(Graph<Node,Edge> graph, List<Node> nodeList) {
         super(graph, nodeList, 1.0);
         buildSequence();
     }
@@ -33,7 +33,7 @@ public class PathWalk extends GraphWalk<Node,Edge> implements Comparable<PathWal
     /**
      * Creates a walk defined by a sequence of edges; weight=1.0.
      */
-    PathWalk(Graph<Node,Edge> graph, Node startNode, Node endNode, List<Edge> edgeList) {
+    public PathWalk(Graph<Node,Edge> graph, Node startNode, Node endNode, List<Edge> edgeList) {
         super(graph, startNode, endNode, edgeList, 1.0);
         buildSequence();
     }
@@ -41,7 +41,7 @@ public class PathWalk extends GraphWalk<Node,Edge> implements Comparable<PathWal
     /**
      * Creates a walk defined by both a sequence of edges and a sequence of nodes; weight=1.0.
      */
-    PathWalk(Graph<Node,Edge> graph, Node startNode, Node endNode, List<Node> nodeList, List<Edge> edgeList) {
+    public PathWalk(Graph<Node,Edge> graph, Node startNode, Node endNode, List<Node> nodeList, List<Edge> edgeList) {
         super(graph, startNode, endNode, nodeList, edgeList, 1.0);
         buildSequence();
     }
@@ -49,7 +49,7 @@ public class PathWalk extends GraphWalk<Node,Edge> implements Comparable<PathWal
     /**
      * Creates a walk defined by a list of nodes as well as identifying info; weight=1.0.
      */
-    PathWalk(Graph<Node,Edge> graph, List<Node> nodeList, String name, int genotype) {
+    public PathWalk(Graph<Node,Edge> graph, List<Node> nodeList, String name, int genotype) {
         super(graph, nodeList, 1.0);
         this.name = name;
         this.genotype = genotype;
@@ -59,7 +59,7 @@ public class PathWalk extends GraphWalk<Node,Edge> implements Comparable<PathWal
     /**
      * Creates a walk defined by a list of nodes as well as identifying info; weight=1.0.
      */
-    PathWalk(Graph<Node,Edge> graph, List<Node> nodeList, String name, int genotype, String label) {
+    public PathWalk(Graph<Node,Edge> graph, List<Node> nodeList, String name, int genotype, String label) {
         super(graph, nodeList, 1.0);
         this.name = name;
         this.genotype = genotype;

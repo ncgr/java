@@ -73,7 +73,7 @@ public class PangenomicGraph extends DirectedMultigraph<Node,Edge> {
         if (gfaFile==null) {
             return null;
         } else {
-            return gfaFile.getName();
+            return gfaFile.getPath();
         }
     }
 
@@ -84,7 +84,7 @@ public class PangenomicGraph extends DirectedMultigraph<Node,Edge> {
         if (labelsFile==null) {
             return null;
         } else {
-            return labelsFile.getName();
+            return labelsFile.getPath();
         }
     }
 
