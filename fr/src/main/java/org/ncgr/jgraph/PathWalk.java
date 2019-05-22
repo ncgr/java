@@ -20,8 +20,6 @@ public class PathWalk extends GraphWalk<Node,Edge> implements Comparable<PathWal
     private String label;    // an optional label, like "+1", "-1", "case", "control", "M", "F"
     private String sequence; // this path's full genomic sequence
 
-    private Map<String,Integer> gaps = new HashMap<>(); // keep track of gaps already computed
-
     /**
      * Creates a walk defined by a sequence of nodes; weight=1.0.
      */
@@ -206,40 +204,6 @@ public class PathWalk extends GraphWalk<Node,Edge> implements Comparable<PathWal
     }
 
     /**
-     * Return the length of this path's sequence exclusively between the two given nodes (0 if one of the nodes is not in this path, or if nl=nr),
-     * associated with nodes that are NOT in the given NodeSet.
-     * @param nl the "left" node
-     * @param nr the "right" node
-     * @return the length of this path's sequence exclusively between nl and nr
-     */
-    public int gap(Node nl, Node nr, NodeSet nodes) {
-        String key = nl.toString()+"-"+nr.toString()+nodes.toString();
-        if (gaps.containsKey(key)) {
-            return gaps.get(key);
-        } else if (!getNodes().contains(nl) || !getNodes().contains(nr)) {
-            return 0;
-        } else if (nl.equals(nr)) {
-            return 0;
-        } else {
-            int gap = 0;
-            int thisGap = 0;
-            PathWalk subpath = subpath(nl,nr);
-            for (Node n : subpath.getNodes()) {
-                if (nodes.contains(n)) {
-                    // reset and save previous gap if large
-                    if (thisGap>gap) gap = thisGap;
-                    thisGap = 0;
-                } else {
-                    // increment gap
-                    thisGap += n.getSequence().length();
-                }
-            }
-            gaps.put(key, gap);
-            return gap;
-        }
-    }
-
-    /**
      * Return the subsequence inclusively between the two given nodes (empty String if one of the nodes is not present in this path).
      * @param nl the "left" node
      * @param nr the "right" node
@@ -336,15 +300,27 @@ public class PathWalk extends GraphWalk<Node,Edge> implements Comparable<PathWal
             Node nr = null;
             int num = 0;
             for (int j=i; j<m.size(); j++) {
-                if (gap(nl, m.get(j), nodes)>kappa) {
-                    // kappa rejection
-                    break;
+                // kappa test
+                PathWalk subpath = subpath(nl, m.get(j));
+                int maxInsertion = 0; // max insertion
+                int insertion = 0; // continguous insertion
+                for (Node n : subpath.getNodes()) {
+                    if (nodes.contains(n)) {
+                        // reset and save previous insertion if large
+                        if (insertion>maxInsertion) maxInsertion = insertion;
+                        insertion = 0;
+                    } else {
+                        // increment insertion
+                        insertion += n.getSequence().length();
+                    }
                 }
+                if (maxInsertion>kappa) break;
+                // we're good, set nr from this cycle
                 nr = m.get(j);
-                num = j - i + 1;
+                num = j - i + 1; // number of this path's nodes in nodes collection
             }
-            PathWalk subpath = subpath(nl,nr);
             // is this a subpath of an already counted subpath?
+            PathWalk subpath = subpath(nl,nr);
             boolean ignore = false;
             for (PathWalk checkpath : s) {
                 if (checkpath.contains(subpath)) {
@@ -352,18 +328,15 @@ public class PathWalk extends GraphWalk<Node,Edge> implements Comparable<PathWal
                     break;
                 }
             }
-            if (!ignore) {
-                if (num>=alpha*nodes.size()) {
-                    if (subpath.getNodes().size()==0) {
-                        System.err.println("ERROR: subpath.getNodes().size()=0; path="+this.toString()+" nl="+nl+" nr="+nr);
-                    } else {
-                        s.add(subpath);
-                    }
-                }
+            // sanity check
+            if (subpath.getNodes().size()==0) {
+                System.err.println("ERROR: subpath.getNodes().size()=0; path="+this.toString()+" nl="+nl+" nr="+nr);
+                ignore = true;
             }
+            // alpha test on maximal subpath
+            if (!ignore && num>=alpha*nodes.size()) s.add(subpath);
         }
         return s;
     }
-
 }
 
