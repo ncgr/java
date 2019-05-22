@@ -30,6 +30,6 @@ rm -f ecoli.*
 
 echo "********** alpha=$alpha kappa=$kappa **********"
 
-java -cp "build/install/fr/lib/*" org.ncgr.pangenomics.fr.FRFinder  -gfa ecoli/ecoli.pan3.paths.gfa \
-     --outputprefix ecoli \
-     --alpha $alpha --kappa $kappa --debug # --serial # --bruteforce --minsup=1 --minsize=1 --minlen=1
+java -cp "build/install/fr/lib/*" org.ncgr.pangenomics.fr.FRFinder  --gfa ecoli/ecoli.pan3.paths.gfa \
+     --outputprefix ecoli-$alpha-$kappa \
+     --alpha $alpha --kappa $kappa --debug --bruteforce --minsup=1 --minsize=1 --minlen=1

@@ -114,6 +114,9 @@ public class FRFinder {
         // accepted FRPairs so we don't merge them more than once
         Map<String,FRPair> acceptedFRPairs = Collections.synchronizedMap(new HashMap<>());
 
+        // used NodeSets for brute force
+        Set<String> usedNodeSets = Collections.synchronizedSet(new HashSet<>());
+
         // just a counter
         int round = 0;
 
@@ -177,14 +180,13 @@ public class FRFinder {
                         syncFrequentedRegions.parallelStream().forEach((fr2) -> {
                                 if (fr1.compareTo(fr2)>0) {
                                     FRPair frpair = new FRPair(fr1, fr2, graph, alpha, kappa, caseCtrl);
-                                    // loopFRs.add(frpair.merged);
-                                    // if (!frequentedRegions.contains(frpair.merged) &&
-                                    //     frpair.merged.support>0 &&
-                                    //     frpair.merged.support>=minSup &&
-                                    //     frpair.merged.nodes.size()>=minSize &&
-                                    //     frpair.merged.avgLength>=minLen) {
-                                    //     frequentedRegions.add(frpair.merged);
-                                    // }
+                                    String nodesKey = frpair.nodes.toString();
+                                    if (!usedNodeSets.contains(nodesKey)) {
+                                        usedNodeSets.add(nodesKey);
+                                        frpair.merge();
+                                        loopFRs.add(frpair.merged);
+                                        if (frpair.merged.support>=minSup && frpair.merged.avgLength>=minLen && frpair.merged.nodes.size()>=minSize) frequentedRegions.add(frpair.merged);
+                                    }
                                 }
                             });
                     });
@@ -548,7 +550,8 @@ public class FRFinder {
         File gfaFile = new File(cmd.getOptionValue("gfa"));
 
         // assume path labels file
-        File labelsFile = new File(cmd.getOptionValue("pathlabels"));
+        File labelsFile = null;
+        if (cmd.hasOption("pathlabels")) labelsFile = new File(cmd.getOptionValue("pathlabels"));
 
         // run parameters
         double alpha = 0.0;
@@ -645,33 +648,33 @@ public class FRFinder {
      * This can be used as input to a classification routine.
      */
     void printPathFRs() throws IOException {
-    //     PrintStream out = System.out;
-    //     if (outputPrefix==null) {
-    //         printHeading("PATH FREQUENTED REGIONS");
-    //     } else {
-    //         out = new PrintStream(getPathFRsFilename(outputPrefix));
-    //     }
-    //     // columns are paths
-    //     boolean first = true;
-    //     for (PathWalk path : graph.getPaths()) {
-    //         if (first) {
-    //             first = false;
-    //         } else {
-    //             out.print("\t");
-    //         }
-    //         out.print(path.getNameGenotypeLabel());
-    //     }
-    //     out.println("");
-    //     // rows are FRs
-    //     int c = 1;
-    //     for (FrequentedRegion fr : frequentedRegions) {
-    //         out.print("FR"+(c++));
-    //         for (PathWalk path : graph.getPaths()) {
-    //             out.print("\t"+fr.countSubpathsOf(path));
-    //         }
-    //         out.println("");
-    //     }
-    //     if (outputPrefix!=null) out.close();
+        PrintStream out = System.out;
+        if (outputPrefix==null) {
+            printHeading("PATH FREQUENTED REGIONS");
+        } else {
+            out = new PrintStream(getPathFRsFilename(outputPrefix));
+        }
+        // columns are paths
+        boolean first = true;
+        for (PathWalk path : graph.getPaths()) {
+            if (first) {
+                first = false;
+            } else {
+                out.print("\t");
+            }
+            out.print(path.getNameGenotypeLabel());
+        }
+        out.println("");
+        // rows are FRs
+        int c = 1;
+        for (FrequentedRegion fr : frequentedRegions) {
+            out.print("FR"+(c++));
+            for (PathWalk path : graph.getPaths()) {
+                out.print("\t"+fr.countSubpathsOf(path));
+            }
+            out.println("");
+        }
+        if (outputPrefix!=null) out.close();
     }
 
     /**
