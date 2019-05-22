@@ -342,8 +342,6 @@ public class FRFinder {
      * Post-process a set of FRs for given minSup, minLen and minSize.
      */
     public void postprocess() throws FileNotFoundException, IOException {
-        // DEBUG
-        System.out.println("Running postprocess()");
         TreeSet<FrequentedRegion> filteredFRs = new TreeSet<>();
         for (FrequentedRegion fr : frequentedRegions) {
             boolean passes = true;
@@ -905,19 +903,22 @@ public class FRFinder {
             // graph = new Graph();
             // graph.genotype = genotype;
             // graph.readVgJsonFile(jsonFile);
-            // if (labelsFilename!=null) graph.readPathLabels(labelsFilename);
         } else if (gfaFilename!=null) {
+            if (verbose) System.out.println("Reading graph from "+gfaFilename);
             File gfaFile = new File(gfaFilename);
-            System.out.println("Reading graph from "+gfaFile.getPath());
             graph = new PangenomicGraph();
             graph.importGFA(gfaFile);
             graph.setGenotype(genotype);
-            if (labelsFilename!=null) graph.readPathLabels(new File(labelsFilename));
         } else if (dotFile!=null && fastaFile!=null) {
             // graph = new Graph();
             // graph.genotype = genotype;
             // graph.readSplitMEMDotFile(dotFile, fastaFile);
-            // if (labelsFilename!=null) graph.readPathLabels(labelsFilename);
+        }
+        // load the path labels if we got 'em
+        if (labelsFilename!=null) {
+            if (verbose) System.out.println("Reading labels file from "+labelsFilename);
+            File labelsFile = new File(labelsFilename);
+            graph.readPathLabels(labelsFile);
         }
     }
 
