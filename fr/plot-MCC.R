@@ -2,28 +2,34 @@
 ## plot the Mathews correlation coefficition (MCC) in some informative way
 ##
 
-plot(hist(results$MCC, breaks=20),
-     xlim=c(-1,1), main="", xlab="Mathews Correlation Coefficient (MCC)")
 
-title(main=paste("study:",study," ",
-                 "graph:",results$graph[1],
-                 "\n",
-                 cases," case paths; ",controls," control paths; ",
-                 length(results$FPR)," SVM cross-comparisons",
-                 "\n",
-                 mergeMode,
-                 sep=""),
-      cex.main=1.0
-      )
+## PNG OUTPUT
+cex.axis = 1.5
+cex.lab = 1.5
+cex.main = 1.5
+cexText = 1.4
 
-legend(x="topleft",
-       legend=c(
-           paste("alpha:\t", capture.output(cat(alphaValues,sep=",")), sep=""),
-           paste("kappa:\t", capture.output(cat(kappaValues,sep=",")), sep=""),
-           paste("minsup:\t", capture.output(cat(minsupValues,sep=",")), sep=""),
-           paste("minsize:\t", capture.output(cat(minsizeValues,sep=",")), sep=""),
-           paste("minlen:\t", capture.output(cat(minlenValues,sep=",")), sep="")
-       ),
-       bty="n",
-       pt.cex=0
-       )
+plot(hist(results$MCC, breaks=(-10:10)/10), main="", xlim=c(-1,1),
+     xlab="Mathews Correlation Coefficient (MCC)",
+     cex.axis=cex.axis, cex.lab=cex.lab)
+
+title(main=paste("Study:",study," ",mergeMode,sep=""), cex.main=cex.main)
+
+xmin = par()$usr[1]
+xmax = par()$usr[2]
+ymin = par()$usr[3]
+ymax = par()$usr[4]
+
+xtext = -1.0
+ytext = ymax*0.9
+dytext = ymax*0.03
+
+text(xtext, ytext-dytext*0, paste("graph:\t\t",graph), pos=4, cex=cexText)
+text(xtext, ytext-dytext*1, paste("case paths:\t",cases), pos=4, cex=cexText)
+text(xtext, ytext-dytext*2, paste("control paths:\t",controls), pos=4, cex=cexText)
+text(xtext, ytext-dytext*3, paste("SVM x-comps:\t", length(results$FPR)), pos=4, cex=cexText)
+text(xtext, ytext-dytext*5, paste("alpha:\t", capture.output(cat(alphaValues,sep=","))), pos=4, cex=cexText)
+text(xtext, ytext-dytext*6, paste("kappa:\t", capture.output(cat(kappaValues,sep=","))), pos=4, cex=cexText)
+text(xtext, ytext-dytext*7, paste("minsup:\t", capture.output(cat(minsupValues,sep=","))), pos=4, cex=cexText)
+text(xtext, ytext-dytext*8, paste("minsize:\t", capture.output(cat(minsizeValues,sep=","))), pos=4, cex=cexText)
+text(xtext, ytext-dytext*9, paste("minlen:\t", capture.output(cat(minlenValues,sep=","))), pos=4, cex=cexText)

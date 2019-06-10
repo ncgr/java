@@ -5,15 +5,33 @@
 library(scales)
 library(RColorBrewer)
 
+## PNG OUTPUT
+xtext = 0.5
+ytext = 0.3
+dytext = 0.03
+xleg = 0.4
+yleg = 0.15
+cex.axis = 1.8
+cex.lab = 1.5
+cex.main = 1.3
+cexStep = 0.6
+cexText = 1.4
+
+## ## ON-SCREEN OUTPUT
+## xtext = 0.5
+## ytext = 0.5
+## dytext = 0.1
+## xleg = 0.35
+## yleg = 0.2
+## cex.main = 1.0
+## cex.axis = 1.0
+## cex.lab = 1.0
+## cexStep = 0.5
+## cexText = 0.9
+
 colors = brewer.pal(4, "Dark2")
 
 plotROC = TRUE
-
-if (requireHomozygous) {
-    mergeMode = "HOM mode: CASE call correct IFF both case paths called CASE"
-} else {
-    mergeMode = "HET mode: CASE call correct IF either case path called CASE"
-}
 
 if (plotROC) {
     x = results$FPR
@@ -30,71 +48,43 @@ if (plotROC) {
 plot(x[results$alpha==0.2], y[results$alpha==0.2],
      xlim=c(0,1), ylim=c(0,1),
      xlab=xlab, ylab=ylab,
-     cex=0.4,
-     col=alpha(colors[1], 0.5)
+     cex=cexStep*1,
+     col=alpha(colors[1], 0.5),
+     cex.axis=cex.axis, cex.lab=cex.lab
      )
 points(x[results$alpha==0.5], y[results$alpha==0.5],
-       cex=0.6,
+       cex=cexStep*2,
        col=alpha(colors[2], 0.5)
        )
 points(x[results$alpha==0.8], y[results$alpha==0.8],
-       cex=0.8,
+       cex=cexStep*3,
        col=alpha(colors[3], 0.5)
        )
 points(x[results$alpha==1.0], y[results$alpha==1.0],
-       cex=1.0,
+       cex=cexStep*4,
        col=alpha(colors[4], 0.5)
        )
 
-title(main=paste("study:",study," ",
-                 "graph:",results$graph[1],
-                 "\n",
-                 cases," case paths; ",controls," control paths; ",
-                 length(results$FPR)," SVM cross-comparisons",
-                 "\n",
-                 mergeMode,
-                 sep=""),
-      cex.main=1.0
-      )
+title(main=paste("Study:",study," ",mergeMode,sep=""), cex.main=cex.main)
 
 if (plotROC) {
     lines(c(0,1), c(0,1), lty=2, col="gray")
 }
 
-legend(x="bottomright",
+legend(x="bottomleft",
        legend=c(expression(paste(alpha,"=0.2",sep="")),
                 expression(paste(alpha,"=0.5",sep="")),
                 expression(paste(alpha,"=0.8",sep="")),
                 expression(paste(alpha,"=1.0",sep=""))),
-       pch=1, col=colors, pt.cex=c(0.4, 0.6, 0.8, 1.0)
+       pch=1, col=colors, pt.cex=cexStep*c(1,2,3,4), cex=cexText
        )
 
-alphaValueString = 
-
-legend(x=0.35, y=0.2,
-       legend=c(
-           paste("alpha:\t", capture.output(cat(alphaValues,sep=",")), sep=""),
-           paste("kappa:\t", capture.output(cat(kappaValues,sep=",")), sep=""),
-           paste("minsup:\t", capture.output(cat(minsupValues,sep=",")), sep=""),
-           paste("minsize:\t", capture.output(cat(minsizeValues,sep=",")), sep=""),
-           paste("minlen:\t", capture.output(cat(minlenValues,sep=",")), sep="")
-       ),
-       bty="n",
-       pt.cex=0
-       )
-## "\n",
-## "kappa=",capture.output(cat(kappaValues)),
-## "\n",
-
-
-## legend(x, y = NULL, legend, fill = NULL, col = par("col"),
-##        border = "black", lty, lwd, pch,
-##        angle = 45, density = NULL, bty = "o", bg = par("bg"),
-##        box.lwd = par("lwd"), box.lty = par("lty"), box.col = par("fg"),
-##        pt.bg = NA, cex = 1, pt.cex = cex, pt.lwd = lwd,
-##        xjust = 0, yjust = 1, x.intersp = 1, y.intersp = 1,
-##        adj = c(0, 0.5), text.width = NULL, text.col = par("col"),
-##        text.font = NULL, merge = do.lines && has.pch, trace = FALSE,
-##        plot = TRUE, ncol = 1, horiz = FALSE, title = NULL,
-##        inset = 0, xpd, title.col = text.col, title.adj = 0.5,
-##        seg.len = 2)
+text(xtext, ytext-dytext*0, paste("graph:\t\t",graph), pos=4, cex=cexText)
+text(xtext, ytext-dytext*1, paste("case paths:\t",cases), pos=4, cex=cexText)
+text(xtext, ytext-dytext*2, paste("control paths:\t",controls), pos=4, cex=cexText)
+text(xtext, ytext-dytext*3, paste("SVM x-comps:\t", length(results$FPR)), pos=4, cex=cexText)
+text(xtext, ytext-dytext*5, paste("alpha:\t", capture.output(cat(alphaValues,sep=","))), pos=4, cex=cexText)
+text(xtext, ytext-dytext*6, paste("kappa:\t", capture.output(cat(kappaValues,sep=","))), pos=4, cex=cexText)
+text(xtext, ytext-dytext*7, paste("minsup:\t", capture.output(cat(minsupValues,sep=","))), pos=4, cex=cexText)
+text(xtext, ytext-dytext*8, paste("minsize:\t", capture.output(cat(minsizeValues,sep=","))), pos=4, cex=cexText)
+text(xtext, ytext-dytext*9, paste("minlen:\t", capture.output(cat(minlenValues,sep=","))), pos=4, cex=cexText)

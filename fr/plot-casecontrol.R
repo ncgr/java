@@ -5,10 +5,25 @@
 
 library(scales)
 
-## params location
+## ## PNG OUTPUT
+## xfrac = 0
+## yfrac = 0.95
+## dyfrac = 0.03
+## cex.axis = 1.8
+## cex.lab = 1.5
+## cex.main = 1.8
+## cexDots = 1.0
+## cexText = 1.5
+
+## ON-SCREEN OUTPUT
 xfrac = 0
 yfrac = 0.95
 dyfrac = 0.04
+cex.axis = 1.0
+cex.lab = 1.0
+cex.main = 1.0
+cexDots = 0.5
+cexText = 0.9
 
 if (labelsExist) {
 
@@ -20,12 +35,13 @@ if (labelsExist) {
     plot(frs$ctrl, frs$case,
          xlim=c(0,xmax), ylim=c(0,ymax),
          xlab="ctrl sample support",  ylab="case sample support",
-         col=alpha("black",0.5)
+         col=alpha("black",0.5), cex.axis=cex.axis, cex.lab=cex.lab
          )
-    title(main=paste(outputprefix,": alpha=",alpha," kappa=",kappa," case/ctrl=",casectrl, sep=""), cex.main=0.9)
+    title(main=paste(outputprefix,": alpha=",alpha," kappa=",kappa," case/ctrl=",casectrl, sep=""), cex.main=cex.main)
     
-    text(frs$ctrl, frs$case, paste(frs$size,frs$avgLen),
-         cex=0.4, pos=1, offset=0.4, col=alpha("black",0.5)
+    text(frs$ctrl, frs$case,
+         paste(frs$size,",",frs$avgLen,sep=""),
+         cex=cexDots, pos=1, offset=0.4, col=alpha("black",0.5)
          )
     
 

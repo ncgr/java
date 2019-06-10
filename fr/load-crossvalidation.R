@@ -117,7 +117,12 @@ for (alpha in alphaValues) {
                             FPR = FP/controlSamples
                             precision = TP/(TP+FP)
                             recall = TP/(TP+FN)
-                            MCC = (TP*TN-FP*FN)/sqrt((TP+FP)*(TP+FN)*(TN+FP)*(TN+FN))
+                            ## Matthews correlation coefficient handling zero denominator
+                            denom = (TP+FP)*(TP+FN)*(TN+FP)*(TN+FN)
+                            if (denom==0) {
+                                denom = 1
+                            }
+                            MCC = (TP*TN-FP*FN)/sqrt(denom)
                             ## append to the results dataframe
                             df = data.frame(graph=graph, alpha=as.numeric(alpha), kappa=kappa,
                                             minsup=minsup, minsize=minsize, minlen=minlen,
