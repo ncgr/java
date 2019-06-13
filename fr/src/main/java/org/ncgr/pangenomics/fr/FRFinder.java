@@ -242,7 +242,7 @@ public class FRFinder {
                         usedFRs.add(frpair.fr2);
                         syncFrequentedRegions.add(frpair.merged);
                         frequentedRegions.add(frpair.merged);
-                        System.out.println(round+":"+frpair.fr1.nodes.toString()+frpair.fr2.nodes.toString()+"\t"+frpair.merged.toString());
+                        System.out.println(round+":"+frpair.merged.toString());
                     }
                 }
             } else {
@@ -297,7 +297,7 @@ public class FRFinder {
                         usedFRs.add(frpair.fr2);
                         syncFrequentedRegions.add(frpair.merged);
                         frequentedRegions.add(frpair.merged);
-                        System.out.println(round+":"+frpair.fr1.nodes+frpair.fr2.nodes+"\t"+frpair.merged.toString());
+                        System.out.println(round+":"+frpair.merged.toString());
                     }
                 }
             }
