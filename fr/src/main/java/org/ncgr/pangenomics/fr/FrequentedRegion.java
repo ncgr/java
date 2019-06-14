@@ -1,9 +1,9 @@
 package org.ncgr.pangenomics.fr;
 
+import org.ncgr.jgraph.Node;
+import org.ncgr.jgraph.NodeSet;
 import org.ncgr.jgraph.PangenomicGraph;
 import org.ncgr.jgraph.PathWalk;
-import org.ncgr.pangenomics.Node;
-import org.ncgr.pangenomics.NodeSet;
 
 import java.text.DecimalFormat;
 
@@ -64,7 +64,6 @@ public class FrequentedRegion implements Comparable<FrequentedRegion> {
         }
         // compute the subpaths, average length, support, etc.
         this.nodes.update();
-        updateSubpaths();
         updateSupport();
         updateAvgLength();
     }
@@ -82,7 +81,7 @@ public class FrequentedRegion implements Comparable<FrequentedRegion> {
             this.casePaths = graph.getLabelCounts().get("case");
             this.ctrlPaths = graph.getLabelCounts().get("ctrl");
         }
-        updateSupport();
+        support = subpaths.size();
         updateAvgLength();
     }
 
@@ -139,21 +138,14 @@ public class FrequentedRegion implements Comparable<FrequentedRegion> {
     }
 
     /**
-     * Update the subpaths from the graph paths for the current alpha and kappa values.
+     * Update the subpaths and support from the graph paths for the current alpha and kappa values.
      */
-    void updateSubpaths() {
+    void updateSupport() {
         subpaths = new HashSet<>();
         for (PathWalk p : graph.getPaths()) {
             Set<PathWalk> supportPaths = p.computeSupport(nodes, alpha, kappa);
             subpaths.addAll(supportPaths);
         }
-    }
-
-    /**
-     * Update the current support of this frequented region, which right now is just the size of the subpaths map.
-     * NOTE: haven't yet implemented rc option
-     */
-    void updateSupport() {
         support = subpaths.size();
     }
 

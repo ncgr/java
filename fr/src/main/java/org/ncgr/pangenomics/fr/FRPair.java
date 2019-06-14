@@ -2,13 +2,13 @@ package org.ncgr.pangenomics.fr;
 
 import java.util.List;
 import java.util.LinkedList;
+import java.util.Set;
 
 import org.ncgr.jgraph.Edge;
+import org.ncgr.jgraph.Node;
+import org.ncgr.jgraph.NodeSet;
 import org.ncgr.jgraph.PangenomicGraph;
 import org.ncgr.jgraph.PathWalk;
-
-import org.ncgr.pangenomics.Node;
-import org.ncgr.pangenomics.NodeSet;
 
 import org.jgrapht.GraphPath;
 import org.jgrapht.alg.shortestpath.DijkstraShortestPath;
@@ -55,17 +55,27 @@ public class FRPair implements Comparable<FRPair> {
             for (Node n1 : nodes) {
                 for (Node n2 : nodes) {
                     if (n1.getId()<n2.getId()) {
-                        GraphPath<Node,Edge> subpath = dsp.getPath(n1, n2);
-                        if (subpath==null) {
-                            // do nothing
-                        } else {
-                            List<Node> missingNodes = new LinkedList<>();
-                            for (Node n : subpath.getVertexList()) {
-                                if (!nodes.contains(n)) {
-                                    missingNodes.add(n);
+                        // DEBUG
+                        try {
+                            GraphPath<Node,Edge> subpath = dsp.getPath(n1, n2);
+                            if (subpath==null) {
+                                // do nothing
+                            } else {
+                                List<Node> missingNodes = new LinkedList<>();
+                                for (Node n : subpath.getVertexList()) {
+                                    if (!nodes.contains(n)) {
+                                        missingNodes.add(n);
+                                    }
                                 }
+                                if (missingNodes.size()<minMissing) minMissing = missingNodes.size();
                             }
-                            if (missingNodes.size()<minMissing) minMissing = missingNodes.size();
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                            System.err.println(System.identityHashCode(n1)+" "+System.identityHashCode(n2));
+                            Set<Node> graphNodes = graph.vertexSet();
+                            for (Node n : graphNodes) System.out.print(System.identityHashCode(n)+" ");
+                            System.out.println("");
+                            System.exit(1);
                         }
                     }
                 }

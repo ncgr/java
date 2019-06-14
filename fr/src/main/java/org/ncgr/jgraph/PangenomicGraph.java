@@ -1,7 +1,5 @@
 package org.ncgr.jgraph;
 
-import org.ncgr.pangenomics.Node;
-
 import java.io.*;
 import java.util.*;
 

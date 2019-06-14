@@ -13,9 +13,9 @@ xtext = xmin + (xmax-xmin)*xfrac
 ytext = ymin + (ymax-ymin)*yfrac
 dytext = (ymax-ymin)*dyfrac
 
-text(xtext, ytext-dytext*0, paste("graph:\t\t",gfafile), pos=4, cex=cexText)
+text(xtext, ytext-dytext*0, gfafile, pos=4, cex=cexText)
 if (labelsExist) {
-    text(xtext, ytext-dytext*1, paste("labels:\t\t",pathlabels), pos=4, cex=cexText)
+    text(xtext, ytext-dytext*1, pathlabels, pos=4, cex=cexText)
     text(xtext, ytext-dytext*2, paste("case paths:\t",labelcounts["case",1]), pos=4, cex=cexText)
     text(xtext, ytext-dytext*3, paste("control paths:\t",labelcounts["ctrl",1]), pos=4, cex=cexText)
 }

@@ -5,25 +5,25 @@
 
 library(scales)
 
-## ## PNG OUTPUT
-## xfrac = 0
-## yfrac = 0.95
-## dyfrac = 0.03
-## cex.axis = 1.8
-## cex.lab = 1.5
-## cex.main = 1.8
-## cexDots = 1.0
-## cexText = 1.5
+## PNG OUTPUT
+xfrac = 0.0
+yfrac = 0.9
+dyfrac = 0.03
+cex.axis = 1.8
+cex.lab = 1.5
+cex.main = 1.8
+cexDots = 1.0
+cexText = 1.5
 
-## ON-SCREEN OUTPUT
-xfrac = 0
-yfrac = 0.95
-dyfrac = 0.04
-cex.axis = 1.0
-cex.lab = 1.0
-cex.main = 1.0
-cexDots = 0.5
-cexText = 0.9
+## ## ON-SCREEN OUTPUT
+## xfrac = 0.65
+## yfrac = 0.65
+## dyfrac = 0.04
+## cex.axis = 1.0
+## cex.lab = 1.0
+## cex.main = 1.0
+## cexDots = 0.5
+## cexText = 0.9
 
 if (labelsExist) {
 

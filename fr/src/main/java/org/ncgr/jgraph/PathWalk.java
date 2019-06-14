@@ -5,9 +5,6 @@ import org.jgrapht.graph.*;
 
 import java.util.*;
 
-import org.ncgr.pangenomics.Node;
-import org.ncgr.pangenomics.NodeSet;
-
 /**
  * An extension of GraphWalk to provide a genomic path through the graph.
  *

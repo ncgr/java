@@ -1,9 +1,9 @@
 package org.ncgr.pangenomics.fr;
 
+import org.ncgr.jgraph.Node;
+import org.ncgr.jgraph.NodeSet;
 import org.ncgr.jgraph.PangenomicGraph;
 import org.ncgr.jgraph.PathWalk;
-import org.ncgr.pangenomics.Node;
-import org.ncgr.pangenomics.NodeSet;
 
 import java.io.*;
 import java.util.*;
@@ -121,32 +121,37 @@ public class FRFinder {
         int round = 0;
 
         if (resume) {
+            // resume from a previous run
             System.out.println("# resuming from previous run");
             String line = null;
             // frequentedRegions
+            System.out.println("#   previously found FRs...");
             BufferedReader frReader = new BufferedReader(new FileReader(FREQUENTED_REGIONS_SAVE));
             while ((line=frReader.readLine())!=null) {
                 String[] parts = line.split("\t");
-                NodeSet nodes = new NodeSet(parts[0]);
+                NodeSet nodes = new NodeSet(graph, parts[0]);
                 frequentedRegions.add(new FrequentedRegion(graph, nodes, alpha, kappa));
                 round++;
             }
             // syncFrequentedRegions
+            System.out.println("#   syncFrequentedRegions...");
             BufferedReader sfrReader = new BufferedReader(new FileReader(SYNC_FREQUENTED_REGIONS_SAVE));
             while ((line=sfrReader.readLine())!=null) {
                 String[] parts = line.split("\t");
-                NodeSet nodes = new NodeSet(parts[0]);
+                NodeSet nodes = new NodeSet(graph, parts[0]);
                 syncFrequentedRegions.add(new FrequentedRegion(graph, nodes, alpha, kappa));
             }
             // usedFRs
+            System.out.println("#   usedFRs...");
             BufferedReader usedFRsReader = new BufferedReader(new FileReader(USED_FRS_SAVE));
             while ((line=usedFRsReader.readLine())!=null) {
                 String[] parts = line.split("\t");
-                NodeSet nodes = new NodeSet(parts[0]);
+                NodeSet nodes = new NodeSet(graph, parts[0]);
                 usedFRs.add(new FrequentedRegion(graph, nodes, alpha, kappa));
             }
+            System.out.println("#   now continuing...");
         } else {
-            // initialize syncFrequentedRegions with single-node FRs
+            // initialize syncFrequentedRegions with single-node FRs that have alpha/kappa support
             for (Node node : graph.getNodes()) {
                 NodeSet c = new NodeSet();
                 c.add(node);
@@ -942,7 +947,7 @@ public class FRFinder {
         String line = null;
         while ((line=reader.readLine())!=null) {
             String[] fields = line.split("\t");
-            NodeSet nodes = new NodeSet(fields[0]);
+            NodeSet nodes = new NodeSet(graph, fields[0]);
             int support = Integer.parseInt(fields[1]);
             double avgLength = Double.parseDouble(fields[2]);
             Set<PathWalk> subpaths = new HashSet<>();

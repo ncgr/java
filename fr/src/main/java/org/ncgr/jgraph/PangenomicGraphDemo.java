@@ -1,7 +1,6 @@
 package org.ncgr.jgraph;
 
 import org.ncgr.pangenomics.Path;
-import org.ncgr.pangenomics.Node;
 
 import java.awt.*;
 import java.io.*;

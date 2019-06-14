@@ -30,4 +30,4 @@ echo "# $prefix alpha=$alpha kappa=$kappa"
 
 java -server -cp "build/install/fr/lib/*" org.ncgr.pangenomics.fr.FRFinder --gfa Schiz/$prefix.paths.gfa  \
      --pathlabels Schiz/labels.txt --outputprefix $prefix-$alpha-$kappa \
-     --alpha $alpha --kappa $kappa --casectrl --resume
+     --alpha $alpha --kappa $kappa --casectrl --resume --serial

@@ -6,8 +6,6 @@ import org.jgrapht.io.*;
 import java.io.*;
 import java.util.*;
 
-import org.ncgr.pangenomics.Node;
-
 /**
  * Importer for GFA files as output from vg view --gfa.
  *
