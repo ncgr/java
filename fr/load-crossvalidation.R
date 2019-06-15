@@ -32,7 +32,7 @@ results = data.frame(graph=character(), alpha=numeric(), kappa=numeric(),
                      minsup=numeric(), minsize=numeric(), minlen=numeric(), 
                      maxIndex=numeric(), C=numeric(), gamma=numeric(), nrFold=numeric(),
                      cases=numeric(), controls=numeric(), caseFails=numeric(), controlFails=numeric(),
-                     TPR=numeric(), FPR=numeric(), precision=numeric(), recall=numeric(), MCC=numeric())
+                     TPR=numeric(), FPR=numeric(), precision=numeric(), recall=numeric(), MCC=numeric(), F1=numeric())
 
 ## loop through all the files, adding to results
 for (alpha in alphaValues) {
@@ -123,12 +123,14 @@ for (alpha in alphaValues) {
                                 denom = 1
                             }
                             MCC = (TP*TN-FP*FN)/sqrt(denom)
+			    ## F1 score
+			    F1 = 2*precision*recall/(precision+recall)
                             ## append to the results dataframe
                             df = data.frame(graph=graph, alpha=as.numeric(alpha), kappa=kappa,
                                             minsup=minsup, minsize=minsize, minlen=minlen,
                                             maxIndex=maxIndex, C=C, gamma=gamma, nrFold=nrFold,
                                             cases=cases, controls=controls, caseFails=caseFails, controlFails=controlFails,
-                                            TPR=TPR, FPR=FPR, precision=precision, recall=recall, MCC=MCC)
+                                            TPR=TPR, FPR=FPR, precision=precision, recall=recall, MCC=MCC, F1=F1)
                             results = rbind(results, df)
                         }
                     }

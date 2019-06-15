@@ -28,6 +28,7 @@ kappa=$3
 
 echo "# $prefix alpha=$alpha kappa=$kappa"
 
-java -server -cp "build/install/fr/lib/*" org.ncgr.pangenomics.fr.FRFinder --gfa Schiz/$prefix.paths.gfa  \
-     --pathlabels Schiz/labels.txt --outputprefix $prefix-$alpha-$kappa \
-     --alpha $alpha --kappa $kappa --casectrl --resume --maxround 144
+java -Xmx160g -XX:+UseParallelGC -Xms2g -XX:SoftRefLRUPolicyMSPerMB=1 -XX:MaxHeapFreeRatio=99 \
+     -server -cp "build/install/fr/lib/*" org.ncgr.pangenomics.fr.FRFinder \
+     --gfa Schiz/$prefix.paths.gfa --pathlabels Schiz/labels.txt --outputprefix $prefix-$alpha-$kappa \
+     --alpha $alpha --kappa $kappa --casectrl --resume

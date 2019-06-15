@@ -1,5 +1,5 @@
 ##
-## plot the Mathews correlation coefficition (MCC) in some informative way
+## plot the F1 score in some informative way
 ##
 
 
@@ -9,8 +9,8 @@ cex.lab = 1.5
 cex.main = 1.5
 cexText = 1.4
 
-plot(hist(results$MCC, breaks=(-10:10)/10), main="", xlim=c(-1,1),
-     xlab="Mathews Correlation Coefficient (MCC)",
+plot(hist(results$F1, breaks=(0:20)/20), main="", xlim=c(0,1),
+     xlab="F1 Score",
      cex.axis=cex.axis, cex.lab=cex.lab)
 
 title(main=paste("Study:",study," ",mergeMode,sep=""), cex.main=cex.main)
@@ -20,7 +20,7 @@ xmax = par()$usr[2]
 ymin = par()$usr[3]
 ymax = par()$usr[4]
 
-xtext = -1.0
+xtext = 0.0
 ytext = ymax*0.9
 dytext = ymax*0.03
 
@@ -35,4 +35,4 @@ text(xtext, ytext-dytext*7, paste("minsup:\t", capture.output(cat(minsupValues,s
 text(xtext, ytext-dytext*8, paste("minsize:\t", capture.output(cat(minsizeValues,sep=","))), pos=4, cex=cexText)
 text(xtext, ytext-dytext*9, paste("minlen:\t", capture.output(cat(minlenValues,sep=","))), pos=4, cex=cexText)
 
-text(xtext, ytext-dytext*11, paste("max(MCC):\t", round(max(results$MCC),2)), pos=4, cex=cexText)
+text(xtext, ytext-dytext*11, paste("max(F1):\t", round(max(results$F1),2)), pos=4, cex=cexText)
