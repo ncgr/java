@@ -28,6 +28,7 @@ public class FRFinder {
     static int MINSUP = 1;
     static int MINSIZE = 1;
     static double MINLEN = 1.0;
+    static int MAXROUND = 0;
     static boolean CASE_CTRL = false;
     static boolean VERBOSE = false;
     static boolean DEBUG = false;
@@ -43,13 +44,14 @@ public class FRFinder {
     // optional parameters, set with setters
     boolean verbose = VERBOSE;
     boolean debug = DEBUG;
-    int minSup = MINSUP;   // minimum support: minimum number of genome paths (fr.support) for an FR to be considered interesting
-    int minSize = MINSIZE; // minimum size: minimum number of de Bruijn nodes (fr.nodes.size()) that an FR must contain to be considered interesting
-    double minLen = MINLEN;   // minimum average length of a frequented region's subpath sequences (fr.avgLength) to be considered interesting
+    int minSup = MINSUP;          // minimum support: minimum number of genome paths (fr.support) for an FR to be considered interesting
+    int minSize = MINSIZE;        // minimum size: minimum number of de Bruijn nodes (fr.nodes.size()) that an FR must contain to be considered interesting
+    double minLen = MINLEN;       // minimum average length of a frequented region's subpath sequences (fr.avgLength) to be considered interesting
+    int maxRound = MAXROUND;      // maximum FR-finding round to run
     boolean caseCtrl = CASE_CTRL; // emphasize FRs that have large case/control support
     boolean bruteForce = BRUTE_FORCE; // find FRs comprehensively with brute force, not using heuristic approach from paper; for testing only!
-    boolean serial = SERIAL; // serial processing for demos or experiments
-    boolean resume = RESUME; // resume from a previous run
+    boolean serial = SERIAL;      // serial processing for demos or experiments
+    boolean resume = RESUME;      // resume from a previous run
 
     // save files
     String SYNC_FREQUENTED_REGIONS_SAVE = "syncFrequentedRegions.save.txt";
@@ -117,7 +119,7 @@ public class FRFinder {
         // used NodeSets for brute force
         Set<String> usedNodeSets = Collections.synchronizedSet(new HashSet<>());
 
-        // just a counter
+        // FR-finding round counter
         int round = 0;
 
         if (resume) {
@@ -125,7 +127,7 @@ public class FRFinder {
             System.out.println("# resuming from previous run");
             String line = null;
             // frequentedRegions
-            System.out.println("#   previously found FRs...");
+            System.out.print("#   frequentedRegions...");
             BufferedReader frReader = new BufferedReader(new FileReader(FREQUENTED_REGIONS_SAVE));
             while ((line=frReader.readLine())!=null) {
                 String[] parts = line.split("\t");
@@ -133,23 +135,26 @@ public class FRFinder {
                 frequentedRegions.add(new FrequentedRegion(graph, nodes, alpha, kappa));
                 round++;
             }
+            System.out.println(frequentedRegions.size());
             // syncFrequentedRegions
-            System.out.println("#   syncFrequentedRegions...");
+            System.out.print("#   syncFrequentedRegions...");
             BufferedReader sfrReader = new BufferedReader(new FileReader(SYNC_FREQUENTED_REGIONS_SAVE));
             while ((line=sfrReader.readLine())!=null) {
                 String[] parts = line.split("\t");
                 NodeSet nodes = new NodeSet(graph, parts[0]);
                 syncFrequentedRegions.add(new FrequentedRegion(graph, nodes, alpha, kappa));
             }
+            System.out.println(syncFrequentedRegions.size());
             // usedFRs
-            System.out.println("#   usedFRs...");
+            System.out.print("#   usedFRs...");
             BufferedReader usedFRsReader = new BufferedReader(new FileReader(USED_FRS_SAVE));
             while ((line=usedFRsReader.readLine())!=null) {
                 String[] parts = line.split("\t");
                 NodeSet nodes = new NodeSet(graph, parts[0]);
                 usedFRs.add(new FrequentedRegion(graph, nodes, alpha, kappa));
             }
-            System.out.println("#   now continuing...");
+            System.out.println(usedFRs.size());
+            System.out.println("# now continuing...");
         } else {
             // initialize syncFrequentedRegions with single-node FRs that have alpha/kappa support
             for (Node node : graph.getNodes()) {
@@ -169,11 +174,9 @@ public class FRFinder {
         // build the FRs round by round
 	long startTime = System.currentTimeMillis();
         boolean added = true;
-        while (added) {
+        while (added && (round<maxRound || maxRound==0)) {
             round++;
             added = false;
-            // gently suggest garbage collection
-            System.gc();
             if (bruteForce) {
                 // no heurism, for demo purposes
                 Set<FrequentedRegion> loopFRs = Collections.synchronizedSet(new HashSet<>());
@@ -426,6 +429,9 @@ public class FRFinder {
     public void setMinLen(double minLen) {
         this.minLen = minLen;
     }
+    public void setMaxRound(int maxRound) {
+        this.maxRound = maxRound;
+    }   
     public void setOutputPrefix(String outputPrefix) {
         this.outputPrefix = outputPrefix;
     }
@@ -465,15 +471,15 @@ public class FRFinder {
         gfaOption.setRequired(false);
         options.addOption(gfaOption);
         //
-        Option kappaOption = new Option("k", "kappa", true, "kappa=maximum insertion length that any supporting path may have (required)");
+        Option kappaOption = new Option("k", "kappa", true, "maximum insertion length that any supporting path may have (required)");
         kappaOption.setRequired(false);
         options.addOption(kappaOption);
         //
-        Option minLenOption = new Option("l", "minlen", true, "minlen=minimum allowed average length (bp) of an FR's subpaths ("+MINLEN+")");
+        Option minLenOption = new Option("l", "minlen", true, "minimum allowed average length (bp) of an FR's subpaths ("+MINLEN+")");
         minLenOption.setRequired(false);
         options.addOption(minLenOption);
         //
-        Option minSupOption = new Option("m", "minsup", true, "minsup=minimum number of supporting paths for a region to be considered interesting ("+MINSUP+")");
+        Option minSupOption = new Option("m", "minsup", true, "minimum number of supporting paths for a region to be considered interesting ("+MINSUP+")");
         minSupOption.setRequired(false);
         options.addOption(minSupOption);
         //
@@ -489,7 +495,7 @@ public class FRFinder {
         labelsOption.setRequired(false);
         options.addOption(labelsOption);
         //
-        Option minSizeOption = new Option("s", "minsize", true, "minsize=minimum number of nodes that a FR must contain to be considered interesting ("+MINSIZE+")");
+        Option minSizeOption = new Option("s", "minsize", true, "minimum number of nodes that a FR must contain to be considered interesting ("+MINSIZE+")");
         minSizeOption.setRequired(false);
         options.addOption(minSizeOption);
         //
@@ -516,6 +522,10 @@ public class FRFinder {
         Option resumeOption = new Option("r", "resume", false, "resume from a previous run ("+RESUME+")");
         resumeOption.setRequired(false);
         options.addOption(resumeOption);
+        //
+        Option maxRoundOption = new Option("m", "maxround", true, "maxiumum FR-finding round to run (0=unlimited)");
+        maxRoundOption.setRequired(false);
+        options.addOption(maxRoundOption);
 
         try {
             cmd = parser.parse(options, args);
@@ -578,7 +588,13 @@ public class FRFinder {
         if (cmd.hasOption("minlen")) {
             minLen = Double.parseDouble(cmd.getOptionValue("minlen"));
         }
-        
+
+        // run limits
+        int maxRound = MAXROUND;
+        if (cmd.hasOption("maxround")) {
+            maxRound = Integer.parseInt(cmd.getOptionValue("maxround"));
+        }
+
         FRFinder frf = null;
         boolean postProcess = false;
         if (cmd.hasOption("inputprefix")) {
@@ -625,6 +641,7 @@ public class FRFinder {
         if (cmd.hasOption("outputprefix")) {
             frf.setOutputPrefix(cmd.getOptionValue("outputprefix"));
         }
+        frf.setMaxRound(maxRound);
 
         // tell findFRs to load saved data if resume requested
         boolean resume = false;
