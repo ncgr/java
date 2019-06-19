@@ -1,0 +1,4 @@
+#!/bin/sh
+## grab the HBB gene, but don't compress since we'll edit half of the files
+vcftools --gzvcf /home/localhost/shokin/erdos/1000G/ALL.chr11.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes.vcf.gz \
+	 --recode --chr 11 --from-bp 5246696 --to-bp 5248301 --indv $1 --out $1

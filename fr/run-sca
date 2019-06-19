@@ -19,13 +19,13 @@
 #  -sr,--serial              find FRs serially for testing/experiments (false)
 #  -v,--verbose              verbose output (false)
 
-## supply prefix, alpha and kappa at invocation
-prefix=$1
+## supply graph, alpha and kappa at invocation
+graph=$1
 alpha=$2
 kappa=$3
 
-echo "# $prefix alpha=$alpha kappa=$kappa"
+echo "# $graph alpha=$alpha kappa=$kappa"
 
-java -server -cp "build/install/fr/lib/*" org.ncgr.pangenomics.fr.FRFinder --gfa SCA/$prefix.paths.gfa  \
-     --pathlabels SCA/labels.txt --outputprefix $prefix-$alpha-$kappa \
-     --alpha $alpha --kappa $kappa --debug --casectrl # --bruteforce --minsup 1 --minsize 1 --minlen 1
+java -server -cp "build/install/fr/lib/*" org.ncgr.pangenomics.fr.FRFinder --pathlabels SCA/labels.txt \
+	--gfa SCA/$graph.paths.gfa --outputprefix $graph-$alpha-$kappa --alpha $alpha --kappa $kappa \
+	--casectrl # --bruteforce --minsup 1 --minsize 1 --minlen 1
