@@ -1,37 +1,47 @@
 #!/bin/sh
-
-REF=/erdos/shokin/hs37d5/hs37d5.11.fa
-VCF=HBB.10k.vcf.gz
-
 ## rs3334 is at 11:5248232
 
+REF=/erdos/shokin/hs37d5/hs37d5.11.fa
+
 # ## the entire HBB gene
+# VCF=HBB.vcf.gz
 # PREFIX=HBB
 # REGION=11:5246696-5248301
 
 # ## a 10k region around HBB
+# VCF=HBB.10k.vcf.gz
 # PREFIX=HBB.10k
 # REGION=11:5240000-5250000
 
 # ## a 5k region around HBB
+# VCF=HBB.5k.vcf.gz
 # PREFIX=HBB.5k
 # REGION=11:5246000-5251000
 
 # ## a 3k region around HBB
+# VCF=HBB.3k.vcf.gz
 # PREFIX=HBB.3k
 # REGION=11:5246000-5249000
 
 # ## a 236b region at the end of HBB containing rs334
+# VCF=HBB.236.vcf.gz
 # PREFIX=HBB.236
 # REGION=11:5248066-5248301
 
 # ## a 128b region at the end of HBB containing rs334
+# VCF=HBB.128.vcf.gz
 # PREFIX=HBB.128
 # REGION=11:5248174-5248301
 
-## a 57b region around rs334
-PREFIX=HBB.57
-REGION=11:5248206-5248262
+# ## a 57b region around rs334
+# VCF=HBB.57.vcf.gz
+# PREFIX=HBB.57
+# REGION=11:5248206-5248262
+
+## a 20kb region centered on rs334
+VCF=HBB.20k.vcf.gz
+PREFIX=HBB.20k
+REGION=11:5238232-5258232
 
 # build the graph
 echo "vg construct --threads 64 --reference $REF --vcf $VCF --region $REGION --alt-paths --flat-alts --node-max 1000 > $PREFIX.vg"
