@@ -6,7 +6,7 @@ import org.jgrapht.graph.*;
 import java.util.*;
 
 /**
- * An extension of GraphWalk to provide a genomic path through the graph.
+ * An extension of GraphWalk to provide a genomic path through the graph and methods appropriate for frequented regions.
  *
  * @author Sam Hokin
  */
@@ -71,28 +71,11 @@ public class PathWalk extends GraphWalk<Node,Edge> implements Comparable<PathWal
     }
     
     /**
-     * Two paths are equal if they have the same name and genotype and traverse the same nodes.
+     * Two paths are equal if they have the same name and genotype and traverse the same nodes,
+     * which means they have the same String representation.
      */
     public boolean equals(PathWalk that) {
         return this.toString().equals(that.toString());
-        // if (!this.name.equals(that.name)) {
-        //     return false;
-        // } else if (this.genotype!=that.genotype) {
-        //     return false;
-        // } else {
-        //     List<Node> thisNodes = this.getNodes();
-        //     List<Node> thatNodes = that.getNodes();
-        //     if (thisNodes.size()!=thatNodes.size()) {
-        //         return false;
-        //     } else {
-        //         for (int i=0; i<thisNodes.size(); i++) {
-        //             if (!thisNodes.get(i).equals(thatNodes.get(i))) {
-        //                 return false;
-        //             }
-        //         }
-        //         return true;
-        //     }
-        // }
     }
 
     /**
@@ -278,19 +261,20 @@ public class PathWalk extends GraphWalk<Node,Edge> implements Comparable<PathWal
 
     /**
      * Algorithm 1 from Cleary, et al. generates the supporting path segments of this path for the given NodeSet and alpha and kappa parameters.
+     *
      * @param nodes the NodeSet, or cluster C as it's called in Algorithm 1
-     * @param alpha the penetrance parameter
-     * @param kappa the insertion parameter
+     * @param alpha the penetrance parameter = minimum fraction of nodes in C that are in subpath
+     * @param kappa the insertion parameter = maximum inserted sequence (kappaByNodes=false) or number of nodes (kappaByNodes=true)
+     * @param kappaByNodes if true, kappa is number of inserted nodes, rather than length of inserted sequence in bases
      * @returns the set of supporting path segments
      */
-    public Set<PathWalk> computeSupport(NodeSet nodes, double alpha, int kappa) {
+    public Set<PathWalk> computeSupport(NodeSet nodes, double alpha, int kappa, boolean kappaByNodes) {
         Set<PathWalk> s = new HashSet<>();
         // m = the list of p's nodes that are in c
         LinkedList<Node> m = new LinkedList<>();
         for (Node n : getNodes()) {
             if (nodes.contains(n)) m.add(n);
         }
-
         // find maximal subpaths
         for (int i=0; i<m.size(); i++) {
             Node nl = m.get(i);
@@ -308,7 +292,11 @@ public class PathWalk extends GraphWalk<Node,Edge> implements Comparable<PathWal
                         insertion = 0;
                     } else {
                         // increment insertion
-                        insertion += n.getSequence().length();
+                        if (kappaByNodes) {
+                            insertion += 1;
+                        } else {
+                            insertion += n.getSequence().length();
+                        }
                     }
                 }
                 if (maxInsertion>kappa) break;
@@ -316,7 +304,7 @@ public class PathWalk extends GraphWalk<Node,Edge> implements Comparable<PathWal
                 nr = m.get(j);
                 num = j - i + 1; // number of this path's nodes in nodes collection
             }
-            // is this a subpath of an already counted subpath?
+            // is this a subpath of an already counted subpath? (maximality test)
             PathWalk subpath = subpath(nl,nr);
             boolean ignore = false;
             for (PathWalk checkpath : s) {

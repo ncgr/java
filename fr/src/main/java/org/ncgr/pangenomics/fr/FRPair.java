@@ -8,7 +8,6 @@ import org.ncgr.jgraph.Edge;
 import org.ncgr.jgraph.Node;
 import org.ncgr.jgraph.NodeSet;
 import org.ncgr.jgraph.PangenomicGraph;
-import org.ncgr.jgraph.PathWalk;
 
 import org.jgrapht.GraphPath;
 import org.jgrapht.alg.shortestpath.DijkstraShortestPath;
@@ -24,6 +23,7 @@ public class FRPair implements Comparable<FRPair> {
     PangenomicGraph graph;
     double alpha;
     int kappa;
+    boolean kappaByNodes;
     boolean caseCtrl;
 
     NodeSet nodes;
@@ -31,12 +31,13 @@ public class FRPair implements Comparable<FRPair> {
 
     boolean alphaReject;
     
-    FRPair(FrequentedRegion fr1, FrequentedRegion fr2, PangenomicGraph graph, double alpha, int kappa, boolean caseCtrl) {
+    FRPair(FrequentedRegion fr1, FrequentedRegion fr2, PangenomicGraph graph, double alpha, int kappa, boolean kappaByNodes, boolean caseCtrl) {
         this.fr1 = fr1;
         this.fr2 = fr2;
         this.graph = graph;
         this.alpha = alpha;
         this.kappa = kappa;
+        this.kappaByNodes = kappaByNodes;
         this.caseCtrl = caseCtrl;
         this.nodes = NodeSet.merge(fr1.nodes, fr2.nodes);
         // nothing to do if an identity merge
@@ -89,7 +90,7 @@ public class FRPair implements Comparable<FRPair> {
      * @returns the set of supporting path segments
      */
     public void merge() {
-        merged = new FrequentedRegion(graph, NodeSet.merge(fr1.nodes,fr2.nodes), alpha, kappa);
+        merged = new FrequentedRegion(graph, NodeSet.merge(fr1.nodes,fr2.nodes), alpha, kappa, kappaByNodes);
     }
 
     /**

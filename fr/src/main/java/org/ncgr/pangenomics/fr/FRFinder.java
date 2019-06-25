@@ -40,6 +40,8 @@ public class FRFinder {
     PangenomicGraph graph;  // the Graph we're analyzing
     double alpha; // penetrance: the fraction of a supporting strain's sequence that actually supports the FR; alternatively, `1-alpha` is the fraction of inserted sequence
     int kappa;    // maximum insertion: the maximum insertion length (measured in bp) that any supporting path may have
+    
+    boolean kappaByNodes = false; // set true to use number of inserted nodes rather than length of inserted sequence in kappa restriction
  
     // optional parameters, set with setters
     boolean verbose = VERBOSE;
@@ -132,7 +134,7 @@ public class FRFinder {
             while ((line=frReader.readLine())!=null) {
                 String[] parts = line.split("\t");
                 NodeSet nodes = new NodeSet(graph, parts[0]);
-                frequentedRegions.add(new FrequentedRegion(graph, nodes, alpha, kappa));
+                frequentedRegions.add(new FrequentedRegion(graph, nodes, alpha, kappa, kappaByNodes));
                 round++;
             }
             System.out.println(frequentedRegions.size());
@@ -142,7 +144,7 @@ public class FRFinder {
             while ((line=sfrReader.readLine())!=null) {
                 String[] parts = line.split("\t");
                 NodeSet nodes = new NodeSet(graph, parts[0]);
-                syncFrequentedRegions.add(new FrequentedRegion(graph, nodes, alpha, kappa));
+                syncFrequentedRegions.add(new FrequentedRegion(graph, nodes, alpha, kappa, kappaByNodes));
             }
             System.out.println(syncFrequentedRegions.size());
             // usedFRs
@@ -151,7 +153,7 @@ public class FRFinder {
             while ((line=usedFRsReader.readLine())!=null) {
                 String[] parts = line.split("\t");
                 NodeSet nodes = new NodeSet(graph, parts[0]);
-                usedFRs.add(new FrequentedRegion(graph, nodes, alpha, kappa));
+                usedFRs.add(new FrequentedRegion(graph, nodes, alpha, kappa, kappaByNodes));
             }
             System.out.println(usedFRs.size());
             System.out.println("# now continuing...");
@@ -162,11 +164,11 @@ public class FRFinder {
                 c.add(node);
                 Set<PathWalk> s = new HashSet<>();
                 for (PathWalk p : graph.getPaths()) {
-                    Set<PathWalk> support = p.computeSupport(c, alpha, kappa);
+                    Set<PathWalk> support = p.computeSupport(c, alpha, kappa, kappaByNodes);
                     s.addAll(support);
                 }
                 if (s.size()>0) {
-                    syncFrequentedRegions.add(new FrequentedRegion(graph, c, s, alpha, kappa));
+                    syncFrequentedRegions.add(new FrequentedRegion(graph, c, s, alpha, kappa, kappaByNodes));
                 }
             }
         }
@@ -187,7 +189,7 @@ public class FRFinder {
                 syncFrequentedRegions.parallelStream().forEach((fr1) -> {
                         syncFrequentedRegions.parallelStream().forEach((fr2) -> {
                                 if (fr1.compareTo(fr2)>0) {
-                                    FRPair frpair = new FRPair(fr1, fr2, graph, alpha, kappa, caseCtrl);
+                                    FRPair frpair = new FRPair(fr1, fr2, graph, alpha, kappa, kappaByNodes, caseCtrl);
                                     String nodesKey = frpair.nodes.toString();
                                     if (!usedNodeSets.contains(nodesKey)) {
                                         usedNodeSets.add(nodesKey);
@@ -211,7 +213,7 @@ public class FRFinder {
                     for (FrequentedRegion fr2 : syncFrequentedRegions) {
                         if (fr2.compareTo(fr1)>=0 && !usedFRs.contains(fr1) && !usedFRs.contains(fr2)) {
                             // no merge or rejection test here
-                            FRPair frpair = new FRPair(fr1, fr2, graph, alpha, kappa, caseCtrl);
+                            FRPair frpair = new FRPair(fr1, fr2, graph, alpha, kappa, kappaByNodes, caseCtrl);
                             String nodesKey = frpair.nodes.toString();
                             if (rejectedNodeSets.contains(nodesKey)) {
                                 // do nothing
@@ -262,9 +264,8 @@ public class FRFinder {
                 syncFrequentedRegions.parallelStream().forEach((fr1) -> {
                         syncFrequentedRegions.parallelStream().forEach((fr2) -> {
                                 if (fr2.compareTo(fr1)>=0 && !usedFRs.contains(fr1) && !usedFRs.contains(fr2)) {
-
                                     // no merge or rejection test here
-                                    FRPair frpair = new FRPair(fr1, fr2, graph, alpha, kappa, caseCtrl);
+                                    FRPair frpair = new FRPair(fr1, fr2, graph, alpha, kappa, kappaByNodes, caseCtrl);
                                     String nodesKey = frpair.nodes.toString();
                                     if (rejectedNodeSets.contains(nodesKey)) {
                                         // do nothing
@@ -420,6 +421,9 @@ public class FRFinder {
     public void setResume() {
         this.resume = true;
     }
+    public void setKappaByNodes() {
+        this.kappaByNodes = true;
+    }
     public void setMinSup(int minSup) {
         this.minSup = minSup;
     }
@@ -431,7 +435,7 @@ public class FRFinder {
     }
     public void setMaxRound(int maxRound) {
         this.maxRound = maxRound;
-    }   
+    }
     public void setOutputPrefix(String outputPrefix) {
         this.outputPrefix = outputPrefix;
     }
@@ -474,6 +478,10 @@ public class FRFinder {
         Option kappaOption = new Option("k", "kappa", true, "maximum insertion length that any supporting path may have (required)");
         kappaOption.setRequired(false);
         options.addOption(kappaOption);
+        //
+        Option kappaByNodesOption = new Option("kn", "kappabynodes", false, "use number of inserted nodes rather than length of inserted sequence in kappa restriction (false)");
+        kappaByNodesOption.setRequired(false);
+        options.addOption(kappaByNodesOption);
         //
         Option minLenOption = new Option("l", "minlen", true, "minimum allowed average length (bp) of an FR's subpaths ("+MINLEN+")");
         minLenOption.setRequired(false);
@@ -638,6 +646,7 @@ public class FRFinder {
         // set optional FRFinder parameters
         if (cmd.hasOption("verbose")) frf.setVerbose();
         if (cmd.hasOption("debug")) frf.setDebug();
+        if (cmd.hasOption("kappabynodes")) frf.setKappaByNodes();
         if (cmd.hasOption("outputprefix")) {
             frf.setOutputPrefix(cmd.getOptionValue("outputprefix"));
         }
@@ -867,6 +876,7 @@ public class FRFinder {
         // FRFinder
         out.println("alpha"+"\t"+alpha);
         out.println("kappa"+"\t"+kappa);
+        out.println("kappabynodes"+"\t"+kappaByNodes);
         out.println("casectrl"+"\t"+caseCtrl);
         if (inputPrefix!=null) {
             // post-processing parameters
@@ -910,6 +920,8 @@ public class FRFinder {
                 alpha = Double.parseDouble(parts[1]);
             } else if (parts[0].equals("kappa")) {
                 kappa = Integer.parseInt(parts[1]);
+            } else if (parts[0].equals("kappabynodes")) {
+                kappaByNodes = Boolean.parseBoolean(parts[1]);
             } else if (parts[0].equals("casectrl")) {
                 caseCtrl = Boolean.parseBoolean(parts[1]);
             } else if (parts[0].equals("minsup")) {
@@ -988,7 +1000,7 @@ public class FRFinder {
                 // add to the subpaths
                 subpaths.add(new PathWalk(graph, subNodes, name, genotype, label));
             }
-            FrequentedRegion fr = new FrequentedRegion(graph, nodes, subpaths, alpha, kappa, support, avgLength);
+            FrequentedRegion fr = new FrequentedRegion(graph, nodes, subpaths, alpha, kappa, kappaByNodes, support, avgLength);
             frequentedRegions.add(fr);
         }
     }

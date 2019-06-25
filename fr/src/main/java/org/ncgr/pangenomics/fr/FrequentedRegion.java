@@ -43,8 +43,9 @@ public class FrequentedRegion implements Comparable<FrequentedRegion> {
     // a subpath must satisfy the requirement that it traverses at least a fraction alpha of this.nodes
     double alpha;
 
-    // a subpath must satisfy the requirement that its contiguous nodes that do NOT belong in this.nodes have total sequence length no larger than kappa
+    // a subpath must satisfy the requirement that its contiguous nodes that do NOT belong in this.nodes have total sequence length or number no larger than kappa
     int kappa;
+    boolean kappaByNodes = false; // set true to use number of inserted nodes rather than length of inserted sequence in bp for kappa
 
     // the PangenomicGraph's case and control path counts
     int casePaths;
@@ -53,11 +54,12 @@ public class FrequentedRegion implements Comparable<FrequentedRegion> {
     /**
      * Construct given a PangenomicGraph, NodeSet and alpha and kappa filter parameters.
      */
-    FrequentedRegion(PangenomicGraph graph, NodeSet nodes, double alpha, int kappa) {
+    FrequentedRegion(PangenomicGraph graph, NodeSet nodes, double alpha, int kappa, boolean kappaByNodes) {
         this.graph = graph;
         this.nodes = nodes;
         this.alpha = alpha;
         this.kappa = kappa;
+        this.kappaByNodes = kappaByNodes;
         if (graph.getLabelCounts().get("case")!=null && graph.getLabelCounts().get("ctrl")!=null) {
             this.casePaths = graph.getLabelCounts().get("case");
             this.ctrlPaths = graph.getLabelCounts().get("ctrl");
@@ -71,12 +73,13 @@ public class FrequentedRegion implements Comparable<FrequentedRegion> {
     /**
      * Construct given a PangenomicGraph, NodeSet and Subpaths
      */
-    FrequentedRegion(PangenomicGraph graph, NodeSet nodes, Set<PathWalk> subpaths, double alpha, int kappa) {
+    FrequentedRegion(PangenomicGraph graph, NodeSet nodes, Set<PathWalk> subpaths, double alpha, int kappa, boolean kappaByNodes) {
         this.graph = graph;
         this.nodes = nodes;
         this.subpaths = subpaths;
         this.alpha = alpha;
         this.kappa = kappa;
+        this.kappaByNodes = kappaByNodes;
         if (graph.getLabelCounts().get("case")!=null && graph.getLabelCounts().get("ctrl")!=null) {
             this.casePaths = graph.getLabelCounts().get("case");
             this.ctrlPaths = graph.getLabelCounts().get("ctrl");
@@ -88,12 +91,13 @@ public class FrequentedRegion implements Comparable<FrequentedRegion> {
     /**
      * Construct given a PangenomicGraph, NodeSet and Subpaths and already known support and avgLength
      */
-    FrequentedRegion(PangenomicGraph graph, NodeSet nodes, Set<PathWalk> subpaths, double alpha, int kappa, int support, double avgLength) {
+    FrequentedRegion(PangenomicGraph graph, NodeSet nodes, Set<PathWalk> subpaths, double alpha, int kappa, boolean kappaByNodes, int support, double avgLength) {
         this.graph = graph;
         this.nodes = nodes;
         this.subpaths = subpaths;
         this.alpha = alpha;
         this.kappa = kappa;
+        this.kappaByNodes = kappaByNodes;
         this.support = support;
         this.avgLength = avgLength;
         if (graph.getLabelCounts().get("case")!=null && graph.getLabelCounts().get("ctrl")!=null) {
@@ -143,7 +147,7 @@ public class FrequentedRegion implements Comparable<FrequentedRegion> {
     void updateSupport() {
         subpaths = new HashSet<>();
         for (PathWalk p : graph.getPaths()) {
-            Set<PathWalk> supportPaths = p.computeSupport(nodes, alpha, kappa);
+            Set<PathWalk> supportPaths = p.computeSupport(nodes, alpha, kappa, kappaByNodes);
             subpaths.addAll(supportPaths);
         }
         support = subpaths.size();
