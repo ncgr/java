@@ -491,6 +491,10 @@ public class FRFinder {
         minSupOption.setRequired(false);
         options.addOption(minSupOption);
         //
+        Option minSizeOption = new Option("s", "minsize", true, "minimum number of nodes that a FR must contain to be considered interesting ("+MINSIZE+")");
+        minSizeOption.setRequired(false);
+        options.addOption(minSizeOption);
+        //
         Option outputprefixOption = new Option("o", "outputprefix", true, "output file prefix (stdout)");
         outputprefixOption.setRequired(false);
         options.addOption(outputprefixOption);
@@ -502,10 +506,6 @@ public class FRFinder {
         Option labelsOption = new Option("p", "pathlabels", true, "tab-delimited file with pathname<tab>label");
         labelsOption.setRequired(false);
         options.addOption(labelsOption);
-        //
-        Option minSizeOption = new Option("s", "minsize", true, "minimum number of nodes that a FR must contain to be considered interesting ("+MINSIZE+")");
-        minSizeOption.setRequired(false);
-        options.addOption(minSizeOption);
         //
         Option verboseOption = new Option("v", "verbose", false, "verbose output ("+VERBOSE+")");
         verboseOption.setRequired(false);
@@ -531,7 +531,7 @@ public class FRFinder {
         resumeOption.setRequired(false);
         options.addOption(resumeOption);
         //
-        Option maxRoundOption = new Option("m", "maxround", true, "maxiumum FR-finding round to run (0=unlimited)");
+        Option maxRoundOption = new Option("mr", "maxround", true, "maximum FR-finding round to run (0=unlimited)");
         maxRoundOption.setRequired(false);
         options.addOption(maxRoundOption);
 
