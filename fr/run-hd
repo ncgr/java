@@ -1,22 +1,38 @@
 #!/bin/sh
+#
 # usage: FRFinder
-#  -a,--alpha <arg>          alpha=penetrance, fraction of a supporting path's sequence that supports the FR (required)
-#  -bf,--bruteforce          find FRs comprehensively via brute force - testing only! (false)
-#  -cc,--casectrl            emphasize FRs that have large case vs. control support (false)
+#  -a,--alpha <arg>          alpha=penetrance, fraction of a supporting
+#                            path's sequence that supports the FR (required)
+#  -bf,--bruteforce          find FRs comprehensively via brute force -
+#                            testing only! (false)
+#  -cc,--casectrl            emphasize FRs that have large case vs. control
+#                            support (false)
 #  -d,--dot <arg>            splitMEM DOT file (requires FASTA file)
 #  -do,--debug               debug output (false)
 #  -f,--fasta <arg>          FASTA file (requires DOT file)
-#  -g,--genotype <arg>       which genotype to include (0,1) from the input file; -1 to include all (-1)
+#  -g,--genotype <arg>       which genotype to include (0,1) from the input
+#                            file; -1 to include all (-1)
 #  -gfa,--gfa <arg>          GFA file
 #  -i,--inputprefix <arg>    input file prefix for further processing
 #  -j,--json <arg>           vg JSON file
-#  -k,--kappa <arg>          kappa=maximum insertion length that any supporting path may have (required)
-#  -l,--minlen <arg>         minlen=minimum allowed average length (bp) of an FR's subpaths (1.0)
-#  -m,--minsup <arg>         minsup=minimum number of supporting paths for a region to be considered interesting (1)
+#  -k,--kappa <arg>          maximum insertion length that any supporting
+#                            path may have (required)
+#  -kn,--kappabynodes        use number of inserted nodes rather than length
+#                            of inserted sequence in kappa restriction
+#                            (false)
+#  -l,--minlen <arg>         minimum allowed average length (bp) of an FR's
+#                            subpaths (1.0)
+#  -m,--minsup <arg>         minimum number of supporting paths for a region
+#                            to be considered interesting (1)
+#  -mr,--maxround <arg>      maximum FR-finding round to run (0=unlimited)
 #  -o,--outputprefix <arg>   output file prefix (stdout)
 #  -p,--pathlabels <arg>     tab-delimited file with pathname<tab>label
-#  -s,--minsize <arg>        minsize=minimum number of nodes that a FR must contain to be considered interesting (1)
-#  -sr,--serial              find FRs serially for testing/experiments (false)
+#  -pr,--prunedgraph         prune graph -- remove all common nodes (false)
+#  -r,--resume               resume from a previous run (false)
+#  -s,--minsize <arg>        minimum number of nodes that a FR must contain
+#                            to be considered interesting (1)
+#  -sr,--serial              find FRs serially for testing/experiments
+#                            (false)
 #  -v,--verbose              verbose output (false)
 
 ## supply prefix, alpha and kappa at invocation
@@ -28,4 +44,4 @@ echo "# $prefix alpha=$alpha kappa=$kappa"
 
 java -server -cp "build/install/fr/lib/*" org.ncgr.pangenomics.fr.FRFinder --gfa HD/$prefix.paths.gfa  \
      --pathlabels HD/labels.txt --outputprefix $prefix-$alpha-$kappa \
-     --alpha $alpha --kappa $kappa --casectrl --kappabynodes # --bruteforce --minsup 1 --minsize 1 --minlen 1
+     --alpha $alpha --kappa $kappa --casectrl --kappabynodes $4 # --bruteforce --minsup 1 --minsize 1 --minlen 1

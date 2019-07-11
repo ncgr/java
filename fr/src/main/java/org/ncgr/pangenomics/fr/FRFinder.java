@@ -38,11 +38,11 @@ public class FRFinder {
     
     // required parameters, no defaults; set in constructor
     PangenomicGraph graph;  // the Graph we're analyzing
-    double alpha; // penetrance: the fraction of a supporting strain's sequence that actually supports the FR; alternatively, `1-alpha` is the fraction of inserted sequence
-    int kappa;    // maximum insertion: the maximum insertion length (measured in bp) that any supporting path may have
-    
-    boolean kappaByNodes = false; // set true to use number of inserted nodes rather than length of inserted sequence in kappa restriction
- 
+    double alpha; // penetrance: the fraction of a supporting strain's sequence that actually supports the FR;
+                  // alternatively, `1-alpha` is the fraction of inserted sequence
+    int kappa;    // maximum insertion: the maximum insertion length (measured in bp) that any supporting path may have;
+                  // or, if kappaByNodes, the maximum number of inserted nodes that a supporting path may have.
+
     // optional parameters, set with setters
     boolean verbose = VERBOSE;
     boolean debug = DEBUG;
@@ -54,7 +54,9 @@ public class FRFinder {
     boolean bruteForce = BRUTE_FORCE; // find FRs comprehensively with brute force, not using heuristic approach from paper; for testing only!
     boolean serial = SERIAL;      // serial processing for demos or experiments
     boolean resume = RESUME;      // resume from a previous run
-
+    boolean kappaByNodes = false; // set true to use number of inserted nodes rather than length of inserted sequence in kappa restriction
+    boolean prunedGraph = false;   // set true to remove common nodes from the graph
+ 
     // save files
     String SYNC_FREQUENTED_REGIONS_SAVE = "syncFrequentedRegions.save.txt";
     String USED_FRS_SAVE = "usedFRs.save.txt";
@@ -93,6 +95,16 @@ public class FRFinder {
      * Find the frequented regions in this Graph.
      */
     public void findFRs() throws IOException {
+        if (prunedGraph) {
+            try {
+                graph.prune();
+                System.out.println("# graph has been pruned (all fully common nodes removed).");
+            } catch (Exception e) {
+                System.err.println(e.toString());
+                System.exit(1);
+            }
+        }
+
 	System.out.println("# graph has "+graph.vertexSet().size()+" nodes and "+graph.getPaths().size()+" paths");
         if (graph.getLabelCounts().get("case")!=null && graph.getLabelCounts().get("ctrl")!=null) {
             System.out.println("# graph has "+graph.getLabelCounts().get("case")+" case paths and "+graph.getLabelCounts().get("ctrl")+" ctrl paths");
@@ -424,6 +436,9 @@ public class FRFinder {
     public void setKappaByNodes() {
         this.kappaByNodes = true;
     }
+    public void setPrunedGraph() {
+        this.prunedGraph = true;
+    }
     public void setMinSup(int minSup) {
         this.minSup = minSup;
     }
@@ -534,6 +549,10 @@ public class FRFinder {
         Option maxRoundOption = new Option("mr", "maxround", true, "maximum FR-finding round to run (0=unlimited)");
         maxRoundOption.setRequired(false);
         options.addOption(maxRoundOption);
+        //
+        Option prunedGraphOption = new Option("pr", "prunedgraph", false, "prune graph -- remove all common nodes (false)");
+        prunedGraphOption.setRequired(false);
+        options.addOption(prunedGraphOption);
 
         try {
             cmd = parser.parse(options, args);
@@ -647,6 +666,7 @@ public class FRFinder {
         if (cmd.hasOption("verbose")) frf.setVerbose();
         if (cmd.hasOption("debug")) frf.setDebug();
         if (cmd.hasOption("kappabynodes")) frf.setKappaByNodes();
+        if (cmd.hasOption("prunedgraph")) frf.setPrunedGraph();
         if (cmd.hasOption("outputprefix")) {
             frf.setOutputPrefix(cmd.getOptionValue("outputprefix"));
         }
@@ -877,6 +897,7 @@ public class FRFinder {
         out.println("alpha"+"\t"+alpha);
         out.println("kappa"+"\t"+kappa);
         out.println("kappabynodes"+"\t"+kappaByNodes);
+        out.println("prunedgraph"+"\t"+prunedGraph);
         out.println("casectrl"+"\t"+caseCtrl);
         if (inputPrefix!=null) {
             // post-processing parameters
@@ -922,6 +943,8 @@ public class FRFinder {
                 kappa = Integer.parseInt(parts[1]);
             } else if (parts[0].equals("kappabynodes")) {
                 kappaByNodes = Boolean.parseBoolean(parts[1]);
+            } else if (parts[0].equals("prunedgraph")) {
+                prunedGraph = Boolean.parseBoolean(parts[1]);
             } else if (parts[0].equals("casectrl")) {
                 caseCtrl = Boolean.parseBoolean(parts[1]);
             } else if (parts[0].equals("minsup")) {
