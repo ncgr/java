@@ -13,7 +13,8 @@ if [ -s $FRFILE ]
 then
 
     ## post-process
-    java -server -cp "build/install/fr/lib/*" org.ncgr.pangenomics.fr.FRFinder --debug --inputprefix $prefix --minsup $minsup --minsize $minsize --minlen $minlen
+    java -server -cp "build/install/fr/lib/*" org.ncgr.pangenomics.fr.FRFinder \
+	    --debug --prunedgraph --inputprefix $prefix --minsup $minsup --minsize $minsize --minlen $minlen
     
     ## run SVM
     if [ -s $SVMFRFILE ]
