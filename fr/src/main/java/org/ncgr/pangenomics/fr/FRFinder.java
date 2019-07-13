@@ -97,17 +97,18 @@ public class FRFinder {
     public void findFRs() throws IOException {
         if (prunedGraph) {
             try {
-                graph.prune();
-                System.out.println("# graph has been pruned (all fully common nodes removed).");
+                int nRemoved = graph.prune();
+                System.out.println("# graph has been pruned ("+nRemoved+" fully common nodes removed).");
             } catch (Exception e) {
                 System.err.println(e.toString());
                 System.exit(1);
             }
         }
 
-	System.out.println("# graph has "+graph.vertexSet().size()+" nodes and "+graph.getPaths().size()+" paths");
+	System.out.println("# graph has "+graph.vertexSet().size()+" nodes and "+graph.getPaths().size()+" paths.");
         if (graph.getLabelCounts().get("case")!=null && graph.getLabelCounts().get("ctrl")!=null) {
-            System.out.println("# graph has "+graph.getLabelCounts().get("case")+" case paths and "+graph.getLabelCounts().get("ctrl")+" ctrl paths");
+            System.out.println("# graph has "+graph.getLabelCounts().get("case")+" case paths and "+
+                               graph.getLabelCounts().get("ctrl")+" ctrl paths.");
         }
         if (verbose) {
             graph.printNodes(System.out);

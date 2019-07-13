@@ -194,25 +194,15 @@ public class PangenomicGraph extends DirectedMultigraph<Node,Edge> {
     /**
      * Prune this graph: remove all nodes that are traversed by ALL paths.
      * paths and nodePaths must have been populated before this is called.
+     * @return the number of removed nodes
      */
-    public void prune() throws Exception {
+    public int prune() throws Exception {
         if (paths==null || paths.size()==0) {
             throw new Exception("PangenomicGraph.paths is not populated; cannot prune.");
         }
         if (nodePaths==null || nodePaths.size()==0) {
             throw new Exception("PangenomicGraph.nodePaths is not populated; cannot prune.");
         }
-        // each Path provides the ordered list of nodes that it traverses, along with its full sequence
-        // TreeSet<PathWalk> paths; // (ordered simply for convenience)
-        // maps a Node to a set of Paths that traverse it
-        // TreeMap<Long,Set<PathWalk>> nodePaths; // keyed and ordered by Node Id (for convenience)
-
-        // Removes the specified vertex from this graph including all its touching edges if present.
-        // More formally, if the graph contains a vertex u such that u.equals(v), the call removes all edges that touch u and then
-        // removes u itself. If no such u is found, the call leaves the graph unchanged.
-        // Returns true if the graph contained the specified vertex. (The graph will not contain the specified vertex once the call returns).
-        // If the specified vertex is null returns false.
-
         Set<Node> nodesToRemove = new TreeSet<>();
         for (Node n : getNodes()) {
             Set<PathWalk> thisPaths = nodePaths.get(n.id);
@@ -221,6 +211,7 @@ public class PangenomicGraph extends DirectedMultigraph<Node,Edge> {
         for (Node n : nodesToRemove) {
             removeVertex(n);
         }
+        return nodesToRemove.size();
     }
 
     /**
