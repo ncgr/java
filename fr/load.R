@@ -30,6 +30,8 @@ for (i in 1:length(rownames(params))) {
     if (params$V1[i]=="outputprefix") outputprefix = params$V2[i]
     if (params$V1[i]=="date") date = params$V2[i]
     if (params$V1[i]=="clocktime") clocktime = params$V2[i]
+    if (params$V1[i]=="kappabynodes") kappaByNodes = params$V2[i]
+    if (params$V1[i]=="prunedgraph") prunedGraph = params$V2[i]
 }
 rm(params)
 
