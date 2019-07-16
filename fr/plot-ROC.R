@@ -79,10 +79,14 @@ legend(x="bottomleft",
        pch=1, col=colors, pt.cex=cexStep*c(1,2,3,4), cex=cexText
        )
 
-text(xtext, ytext-dytext*0, paste("graph:  ",graph), pos=4, cex=cexText)
+if (prunedGraph) {
+    text(xtext, ytext-dytext*0, paste("graph:  ",graph," PRUNED"), pos=4, cex=cexText)
+} else {
+    text(xtext, ytext-dytext*0, paste("graph:  ",graph), pos=4, cex=cexText)
+}
 text(xtext, ytext-dytext*1, paste("case paths: ",cases), pos=4, cex=cexText)
 text(xtext, ytext-dytext*2, paste("control paths: ",controls), pos=4, cex=cexText)
-text(xtext, ytext-dytext*3, paste("SVM x-comps: ", length(results$FPR)), pos=4, cex=cexText)
+text(xtext, ytext-dytext*4, paste("SVM x-comps: ", length(results$FPR)), pos=4, cex=cexText)
 text(xtext, ytext-dytext*5, paste("alpha: ", capture.output(cat(alphaValues,sep=","))), pos=4, cex=cexText)
 text(xtext, ytext-dytext*6, paste("kappa: ", capture.output(cat(kappaValues,sep=","))), pos=4, cex=cexText)
 text(xtext, ytext-dytext*7, paste("minsup: ", capture.output(cat(minsupValues,sep=","))), pos=4, cex=cexText)
