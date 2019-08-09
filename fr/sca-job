@@ -4,8 +4,8 @@ prefix=HBB
 
 for alpha in 0.2 0.5 0.8 1.0
 do
-	for kappa in 0 1 2 3 12 48 192 768
+	for kappa in 0 1 2 3 4 5 10
 	do
-	    ./run-sca $prefix $alpha $kappa
+	    ./run-sca $prefix $alpha $kappa --prunedgraph
 	done
 done

@@ -1,26 +1,38 @@
 #!/bin/sh
-# algorithm
-#  -a,--alpha <arg>          alpha=penetrance, fraction of a supporting path's sequence that supports the FR (required)
-#  -k,--kappa <arg>          kappa=maximum insertion length that any supporting path may have (required)
-#  -cc,--casectrl            emphasize FRs that have large case vs. control support (false)
-# input
+# usage: FRFinder
+#  -a,--alpha <arg>          alpha=penetrance, fraction of a supporting
+#                            path's sequence that supports the FR (required)
+#  -bf,--bruteforce          find FRs comprehensively via brute force -
+#                            testing only! (false)
+#  -cc,--casectrl            emphasize FRs that have large case vs. control
+#                            support (false)
 #  -d,--dot <arg>            splitMEM DOT file (requires FASTA file)
-#  -f,--fasta <arg>          FASTA file (requires DOT file)
-#  -g,--genotype <arg>       which genotype to include (0,1) from the input file; -1 to include all (-1)
-#  -j,--json <arg>           vg JSON file
-#  -gfa,--gfa <arg>          GFA file
-#  -p,--pathlabels <arg>     tab-delimited file with pathname<tab>label
-# post-processing input
-#  -i,--inputprefix <arg>    input file prefix for further processing (=outputprefix from previous run)
-#  -m,--minsup <arg>         minsup=minimum number of supporting paths for a region to be considered interesting (1)
-#  -s,--minsize <arg>        minsize=minimum number of nodes that a FR must contain to be considered interesting (1)
-#  -l,--minlen <arg>         minlen=minimum allowed average length (bp) of an FR's subpaths (1)
-# output
-#  -o,--outputprefix <arg>   output file prefix (stdout)
-# other
-#  -go,--graphonly           just read the graph and output, do not find FRs; for debuggery (false)
-#  -v,--verbose              verbose output (false)
 #  -do,--debug               debug output (false)
+#  -f,--fasta <arg>          FASTA file (requires DOT file)
+#  -g,--genotype <arg>       which genotype to include (0,1) from the input
+#                            file; -1 to include all (-1)
+#  -gfa,--gfa <arg>          GFA file
+#  -i,--inputprefix <arg>    input file prefix for further processing
+#  -j,--json <arg>           vg JSON file
+#  -k,--kappa <arg>          maximum insertion length that any supporting
+#                            path may have (required)
+#  -kn,--kappabynodes        use number of inserted nodes rather than length
+#                            of inserted sequence in kappa restriction
+#                            (false)
+#  -l,--minlen <arg>         minimum allowed average length (bp) of an FR's
+#                            subpaths (1.0)
+#  -m,--minsup <arg>         minimum number of supporting paths for a region
+#                            to be considered interesting (1)
+#  -mr,--maxround <arg>      maximum FR-finding round to run (0=unlimited)
+#  -o,--outputprefix <arg>   output file prefix (stdout)
+#  -p,--pathlabels <arg>     tab-delimited file with pathname<tab>label
+#  -pr,--prunedgraph         prune graph -- remove all common nodes (false)
+#  -r,--resume               resume from a previous run (false)
+#  -s,--minsize <arg>        minimum number of nodes that a FR must contain
+#                            to be considered interesting (1)
+#  -sr,--serial              find FRs serially for testing/experiments
+#                            (false)
+#  -v,--verbose              verbose output (false)
 
 prefix=$1
 alpha=$2
@@ -28,7 +40,6 @@ kappa=$3
 
 echo "# $prefix alpha=$alpha kappa=$kappa"
 
-java -Xmx160g -XX:+UseParallelGC -Xms2g -XX:SoftRefLRUPolicyMSPerMB=1 -XX:MaxHeapFreeRatio=99 \
-     -server -cp "build/install/fr/lib/*" org.ncgr.pangenomics.fr.FRFinder \
-     --gfa Schiz/$prefix.paths.gfa --pathlabels Schiz/labels.txt --outputprefix $prefix-$alpha-$kappa \
-     --alpha $alpha --kappa $kappa --casectrl --resume
+java -server -Xmx160g -XX:+UseParallelGC -Xms2g -XX:SoftRefLRUPolicyMSPerMB=1 -XX:MaxHeapFreeRatio=99 -cp "build/install/fr/lib/*" org.ncgr.pangenomics.fr.FRFinder \
+     --gfa SchizophreniaSwedish_Sklar/$prefix.paths.gfa --pathlabels SchizophreniaSwedish_Sklar/labels.txt --outputprefix $prefix-$alpha-$kappa \
+     --alpha $alpha --kappa $kappa --casectrl --prunedgraph # --resume

@@ -28,4 +28,4 @@ echo "# $graph alpha=$alpha kappa=$kappa"
 
 java -server -cp "build/install/fr/lib/*" org.ncgr.pangenomics.fr.FRFinder --pathlabels SCA/labels.txt \
 	--gfa SCA/$graph.paths.gfa --outputprefix $graph-$alpha-$kappa \
-	--alpha $alpha --kappa $kappa --casectrl --kappabynodes # --bruteforce --minsup 1 --minsize 1 --minlen 1
+	--alpha $alpha --kappa $kappa --casectrl --kappabynodes $4 # --bruteforce --minsup 1 --minsize 1 --minlen 1
