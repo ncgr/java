@@ -16,16 +16,19 @@ if (requireHomozygous) {
     mergeMode = "HET mode: sample is called CASE if at least ONE path is called CASE"
 }   
 
-## standard
+## standard, nodes-based kappa
 alphaValues = c("0.2","0.5","0.8","1.0")
-kappaValues = c(0,1,2,3,12,48,192,768)
+kappaValues = c(0,1,2,3,4,5,10)
 minsupValues = c(1,2,4,10,20,50,100)
 minsizeValues = c(1,2,4,10,20,50,100)
 minlenValues = c(1,2,4,10,20,50,100,500)
 
+## bases-based kappa values
+## kappaValues = c(0,1,2,3,12,48,192,768)
+
 ## single alpha, kappa 
-#alphaValues = c("0.2")
-#kappaValues = c(3)
+## alphaValues = c("0.2")
+## kappaValues = c(3)
 
 ## our resulting data frame
 results = data.frame(graph=character(), alpha=numeric(), kappa=numeric(),

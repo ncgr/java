@@ -75,12 +75,15 @@ public class MotifScanner {
                 double querySum = 0.0;
                 for (int i=0; i<len; i++) {
                     char queryChar = queryUC.charAt(i);
-                    int row = rows.get(queryChar);
-                    int queryVal = vals[i][row];
-                    for (int j=0; j<rows.size(); j++) colSum[i] += vals[i][j];
-                    if (colSum[i]>0) querySum += (double)queryVal/(double)colSum[i];
+                    // skip this position if 'N' or some other character
+                    if (queryChar=='A' || queryChar=='C' || queryChar=='G' || queryChar=='T') {
+                        int row = rows.get(queryChar);
+                        int queryVal = vals[i][row];
+                        for (int j=0; j<rows.size(); j++) colSum[i] += vals[i][j];
+                        if (colSum[i]>0) querySum += (double)queryVal/(double)colSum[i];
+                    }
                 }
-                hitMap.put(matrix,querySum);
+                hitMap.put(matrix, querySum);
             }
         }
         return hitMap;

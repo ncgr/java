@@ -1,6 +1,17 @@
 package org.ncgr.pangenomics;
 
-import java.util.*;
+import java.io.BufferedReader;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.IOException;
+
+import java.util.List;
+import java.util.LinkedList;
+import java.util.Map;
+import java.util.TreeMap;
+import java.util.Set;
+import java.util.HashSet;
+import java.util.StringJoiner;
 
 /**
  * Encapsulates a path through a Graph, along with its full sequence.
@@ -14,7 +25,7 @@ public class Path implements Comparable<Path> {
     public int genotype;            // the genotype assigned to the path (0/1)
     public String label;            // an optional label, like "+1", "-1", "case", "control", "M", "F"
     public String sequence;         // this path's full sequence
-    public List<Node> nodes;  // the ordered list of nodes that this path travels
+    public List<Node> nodes;        // the ordered list of nodes that this path travels
 
     /**
      * Construct given a path name, genotype and a list of nodes (minimum requirement)
@@ -50,6 +61,15 @@ public class Path implements Comparable<Path> {
         for (String nodeAsString : nodesAsStrings) {
             nodes.add(new Node(Long.parseLong(nodeAsString)));
         }
+    }
+
+    /**
+     * Construct given a name.genotype, label and list of Nodes
+     */
+    public Path(String nameGenotype, String label, List<Node> nodes) {
+        this.parseNameGenotype(nameGenotype);
+        this.label = label;
+        this.nodes = nodes;
     }
 
     /**
@@ -169,6 +189,20 @@ public class Path implements Comparable<Path> {
     }
 
     /**
+     * Parse out the path name and genotype from a string like "S12345.0"
+     */
+    public void parseNameGenotype(String nameGenotype) {
+        String[] parts = nameGenotype.split("\\.");
+        if (parts.length==1)  {
+            this.name = nameGenotype; // no genotype suffix
+        } else {
+            this.genotype = Integer.parseInt(parts[parts.length-1]);
+            this.name = parts[0];
+            for (int i=1; i<(parts.length-1); i++) this.name += "."+parts[i];
+        }
+    }
+
+    /**
      * Build this path's sequence from its Node list.
      */
     public void buildSequence() {
@@ -236,6 +270,18 @@ public class Path implements Comparable<Path> {
     }
 
     /**
+     * Return true if this path contains the given Node, matched by id.
+     */
+    public boolean containsNode(Node n) {
+        for (Node node : nodes) {
+            if (n.equals(node)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
      * Return a summary string.
      */
     public String toString() {
@@ -248,5 +294,33 @@ public class Path implements Comparable<Path> {
         s += joiner.toString();
         s += "]";
         return s;
+    }
+
+
+    /**
+     * Load a Map of paths from a file: the paths contain their node lists but the node sequences are NOT constructed.
+     * 0       1       2       3       4       5       6       7       ...
+     * 28278.0 case    5722432 1       2       3       4       5       ...
+     */
+    public static Map<String,Path> readFromFile(String filename) throws FileNotFoundException, IOException {
+        Map<String,Path> map = new TreeMap<>();
+        BufferedReader reader = new BufferedReader(new FileReader(filename));
+        String line = null;
+        while ((line=reader.readLine())!=null) {
+            String[] parts = line.split("\t");
+            String nameGenotype = parts[0];
+            String label = parts[1];
+            long length = Long.parseLong(parts[2]);
+            List<Node> nodes = new LinkedList<>();
+            for (int i=3; i<parts.length; i++) {
+                long id = Long.parseLong(parts[i]);
+                Node n = new Node(id);
+                nodes.add(n);
+            }
+            // build the Path
+            Path p = new Path(nameGenotype, label, nodes);
+            map.put(nameGenotype, p);
+        }
+        return map;
     }
 }
