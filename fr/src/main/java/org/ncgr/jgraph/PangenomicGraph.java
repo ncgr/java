@@ -59,9 +59,15 @@ public class PangenomicGraph extends DirectedMultigraph<Node,Edge> {
         GFAImporter importer = new GFAImporter();
         if (verbose) importer.setVerbose();
         importer.setGenotype(genotype);
+        long importGraphStart = System.currentTimeMillis();
         importer.importGraph(this, gfaFile);
+        long importGraphEnd = System.currentTimeMillis();
+        if (verbose) System.out.println("GFAImporter.importGraph took "+(importGraphEnd-importGraphStart)+" ms.");
         paths = importer.getPaths();
+        long buildNodePathsStart = System.currentTimeMillis();
         buildNodePaths();
+        long buildNodePathsEnd = System.currentTimeMillis();
+        if (verbose) System.out.println("buildNodePaths took "+(buildNodePathsEnd-buildNodePathsStart)+" ms.");
     }
 
     /**
@@ -415,18 +421,42 @@ public class PangenomicGraph extends DirectedMultigraph<Node,Edge> {
             PrintStream labelCountsOut = new PrintStream(outputPrefix+".labelcounts.txt");
             printLabelCounts(labelCountsOut);
         }
+
         PrintStream nodesOut = new PrintStream(outputPrefix+".nodes.txt");
-        PrintStream nodeHistogramOut = new PrintStream(outputPrefix+".nodehistogram.txt");
-        PrintStream pathsOut = new PrintStream(outputPrefix+".paths.txt");
-        PrintStream nodePathsOut = new PrintStream(outputPrefix+".nodepaths.txt");
-        PrintStream pathSequencesOut = new PrintStream(outputPrefix+".pathsequences.fasta");
-        PrintStream pcaOut = new PrintStream(outputPrefix+".pathpca.txt");
+        long printNodesStart = System.currentTimeMillis();
         printNodes(nodesOut);
+        long printNodesEnd = System.currentTimeMillis();
+        if (verbose) System.out.println("printNodes took "+(printNodesEnd-printNodesStart)+" ms.");
+
+        PrintStream nodeHistogramOut = new PrintStream(outputPrefix+".nodehistogram.txt");
+        long printNodeHistogramStart = System.currentTimeMillis();
         printNodeHistogram(nodeHistogramOut);
+        long printNodeHistogramEnd = System.currentTimeMillis();
+        if (verbose) System.out.println("printNodeHistogram took "+(printNodeHistogramEnd-printNodeHistogramStart)+" ms.");
+
+        PrintStream pathsOut = new PrintStream(outputPrefix+".paths.txt");
+        long printPathsStart = System.currentTimeMillis();
         printPaths(pathsOut);
+        long printPathsEnd = System.currentTimeMillis();
+        if (verbose) System.out.println("printPaths took "+(printPathsEnd-printPathsStart)+" ms.");
+
+        PrintStream nodePathsOut = new PrintStream(outputPrefix+".nodepaths.txt");
+        long printNodePathsStart = System.currentTimeMillis();
         printNodePaths(nodePathsOut);
+        long printNodePathsEnd = System.currentTimeMillis();
+        if (verbose) System.out.println("printNodePaths took "+(printNodePathsEnd-printNodePathsStart)+" ms.");
+        
+        PrintStream pathSequencesOut = new PrintStream(outputPrefix+".pathsequences.fasta");
+        long printPathSequencesStart = System.currentTimeMillis();
         printPathSequences(pathSequencesOut);
-        printPcaData(pcaOut);
+        long printPathSequencesEnd = System.currentTimeMillis();
+        if (verbose) System.out.println("printPathSequences took "+(printPathSequencesEnd-printPathSequencesStart)+" ms.");
+        
+        PrintStream pcaDataOut = new PrintStream(outputPrefix+".pathpca.txt");
+        long printPcaDataStart = System.currentTimeMillis();
+        printPcaData(pcaDataOut);
+        long printPcaDataEnd = System.currentTimeMillis();
+        if (verbose) System.out.println("printPcaData took "+(printPcaDataEnd-printPcaDataStart)+" ms.");
     }
 
     /**
@@ -505,7 +535,10 @@ public class PangenomicGraph extends DirectedMultigraph<Node,Edge> {
         PangenomicGraph pg = new PangenomicGraph();
         if (cmd.hasOption("verbose")) pg.setVerbose();
         if (cmd.hasOption("genotype")) pg.setGenotype(Integer.parseInt(cmd.getOptionValue("genotype")));
+        long importStart = System.currentTimeMillis();
         pg.importGFA(gfaFile);
+        long importEnd = System.currentTimeMillis();
+        if (pg.verbose) System.out.println("GFA import took "+(importEnd-importStart)+" ms.");
 
         // if a labels file is given, add them to the paths
         if (labelsFile!=null) {
