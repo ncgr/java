@@ -1,0 +1,4 @@
+#!/bin/sh
+# update the production webapp
+sudo cp -r webapps/ROOT/* /var/lib/tomcat/webapps/motifs
+sudo systemctl restart tomcat
