@@ -1,0 +1,7 @@
+cp build/libs/ncgr-motifs.jar ~/beanmine/libs
+cp build/libs/ncgr-motifs.jar ~/chickpeamine/libs
+cp build/libs/ncgr-motifs.jar ~/cowpeamine/libs
+cp build/libs/ncgr-motifs.jar ~/legumemine/libs
+cp build/libs/ncgr-motifs.jar ~/lentilmine/libs
+cp build/libs/ncgr-motifs.jar ~/peanutmine/libs
+cp build/libs/ncgr-motifs.jar ~/soymine/libs
