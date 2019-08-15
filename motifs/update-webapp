@@ -1,4 +1,6 @@
 #!/bin/sh
 # update the production webapp
+./gradlew installDist
+cp build/install/ncgr-motifs/lib/* webapps/ROOT/WEB-INF/lib/
 sudo cp -r webapps/ROOT/* /var/lib/tomcat/webapps/motifs
 sudo systemctl restart tomcat
