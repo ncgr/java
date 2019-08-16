@@ -158,9 +158,6 @@ public class GFAImporter implements GraphImporter<Node,Edge> {
             }
             if (verbose) System.out.println(path.getNameGenotypeLabel());
         }
-
-        // build the path sequences from their nodes (populated above)
-        buildPathSequences();
     }
 
     /**

@@ -177,10 +177,11 @@ public class PathWalk extends GraphWalk<Node,Edge> implements Comparable<PathWal
      * Build this path's sequence from its list of nodes.
      */
     public void buildSequence() {
-        sequence = "";
+        StringBuilder builder = new StringBuilder();
         for (Node node : getNodes()) {
-            sequence += node.getSequence();
+            builder.append(node.getSequence());
         }
+        sequence = builder.toString();
     }
 
     /**
