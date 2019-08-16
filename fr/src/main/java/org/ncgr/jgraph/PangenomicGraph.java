@@ -278,8 +278,9 @@ public class PangenomicGraph extends DirectedMultigraph<Node,Edge> {
         for (int len : countMap.keySet()) {
             int counts = countMap.get(len);
             out.print("length="+len+"\t("+counts+")\t");
-            for (int i=1; i<=counts; i++) out.print("X");
-            out.println("");
+            StringBuilder builder = new StringBuilder();
+            for (int i=1; i<=counts; i++) builder.append("X");
+            out.println(builder.toString());
         }
     }
 
@@ -290,10 +291,11 @@ public class PangenomicGraph extends DirectedMultigraph<Node,Edge> {
         if (out==System.out) printHeading("PATHS");
         for (PathWalk path : paths) {
             out.print(path.getNameGenotype()+"\t"+path.getLabel()+"\t"+path.getSequence().length());
+            StringBuilder builder = new StringBuilder();
             for (Node node : path.getNodes()) {
-                out.print("\t"+node.getId());
+                builder.append("\t"+node.getId());
             }
-            out.println("");
+            out.println(builder.toString());
         }
     }
 
@@ -302,17 +304,19 @@ public class PangenomicGraph extends DirectedMultigraph<Node,Edge> {
      */
     public void printEdges(PrintStream out) {
         if (out==System.out) printHeading("EDGES");
+        StringBuilder builder = new StringBuilder();
         String lastNameGenotype = "";
         for (Edge e : edgeSet()) {
             if (!e.getNameGenotype().equals(lastNameGenotype)) {
-                out.println("");
-                out.print(e.toString());
+                out.println(builder.toString());
+                builder = new StringBuilder();
+                builder.append(e.toString());
             } else {
-                out.print(" "+e.toString());
+                builder.append(" "+e.toString());
             }
             lastNameGenotype = e.getNameGenotype();
         }
-        out.println("");
+        out.println(builder.toString());
     }
 
     /**
@@ -357,11 +361,12 @@ public class PangenomicGraph extends DirectedMultigraph<Node,Edge> {
             }
             out.println("");
             // print out the sequence, 100 chars to a line
-            for (int i=1; i<=path.getSequence().length(); i++) {
-                out.print(path.getSequence().charAt((i-1)));
-                if (i%100==0) out.print("\n");
+            String sequence = path.getSequence();
+            for (int i=0; i<sequence.length(); i+=100) {
+                int j = i + 100;
+                if (j>sequence.length()) j = sequence.length();
+                out.println(sequence.substring(i, j));
             }
-            out.println("");
         }
     }
 
@@ -379,30 +384,32 @@ public class PangenomicGraph extends DirectedMultigraph<Node,Edge> {
      * Print node participation by path, appropriate for PCA analysis.
      */
     public void printPcaData(PrintStream out) throws FileNotFoundException, IOException {
+        StringBuilder builder = new StringBuilder();
         // header is paths
         boolean first = true;
         for (PathWalk path : paths) {
             if (first) {
-                out.print(path.getNameGenotype());
+                builder.append(path.getNameGenotype());
                 first = false;
             } else {
-                out.print("\t"+path.getNameGenotype());
+                builder.append("\t"+path.getNameGenotype());
             }
-            if (path.getLabel()!=null) out.print("."+path.getLabel());
+            if (path.getLabel()!=null) builder.append("."+path.getLabel());
         }
-        out.println("");
+        out.println(builder.toString());
         // rows are nodes
         for (Node node : vertexSet()) {
+            builder = new StringBuilder();
             Set<PathWalk> nPaths = nodePaths.get(node.getId());
-            out.print("N"+node.getId());
+            builder.append("N"+node.getId());
             for (PathWalk path : paths) {
                 if (path.getNodes().contains(node)) {
-                    out.print("\t1");
+                    builder.append("\t1");
                 } else {
-                    out.print("\t0");
+                    builder.append("\t0");
                 }
             }
-            out.println("");
+            out.println(builder.toString());
         }
     }
 
