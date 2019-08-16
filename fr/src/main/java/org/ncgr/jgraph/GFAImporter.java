@@ -1,10 +1,22 @@
 package org.ncgr.jgraph;
 
-import org.jgrapht.*;
-import org.jgrapht.io.*;
+import org.jgrapht.Graph;
+import org.jgrapht.io.GraphImporter;
 
-import java.io.*;
-import java.util.*;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.IOException;
+import java.io.Reader;
+
+import java.util.Collections;
+import java.util.List;
+import java.util.LinkedList;
+import java.util.Map;
+import java.util.TreeMap;
+import java.util.Set;
+import java.util.TreeSet;
 
 /**
  * Importer for GFA files as output from vg view --gfa.
@@ -54,7 +66,7 @@ public class GFAImporter implements GraphImporter<Node,Edge> {
      */
     public void importGraph(Graph<Node,Edge> g, Reader reader) {
         TreeMap<Long,Node> nodes = new TreeMap<>();
-        Map<String,LinkedList<Node>> nodeListMap = new HashMap<>();
+        Map<String,LinkedList<Node>> nodeListMap = new TreeMap<>();
         paths = new TreeSet<>(); // (ordered simply for convenience)
         try {
             BufferedReader br = new BufferedReader(reader);
@@ -118,17 +130,21 @@ public class GFAImporter implements GraphImporter<Node,Edge> {
             System.exit(1);
         }
 
-        // build the paths from the nodeListMap
-        for (String pathName : nodeListMap.keySet()) {
-            List<Node> nodeList = nodeListMap.get(pathName);
-            String[] parts = pathName.split(":"); // separate out the genotype
-            String name = parts[0];
-            int genotype = Integer.parseInt(parts[1]);
-            PathWalk path = new PathWalk(g, nodeList, name, genotype);
-            paths.add(path);
-        }
-
+        // build the paths (in parallel) from the nodeListMap
+        if (verbose) System.out.println("Building PathWalks:");
+        Set<String> nodeListPathNames = Collections.synchronizedSet(nodeListMap.keySet());
+        nodeListPathNames.parallelStream().forEach((pathName) -> {
+                List<Node> nodeList = nodeListMap.get(pathName);
+                String[] parts = pathName.split(":"); // separate out the genotype
+                String name = parts[0];
+                int genotype = Integer.parseInt(parts[1]);
+                PathWalk path = new PathWalk(g, nodeList, name, genotype);
+                paths.add(path);
+                if (verbose) System.out.println(name+"."+genotype+" "+nodeList.size()+" nodes");
+            });
+        
         // build the path-labeled graph edges from the paths
+        if (verbose) System.out.println("Adding pathwalk edges to graph:");
         for (PathWalk path : paths) {
             boolean first = true;
             Node lastNode = null;
@@ -140,6 +156,7 @@ public class GFAImporter implements GraphImporter<Node,Edge> {
                 }
                 lastNode = node;
             }
+            if (verbose) System.out.println(path.getNameGenotypeLabel());
         }
 
         // build the path sequences from their nodes (populated above)
@@ -150,8 +167,10 @@ public class GFAImporter implements GraphImporter<Node,Edge> {
      * Build the path sequences - just calls PathWalk.buildSequence() for each path.
      */
     void buildPathSequences() {
+        if (verbose) System.out.println("Building path sequences:");
         for (PathWalk path : paths) {
             path.buildSequence();
+            if (verbose) System.out.println(path.getNameGenotypeLabel());
         }
     }
 
