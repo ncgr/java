@@ -59,15 +59,9 @@ public class PangenomicGraph extends DirectedMultigraph<Node,Edge> {
         GFAImporter importer = new GFAImporter();
         if (verbose) importer.setVerbose();
         importer.setGenotype(genotype);
-        long importGraphStart = System.currentTimeMillis();
         importer.importGraph(this, gfaFile);
-        long importGraphEnd = System.currentTimeMillis();
-        if (verbose) System.out.println("GFAImporter.importGraph took "+(importGraphEnd-importGraphStart)+" ms.");
         paths = importer.getPaths();
-        long buildNodePathsStart = System.currentTimeMillis();
         buildNodePaths();
-        long buildNodePathsEnd = System.currentTimeMillis();
-        if (verbose) System.out.println("buildNodePaths took "+(buildNodePathsEnd-buildNodePathsStart)+" ms.");
     }
 
     /**
@@ -423,28 +417,16 @@ public class PangenomicGraph extends DirectedMultigraph<Node,Edge> {
         }
 
         PrintStream nodesOut = new PrintStream(outputPrefix+".nodes.txt");
-        long printNodesStart = System.currentTimeMillis();
         printNodes(nodesOut);
-        long printNodesEnd = System.currentTimeMillis();
-        if (verbose) System.out.println("printNodes took "+(printNodesEnd-printNodesStart)+" ms.");
 
         PrintStream nodeHistogramOut = new PrintStream(outputPrefix+".nodehistogram.txt");
-        long printNodeHistogramStart = System.currentTimeMillis();
         printNodeHistogram(nodeHistogramOut);
-        long printNodeHistogramEnd = System.currentTimeMillis();
-        if (verbose) System.out.println("printNodeHistogram took "+(printNodeHistogramEnd-printNodeHistogramStart)+" ms.");
 
         PrintStream pathsOut = new PrintStream(outputPrefix+".paths.txt");
-        long printPathsStart = System.currentTimeMillis();
         printPaths(pathsOut);
-        long printPathsEnd = System.currentTimeMillis();
-        if (verbose) System.out.println("printPaths took "+(printPathsEnd-printPathsStart)+" ms.");
 
         PrintStream nodePathsOut = new PrintStream(outputPrefix+".nodepaths.txt");
-        long printNodePathsStart = System.currentTimeMillis();
         printNodePaths(nodePathsOut);
-        long printNodePathsEnd = System.currentTimeMillis();
-        if (verbose) System.out.println("printNodePaths took "+(printNodePathsEnd-printNodePathsStart)+" ms.");
         
         PrintStream pathSequencesOut = new PrintStream(outputPrefix+".pathsequences.fasta");
         long printPathSequencesStart = System.currentTimeMillis();
