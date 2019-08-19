@@ -13,7 +13,10 @@ paths = as.data.frame(t(nodes))
 paths.pca = prcomp(paths, center=TRUE)
 
 ## add labels
-paths$Label = substr(rownames(paths),10,14)
+paths.split = strsplit(rownames(paths), ".", fixed=TRUE)
+for (i in 1:length(rownames(paths))) {
+    paths$Label[i] = paths.split[[i]][3]
+}
 
 ## plot PC2 vs PC1
 library(ggfortify)
