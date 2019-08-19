@@ -56,27 +56,15 @@ public class FRPair implements Comparable<FRPair> {
             for (Node n1 : nodes) {
                 for (Node n2 : nodes) {
                     if (n1.getId()<n2.getId()) {
-                        // DEBUG
-                        try {
-                            GraphPath<Node,Edge> subpath = dsp.getPath(n1, n2);
-                            if (subpath==null) {
-                                // do nothing
-                            } else {
-                                List<Node> missingNodes = new LinkedList<>();
-                                for (Node n : subpath.getVertexList()) {
-                                    if (!nodes.contains(n)) {
-                                        missingNodes.add(n);
-                                    }
+                        GraphPath<Node,Edge> subpath = dsp.getPath(n1, n2);
+                        if (subpath!=null) {
+                            List<Node> missingNodes = new LinkedList<>();
+                            for (Node n : subpath.getVertexList()) {
+                                if (!nodes.contains(n)) {
+                                    missingNodes.add(n);
                                 }
-                                if (missingNodes.size()<minMissing) minMissing = missingNodes.size();
                             }
-                        } catch (Exception e) {
-                            e.printStackTrace();
-                            System.err.println(System.identityHashCode(n1)+" "+System.identityHashCode(n2));
-                            Set<Node> graphNodes = graph.vertexSet();
-                            for (Node n : graphNodes) System.out.print(System.identityHashCode(n)+" ");
-                            System.out.println("");
-                            System.exit(1);
+                            if (missingNodes.size()<minMissing) minMissing = missingNodes.size();
                         }
                     }
                 }

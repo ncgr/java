@@ -52,9 +52,9 @@ public class NodeSet extends TreeSet<Node> implements Comparable<NodeSet> {
      * Update derived quantities like totalBases.
      */
     public void update() {
-        String bases = "";
+        StringBuilder bases = new StringBuilder();
         for (Node n : this) {
-            bases += n.sequence;
+            bases.append(n.sequence);
         }
         this.totalBases = bases.length();
     }
