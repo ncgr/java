@@ -17,15 +17,15 @@ import org.jgrapht.traverse.*;
  */ 
 public class PangenomicGraph extends DirectedMultigraph<Node,Edge> {
 
-    // defaults
-    public static int BOTH_GENOTYPES = -1;
-    public static boolean VERBOSE = false;
-
     // output verbosity
-    boolean verbose = VERBOSE;
+    boolean verbose = false;
 
-    // genotype preference (default: load all genotypes)
+    // genotype preference (default: -1=load all genotypes)
+    public static int BOTH_GENOTYPES = -1;
     int genotype = BOTH_GENOTYPES;
+
+    // skip edges (faster if graph is large)
+    boolean skipEdges = false;
 
     // the GFA file that holds this graph
     File gfaFile;
@@ -58,6 +58,7 @@ public class PangenomicGraph extends DirectedMultigraph<Node,Edge> {
         this.gfaFile = gfaFile;
         GFAImporter importer = new GFAImporter();
         if (verbose) importer.setVerbose();
+        if (skipEdges) importer.setSkipEdges();
         importer.setGenotype(genotype);
         importer.importGraph(this, gfaFile);
         paths = importer.getPaths();
@@ -178,6 +179,13 @@ public class PangenomicGraph extends DirectedMultigraph<Node,Edge> {
      */
     public void setVerbose() {
         verbose = true;
+    }
+
+    /**
+     * Set the skipEdges flag.
+     */
+    public void setSkipEdges() {
+        skipEdges = true;
     }
 
     /**
@@ -477,7 +485,7 @@ public class PangenomicGraph extends DirectedMultigraph<Node,Edge> {
         gfaOption.setRequired(false);
         options.addOption(gfaOption);
         //
-        Option genotypeOption = new Option("gt", "genotype", true, "which genotype to include (0,1) from the GFA file; "+BOTH_GENOTYPES+" to include both ("+BOTH_GENOTYPES+")");
+        Option genotypeOption = new Option("gt", "genotype", true, "which genotype to include (0,1) from the GFA file; -1 to include both (-1)");
         genotypeOption.setRequired(false);
         options.addOption(genotypeOption);
         //
@@ -489,9 +497,13 @@ public class PangenomicGraph extends DirectedMultigraph<Node,Edge> {
         outputprefixOption.setRequired(false);
         options.addOption(outputprefixOption);
         //
-        Option verboseOption = new Option("v", "verbose", false, "verbose output ("+VERBOSE+")");
+        Option verboseOption = new Option("v", "verbose", false, "verbose output (false)");
         verboseOption.setRequired(false);
         options.addOption(verboseOption);
+        //
+        Option skipEdgesOption = new Option("s", "skipedges", false, "skip adding edges to graph (false)");
+        skipEdgesOption.setRequired(false);
+        options.addOption(skipEdgesOption);
 
         try {
             cmd = parser.parse(options, args);
@@ -523,6 +535,7 @@ public class PangenomicGraph extends DirectedMultigraph<Node,Edge> {
         // create a PangenomicGraph from a GFA file
         PangenomicGraph pg = new PangenomicGraph();
         if (cmd.hasOption("verbose")) pg.setVerbose();
+        if (cmd.hasOption("skipedges")) pg.setSkipEdges();
         if (cmd.hasOption("genotype")) pg.setGenotype(Integer.parseInt(cmd.getOptionValue("genotype")));
         long importStart = System.currentTimeMillis();
         pg.importGFA(gfaFile);

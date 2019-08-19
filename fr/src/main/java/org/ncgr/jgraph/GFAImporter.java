@@ -25,12 +25,15 @@ import java.util.TreeSet;
  */
 public class GFAImporter implements GraphImporter<Node,Edge> {
 
-    // genotype preference (default: load all genotypes)
+    // genotype preference (default: -1=load all genotypes)
     public static int BOTH_GENOTYPES = -1;
     public int genotype = BOTH_GENOTYPES;
 
     // verbosity flag
     private boolean verbose = false;
+
+    // skip-edges flag (to speed things up)
+    private boolean skipEdges = false;
 
     // we keep track of the genomic paths here since it's the only place we follow them
     TreeSet<PathWalk> paths;
@@ -144,19 +147,24 @@ public class GFAImporter implements GraphImporter<Node,Edge> {
             });
         
         // build the path-labeled graph edges from the paths
-        if (verbose) System.out.println("Adding pathwalk edges to graph:");
-        for (PathWalk path : paths) {
-            boolean first = true;
-            Node lastNode = null;
-            for (Node node : path.getNodes()) {
-                if (first) {
-                    first = false;
-                } else {
-                    g.addEdge(lastNode, node, new Edge(path));
+        // this can take a long time on a large graph, so skip if skipEdges==true
+        if (skipEdges) {
+            if (verbose) System.out.println("Skipping adding edges to graph!");
+        } else {
+            if (verbose) System.out.println("Adding pathwalk edges to graph:");
+            for (PathWalk path : paths) {
+                boolean first = true;
+                Node lastNode = null;
+                for (Node node : path.getNodes()) {
+                    if (first) {
+                        first = false;
+                    } else {
+                        g.addEdge(lastNode, node, new Edge(path));
+                    }
+                    lastNode = node;
                 }
-                lastNode = node;
+                if (verbose) System.out.println(path.getNameGenotypeLabel());
             }
-            if (verbose) System.out.println(path.getNameGenotypeLabel());
         }
     }
 
@@ -176,6 +184,13 @@ public class GFAImporter implements GraphImporter<Node,Edge> {
      */
     public void setVerbose() {
         verbose = true;
+    }
+
+    /**
+     * Toggle skipEdges on.
+     */
+    public void setSkipEdges() {
+        skipEdges = true;
     }
 
     /**
