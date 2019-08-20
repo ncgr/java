@@ -285,8 +285,8 @@ public class PangenomicGraph extends DirectedMultigraph<Node,Edge> {
         }
         for (int len : countMap.keySet()) {
             int counts = countMap.get(len);
-            out.print("length="+len+"\t("+counts+")\t");
             StringBuilder builder = new StringBuilder();
+            builder.append("length="+len+"\t("+counts+")\t");
             for (int i=1; i<=counts; i++) builder.append("X");
             out.println(builder.toString());
         }
@@ -298,8 +298,8 @@ public class PangenomicGraph extends DirectedMultigraph<Node,Edge> {
     public void printPaths(PrintStream out) {
         if (out==System.out) printHeading("PATHS");
         for (PathWalk path : paths) {
-            out.print(path.getNameGenotype()+"\t"+path.getLabel()+"\t"+path.getSequence().length());
             StringBuilder builder = new StringBuilder();
+            builder.append(path.getNameGenotype()+"\t"+path.getLabel()+"\t"+path.getSequence().length());
             for (Node node : path.getNodes()) {
                 builder.append("\t"+node.getId());
             }
@@ -334,11 +334,12 @@ public class PangenomicGraph extends DirectedMultigraph<Node,Edge> {
         if (out==System.out) printHeading("NODE PATHS");
         for (Long nodeId : nodePaths.keySet()) {
             Set<PathWalk> pathSet = nodePaths.get(nodeId);
-            out.print(String.valueOf(nodeId));
+            StringBuilder builder = new StringBuilder();
+            builder.append(nodeId);
             for (PathWalk path : pathSet) {
-                out.print("\t"+path.getNameGenotype());
+                builder.append("\t"+path.getNameGenotype());
             }
-            out.println("");
+            out.println(builder.toString());
         }
     }
 
