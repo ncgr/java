@@ -18,8 +18,8 @@ nodes = nodes[rowSums(nodes)!=0 & rowSums(nodes)!=dim(nodes)[2],]
 paths = as.data.frame(t(nodes))
 
 ## which are cases and which are controls
-cases = endsWith(rownames(paths.pca.ind$contrib), "case")
-controls = endsWith(rownames(paths.pca.ind$contrib), "ctrl")
+cases = endsWith(rownames(paths), "case")
+controls = endsWith(rownames(paths), "ctrl")
 
 ## compute PCA using prcomp
 paths.pca = prcomp(paths, center=TRUE)
