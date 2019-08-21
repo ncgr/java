@@ -32,11 +32,11 @@ public class GFAImporter implements GraphImporter<Node,Edge> {
     // verbosity flag
     private boolean verbose = false;
 
-    // skip-edges flag (to speed things up)
+    // skip-edges flag (to speed things up on big graphs)
     private boolean skipEdges = false;
 
     // we keep track of the genomic paths here since it's the only place we follow them
-    TreeSet<PathWalk> paths;
+    Set<PathWalk> paths;
 
     /**
      * Import a Graph from a GFA file.
@@ -69,8 +69,8 @@ public class GFAImporter implements GraphImporter<Node,Edge> {
      */
     public void importGraph(Graph<Node,Edge> g, Reader reader) {
         TreeMap<Long,Node> nodes = new TreeMap<>();
-        Map<String,LinkedList<Node>> nodeListMap = new TreeMap<>();
-        paths = new TreeSet<>(); // (ordered simply for convenience)
+        Map<String,LinkedList<Node>> nodeListMap = Collections.synchronizedMap(new TreeMap<String,LinkedList<Node>>());
+        paths = Collections.synchronizedSet(new TreeSet<PathWalk>()); // (ordered simply for convenience)
         try {
             BufferedReader br = new BufferedReader(reader);
             String line = null;
@@ -136,6 +136,7 @@ public class GFAImporter implements GraphImporter<Node,Edge> {
         // build the paths (in parallel) from the nodeListMap
         if (verbose) System.out.println("Building PathWalks:");
         Set<String> nodeListPathNames = Collections.synchronizedSet(nodeListMap.keySet());
+
         nodeListPathNames.parallelStream().forEach((pathName) -> {
                 List<Node> nodeList = nodeListMap.get(pathName);
                 String[] parts = pathName.split(":"); // separate out the genotype
@@ -145,6 +146,10 @@ public class GFAImporter implements GraphImporter<Node,Edge> {
                 paths.add(path);
                 if (verbose) System.out.println(path.getNameGenotypeLabel()+" "+nodeList.size()+" nodes");
             });
+
+        // DEBUG
+        if (verbose) System.out.println(paths.size()+" paths");
+        System.exit(0);
         
         // build the path-labeled graph edges from the paths
         // this can take a long time on a large graph, so skip if skipEdges==true
@@ -207,7 +212,7 @@ public class GFAImporter implements GraphImporter<Node,Edge> {
     /**
      * Get the paths.
      */
-    public TreeSet<PathWalk> getPaths() {
+    public Set<PathWalk> getPaths() {
         return paths;
     }
 }

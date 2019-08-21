@@ -34,10 +34,10 @@ public class PangenomicGraph extends DirectedMultigraph<Node,Edge> {
     File labelsFile;
     
     // each Path provides the ordered list of nodes that it traverses, along with its full sequence
-    TreeSet<PathWalk> paths; // (ordered simply for convenience)
+    Set<PathWalk> paths; // (ordered simply for convenience)
     
     // maps a Node to a set of Paths that traverse it
-    TreeMap<Long,Set<PathWalk>> nodePaths; // keyed and ordered by Node Id (for convenience)
+    Map<Long,Set<PathWalk>> nodePaths; // keyed and ordered by Node Id
 
     // maps a path label to a count of paths that have that label
     Map<String,Integer> labelCounts; // keyed by label
@@ -239,7 +239,7 @@ public class PangenomicGraph extends DirectedMultigraph<Node,Edge> {
     /**
      * Get this graph's paths.
      */
-    public TreeSet<PathWalk> getPaths() {
+    public Set<PathWalk> getPaths() {
         return paths;
     }
 
