@@ -1,0 +1,46 @@
+#!/bin/sh
+
+vcf-merge -R "0/0"  \
+	  HG00096.recode.vcf.gz \
+	  HG00097.recode.vcf.gz \
+	  HG00099.recode.vcf.gz \
+	  HG00100.recode.vcf.gz \
+	  HG00101.recode.vcf.gz \
+	  HG00102.recode.vcf.gz \
+	  HG00103.recode.vcf.gz \
+	  HG00105.recode.vcf.gz \
+	  HG00106.recode.vcf.gz \
+	  HG00107.recode.vcf.gz \
+	  HG00108.recode.vcf.gz \
+	  HG00109.recode.vcf.gz \
+	  HG00110.recode.vcf.gz \
+	  HG00111.recode.vcf.gz \
+	  HG00112.recode.vcf.gz \
+	  HG00113.recode.vcf.gz \
+	  HG00114.recode.vcf.gz \
+	  HG00115.recode.vcf.gz \
+	  HG00116.recode.vcf.gz \
+	  HG00117.recode.vcf.gz \
+	  HG00118.recode.vcf.gz \
+	  HG00119.recode.vcf.gz \
+	  HG00120.recode.vcf.gz \
+	  HG00121.recode.vcf.gz \
+	  HG00122.recode.vcf.gz \
+	  HG00123.recode.vcf.gz \
+	  HG00125.recode.vcf.gz \
+	  HG00126.recode.vcf.gz \
+	  HG00127.recode.vcf.gz \
+	  HG00128.recode.vcf.gz \
+	  HG00129.recode.vcf.gz \
+	  HG00130.recode.vcf.gz \
+	  HG00131.recode.vcf.gz \
+	  HG00132.recode.vcf.gz \
+	  HG00133.recode.vcf.gz \
+	  HG00136.recode.vcf.gz \
+	  HG00137.recode.vcf.gz \
+	  HG00138.recode.vcf.gz \
+	  HG00139.recode.vcf.gz \
+	  HG00140.recode.vcf.gz \
+	  > ALL.vcf
+
+vcf2tbi ALL.vcf

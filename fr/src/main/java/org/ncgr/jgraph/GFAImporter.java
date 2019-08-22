@@ -147,10 +147,6 @@ public class GFAImporter implements GraphImporter<Node,Edge> {
                 if (verbose) System.out.println(path.getNameGenotypeLabel()+" "+nodeList.size()+" nodes");
             });
 
-        // DEBUG
-        if (verbose) System.out.println(paths.size()+" paths");
-        System.exit(0);
-        
         // build the path-labeled graph edges from the paths
         // this can take a long time on a large graph, so skip if skipEdges==true
         if (skipEdges) {

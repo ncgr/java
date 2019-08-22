@@ -6,7 +6,7 @@ NODEMAX=1024
 
 REF=/erdos/shokin/hs37d5/hs37d5.11.fa
 
-## the entire HBB gene
+## just the HBB gene
 VCF=HBB.vcf.gz
 PREFIX=HBB
 REGION=11:5246696-5248301
@@ -58,13 +58,13 @@ vg index --threads 64 --compact --xg-name $PREFIX.xg --gbwt-name $PREFIX.gbwt --
 # extract the threads from the GBWT as vg Paths
 echo "vg paths --xg $PREFIX.xg --gbwt $PREFIX.gbwt --extract-vg --threads-by _thread_[sample] > [sample]_paths.vg"
 
-## 20 cases cooked from 1000G
+## 20 cases from 1kG with SCA allele applied
 for INDV in HG00096 HG00097 HG00099 HG00100 HG00101 HG00102 HG00103 HG00105 HG00106 HG00107 HG00108 HG00109 HG00110 HG00111 HG00112 HG00113 HG00114 HG00115 HG00116 HG00117
 do
     vg paths --xg $PREFIX.xg --gbwt $PREFIX.gbwt --extract-vg --paths-by _thread_${INDV} > ${INDV}_paths.vg
 done
     
-## 20 controls from 1000G
+## 20 controls from 1kG
 for INDV in HG00118 HG00119 HG00120 HG00121 HG00122 HG00123 HG00125 HG00126 HG00127 HG00128 HG00129 HG00130 HG00131 HG00132 HG00133 HG00136 HG00137 HG00138 HG00139 HG00140
 do
     vg paths --xg $PREFIX.xg --gbwt $PREFIX.gbwt --extract-vg --paths-by _thread_${INDV} > ${INDV}_paths.vg
