@@ -1044,7 +1044,7 @@ public class FRFinder {
                     subNodes.add(new Node(Long.parseLong(nodeAsString)));
                 }
                 // add to the subpaths
-                subpaths.add(new PathWalk(graph, subNodes, name, genotype, label));
+                subpaths.add(new PathWalk(graph, subNodes, name, genotype, label, false));
             }
             FrequentedRegion fr = new FrequentedRegion(graph, nodes, subpaths, alpha, kappa, kappaByNodes, support, avgLength);
             frequentedRegions.add(fr);

@@ -20,46 +20,46 @@ public class PathWalk extends GraphWalk<Node,Edge> implements Comparable<PathWal
     /**
      * Creates a walk defined by a sequence of nodes; weight=1.0.
      */
-    public PathWalk(Graph<Node,Edge> graph, List<Node> nodeList) {
+    public PathWalk(Graph<Node,Edge> graph, List<Node> nodeList, boolean skipSequence) {
         super(graph, nodeList, 1.0);
-        buildSequence();
+        if (!skipSequence) buildSequence();
     }
 
     /**
      * Creates a walk defined by a sequence of edges; weight=1.0.
      */
-    public PathWalk(Graph<Node,Edge> graph, Node startNode, Node endNode, List<Edge> edgeList) {
+    public PathWalk(Graph<Node,Edge> graph, Node startNode, Node endNode, List<Edge> edgeList, boolean skipSequence) {
         super(graph, startNode, endNode, edgeList, 1.0);
-        buildSequence();
+        if (!skipSequence) buildSequence();
     }
 
     /**
      * Creates a walk defined by both a sequence of edges and a sequence of nodes; weight=1.0.
      */
-    public PathWalk(Graph<Node,Edge> graph, Node startNode, Node endNode, List<Node> nodeList, List<Edge> edgeList) {
+    public PathWalk(Graph<Node,Edge> graph, Node startNode, Node endNode, List<Node> nodeList, List<Edge> edgeList, boolean skipSequence) {
         super(graph, startNode, endNode, nodeList, edgeList, 1.0);
-        buildSequence();
+        if (!skipSequence) buildSequence();
     }
 
     /**
      * Creates a walk defined by a list of nodes as well as identifying info; weight=1.0.
      */
-    public PathWalk(Graph<Node,Edge> graph, List<Node> nodeList, String name, int genotype) {
+    public PathWalk(Graph<Node,Edge> graph, List<Node> nodeList, String name, int genotype, boolean skipSequence) {
         super(graph, nodeList, 1.0);
         this.name = name;
         this.genotype = genotype;
-        buildSequence();
+        if (!skipSequence) buildSequence();
     }
 
     /**
      * Creates a walk defined by a list of nodes as well as identifying info; weight=1.0.
      */
-    public PathWalk(Graph<Node,Edge> graph, List<Node> nodeList, String name, int genotype, String label) {
+    public PathWalk(Graph<Node,Edge> graph, List<Node> nodeList, String name, int genotype, String label, boolean skipSequence) {
         super(graph, nodeList, 1.0);
         this.name = name;
         this.genotype = genotype;
         this.label = label;
-        buildSequence();
+        if (!skipSequence) buildSequence();
     }
 
     /**
@@ -222,7 +222,7 @@ public class PathWalk extends GraphWalk<Node,Edge> implements Comparable<PathWal
                 }
             }
         }
-        return new PathWalk(this.graph, subnodes, name, genotype, label);
+        return new PathWalk(this.graph, subnodes, name, genotype, label, false);
     }
 
     /**

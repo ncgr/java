@@ -35,6 +35,9 @@ public class GFAImporter implements GraphImporter<Node,Edge> {
     // skip-edges flag (to speed things up on big graphs)
     private boolean skipEdges = false;
 
+    // skip-sequences flag (to reduce memory)
+    private boolean skipSequences = false;
+
     // we keep track of the genomic paths here since it's the only place we follow them
     Set<PathWalk> paths;
 
@@ -142,7 +145,7 @@ public class GFAImporter implements GraphImporter<Node,Edge> {
                 String[] parts = pathName.split(":"); // separate out the genotype
                 String name = parts[0];
                 int genotype = Integer.parseInt(parts[1]);
-                PathWalk path = new PathWalk(g, nodeList, name, genotype);
+                PathWalk path = new PathWalk(g, nodeList, name, genotype, skipSequences);
                 paths.add(path);
                 if (verbose) System.out.println(path.getNameGenotypeLabel()+" "+nodeList.size()+" nodes");
             });
@@ -192,6 +195,13 @@ public class GFAImporter implements GraphImporter<Node,Edge> {
      */
     public void setSkipEdges() {
         skipEdges = true;
+    }
+
+    /**
+     * Toggle skipSequences on.
+     */
+    public void setSkipSequences() {
+	skipSequences = true;
     }
 
     /**

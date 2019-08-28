@@ -27,6 +27,9 @@ public class PangenomicGraph extends DirectedMultigraph<Node,Edge> {
     // skip edges (faster if graph is large)
     boolean skipEdges = false;
 
+    // skip building sequences (reduces RAM)
+    boolean skipSequences = false;
+
     // the GFA file that holds this graph
     File gfaFile;
 
@@ -59,6 +62,7 @@ public class PangenomicGraph extends DirectedMultigraph<Node,Edge> {
         GFAImporter importer = new GFAImporter();
         if (verbose) importer.setVerbose();
         if (skipEdges) importer.setSkipEdges();
+	if (skipSequences) importer.setSkipSequences();
         importer.setGenotype(genotype);
         importer.importGraph(this, gfaFile);
         paths = importer.getPaths();
@@ -186,6 +190,13 @@ public class PangenomicGraph extends DirectedMultigraph<Node,Edge> {
      */
     public void setSkipEdges() {
         skipEdges = true;
+    }
+
+    /**
+     * Set the skipSequences flag.
+     */
+    public void setSkipSequences() {
+	skipSequences = true;
     }
 
     /**
@@ -502,9 +513,13 @@ public class PangenomicGraph extends DirectedMultigraph<Node,Edge> {
         verboseOption.setRequired(false);
         options.addOption(verboseOption);
         //
-        Option skipEdgesOption = new Option("s", "skipedges", false, "skip adding edges to graph (false)");
+        Option skipEdgesOption = new Option("se", "skipedges", false, "skip adding edges to graph (false)");
         skipEdgesOption.setRequired(false);
         options.addOption(skipEdgesOption);
+        //
+        Option skipSequencesOption = new Option("ss", "skipsequences", false, "skip building sequences of paths (false)");
+        skipSequencesOption.setRequired(false);
+        options.addOption(skipSequencesOption);
 
         try {
             cmd = parser.parse(options, args);
@@ -537,6 +552,7 @@ public class PangenomicGraph extends DirectedMultigraph<Node,Edge> {
         PangenomicGraph pg = new PangenomicGraph();
         if (cmd.hasOption("verbose")) pg.setVerbose();
         if (cmd.hasOption("skipedges")) pg.setSkipEdges();
+	if (cmd.hasOption("skipsequences")) pg.setSkipSequences();
         if (cmd.hasOption("genotype")) pg.setGenotype(Integer.parseInt(cmd.getOptionValue("genotype")));
         long importStart = System.currentTimeMillis();
         pg.importGFA(gfaFile);
