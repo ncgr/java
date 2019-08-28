@@ -40,23 +40,40 @@ public class Node implements Comparable<Node> {
         return sequence;
     }
 
+    // /**
+    //  * Two nodes are equal if they have the same id.
+    //  */
+    // public boolean equals(Node that) {
+    //     return this.id==that.id;
+    // }
+
     /**
-     * Two nodes are equal if they have the same id.
+     * Two nodes are equal if they have the same sequence.
      */
     public boolean equals(Node that) {
-        return this.id==that.id;
+        return this.sequence.equals(that.sequence);
     }
 
     /**
-     * Compare based simply on id.
+     * Hash code uses String.hashCode(), which is LIKELY to be distinct for distinct strings.
      */
+    @Override
+    public int hashCode() {
+        return sequence.hashCode();
+    }
+
+    /**
+     * Compare based on sequence.
+     */
+    @Override
     public int compareTo(Node that) {
-        return (int)(this.id - that.id);
+        return this.sequence.compareTo(that.sequence);
     }
 
     /**
-     * Simply return the id.
+     * Simply return the id. OR SEQUENCE? OR hashCode()?
      */
+    @Override
     public String toString() {
         return String.valueOf(id);
     }

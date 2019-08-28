@@ -61,4 +61,19 @@ public class Edge extends DefaultEdge {
     public String toString() {
         return getSource()+":"+getNameGenotype()+":"+getTarget();
     }
+
+    /**
+     * Two edges are equal if they connect the same nodes AND are on the same path (NameGenotype), i.e. have the same string representation.
+     */
+    public boolean equals(Edge that) {
+        return this.toString().equals(that.toString());
+    }
+
+    /**
+     * Return a hash code from the String.hashCode() on the string representation.
+     */
+    @Override
+    public int hashCode() {
+        return this.toString().hashCode();
+    }
 }
