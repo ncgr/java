@@ -6,7 +6,7 @@ import java.util.TreeMap;
  * Representation of a sample consisting of a name, label and a map of indices to double values.
  * Comparable is implemented for alpha sorting on sample.name.
  */
-public class Sample implements Comparable<Sample> {
+public class Sample implements Comparable {
 
     public String name;
     public String label;
@@ -53,14 +53,18 @@ public class Sample implements Comparable<Sample> {
     /**
      * Two samples are equal if they have the same name.
      */
-    public boolean equals(Sample that) {
+    @Override
+    public boolean equals(Object o) {
+	Sample that = (Sample) o;
         return this.name.equals(that.name);
     }
 
     /**
      * Compare based on name, alphabetically.
      */
-    public int compareTo(Sample that) {
+    @Override
+    public int compareTo(Object o) {
+	Sample that = (Sample) o;
         return this.name.compareTo(that.name);
     }
 }

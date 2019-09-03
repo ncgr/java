@@ -16,7 +16,7 @@ import org.jgrapht.alg.shortestpath.DijkstraShortestPath;
  * Container for a pair of FrequentedRegions and their merged result with a comparator for ranking it.
  * This is where one implements weighting of certain desired FR characteristics.
  */
-public class FRPair implements Comparable<FRPair> {
+public class FRPair implements Comparable {
 
     FrequentedRegion fr1;
     FrequentedRegion fr2;
@@ -77,14 +77,15 @@ public class FRPair implements Comparable<FRPair> {
      * Algorithm 2 from Cleary, et al. returns the supporting path segments for the given merge of FRs.
      * @returns the set of supporting path segments
      */
-    public void merge() {
+    public void merge() throws Exception {
         merged = new FrequentedRegion(graph, NodeSet.merge(fr1.nodes,fr2.nodes), alpha, kappa, kappaByNodes);
     }
 
     /**
      * Two FRPairs are equal if their components are equal.
      */
-    public boolean equals(FRPair that) {
+    public boolean equals(Object o) {
+	FRPair that = (FRPair) o;
         return (this.fr1.equals(that.fr1) && this.fr2.equals(that.fr2)) || (this.fr1.equals(that.fr2) && this.fr2.equals(that.fr1));
     }
 
@@ -95,7 +96,9 @@ public class FRPair implements Comparable<FRPair> {
      * caseCtrl: balanced case vs. control difference; else default.
      * default: support, avgLength, nodes.size()
      */
-    public int compareTo(FRPair that) {
+    @Override
+    public int compareTo(Object o) {
+	FRPair that = (FRPair) o;
         if (this.equals(that)) return 0;
         if (caseCtrl) {
             int thisDifference = this.merged.caseControlDifference();

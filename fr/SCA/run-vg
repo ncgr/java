@@ -58,6 +58,7 @@ vg index --threads 64 --compact --xg-name $PREFIX.xg --gbwt-name $PREFIX.gbwt --
 # extract the threads from the GBWT as vg Paths
 echo "vg paths --xg $PREFIX.xg --gbwt $PREFIX.gbwt --extract-vg --threads-by _thread_[sample] > [sample]_paths.vg"
 
+
 ## 20 cases from 1kG with SCA allele applied
 for INDV in HG00096 HG00097 HG00099 HG00100 HG00101 HG00102 HG00103 HG00105 HG00106 HG00107 HG00108 HG00109 HG00110 HG00111 HG00112 HG00113 HG00114 HG00115 HG00116 HG00117
 do
@@ -72,7 +73,7 @@ done
 
 # now add those paths back to the vg
 cat $PREFIX.vg *_paths.vg > $PREFIX.paths.vg
-rm *_paths.vg
+## rm *_paths.vg
 
 # output some nice files
 vg view --threads 64 --gfa $PREFIX.paths.vg > $PREFIX.paths.gfa

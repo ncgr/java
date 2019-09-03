@@ -65,7 +65,9 @@ public class Edge extends DefaultEdge {
     /**
      * Two edges are equal if they connect the same nodes AND are on the same path (NameGenotype), i.e. have the same string representation.
      */
-    public boolean equals(Edge that) {
+    @Override
+    public boolean equals(Object o) {
+	Edge that = (Edge) o;
         return this.toString().equals(that.toString());
     }
 

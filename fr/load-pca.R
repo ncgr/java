@@ -9,13 +9,23 @@ library(factoextra)
 ## get the file prefix from the user
 prefix = readline(prompt="graph prefix (e.g. 3q29): ")
 
-## load/prune nodes
-nodes = read.table(paste(prefix,".pathpca.txt", sep=""))
+## ## load paths
+## ## V1        V2   V3 V4 V5 V6 V7 V8 V9 V10 V11 V12 V13 V14 V15 V16 V17 V18 V19
+## ## HG00123.0 ctrl 1606  1  3  4  3  7  3  10   2  13  11  16   5  19  11  22   5
+## paths = read.table(paste(prefix,"paths.txt", sep="."))
+## rownames(paths) = paste(paths$V1,paths$V2, sep=".")
+## paths$V1 = NULL
+## paths$V2 = NULL
+## paths$V3 = NULL
 
-nodes = nodes[rowSums(nodes)!=0 & rowSums(nodes)!=dim(nodes)[2],]
+## load/prune pathpca records
+pathpca = read.table(paste(prefix,"pathpca.txt", sep="."))
 
-## paths data frame
-paths = as.data.frame(t(nodes))
+## prune
+## ##pathpca = pathpca[rowSums(nodes)!=0 & rowSums(nodes)!=dim(nodes)[2],]
+
+## ## paths data frame from pathpca data frame (rather than paths file)
+paths = as.data.frame(t(pathpca))
 
 ## which are cases and which are controls
 cases = endsWith(rownames(paths), "case")

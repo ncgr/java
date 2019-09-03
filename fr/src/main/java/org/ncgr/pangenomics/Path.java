@@ -18,7 +18,7 @@ import java.util.StringJoiner;
  *
  * @author Sam Hokin
  */
-public class Path implements Comparable<Path> {
+public class Path implements Comparable {
 
     // probably ought to use getters/setters for these...
     public String name;             // the name of this path, typically a subject ID
@@ -138,7 +138,9 @@ public class Path implements Comparable<Path> {
     /**
      * Two paths are equal if they have the same name and genotype and traverse the same nodes.
      */
-    public boolean equals(Path that) {
+    @Override
+    public boolean equals(Object o) {
+	Path that = (Path) o;
         if (!this.name.equals(that.name)) {
             return false;
         } else if (this.genotype!=that.genotype) {
@@ -156,7 +158,9 @@ public class Path implements Comparable<Path> {
     /**
      * Compare based on name then genotype then node size then first node id.
      */
-    public int compareTo(Path that) {
+    @Override
+    public int compareTo(Object o) {
+	Path that = (Path) o;
         if (!this.name.equals(that.name)) {
             return this.name.compareTo(that.name);
         } else if (this.genotype!=that.genotype) {

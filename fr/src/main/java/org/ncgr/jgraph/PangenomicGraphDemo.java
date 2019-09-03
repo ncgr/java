@@ -48,7 +48,7 @@ public class PangenomicGraphDemo extends JApplet {
      *
      * @param args command line arguments
      */
-    public static void main(String[] args) throws IOException, FileNotFoundException {
+    public static void main(String[] args) throws Exception {
 
         Options options = new Options();
         CommandLineParser parser = new DefaultParser();

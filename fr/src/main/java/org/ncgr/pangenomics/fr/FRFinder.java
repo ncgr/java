@@ -107,7 +107,7 @@ public class FRFinder {
     /**
      * Construct with the output from a previous run. Be sure to set minSup, minSize, minLen filters as needed before running postprocess().
      */
-    public FRFinder(String inputPrefix) throws FileNotFoundException, IOException {
+    public FRFinder(String inputPrefix) throws Exception {
         this.inputPrefix = inputPrefix;
         readParameters();
         readFrequentedRegions();
@@ -116,15 +116,10 @@ public class FRFinder {
     /**
      * Find the frequented regions in this Graph.
      */
-    public void findFRs() throws IOException {
+    public void findFRs() throws Exception {
         if (prunedGraph) {
-            try {
-                int nRemoved = graph.prune();
-                System.out.println("# graph has been pruned ("+nRemoved+" fully common nodes removed).");
-            } catch (Exception e) {
-                System.err.println(e.toString());
-                System.exit(1);
-            }
+	    int nRemoved = graph.prune();
+	    System.out.println("# graph has been pruned ("+nRemoved+" fully common nodes removed).");
         }
 
 	System.out.println("# graph has "+graph.vertexSet().size()+" nodes and "+graph.getPaths().size()+" paths.");
@@ -228,7 +223,11 @@ public class FRFinder {
                                     String nodesKey = frpair.nodes.toString();
                                     if (!usedNodeSets.contains(nodesKey)) {
                                         usedNodeSets.add(nodesKey);
-                                        frpair.merge();
+					try {
+					    frpair.merge();
+					} catch (Exception e) {
+					    System.err.println(e.toString());
+					}
                                         loopFRs.add(frpair.merged);
                                         if (frpair.merged.support>=minSup && frpair.merged.avgLength>=minLen && frpair.merged.nodes.size()>=minSize) frequentedRegions.add(frpair.merged);
                                     }
@@ -318,7 +317,11 @@ public class FRFinder {
                                             rejectedNodeSets.add(nodesKey);
                                         } else {
                                             // merge and add to accepted set
-                                            frpair.merge();
+					    try {
+						frpair.merge();
+					    } catch (Exception e) {
+						System.err.println(e.toString());
+					    }
                                             acceptedFRPairs.put(nodesKey, frpair);
                                             pq.add(frpair);
                                         }
@@ -385,7 +388,7 @@ public class FRFinder {
     /**
      * Post-process a set of FRs for given minSup, minLen and minSize.
      */
-    public void postprocess() throws FileNotFoundException, IOException {
+    public void postprocess() throws Exception {
         TreeSet<FrequentedRegion> filteredFRs = new TreeSet<>();
         for (FrequentedRegion fr : frequentedRegions) {
             boolean passes = true;
@@ -481,7 +484,7 @@ public class FRFinder {
     /**
      * Command-line utility
      */
-    public static void main(String[] args) throws FileNotFoundException, IOException {
+    public static void main(String[] args) throws Exception {
 
         Options options = new Options();
         CommandLineParser parser = new DefaultParser();
@@ -594,14 +597,10 @@ public class FRFinder {
         
         // parameter validation
         if (!cmd.hasOption("inputprefix") && !cmd.hasOption("dot") && !cmd.hasOption("json") && !cmd.hasOption("gfa")) {
-            System.err.println("You must specify a splitMEM-style DOT file plus FASTA (-d/--dot and -f/--fasta ), a vg JSON file (-j, --json) or a vg GFA file (--gfa)");
-            System.exit(1);
-            return;
+            throw new Exception("You must specify a splitMEM-style DOT file plus FASTA (-d/--dot and -f/--fasta ), a vg JSON file (-j, --json) or a vg GFA file (--gfa)");
         }
         if (cmd.hasOption("dot") && !cmd.hasOption("fasta")) {
-            System.err.println("If you specify a splitMEM dot file (-d/--dot) you MUST ALSO specify a FASTA file (-f/--fasta)");
-            System.exit(1);
-            return;
+            throw new Exception("If you specify a splitMEM dot file (-d/--dot) you MUST ALSO specify a FASTA file (-f/--fasta)");
         }
         
         // files
@@ -936,7 +935,7 @@ public class FRFinder {
     /**
      * Read in the parameters from a previous run.
      */
-    void readParameters() throws FileNotFoundException, IOException {
+    void readParameters() throws Exception {
         String paramsFile = getParamsFilename(inputPrefix);
         BufferedReader reader = new BufferedReader(new FileReader(paramsFile));
         String line = null;
@@ -1010,12 +1009,20 @@ public class FRFinder {
      * 628863.1.case:[18,20,21,23,24,26,27,29,30,33,34]
      * etc.
      */
-    void readFrequentedRegions() throws FileNotFoundException, IOException {
+    void readFrequentedRegions() throws Exception {
         // do we have a Graph?
         if (graph.getNodes().size()==0) {
-            System.err.println("ERROR in readFrequentedRegions: graph has not been initialized.");
-            System.exit(1);
+            throw new Exception("ERROR in readFrequentedRegions: graph has not been initialized.");
         }
+	// build an id-keyed map of nodes for further down
+	Map<Long,Node> nodesById = new HashMap<>();
+	for (Node n : graph.getNodes()) {
+	    if (n.getSequence()==null) {
+		throw new Exception("ERROR in readFrequentedRegions: graph node "+n.getId()+" has no sequence.");
+	    }
+	    nodesById.put(n.getId(), n);
+	}
+	// build the FRs
         frequentedRegions = new TreeSet<>();
         String frFilename = getFRSubpathsFilename(inputPrefix);
         BufferedReader reader = new BufferedReader(new FileReader(frFilename));
@@ -1041,7 +1048,8 @@ public class FRFinder {
                 List<Node> subNodes = new LinkedList<>();
                 String[] nodesAsStrings = nodeString.replace("[","").replace("]","").split(",");
                 for (String nodeAsString : nodesAsStrings) {
-                    subNodes.add(new Node(Long.parseLong(nodeAsString)));
+		    long nodeId = Long.parseLong(nodeAsString);
+                    subNodes.add(nodesById.get(nodeId));
                 }
                 // add to the subpaths
                 subpaths.add(new PathWalk(graph, subNodes, name, genotype, label, false));

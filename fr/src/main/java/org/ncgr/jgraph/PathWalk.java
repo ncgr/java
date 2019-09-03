@@ -7,10 +7,11 @@ import java.util.*;
 
 /**
  * An extension of GraphWalk to provide a genomic path through the graph and methods appropriate for frequented regions.
+ * It must implement Comparable, otherwise identical paths from different individuals will be regarded equal.
  *
  * @author Sam Hokin
  */
-public class PathWalk extends GraphWalk<Node,Edge> implements Comparable<PathWalk> {
+public class PathWalk extends GraphWalk<Node,Edge> implements Comparable {
 
     private String name;     // the name identifying this path, a sample or individual
     private int genotype;    // the genotype identifier for this path: 0 or 1
@@ -20,7 +21,7 @@ public class PathWalk extends GraphWalk<Node,Edge> implements Comparable<PathWal
     /**
      * Creates a walk defined by a sequence of nodes; weight=1.0.
      */
-    public PathWalk(Graph<Node,Edge> graph, List<Node> nodeList, boolean skipSequence) {
+    public PathWalk(Graph<Node,Edge> graph, List<Node> nodeList, boolean skipSequence) throws Exception {
         super(graph, nodeList, 1.0);
         if (!skipSequence) buildSequence();
     }
@@ -28,7 +29,7 @@ public class PathWalk extends GraphWalk<Node,Edge> implements Comparable<PathWal
     /**
      * Creates a walk defined by a sequence of edges; weight=1.0.
      */
-    public PathWalk(Graph<Node,Edge> graph, Node startNode, Node endNode, List<Edge> edgeList, boolean skipSequence) {
+    public PathWalk(Graph<Node,Edge> graph, Node startNode, Node endNode, List<Edge> edgeList, boolean skipSequence) throws Exception {
         super(graph, startNode, endNode, edgeList, 1.0);
         if (!skipSequence) buildSequence();
     }
@@ -36,7 +37,7 @@ public class PathWalk extends GraphWalk<Node,Edge> implements Comparable<PathWal
     /**
      * Creates a walk defined by both a sequence of edges and a sequence of nodes; weight=1.0.
      */
-    public PathWalk(Graph<Node,Edge> graph, Node startNode, Node endNode, List<Node> nodeList, List<Edge> edgeList, boolean skipSequence) {
+    public PathWalk(Graph<Node,Edge> graph, Node startNode, Node endNode, List<Node> nodeList, List<Edge> edgeList, boolean skipSequence) throws Exception {
         super(graph, startNode, endNode, nodeList, edgeList, 1.0);
         if (!skipSequence) buildSequence();
     }
@@ -44,7 +45,7 @@ public class PathWalk extends GraphWalk<Node,Edge> implements Comparable<PathWal
     /**
      * Creates a walk defined by a list of nodes as well as identifying info; weight=1.0.
      */
-    public PathWalk(Graph<Node,Edge> graph, List<Node> nodeList, String name, int genotype, boolean skipSequence) {
+    public PathWalk(Graph<Node,Edge> graph, List<Node> nodeList, String name, int genotype, boolean skipSequence) throws Exception {
         super(graph, nodeList, 1.0);
         this.name = name;
         this.genotype = genotype;
@@ -54,7 +55,7 @@ public class PathWalk extends GraphWalk<Node,Edge> implements Comparable<PathWal
     /**
      * Creates a walk defined by a list of nodes as well as identifying info; weight=1.0.
      */
-    public PathWalk(Graph<Node,Edge> graph, List<Node> nodeList, String name, int genotype, String label, boolean skipSequence) {
+    public PathWalk(Graph<Node,Edge> graph, List<Node> nodeList, String name, int genotype, String label, boolean skipSequence) throws Exception {
         super(graph, nodeList, 1.0);
         this.name = name;
         this.genotype = genotype;
@@ -63,25 +64,21 @@ public class PathWalk extends GraphWalk<Node,Edge> implements Comparable<PathWal
     }
 
     /**
-     * Do we need to implement equals(Object)?
-     */
-    public boolean equals(Object o) {
-        PathWalk that = (PathWalk) o;
-        return this.equals(that);
-    }
-    
-    /**
      * Two paths are equal if they have the same name and genotype and traverse the same nodes,
      * which means they have the same String representation.
      */
-    public boolean equals(PathWalk that) {
+    @Override
+    public boolean equals(Object o) {
+        PathWalk that = (PathWalk) o;
         return this.toString().equals(that.toString());
     }
-
+    
     /**
      * Compare based on name then genotype then node size then first node id.
      */
-    public int compareTo(PathWalk that) {
+    @Override
+    public int compareTo(Object o) {
+    	PathWalk that = (PathWalk) o;
         if (!this.name.equals(that.name)) {
             return this.name.compareTo(that.name);
         } else if (this.genotype!=that.genotype) {
@@ -176,9 +173,14 @@ public class PathWalk extends GraphWalk<Node,Edge> implements Comparable<PathWal
     /**
      * Build this path's sequence from its list of nodes.
      */
-    public void buildSequence() {
+    public void buildSequence() throws Exception {
         StringBuilder builder = new StringBuilder();
         for (Node node : getNodes()) {
+	    if (node==null) {
+		throw new Exception("Null node returned by PathWalk.getNodes()!!");
+	    } else if (node.getSequence()==null) {
+		throw new Exception("Node "+node.getId()+" has no sequence!");
+	    }
             builder.append(node.getSequence());
         }
         sequence = builder.toString();
@@ -190,7 +192,7 @@ public class PathWalk extends GraphWalk<Node,Edge> implements Comparable<PathWal
      * @param nr the "right" node
      * @return the subsequence inclusively between nl and nr
      */
-    public String subsequence(Node nl, Node nr) {
+    public String subsequence(Node nl, Node nr) throws Exception {
         if (!getNodes().contains(nl) || !getNodes().contains(nr)) return "";
         return subpath(nl,nr).sequence;
     }
@@ -201,7 +203,7 @@ public class PathWalk extends GraphWalk<Node,Edge> implements Comparable<PathWal
      * @param nr the "right" node
      * @return the PathWalk inclusively between nl and nr
      */
-    public PathWalk subpath(Node nl, Node nr) {
+    public PathWalk subpath(Node nl, Node nr) throws Exception {
         List<Node> subnodes = new LinkedList<>();
         if (getNodes().contains(nl) && getNodes().contains(nr)) {
             if (nl.equals(nr)) {
@@ -269,7 +271,7 @@ public class PathWalk extends GraphWalk<Node,Edge> implements Comparable<PathWal
      * @param kappaByNodes if true, kappa is number of inserted nodes, rather than length of inserted sequence in bases
      * @returns the set of supporting path segments
      */
-    public Set<PathWalk> computeSupport(NodeSet nodes, double alpha, int kappa, boolean kappaByNodes) {
+    public Set<PathWalk> computeSupport(NodeSet nodes, double alpha, int kappa, boolean kappaByNodes) throws Exception {
         Set<PathWalk> s = new HashSet<>();
         // m = the list of p's nodes that are in c
         LinkedList<Node> m = new LinkedList<>();

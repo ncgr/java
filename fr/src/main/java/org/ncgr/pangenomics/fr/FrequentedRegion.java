@@ -20,7 +20,7 @@ import java.util.TreeSet;
  *
  * @author Sam Hokin
  */
-public class FrequentedRegion implements Comparable<FrequentedRegion> {
+public class FrequentedRegion implements Comparable {
 
     // static utility stuff
     static DecimalFormat df = new DecimalFormat("0.00");
@@ -54,7 +54,7 @@ public class FrequentedRegion implements Comparable<FrequentedRegion> {
     /**
      * Construct given a PangenomicGraph, NodeSet and alpha and kappa filter parameters.
      */
-    FrequentedRegion(PangenomicGraph graph, NodeSet nodes, double alpha, int kappa, boolean kappaByNodes) {
+    FrequentedRegion(PangenomicGraph graph, NodeSet nodes, double alpha, int kappa, boolean kappaByNodes) throws Exception {
         this.graph = graph;
         this.nodes = nodes;
         this.alpha = alpha;
@@ -117,14 +117,17 @@ public class FrequentedRegion implements Comparable<FrequentedRegion> {
     /**
      * Equality is simply based on the NodeSets.
      */
-    public boolean equals(FrequentedRegion that) {
+    public boolean equals(Object o) {
+	FrequentedRegion that = (FrequentedRegion) o;
         return this.nodes.equals(that.nodes);
     }
 
     /**
      * Comparison is based on the NodeSet comparator.
      */
-    public int compareTo(FrequentedRegion that) {
+    @Override
+    public int compareTo(Object o) {
+	FrequentedRegion that = (FrequentedRegion) o;
         return this.nodes.compareTo(that.nodes);
     }
     
@@ -144,7 +147,7 @@ public class FrequentedRegion implements Comparable<FrequentedRegion> {
     /**
      * Update the subpaths and support from the graph paths for the current alpha and kappa values.
      */
-    void updateSupport() {
+    void updateSupport() throws Exception {
         subpaths = new HashSet<>();
         for (PathWalk p : graph.getPaths()) {
             Set<PathWalk> supportPaths = p.computeSupport(nodes, alpha, kappa, kappaByNodes);

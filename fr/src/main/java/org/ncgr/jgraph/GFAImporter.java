@@ -14,9 +14,9 @@ import java.util.Collections;
 import java.util.List;
 import java.util.LinkedList;
 import java.util.Map;
-import java.util.TreeMap;
+import java.util.HashMap;
 import java.util.Set;
-import java.util.TreeSet;
+import java.util.HashSet;
 
 /**
  * Importer for GFA files as output from vg view --gfa.
@@ -71,9 +71,10 @@ public class GFAImporter implements GraphImporter<Node,Edge> {
      * @param reader the reader attached to the GFA file
      */
     public void importGraph(Graph<Node,Edge> g, Reader reader) {
-        TreeMap<Long,Node> nodes = new TreeMap<>();
-        Map<String,LinkedList<Node>> nodeListMap = Collections.synchronizedMap(new TreeMap<String,LinkedList<Node>>());
-        paths = Collections.synchronizedSet(new TreeSet<PathWalk>()); // (ordered simply for convenience)
+        Map<Long,Node> nodes = new HashMap<>();
+	Map<String,Node> nodesBySequence = new HashMap<>();
+        Map<String,LinkedList<Node>> nodeListMap = Collections.synchronizedMap(new HashMap<String,LinkedList<Node>>());
+        paths = Collections.synchronizedSet(new HashSet<PathWalk>());
         try {
             BufferedReader br = new BufferedReader(reader);
             String line = null;
@@ -89,8 +90,15 @@ public class GFAImporter implements GraphImporter<Node,Edge> {
                     long nodeId = Long.parseLong(parts[1]);
                     String sequence = parts[2];
                     Node node = new Node(nodeId, sequence);
-                    g.addVertex(node);
-                    nodes.put(nodeId, node);
+		    boolean added = g.addVertex(node);
+		    if (added) {
+			// new node, add to the by-sequence map
+			nodesBySequence.put(sequence, node);
+		    } else {
+			// node already in graph, so associate that one with this ID
+			node = nodesBySequence.get(sequence);
+		    }
+		    nodes.put(nodeId, node);
                 } else if (recordType.equals("P") && parts.length==4) {
                     // Path line
                     // Sometimes path entries do not contain any nodes, so required parts.length==4.
@@ -145,9 +153,13 @@ public class GFAImporter implements GraphImporter<Node,Edge> {
                 String[] parts = pathName.split(":"); // separate out the genotype
                 String name = parts[0];
                 int genotype = Integer.parseInt(parts[1]);
-                PathWalk path = new PathWalk(g, nodeList, name, genotype, skipSequences);
-                paths.add(path);
-                if (verbose) System.out.println(path.getNameGenotypeLabel()+" "+nodeList.size()+" nodes");
+		try {
+		    PathWalk path = new PathWalk(g, nodeList, name, genotype, skipSequences);
+		    paths.add(path);
+		    if (verbose) System.out.println(path.getNameGenotypeLabel()+" "+nodeList.size()+" nodes");
+		} catch (Exception e) {
+		    System.err.println(e.toString());
+		}
             });
 
         // build the path-labeled graph edges from the paths
@@ -178,8 +190,12 @@ public class GFAImporter implements GraphImporter<Node,Edge> {
     void buildPathSequences() {
         if (verbose) System.out.println("Building path sequences:");
         for (PathWalk path : paths) {
-            path.buildSequence();
-            if (verbose) System.out.println(path.getNameGenotypeLabel());
+	    try {
+		path.buildSequence();
+		if (verbose) System.out.println(path.getNameGenotypeLabel());
+	    } catch (Exception e) {
+		System.err.println(e.toString());
+	    }
         }
     }
 

@@ -326,7 +326,8 @@ public class Graph {
     /**
      * Return true if this and that Graph come from the same file.
      */
-    public boolean equals(Graph that) {
+    public boolean equals(Object o) {
+	Graph that = (Graph) o;
         if (this.jsonFile!=null && that.jsonFile!=null) {
             return this.jsonFile.equals(that.jsonFile);
         } else if (this.gfaFile!=null && that.gfaFile!=null) {

@@ -5,7 +5,7 @@ package org.ncgr.jgraph;
  *
  * @author Sam Hokin
  */
-public class Node implements Comparable<Node> {
+public class Node implements Comparable {
 
     Long id;         // the id of this node, assigned by the graph reader
     String sequence; // the genomic sequence associated with this node
@@ -40,17 +40,12 @@ public class Node implements Comparable<Node> {
         return sequence;
     }
 
-    // /**
-    //  * Two nodes are equal if they have the same id.
-    //  */
-    // public boolean equals(Node that) {
-    //     return this.id==that.id;
-    // }
-
     /**
      * Two nodes are equal if they have the same sequence.
      */
-    public boolean equals(Node that) {
+    @Override
+    public boolean equals(Object o) {
+	Node that = (Node)o;
         return this.sequence.equals(that.sequence);
     }
 
@@ -66,7 +61,8 @@ public class Node implements Comparable<Node> {
      * Compare based on sequence.
      */
     @Override
-    public int compareTo(Node that) {
+    public int compareTo(Object o) {
+	Node that = (Node) o;
         return this.sequence.compareTo(that.sequence);
     }
 

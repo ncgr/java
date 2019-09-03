@@ -15,7 +15,7 @@ import org.jgrapht.traverse.*;
  *
  * @author Sam Hokin
  */ 
-public class PangenomicGraph extends DirectedMultigraph<Node,Edge> {
+public class PangenomicGraph extends DirectedPseudograph<Node,Edge> {
 
     // output verbosity
     boolean verbose = false;
@@ -39,7 +39,7 @@ public class PangenomicGraph extends DirectedMultigraph<Node,Edge> {
     // each Path provides the ordered list of nodes that it traverses, along with its full sequence
     Set<PathWalk> paths; // (ordered simply for convenience)
     
-    // maps a Node to a set of Paths that traverse it
+    // maps a Node to a set of Paths that traverse it -- NOT INTERESTING WHEN NODES HAVE THE SAME PATH MANY TIMES!!!
     Map<Long,Set<PathWalk>> nodePaths; // keyed and ordered by Node Id
 
     // maps a path label to a count of paths that have that label
@@ -50,14 +50,14 @@ public class PangenomicGraph extends DirectedMultigraph<Node,Edge> {
      */
     public PangenomicGraph() {
         super(Edge.class);
-        nodePaths = new TreeMap<>();
-        labelCounts = new TreeMap<>();
+        nodePaths = new HashMap<>();
+        labelCounts = new HashMap<>();
     }
 
     /**
      * Import from a GFA file.
      */
-    public void importGFA(File gfaFile) {
+    public void importGFA(File gfaFile) throws Exception {
         this.gfaFile = gfaFile;
         GFAImporter importer = new GFAImporter();
         if (verbose) importer.setVerbose();
@@ -91,24 +91,29 @@ public class PangenomicGraph extends DirectedMultigraph<Node,Edge> {
         }
     }
 
-    /**
-     * Return true if this and that PangenomicGraph come from the same file.
-     */
-    public boolean equals(PangenomicGraph that) {
-        if (this.gfaFile!=null && that.gfaFile!=null) {
-            return this.gfaFile.equals(that.gfaFile);
-        } else {
-            return false;
-        }
-    }
+    // /**
+    //  * Return true if this and that PangenomicGraph come from the same file.
+    //  */
+    // public boolean equals(Object o) {
+    // 	PangenomicGraph that = (PangenomicGraph) o;
+    //     if (this.gfaFile!=null && that.gfaFile!=null) {
+    //         return this.gfaFile.equals(that.gfaFile);
+    //     } else {
+    //         return false;
+    //     }
+    // }
 
     /**
      * Build the node paths: the set of paths that run through each node.
      */
-    void buildNodePaths() {
+    void buildNodePaths() throws Exception {
+	if (verbose) System.out.println("Building node paths...");
         // init empty paths for each node
         for (Node n : vertexSet()) {
-            nodePaths.put(n.getId(), new TreeSet<PathWalk>());
+	    if (n.getSequence()==null) {
+		throw new Exception("Node "+n.getId()+" has no sequence. Aborting.");
+	    }
+            nodePaths.put(n.getId(), new HashSet<PathWalk>());
         }
         // now load the paths
         for (PathWalk path : paths) {
@@ -123,10 +128,10 @@ public class PangenomicGraph extends DirectedMultigraph<Node,Edge> {
      */
     public void readPathLabels(File labelsFile) throws FileNotFoundException, IOException {
         this.labelsFile = labelsFile;
-        labelCounts = new TreeMap<>();
+        labelCounts = new HashMap<>();
         BufferedReader reader = new BufferedReader(new FileReader(labelsFile));
         String line = null;
-        Map<String,String> labels = new TreeMap<String,String>();
+        Map<String,String> labels = new HashMap<String,String>();
         while ((line=reader.readLine())!=null) {
             if (!line.startsWith("#")) {
                 String[] fields = line.split("\t");
@@ -222,7 +227,7 @@ public class PangenomicGraph extends DirectedMultigraph<Node,Edge> {
         if (nodePaths==null || nodePaths.size()==0) {
             throw new Exception("PangenomicGraph.nodePaths is not populated; cannot prune.");
         }
-        Set<Node> nodesToRemove = new TreeSet<>();
+        Set<Node> nodesToRemove = new HashSet<>();
         for (Node n : getNodes()) {
             Set<PathWalk> thisPaths = nodePaths.get(n.id);
             if (thisPaths.size()==paths.size()) nodesToRemove.add(n);
@@ -417,17 +422,19 @@ public class PangenomicGraph extends DirectedMultigraph<Node,Edge> {
             if (path.getLabel()!=null) builder.append("."+path.getLabel());
         }
         out.println(builder.toString());
-        // rows are nodes
+        // rows are nodes and counts of path support of each node
         for (Node node : vertexSet()) {
             builder = new StringBuilder();
-            Set<PathWalk> nPaths = nodePaths.get(node.getId());
             builder.append("N"+node.getId());
+            Set<PathWalk> nPaths = nodePaths.get(node.getId());
             for (PathWalk path : paths) {
-                if (path.getNodes().contains(node)) {
-                    builder.append("\t1");
-                } else {
-                    builder.append("\t0");
-                }
+		// spin through the path, counting occurrences of this node
+		List<Node> nodeList = path.getNodes();
+		int count = 0;
+		for (Node n : nodeList) {
+		    if (n.equals(node)) count++;
+		}
+		builder.append("\t"+count);
             }
             out.println(builder.toString());
         }
@@ -486,7 +493,7 @@ public class PangenomicGraph extends DirectedMultigraph<Node,Edge> {
     /**
      * Command-line utility
      */
-    public static void main(String[] args) throws FileNotFoundException, IOException {
+    public static void main(String[] args) throws Exception {
 
         Options options = new Options();
         CommandLineParser parser = new DefaultParser();

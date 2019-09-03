@@ -15,7 +15,7 @@ import java.util.HashMap;
  *
  * @author Sam Hokin
  */
-public class NodeSet extends TreeSet<Node> implements Comparable<NodeSet> {
+public class NodeSet extends TreeSet<Node> implements Comparable {
 
     public int totalBases;
 
@@ -62,14 +62,16 @@ public class NodeSet extends TreeSet<Node> implements Comparable<NodeSet> {
     /**
      * Equality if exactly the same nodes.
      */
-    public boolean equals(NodeSet that) {
+    public boolean equals(Object o) {
+	NodeSet that = (NodeSet) o;
         return this.containsAll(that) && that.containsAll(this);
     }
 
     /**
      * Compare based on size, then node IDs, one by one.
      */
-    public int compareTo(NodeSet that) {
+    public int compareTo(Object o) {
+	NodeSet that = (NodeSet) o;
         if (this.equals(that)) {
             return 0;
         } else if (this.size()!=that.size()) {

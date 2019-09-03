@@ -13,7 +13,7 @@ import java.util.TreeMap;
  *
  * @author Sam Hokin
  */
-public class Node implements Comparable<Node> {
+public class Node implements Comparable {
 
     Long id;         // the id of this node, assigned by the graph reader
     String sequence; // the genomic sequence associated with this node
@@ -58,14 +58,17 @@ public class Node implements Comparable<Node> {
     /**
      * Two nodes are equal if they have the same id.
      */
-    public boolean equals(Node that) {
+    public boolean equals(Object o) {
+	Node that = (Node) o;
         return this.getId()==that.getId();
     }
 
     /**
      * Compare based simply on id.
      */
-    public int compareTo(Node that) {
+    @Override
+    public int compareTo(Object o) {
+	Node that = (Node) o;
         return (int)(this.id - that.id);
     }
 
