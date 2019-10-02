@@ -28,8 +28,10 @@ pathpca = read.table(paste(prefix,"pathpca.txt", sep="."))
 paths = as.data.frame(t(pathpca))
 
 ## which are cases and which are controls
+cases = endsWith(rownames(paths), "case")
 cases.0 = endsWith(rownames(paths), "0.case")
 cases.1 = endsWith(rownames(paths), "1.case")
+controls = endsWith(rownames(paths), "ctrl")
 controls.0 = endsWith(rownames(paths), "0.ctrl")
 controls.1 = endsWith(rownames(paths), "1.ctrl")
 
@@ -49,8 +51,6 @@ paths.pca.var = get_pca_var(paths.pca)
 paths.pca.ind = get_pca_ind(paths.pca)
 
 ## add labels to data frames
-paths$Label[cases.0] = "case"
-paths$Label[cases.1] = "case"
-paths$Label[controls.0] = "ctrl"
-paths$Label[controls.1] = "ctrl"
+paths$Label[cases] = "case"
+paths$Label[controls] = "ctrl"
 

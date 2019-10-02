@@ -13,10 +13,10 @@ plot.pca.hist = function(pc) {
     h.cases = hist(paths.pca.ind$coord[cases,pc], breaks=breaks)
     h.controls = hist(paths.pca.ind$coord[controls,pc], breaks=breaks)
     ymax = max(c(h.cases$counts,h.controls$counts))
-    plot(h.cases, col=rgb(0,1,0,1/2), xlab="PCA Coords", 
+    plot(h.cases, col=rgb(1,0,0,1/2), xlab="PCA Coords", 
         main=paste("PC", pc, "Individual Coordinates", "cases - controls=", cases.controls),
 	ylim=c(0,ymax)
 	)
-    plot(h.controls, col=rgb(1,0,0,1/2), add=TRUE)
+    plot(h.controls, col=rgb(0,1,0,1/2), add=TRUE)
 }
 
