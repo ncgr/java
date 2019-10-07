@@ -7,6 +7,8 @@ import java.util.Set;
 import org.ncgr.jgraph.Edge;
 import org.ncgr.jgraph.Node;
 import org.ncgr.jgraph.NodeSet;
+import org.ncgr.jgraph.NullNodeException;
+import org.ncgr.jgraph.NullSequenceException;
 import org.ncgr.jgraph.PangenomicGraph;
 
 import org.jgrapht.GraphPath;
@@ -75,7 +77,7 @@ public class FRPair implements Comparable {
      * Algorithm 2 from Cleary, et al. returns the supporting path segments for the given merge of FRs.
      * @returns the set of supporting path segments
      */
-    public void merge() throws Exception {
+    public void merge() throws NullNodeException, NullSequenceException {
         merged = new FrequentedRegion(graph, NodeSet.merge(fr1.nodes,fr2.nodes), alpha, kappa);
     }
 

@@ -2,6 +2,9 @@ package org.ncgr.pangenomics.fr;
 
 import org.ncgr.jgraph.Node;
 import org.ncgr.jgraph.NodeSet;
+import org.ncgr.jgraph.NoNodesException;
+import org.ncgr.jgraph.NoNodePathsException;
+import org.ncgr.jgraph.NoPathsException;
 import org.ncgr.jgraph.NullNodeException;
 import org.ncgr.jgraph.NullSequenceException;
 import org.ncgr.jgraph.PangenomicGraph;
@@ -77,7 +80,7 @@ public class FRFinder {
     /**
      * Construct with the output from a previous run. Be sure to set minSup, minSize, minLen filters as needed before running postprocess().
      */
-    public FRFinder(String inputPrefix, double alpha, int kappa) throws FileNotFoundException, IOException, NullNodeException, NullSequenceException {
+    public FRFinder(String inputPrefix, double alpha, int kappa) throws FileNotFoundException, IOException, NullNodeException, NullSequenceException, NoNodesException {
         initializeParameters();
         readParameters(inputPrefix); // sets properties from file
         readFrequentedRegions(alpha, kappa);
@@ -106,7 +109,7 @@ public class FRFinder {
      *                alternatively, `1-alpha` is the fraction of inserted sequence
      * int kappa = maximum insertion: the maximum number of inserted nodes that a supporting path may have.
       */
-    public void findFRs(double alpha, int kappa) throws FileNotFoundException, IOException, NullNodeException, NullSequenceException {
+    public void findFRs(double alpha, int kappa) throws FileNotFoundException, IOException, NullNodeException, NullSequenceException, NoPathsException, NoNodePathsException {
         if (getPrunedGraph()) {
 	    int nRemoved = graph.prune();
 	    System.out.println("# graph has been pruned ("+nRemoved+" fully common nodes removed).");
@@ -489,11 +492,15 @@ public class FRFinder {
     public void setOutputPrefix(String outputPrefix) {
         parameters.setProperty("outputPrefix", outputPrefix);
     }
+    public void setGfaFile(String gfaFilename) {
+        parameters.setProperty("gfaFile", gfaFilename);
+    }
 
     /**
      * Command-line utility
      */
-    public static void main(String[] args) throws FileNotFoundException, IOException, NullNodeException, NullSequenceException {
+    public static void main(String[] args) throws FileNotFoundException, IOException,
+                                                  NullNodeException, NullSequenceException, NoNodesException, NoPathsException, NoNodePathsException {
 
         Options options = new Options();
         CommandLineParser parser = new DefaultParser();
@@ -590,7 +597,8 @@ public class FRFinder {
         
         // parameter validation
         if (!cmd.hasOption("inputprefix") && !cmd.hasOption("gfa")) {
-            throw new Exception("You must specify a vg GFA file (--gfa)");
+            System.err.println("You must specify a vg GFA file (--gfa)");
+            System.exit(1);
         }
         
         // GFA file
@@ -630,6 +638,7 @@ public class FRFinder {
             // instantiate the FRFinder with this Graph, alpha and kappa
             postProcess = false;
             frf = new FRFinder(pg);
+            frf.setGfaFile(gfaFile.getName());
             if (cmd.hasOption("casectrl")) {
                 frf.setCaseCtrl();
             }
@@ -861,7 +870,6 @@ public class FRFinder {
         }
         String comments = "alpha="+alpha+
             "\n"+"kappa="+kappa+
-            "\n"+"date="+ZonedDateTime.now().toString()+
             "\n"+"clocktime="+formatTime(clockTime);
         parameters.store(out, comments);
     }
@@ -875,7 +883,7 @@ public class FRFinder {
         String line = null;
         double alpha = 0;
         while ((line=reader.readLine())!=null) {
-            if (line.startsWith("alpha")) {
+            if (line.startsWith("#alpha")) {
                 String[] parts = line.split("=");
                 alpha = Double.parseDouble(parts[1]);
             }
@@ -892,7 +900,7 @@ public class FRFinder {
         String line = null;
         int kappa = 0;
         while ((line=reader.readLine())!=null) {
-            if (line.startsWith("kappa")) {
+            if (line.startsWith("#kappa")) {
                 String[] parts = line.split("=");
                 kappa = Integer.parseInt(parts[1]);
             }
@@ -958,16 +966,16 @@ public class FRFinder {
      * 628863.1.case:[18,20,21,23,24,26,27,29,30,33,34]
      * etc.
      */
-    void readFrequentedRegions(double alpha, int kappa) throws FileNotFoundException, IOException, NullNodeException, NullSequenceException {
+    void readFrequentedRegions(double alpha, int kappa) throws FileNotFoundException, IOException, NullNodeException, NullSequenceException, NoNodesException {
         // do we have a Graph?
         if (graph.getNodes().size()==0) {
-            throw new Exception("ERROR in readFrequentedRegions: graph has not been initialized.");
+            throw new NoNodesException("ERROR in readFrequentedRegions: graph has not been initialized and has no nodes.");
         }
 	// build an id-keyed map of nodes for further down
 	Map<Long,Node> nodesById = new HashMap<>();
 	for (Node n : graph.getNodes()) {
 	    if (n.getSequence()==null) {
-		throw new Exception("ERROR in readFrequentedRegions: graph node "+n.getId()+" has no sequence.");
+		throw new NullSequenceException("ERROR in readFrequentedRegions: graph node "+n.getId()+" has no sequence.");
 	    }
 	    nodesById.put(n.getId(), n);
 	}

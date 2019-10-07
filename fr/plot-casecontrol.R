@@ -37,7 +37,7 @@ if (labelsExist) {
          xlab="ctrl sample support",  ylab="case sample support",
          col=alpha("black",0.5), cex.axis=cex.axis, cex.lab=cex.lab
          )
-    title(main=paste(outputprefix,": alpha=",alpha," kappa=",kappa,sep=""), cex.main=cex.main)
+    title(main=paste(outputPrefix,": alpha=",alpha," kappa=",kappa,sep=""), cex.main=cex.main)
     
     text(frs$ctrl, frs$case,
          paste(frs$size,",",frs$avgLen,sep=""),
@@ -45,7 +45,7 @@ if (labelsExist) {
          )
     
 
-    lines(c(0,labelcounts["ctrl",1]*10),c(0,labelcounts["case",1]*10), col="gray")
+    lines(c(0,labelCounts["ctrl",1]*10),c(0,labelCounts["case",1]*10), col="gray")
 
     source("params.R")
     

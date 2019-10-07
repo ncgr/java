@@ -1,14 +1,28 @@
 package org.ncgr.jgraph;
 
-import java.io.*;
-import java.util.*;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.IOException;
+import java.io.PrintStream;
 
-import org.apache.commons.cli.*;
+import java.util.List;
+import java.util.Map;
+import java.util.HashMap;
+import java.util.TreeMap;
+import java.util.Set;
+import java.util.HashSet;
 
-import org.jgrapht.*;
-import org.jgrapht.graph.*;
-import org.jgrapht.io.*;
-import org.jgrapht.traverse.*;
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.CommandLineParser;
+import org.apache.commons.cli.DefaultParser;
+import org.apache.commons.cli.HelpFormatter;
+import org.apache.commons.cli.Option;
+import org.apache.commons.cli.Options;
+import org.apache.commons.cli.ParseException;
+
+import org.jgrapht.graph.DirectedPseudograph;
 
 /**
  * Storage of a pan-genomic graph in a JGraphT object.
@@ -57,7 +71,7 @@ public class PangenomicGraph extends DirectedPseudograph<Node,Edge> {
     /**
      * Import from a GFA file.
      */
-    public void importGFA(File gfaFile) throws Exception {
+    public void importGFA(File gfaFile) throws NullSequenceException {
         this.gfaFile = gfaFile;
         GFAImporter importer = new GFAImporter();
         if (verbose) importer.setVerbose();
@@ -106,12 +120,12 @@ public class PangenomicGraph extends DirectedPseudograph<Node,Edge> {
     /**
      * Build the node paths: the set of paths that run through each node.
      */
-    void buildNodePaths() throws Exception {
+    void buildNodePaths() throws NullSequenceException {
 	if (verbose) System.out.println("Building node paths...");
         // init empty paths for each node
         for (Node n : vertexSet()) {
 	    if (n.getSequence()==null) {
-		throw new Exception("Node "+n.getId()+" has no sequence. Aborting.");
+		throw new NullSequenceException("Node "+n.getId()+" has no sequence. Aborting.");
 	    }
             nodePaths.put(n.getId(), new HashSet<PathWalk>());
         }
@@ -220,12 +234,12 @@ public class PangenomicGraph extends DirectedPseudograph<Node,Edge> {
      * paths and nodePaths must have been populated before this is called.
      * @return the number of removed nodes
      */
-    public int prune() throws Exception {
+    public int prune() throws NoPathsException, NoNodePathsException {
         if (paths==null || paths.size()==0) {
-            throw new Exception("PangenomicGraph.paths is not populated; cannot prune.");
+            throw new NoPathsException("PangenomicGraph.paths is not populated; cannot prune.");
         }
         if (nodePaths==null || nodePaths.size()==0) {
-            throw new Exception("PangenomicGraph.nodePaths is not populated; cannot prune.");
+            throw new NoNodePathsException("PangenomicGraph.nodePaths is not populated; cannot prune.");
         }
         Set<Node> nodesToRemove = new HashSet<>();
         for (Node n : getNodes()) {
@@ -493,7 +507,7 @@ public class PangenomicGraph extends DirectedPseudograph<Node,Edge> {
     /**
      * Command-line utility
      */
-    public static void main(String[] args) throws Exception {
+    public static void main(String[] args) throws FileNotFoundException, IOException, NullSequenceException {
 
         Options options = new Options();
         CommandLineParser parser = new DefaultParser();
