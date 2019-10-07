@@ -23,7 +23,6 @@ public class FRPair implements Comparable {
     PangenomicGraph graph;
     double alpha;
     int kappa;
-    boolean kappaByNodes;
     boolean caseCtrl;
 
     NodeSet nodes;
@@ -31,13 +30,12 @@ public class FRPair implements Comparable {
 
     boolean alphaReject;
     
-    FRPair(FrequentedRegion fr1, FrequentedRegion fr2, PangenomicGraph graph, double alpha, int kappa, boolean kappaByNodes, boolean caseCtrl) {
+    FRPair(FrequentedRegion fr1, FrequentedRegion fr2, PangenomicGraph graph, double alpha, int kappa, boolean caseCtrl) {
         this.fr1 = fr1;
         this.fr2 = fr2;
         this.graph = graph;
         this.alpha = alpha;
         this.kappa = kappa;
-        this.kappaByNodes = kappaByNodes;
         this.caseCtrl = caseCtrl;
         this.nodes = NodeSet.merge(fr1.nodes, fr2.nodes);
         // nothing to do if an identity merge
@@ -78,7 +76,7 @@ public class FRPair implements Comparable {
      * @returns the set of supporting path segments
      */
     public void merge() throws Exception {
-        merged = new FrequentedRegion(graph, NodeSet.merge(fr1.nodes,fr2.nodes), alpha, kappa, kappaByNodes);
+        merged = new FrequentedRegion(graph, NodeSet.merge(fr1.nodes,fr2.nodes), alpha, kappa);
     }
 
     /**

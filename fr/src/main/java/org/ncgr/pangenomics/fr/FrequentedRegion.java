@@ -2,6 +2,8 @@ package org.ncgr.pangenomics.fr;
 
 import org.ncgr.jgraph.Node;
 import org.ncgr.jgraph.NodeSet;
+import org.ncgr.jgraph.NullNodeException;
+import org.ncgr.jgraph.NullSequenceException;
 import org.ncgr.jgraph.PangenomicGraph;
 import org.ncgr.jgraph.PathWalk;
 
@@ -43,9 +45,8 @@ public class FrequentedRegion implements Comparable {
     // a subpath must satisfy the requirement that it traverses at least a fraction alpha of this.nodes
     double alpha;
 
-    // a subpath must satisfy the requirement that its contiguous nodes that do NOT belong in this.nodes have total sequence length or number no larger than kappa
+    // a subpath must satisfy the requirement that its contiguous nodes that do NOT belong in this.nodes have number no larger than kappa
     int kappa;
-    boolean kappaByNodes = false; // set true to use number of inserted nodes rather than length of inserted sequence in bp for kappa
 
     // the PangenomicGraph's case and control path counts
     int casePaths;
@@ -54,12 +55,11 @@ public class FrequentedRegion implements Comparable {
     /**
      * Construct given a PangenomicGraph, NodeSet and alpha and kappa filter parameters.
      */
-    FrequentedRegion(PangenomicGraph graph, NodeSet nodes, double alpha, int kappa, boolean kappaByNodes) throws Exception {
+    FrequentedRegion(PangenomicGraph graph, NodeSet nodes, double alpha, int kappa) throws NullNodeException, NullSequenceException {
         this.graph = graph;
         this.nodes = nodes;
         this.alpha = alpha;
         this.kappa = kappa;
-        this.kappaByNodes = kappaByNodes;
         if (graph.getLabelCounts().get("case")!=null && graph.getLabelCounts().get("ctrl")!=null) {
             this.casePaths = graph.getLabelCounts().get("case");
             this.ctrlPaths = graph.getLabelCounts().get("ctrl");
@@ -73,13 +73,12 @@ public class FrequentedRegion implements Comparable {
     /**
      * Construct given a PangenomicGraph, NodeSet and Subpaths
      */
-    FrequentedRegion(PangenomicGraph graph, NodeSet nodes, Set<PathWalk> subpaths, double alpha, int kappa, boolean kappaByNodes) {
+    FrequentedRegion(PangenomicGraph graph, NodeSet nodes, Set<PathWalk> subpaths, double alpha, int kappa) {
         this.graph = graph;
         this.nodes = nodes;
         this.subpaths = subpaths;
         this.alpha = alpha;
         this.kappa = kappa;
-        this.kappaByNodes = kappaByNodes;
         if (graph.getLabelCounts().get("case")!=null && graph.getLabelCounts().get("ctrl")!=null) {
             this.casePaths = graph.getLabelCounts().get("case");
             this.ctrlPaths = graph.getLabelCounts().get("ctrl");
@@ -91,13 +90,12 @@ public class FrequentedRegion implements Comparable {
     /**
      * Construct given a PangenomicGraph, NodeSet and Subpaths and already known support and avgLength
      */
-    FrequentedRegion(PangenomicGraph graph, NodeSet nodes, Set<PathWalk> subpaths, double alpha, int kappa, boolean kappaByNodes, int support, double avgLength) {
+    FrequentedRegion(PangenomicGraph graph, NodeSet nodes, Set<PathWalk> subpaths, double alpha, int kappa, int support, double avgLength) {
         this.graph = graph;
         this.nodes = nodes;
         this.subpaths = subpaths;
         this.alpha = alpha;
         this.kappa = kappa;
-        this.kappaByNodes = kappaByNodes;
         this.support = support;
         this.avgLength = avgLength;
         if (graph.getLabelCounts().get("case")!=null && graph.getLabelCounts().get("ctrl")!=null) {
@@ -147,10 +145,10 @@ public class FrequentedRegion implements Comparable {
     /**
      * Update the subpaths and support from the graph paths for the current alpha and kappa values.
      */
-    void updateSupport() throws Exception {
+    void updateSupport() throws NullNodeException, NullSequenceException {
         subpaths = new HashSet<>();
         for (PathWalk p : graph.getPaths()) {
-            Set<PathWalk> supportPaths = p.computeSupport(nodes, alpha, kappa, kappaByNodes);
+            Set<PathWalk> supportPaths = p.computeSupport(nodes, alpha, kappa);
             subpaths.addAll(supportPaths);
         }
         support = subpaths.size();

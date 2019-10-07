@@ -22,7 +22,6 @@ if (labelsExist) {
 if (prunedGraph) {
     text(xtext, ytext-dytext*4, paste("graph has been pruned"), pos=4, cex=cexText)
 }
-text(xtext, ytext-dytext*5, paste("kappa by nodes: ",kappaByNodes), pos=4, cex=cexText)
 text(xtext, ytext-dytext*6, paste("FRs:\t\t",length(frs$nodes)), pos=4, cex=cexText)
 text(xtext, ytext-dytext*7, paste("clock time:\t",clocktime), pos=4, cex=cexText)
 

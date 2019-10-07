@@ -21,7 +21,7 @@ public class PathWalk extends GraphWalk<Node,Edge> implements Comparable {
     /**
      * Creates a walk defined by a sequence of nodes; weight=1.0.
      */
-    public PathWalk(Graph<Node,Edge> graph, List<Node> nodeList, boolean skipSequence) throws Exception {
+    public PathWalk(Graph<Node,Edge> graph, List<Node> nodeList, boolean skipSequence) throws NullNodeException, NullSequenceException {
         super(graph, nodeList, 1.0);
         if (!skipSequence) buildSequence();
     }
@@ -29,7 +29,7 @@ public class PathWalk extends GraphWalk<Node,Edge> implements Comparable {
     /**
      * Creates a walk defined by a sequence of edges; weight=1.0.
      */
-    public PathWalk(Graph<Node,Edge> graph, Node startNode, Node endNode, List<Edge> edgeList, boolean skipSequence) throws Exception {
+    public PathWalk(Graph<Node,Edge> graph, Node startNode, Node endNode, List<Edge> edgeList, boolean skipSequence) throws NullNodeException, NullSequenceException {
         super(graph, startNode, endNode, edgeList, 1.0);
         if (!skipSequence) buildSequence();
     }
@@ -37,7 +37,7 @@ public class PathWalk extends GraphWalk<Node,Edge> implements Comparable {
     /**
      * Creates a walk defined by both a sequence of edges and a sequence of nodes; weight=1.0.
      */
-    public PathWalk(Graph<Node,Edge> graph, Node startNode, Node endNode, List<Node> nodeList, List<Edge> edgeList, boolean skipSequence) throws Exception {
+    public PathWalk(Graph<Node,Edge> graph, Node startNode, Node endNode, List<Node> nodeList, List<Edge> edgeList, boolean skipSequence) throws NullNodeException, NullSequenceException {
         super(graph, startNode, endNode, nodeList, edgeList, 1.0);
         if (!skipSequence) buildSequence();
     }
@@ -45,7 +45,7 @@ public class PathWalk extends GraphWalk<Node,Edge> implements Comparable {
     /**
      * Creates a walk defined by a list of nodes as well as identifying info; weight=1.0.
      */
-    public PathWalk(Graph<Node,Edge> graph, List<Node> nodeList, String name, int genotype, boolean skipSequence) throws Exception {
+    public PathWalk(Graph<Node,Edge> graph, List<Node> nodeList, String name, int genotype, boolean skipSequence) throws NullNodeException, NullSequenceException {
         super(graph, nodeList, 1.0);
         this.name = name;
         this.genotype = genotype;
@@ -55,7 +55,7 @@ public class PathWalk extends GraphWalk<Node,Edge> implements Comparable {
     /**
      * Creates a walk defined by a list of nodes as well as identifying info; weight=1.0.
      */
-    public PathWalk(Graph<Node,Edge> graph, List<Node> nodeList, String name, int genotype, String label, boolean skipSequence) throws Exception {
+    public PathWalk(Graph<Node,Edge> graph, List<Node> nodeList, String name, int genotype, String label, boolean skipSequence) throws NullNodeException, NullSequenceException {
         super(graph, nodeList, 1.0);
         this.name = name;
         this.genotype = genotype;
@@ -173,13 +173,13 @@ public class PathWalk extends GraphWalk<Node,Edge> implements Comparable {
     /**
      * Build this path's sequence from its list of nodes.
      */
-    public void buildSequence() throws Exception {
+    public void buildSequence() throws NullNodeException, NullSequenceException {
         StringBuilder builder = new StringBuilder();
         for (Node node : getNodes()) {
 	    if (node==null) {
-		throw new Exception("Null node returned by PathWalk.getNodes()!!");
+		throw new NullNodeException("Null node returned by PathWalk.getNodes()!!");
 	    } else if (node.getSequence()==null) {
-		throw new Exception("Node "+node.getId()+" has no sequence!");
+		throw new NullSequenceException("Node "+node.getId()+" has no sequence!");
 	    }
             builder.append(node.getSequence());
         }
@@ -192,7 +192,7 @@ public class PathWalk extends GraphWalk<Node,Edge> implements Comparable {
      * @param nr the "right" node
      * @return the subsequence inclusively between nl and nr
      */
-    public String subsequence(Node nl, Node nr) throws Exception {
+    public String subsequence(Node nl, Node nr) throws NullNodeException, NullSequenceException {
         if (!getNodes().contains(nl) || !getNodes().contains(nr)) return "";
         return subpath(nl,nr).sequence;
     }
@@ -203,7 +203,7 @@ public class PathWalk extends GraphWalk<Node,Edge> implements Comparable {
      * @param nr the "right" node
      * @return the PathWalk inclusively between nl and nr
      */
-    public PathWalk subpath(Node nl, Node nr) throws Exception {
+    public PathWalk subpath(Node nl, Node nr) throws NullNodeException, NullSequenceException {
         List<Node> subnodes = new LinkedList<>();
         if (getNodes().contains(nl) && getNodes().contains(nr)) {
             if (nl.equals(nr)) {
@@ -267,11 +267,10 @@ public class PathWalk extends GraphWalk<Node,Edge> implements Comparable {
      *
      * @param nodes the NodeSet, or cluster C as it's called in Algorithm 1
      * @param alpha the penetrance parameter = minimum fraction of nodes in C that are in subpath
-     * @param kappa the insertion parameter = maximum inserted sequence (kappaByNodes=false) or number of nodes (kappaByNodes=true)
-     * @param kappaByNodes if true, kappa is number of inserted nodes, rather than length of inserted sequence in bases
+     * @param kappa the insertion parameter = maximum inserted number of nodes
      * @returns the set of supporting path segments
      */
-    public Set<PathWalk> computeSupport(NodeSet nodes, double alpha, int kappa, boolean kappaByNodes) throws Exception {
+    public Set<PathWalk> computeSupport(NodeSet nodes, double alpha, int kappa) throws NullNodeException, NullSequenceException {
         Set<PathWalk> s = new HashSet<>();
         // m = the list of p's nodes that are in c
         LinkedList<Node> m = new LinkedList<>();
@@ -294,12 +293,7 @@ public class PathWalk extends GraphWalk<Node,Edge> implements Comparable {
                         if (insertion>maxInsertion) maxInsertion = insertion;
                         insertion = 0;
                     } else {
-                        // increment insertion
-                        if (kappaByNodes) {
-                            insertion += 1;
-                        } else {
-                            insertion += n.getSequence().length();
-                        }
+                        insertion += 1;
                     }
                 }
                 if (maxInsertion>kappa) break;

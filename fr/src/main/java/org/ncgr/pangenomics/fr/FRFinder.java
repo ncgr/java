@@ -2,6 +2,8 @@ package org.ncgr.pangenomics.fr;
 
 import org.ncgr.jgraph.Node;
 import org.ncgr.jgraph.NodeSet;
+import org.ncgr.jgraph.NullNodeException;
+import org.ncgr.jgraph.NullSequenceException;
 import org.ncgr.jgraph.PangenomicGraph;
 import org.ncgr.jgraph.PathWalk;
 
@@ -53,18 +55,10 @@ public class FRFinder {
     // parameters are stored in a Properties object
     Properties parameters = new Properties();
 
-    // double alpha; // penetrance: the fraction of a supporting strain's sequence that actually supports the FR;
-    //               // alternatively, `1-alpha` is the fraction of inserted sequence
-    // int kappa;    // maximum insertion: the maximum insertion length (measured in bp) that any supporting path may have;
-    //               // or, if kappaByNodes, the maximum number of inserted nodes that a supporting path may have.
- 
     // save files
     String SYNC_FREQUENTED_REGIONS_SAVE = "syncFrequentedRegions.save.txt";
     String USED_FRS_SAVE = "usedFRs.save.txt";
     String FREQUENTED_REGIONS_SAVE = "frequentedRegions.save.txt";
-
-    // I/O
-    String outputPrefix; // output file prefix
 
     // the FRs, sorted for convenience
     TreeSet<FrequentedRegion> frequentedRegions;
@@ -73,7 +67,7 @@ public class FRFinder {
     long clockTime;
 
     /**
-     * Construct with a populated Graph
+     * Construct with a populated Graph and default parameters.
      */
     public FRFinder(PangenomicGraph graph) {
         initializeParameters();
@@ -83,9 +77,10 @@ public class FRFinder {
     /**
      * Construct with the output from a previous run. Be sure to set minSup, minSize, minLen filters as needed before running postprocess().
      */
-    public FRFinder(String inputPrefix) throws Exception {
+    public FRFinder(String inputPrefix, double alpha, int kappa) throws FileNotFoundException, IOException, NullNodeException, NullSequenceException {
+        initializeParameters();
         readParameters(inputPrefix); // sets properties from file
-        readFrequentedRegions(getAlpha(), getKappa());
+        readFrequentedRegions(alpha, kappa);
     }
 
     /**
@@ -102,14 +97,16 @@ public class FRFinder {
         parameters.setProperty("bruteForce", "false");
         parameters.setProperty("serial", "false");
         parameters.setProperty("resume", "false");
-        parameters.setProperty("kappaByNodes", "false");
         parameters.setProperty("prunedGraph", "false");
     }
 
     /**
      * Find the frequented regions in this Graph for the given alpha and kappa values.
-     */
-    public void findFRs(double alpha, double kappa) throws Exception {
+     * double alpha = penetrance: the fraction of a supporting strain's sequence that actually supports the FR;
+     *                alternatively, `1-alpha` is the fraction of inserted sequence
+     * int kappa = maximum insertion: the maximum number of inserted nodes that a supporting path may have.
+      */
+    public void findFRs(double alpha, int kappa) throws FileNotFoundException, IOException, NullNodeException, NullSequenceException {
         if (getPrunedGraph()) {
 	    int nRemoved = graph.prune();
 	    System.out.println("# graph has been pruned ("+nRemoved+" fully common nodes removed).");
@@ -157,7 +154,7 @@ public class FRFinder {
             while ((line=frReader.readLine())!=null) {
                 String[] parts = line.split("\t");
                 NodeSet nodes = new NodeSet(graph, parts[0]);
-                frequentedRegions.add(new FrequentedRegion(graph, nodes, alpha, kappa, kappaByNodes));
+                frequentedRegions.add(new FrequentedRegion(graph, nodes, alpha, kappa));
                 round++;
             }
             System.out.println(frequentedRegions.size());
@@ -167,7 +164,7 @@ public class FRFinder {
             while ((line=sfrReader.readLine())!=null) {
                 String[] parts = line.split("\t");
                 NodeSet nodes = new NodeSet(graph, parts[0]);
-                syncFrequentedRegions.add(new FrequentedRegion(graph, nodes, alpha, kappa, kappaByNodes));
+                syncFrequentedRegions.add(new FrequentedRegion(graph, nodes, alpha, kappa));
             }
             System.out.println(syncFrequentedRegions.size());
             // usedFRs
@@ -176,7 +173,7 @@ public class FRFinder {
             while ((line=usedFRsReader.readLine())!=null) {
                 String[] parts = line.split("\t");
                 NodeSet nodes = new NodeSet(graph, parts[0]);
-                usedFRs.add(new FrequentedRegion(graph, nodes, alpha, kappa, kappaByNodes));
+                usedFRs.add(new FrequentedRegion(graph, nodes, alpha, kappa));
             }
             System.out.println(usedFRs.size());
             System.out.println("# now continuing...");
@@ -187,11 +184,11 @@ public class FRFinder {
                 c.add(node);
                 Set<PathWalk> s = new HashSet<>();
                 for (PathWalk p : graph.getPaths()) {
-                    Set<PathWalk> support = p.computeSupport(c, alpha, kappa, kappaByNodes);
+                    Set<PathWalk> support = p.computeSupport(c, alpha, kappa);
                     s.addAll(support);
                 }
                 if (s.size()>0) {
-                    syncFrequentedRegions.add(new FrequentedRegion(graph, c, s, alpha, kappa, kappaByNodes));
+                    syncFrequentedRegions.add(new FrequentedRegion(graph, c, s, alpha, kappa));
                 }
             }
         }
@@ -199,10 +196,10 @@ public class FRFinder {
         // build the FRs round by round
 	long startTime = System.currentTimeMillis();
         boolean added = true;
-        while (added && (round<maxRound || maxRound==0)) {
+        while (added && (round<getMaxRound() || getMaxRound()==0)) {
             round++;
             added = false;
-            if (bruteForce) {
+            if (getBruteForce()) {
                 // no heurism, for demo purposes
                 Set<FrequentedRegion> loopFRs = Collections.synchronizedSet(new HashSet<>());
                 int oldSyncSize = syncFrequentedRegions.size();
@@ -212,7 +209,7 @@ public class FRFinder {
                 syncFrequentedRegions.parallelStream().forEach((fr1) -> {
                         syncFrequentedRegions.parallelStream().forEach((fr2) -> {
                                 if (fr1.compareTo(fr2)>0) {
-                                    FRPair frpair = new FRPair(fr1, fr2, graph, alpha, kappa, kappaByNodes, caseCtrl);
+                                    FRPair frpair = new FRPair(fr1, fr2, graph, alpha, kappa, getCaseCtrl());
                                     String nodesKey = frpair.nodes.toString();
                                     if (!usedNodeSets.contains(nodesKey)) {
                                         usedNodeSets.add(nodesKey);
@@ -222,7 +219,7 @@ public class FRFinder {
 					    System.err.println(e.toString());
 					}
                                         loopFRs.add(frpair.merged);
-                                        if (frpair.merged.support>=getMinSup() && frpair.merged.avgLength>=minLen && frpair.merged.nodes.size()>=minSize) frequentedRegions.add(frpair.merged);
+                                        if (frpair.merged.support>=getMinSup() && frpair.merged.avgLength>=getMinLen() && frpair.merged.nodes.size()>=getMinSize()) frequentedRegions.add(frpair.merged);
                                     }
                                 }
                             });
@@ -231,7 +228,7 @@ public class FRFinder {
                 syncFrequentedRegions.addAll(loopFRs);
                 added = syncFrequentedRegions.size()>oldSyncSize;
                 System.out.println(round+":"+(syncFrequentedRegions.size()-oldSyncSize)+" sync FRs added; "+(frequentedRegions.size()-oldFRSize)+" supported FRs added.");
-            } else if (serial) {
+            } else if (getSerial()) {
                 // serial processing with extra output for demo purposes or other experiments
                 // put FR pairs into a PriorityQueue which sorts them by decreasing interest (defined by the FRPair comparator)
                 PriorityQueue<FRPair> pq = new PriorityQueue<>();
@@ -240,7 +237,7 @@ public class FRFinder {
                     for (FrequentedRegion fr2 : syncFrequentedRegions) {
                         if (fr2.compareTo(fr1)>=0 && !usedFRs.contains(fr1) && !usedFRs.contains(fr2)) {
                             // no merge or rejection test here
-                            FRPair frpair = new FRPair(fr1, fr2, graph, alpha, kappa, kappaByNodes, caseCtrl);
+                            FRPair frpair = new FRPair(fr1, fr2, graph, alpha, kappa, getCaseCtrl());
                             String nodesKey = frpair.nodes.toString();
                             if (rejectedNodeSets.contains(nodesKey)) {
                                 // do nothing
@@ -269,7 +266,7 @@ public class FRFinder {
                 // add our new FR
                 if (pq.size()>0) {
                     FRPair frpair = pq.peek();
-                    if (caseCtrl) {
+                    if (getCaseCtrl()) {
                         added = frpair.merged.caseControlDifference()>0;
                     } else {
                         added = frpair.merged.support>0;
@@ -292,7 +289,7 @@ public class FRFinder {
                         syncFrequentedRegions.parallelStream().forEach((fr2) -> {
                                 if (fr2.compareTo(fr1)>=0 && !usedFRs.contains(fr1) && !usedFRs.contains(fr2)) {
                                     // no merge or rejection test here
-                                    FRPair frpair = new FRPair(fr1, fr2, graph, alpha, kappa, kappaByNodes, caseCtrl);
+                                    FRPair frpair = new FRPair(fr1, fr2, graph, alpha, kappa, getCaseCtrl());
                                     String nodesKey = frpair.nodes.toString();
                                     if (rejectedNodeSets.contains(nodesKey)) {
                                         // do nothing
@@ -327,7 +324,7 @@ public class FRFinder {
                 // add our new FR
                 if (pq.size()>0) {
                     FRPair frpair = pq.peek();
-                    if (caseCtrl) {
+                    if (getCaseCtrl()) {
                         added = frpair.merged.caseControlDifference()>0;
                     } else {
                         added = frpair.merged.support>0;
@@ -370,18 +367,18 @@ public class FRFinder {
         
 	// final output
 	if (frequentedRegions.size()>0) {
-            printParameters();
+            printParameters(alpha, kappa);
             printFrequentedRegions();
             printFRSubpaths();
             printPathFRs();
-	    if (outputPrefix!=null) graph.printAll(outputPrefix);
+	    if (getOutputPrefix()!=null) graph.printAll(getOutputPrefix());
 	}
     }
 
     /**
      * Post-process a set of FRs for given minSup, minLen and minSize.
      */
-    public void postprocess() throws Exception {
+    public void postprocess(double alpha, int kappa) throws FileNotFoundException, IOException {
         TreeSet<FrequentedRegion> filteredFRs = new TreeSet<>();
         for (FrequentedRegion fr : frequentedRegions) {
             boolean passes = true;
@@ -392,13 +389,13 @@ public class FRFinder {
             } else {
                 reason += " SUPPORT";
             }
-            if (fr.nodes.size()<minSize) {
+            if (fr.nodes.size()<getMinSize()) {
                 passes = false;
                 reason += " size";
             } else {
                 reason += " SIZE";
             }
-            if (fr.avgLength<minLen) {
+            if (fr.avgLength<getMinLen()) {
                 passes = false;
                 reason += " avgLength";
             } else {
@@ -407,7 +404,7 @@ public class FRFinder {
             if (passes) filteredFRs.add(fr);
             if (getVerbose()) System.out.println(fr.toString()+reason);
         }
-        if (getVerbose()) System.out.println(filteredFRs.size()+" FRs passed minSup="+getMinSup()+", minSize="+minSize+", minLen="+minLen);
+        if (getVerbose()) System.out.println(filteredFRs.size()+" FRs passed minSup="+getMinSup()+", minSize="+getMinSize()+", minLen="+getMinLen());
 	// output the filtered FRs and SVM data
         frequentedRegions = filteredFRs;
 	if (frequentedRegions.size()>0) {
@@ -418,12 +415,6 @@ public class FRFinder {
     }
 
     // parameter getters
-    public double getAlpha() {
-        return Double.parseDouble(parameters.getProperty("alpha"));
-    }
-    public double getKappa() {
-        return Double.parseDouble(parameters.getProperty("kappa"));
-    }
     public boolean getVerbose() {
         return Boolean.parseBoolean(parameters.getProperty("verbose"));
     }
@@ -438,6 +429,27 @@ public class FRFinder {
     }
     public double getMinLen() {
         return Double.parseDouble(parameters.getProperty("minLen"));
+    }
+    public boolean getResume() {
+        return Boolean.parseBoolean(parameters.getProperty("resume"));
+    }
+    public boolean getBruteForce() {
+        return Boolean.parseBoolean(parameters.getProperty("bruteForce"));
+    }
+    public boolean getSerial() {
+        return Boolean.parseBoolean(parameters.getProperty("serial"));
+    }
+    public boolean getCaseCtrl() {
+        return Boolean.parseBoolean(parameters.getProperty("caseCtrl"));
+    }
+    public String getInputPrefix() {
+        return parameters.getProperty("inputPrefix");
+    }
+    public int getMaxRound() {
+        return Integer.parseInt(parameters.getProperty("maxRound"));
+    }
+    public String getOutputPrefix() {
+        return parameters.getProperty("outputPrefix");
     }
 
     // parameter setters
@@ -458,9 +470,6 @@ public class FRFinder {
     }
     public void setResume() {
         parameters.setProperty("resume", "true");
-    }
-    public void setKappaByNodes() {
-        parameters.setProperty("kappaByNodes", "true");
     }
     public void setPrunedGraph() {
         parameters.setProperty("prunedGraph", "true");
@@ -484,7 +493,7 @@ public class FRFinder {
     /**
      * Command-line utility
      */
-    public static void main(String[] args) throws Exception {
+    public static void main(String[] args) throws FileNotFoundException, IOException, NullNodeException, NullSequenceException {
 
         Options options = new Options();
         CommandLineParser parser = new DefaultParser();
@@ -495,22 +504,10 @@ public class FRFinder {
         Option alphaOption = new Option("a", "alpha", true, "alpha=penetrance, fraction of a supporting path's sequence that supports the FR (required)");
         alphaOption.setRequired(false);
         options.addOption(alphaOption);
-	// 
-        Option dotOption = new Option("d", "dot", true, "splitMEM DOT file (requires FASTA file)");
-        dotOption.setRequired(false);
-        options.addOption(dotOption);
         //
-        Option fastaOption = new Option("f", "fasta", true, "FASTA file (requires DOT file)");
-        fastaOption.setRequired(false);
-        options.addOption(fastaOption);
-        //
-        Option genotypeOption = new Option("g", "genotype", true, "which genotype to include (0,1) from the input file; "+PangenomicGraph.BOTH_GENOTYPES+" to include all ("+PangenomicGraph.BOTH_GENOTYPES+")");
+        Option genotypeOption = new Option("g", "genotype", true, "which genotype to include (0,1) from the input file; "+PangenomicGraph.BOTH_GENOTYPES+" to include all ["+PangenomicGraph.BOTH_GENOTYPES+"]");
         genotypeOption.setRequired(false);
         options.addOption(genotypeOption);
-        //
-        Option jsonOption = new Option("j", "json", true, "vg JSON file");
-        jsonOption.setRequired(false);
-        options.addOption(jsonOption);
         //
         Option gfaOption = new Option("gfa", "gfa", true, "GFA file");
         gfaOption.setRequired(false);
@@ -520,19 +517,15 @@ public class FRFinder {
         kappaOption.setRequired(false);
         options.addOption(kappaOption);
         //
-        Option kappaByNodesOption = new Option("kn", "kappabynodes", false, "use number of inserted nodes rather than length of inserted sequence in kappa restriction (false)");
-        kappaByNodesOption.setRequired(false);
-        options.addOption(kappaByNodesOption);
-        //
-        Option minLenOption = new Option("l", "minlen", true, "minimum allowed average length (bp) of an FR's subpaths ("+MINLEN+")");
+        Option minLenOption = new Option("l", "minlen", true, "minimum allowed average length (bp) of an FR's subpaths [1.0]");
         minLenOption.setRequired(false);
         options.addOption(minLenOption);
         //
-        Option minSupOption = new Option("m", "minsup", true, "minimum number of supporting paths for a region to be considered interesting ("+MINSUP+")");
+        Option minSupOption = new Option("m", "minsup", true, "minimum number of supporting paths for a region to be considered interesting [1]");
         minSupOption.setRequired(false);
         options.addOption(minSupOption);
         //
-        Option minSizeOption = new Option("s", "minsize", true, "minimum number of nodes that a FR must contain to be considered interesting ("+MINSIZE+")");
+        Option minSizeOption = new Option("s", "minsize", true, "minimum number of nodes that a FR must contain to be considered interesting [1]");
         minSizeOption.setRequired(false);
         options.addOption(minSizeOption);
         //
@@ -548,27 +541,27 @@ public class FRFinder {
         labelsOption.setRequired(false);
         options.addOption(labelsOption);
         //
-        Option verboseOption = new Option("v", "verbose", false, "verbose output ("+VERBOSE+")");
+        Option verboseOption = new Option("v", "verbose", false, "verbose output [false]");
         verboseOption.setRequired(false);
         options.addOption(verboseOption);
         //
-        Option debugOption = new Option("do", "debug", false, "debug output ("+DEBUG+")");
+        Option debugOption = new Option("do", "debug", false, "debug output [false]");
         debugOption.setRequired(false);
         options.addOption(debugOption);
         //
-        Option caseCtrlOption = new Option("cc", "casectrl", false, "emphasize FRs that have large case vs. control support ("+CASE_CTRL+")");
+        Option caseCtrlOption = new Option("cc", "casectrl", false, "emphasize FRs that have large case vs. control support [false]");
         caseCtrlOption.setRequired(false);
         options.addOption(caseCtrlOption);
         //
-        Option bruteForceOption = new Option("bf", "bruteforce", false, "find FRs comprehensively via brute force - testing only! ("+BRUTE_FORCE+")");
+        Option bruteForceOption = new Option("bf", "bruteforce", false, "find FRs comprehensively via brute force - testing only! [false]");
         bruteForceOption.setRequired(false);
         options.addOption(bruteForceOption);
         //
-        Option serialOption = new Option("sr", "serial", false, "find FRs serially for testing/experiments ("+SERIAL+")");
+        Option serialOption = new Option("sr", "serial", false, "find FRs serially for testing/experiments [false]");
         serialOption.setRequired(false);
         options.addOption(serialOption);
         //
-        Option resumeOption = new Option("r", "resume", false, "resume from a previous run ("+RESUME+")");
+        Option resumeOption = new Option("r", "resume", false, "resume from a previous run [false]");
         resumeOption.setRequired(false);
         options.addOption(resumeOption);
         //
@@ -596,20 +589,10 @@ public class FRFinder {
         }
         
         // parameter validation
-        if (!cmd.hasOption("inputprefix") && !cmd.hasOption("dot") && !cmd.hasOption("json") && !cmd.hasOption("gfa")) {
-            throw new Exception("You must specify a splitMEM-style DOT file plus FASTA (-d/--dot and -f/--fasta ), a vg JSON file (-j, --json) or a vg GFA file (--gfa)");
-        }
-        if (cmd.hasOption("dot") && !cmd.hasOption("fasta")) {
-            throw new Exception("If you specify a splitMEM dot file (-d/--dot) you MUST ALSO specify a FASTA file (-f/--fasta)");
+        if (!cmd.hasOption("inputprefix") && !cmd.hasOption("gfa")) {
+            throw new Exception("You must specify a vg GFA file (--gfa)");
         }
         
-        // files
-        String dotFile = cmd.getOptionValue("dot");
-        String fastaFile = cmd.getOptionValue("fasta");
-        String jsonFile = cmd.getOptionValue("json");
-        // String gfaFilename = cmd.getOptionValue("gfa");
-        // String pathLabelsFile = cmd.getOptionValue("pathlabels");
-
         // GFA file
         File gfaFile = null;
         if (cmd.hasOption("gfa")) gfaFile = new File(cmd.getOptionValue("gfa"));
@@ -618,45 +601,22 @@ public class FRFinder {
         File labelsFile = null;
         if (cmd.hasOption("pathlabels")) labelsFile = new File(cmd.getOptionValue("pathlabels"));
 
-        // run parameters
+        // required run parameters
         double alpha = 0.0;
         int kappa = 0;
         if (cmd.hasOption("alpha")) alpha = Double.parseDouble(cmd.getOptionValue("alpha"));
         if (cmd.hasOption("kappa")) kappa = Integer.parseInt(cmd.getOptionValue("kappa"));
-
-        // filters
-        int minSup = MINSUP;
-        int minSize = MINSIZE;
-        double minLen = MINLEN;
-        if (cmd.hasOption("minsup")) {
-            minSup = Integer.parseInt(cmd.getOptionValue("minsup"));
-        }
-        if (cmd.hasOption("minsize")) {
-            minSize = Integer.parseInt(cmd.getOptionValue("minsize"));
-        }
-        if (cmd.hasOption("minlen")) {
-            minLen = Double.parseDouble(cmd.getOptionValue("minlen"));
-        }
-
-        // run limits
-        int maxRound = MAXROUND;
-        if (cmd.hasOption("maxround")) {
-            maxRound = Integer.parseInt(cmd.getOptionValue("maxround"));
-        }
 
         FRFinder frf = null;
         boolean postProcess = false;
         if (cmd.hasOption("inputprefix")) {
             postProcess = true;
             String inputPrefix = cmd.getOptionValue("inputprefix");
+            // get alpha, kappa from saved input file
+            alpha = readAlpha(inputPrefix);
+            kappa = readKappa(inputPrefix);
             // instantiate the FRFinder from the saved files
-            frf = new FRFinder(inputPrefix);
-            // apply the desired filters
-            frf.setMinSup(minSup);
-            frf.setMinSize(minSize);
-            frf.setMinLen(minLen);
-	    // set the outputPrefix, which depends on the above being set
-	    frf.setOutputPrefix(frf.getOutputPrefix(inputPrefix));
+            frf = new FRFinder(inputPrefix, alpha, kappa);
         } else if (gfaFile!=null) { 
             // create a PangenomicGraph from a GFA file
             PangenomicGraph pg = new PangenomicGraph();
@@ -678,29 +638,23 @@ public class FRFinder {
             } else if (cmd.hasOption("serial")) {
                 frf.setSerial();
             }
-            // these are not used by normal method, which saves all FRs
-            frf.setMinSup(minSup);
-            frf.setMinSize(minSize);
-            frf.setMinLen(minLen);
         }
-        
+
         // set optional FRFinder parameters
+        if (cmd.hasOption("minsup")) frf.setMinSup(Integer.parseInt(cmd.getOptionValue("minsup")));
+        if (cmd.hasOption("minsize")) frf.setMinSize(Integer.parseInt(cmd.getOptionValue("minsize")));
+        if (cmd.hasOption("minlen")) frf.setMinLen(Double.parseDouble(cmd.getOptionValue("minlen")));
+        if (cmd.hasOption("maxround")) frf.setMaxRound(Integer.parseInt(cmd.getOptionValue("maxround")));
+        
         if (cmd.hasOption("verbose")) frf.setVerbose();
         if (cmd.hasOption("debug")) frf.setDebug();
-        if (cmd.hasOption("kappabynodes")) frf.setKappaByNodes();
-        if (cmd.hasOption("prunedgraph")) frf.setPrunedGraph();
-        if (cmd.hasOption("outputprefix")) {
-            frf.setOutputPrefix(cmd.getOptionValue("outputprefix"));
-        }
-        frf.setMaxRound(maxRound);
-
-        // tell findFRs to load saved data if resume requested
-        boolean resume = false;
         if (cmd.hasOption("resume")) frf.setResume();
+        if (cmd.hasOption("prunedgraph")) frf.setPrunedGraph();
+        if (cmd.hasOption("outputprefix")) frf.setOutputPrefix(cmd.getOptionValue("outputprefix"));
 
         // run the requested job
         if (postProcess) {
-            frf.postprocess();
+            frf.postprocess(alpha, kappa);
         } else {
             frf.findFRs(alpha, kappa);
         }
@@ -721,10 +675,10 @@ public class FRFinder {
      */
     void printPathFRs() throws IOException {
         PrintStream out = System.out;
-        if (outputPrefix==null) {
+        if (getOutputPrefix()==null) {
             printHeading("PATH FREQUENTED REGIONS");
         } else {
-            out = new PrintStream(getPathFRsFilename(outputPrefix));
+            out = new PrintStream(getPathFRsFilename(getOutputPrefix()));
         }
         // columns are paths
         boolean first = true;
@@ -746,7 +700,7 @@ public class FRFinder {
             }
             out.println("");
         }
-        if (outputPrefix!=null) out.close();
+        if (getOutputPrefix()!=null) out.close();
     }
 
     /**
@@ -760,10 +714,10 @@ public class FRFinder {
      */
     void printPathFRsSVM() throws IOException {
         PrintStream out = System.out;
-        if (outputPrefix==null) {
+        if (getOutputPrefix()==null) {
             printHeading("PATH SVM RECORDS");
         } else {
-            out = new PrintStream(getPathFRsSVMFilename(outputPrefix));
+            out = new PrintStream(getPathFRsSVMFilename(getOutputPrefix()));
         }
         // only rows, one per path
         for (PathWalk path : graph.getPaths()) {
@@ -779,7 +733,7 @@ public class FRFinder {
             }
             out.println("");
         }
-        if (outputPrefix!=null) out.close();
+        if (getOutputPrefix()!=null) out.close();
     }
 
     /**
@@ -803,11 +757,11 @@ public class FRFinder {
      */
     void printPathFRsARFF() throws IOException {
         PrintStream out = System.out;
-        if (outputPrefix==null) {
+        if (getOutputPrefix()==null) {
             out.println("@RELATION frs");
         } else {
-            out = new PrintStream(getPathFRsARFFFilename(outputPrefix));
-            out.println("@RELATION "+outputPrefix);
+            out = new PrintStream(getPathFRsARFFFilename(getOutputPrefix()));
+            out.println("@RELATION "+getOutputPrefix());
             out.println("");
         }
         // attributes: path ID
@@ -833,7 +787,7 @@ public class FRFinder {
             }
             out.println(path.getLabel());
         }
-        if (outputPrefix!=null) out.close();
+        if (getOutputPrefix()!=null) out.close();
     }
     
     /**
@@ -845,16 +799,16 @@ public class FRFinder {
             return;
         }
         PrintStream out = System.out;
-        if (outputPrefix==null) {
+        if (getOutputPrefix()==null) {
             printHeading("FREQUENTED REGIONS");
         } else {
-            out = new PrintStream(getFRsFilename(outputPrefix));
+            out = new PrintStream(getFRsFilename(getOutputPrefix()));
         }
         out.println(frequentedRegions.first().columnHeading());
         for (FrequentedRegion fr : frequentedRegions) {
             out.println(fr.toString());
         }
-        if (outputPrefix!=null) out.close();
+        if (getOutputPrefix()!=null) out.close();
     }
 
     /**
@@ -865,13 +819,13 @@ public class FRFinder {
             System.err.println("NO FREQUENTED REGIONS!");
             return;
         }
-        if (outputPrefix==null) return;
-        PrintStream out = new PrintStream(getFRSubpathsFilename(outputPrefix));
+        if (getOutputPrefix()==null) return;
+        PrintStream out = new PrintStream(getFRSubpathsFilename(getOutputPrefix()));
         for (FrequentedRegion fr : frequentedRegions) {
             out.println(fr.toString());
             out.println(fr.subpathsString());
         }
-        if (outputPrefix!=null) out.close();
+        if (getOutputPrefix()!=null) out.close();
     }
 
     /**
@@ -898,106 +852,102 @@ public class FRFinder {
     /**
      * Print out the parameters, either to stdout or outputPrefix.params.txt
      */
-    public void printParameters() throws IOException {
+    public void printParameters(double alpha, int kappa) throws IOException {
         PrintStream out = System.out;
-        if (outputPrefix==null) {
+        if (getOutputPrefix()==null) {
             printHeading("PARAMETERS");
         } else {
-            out = new PrintStream(getParamsFilename(outputPrefix));
+            out = new PrintStream(getParamsFilename(getOutputPrefix()));
         }
-        out.println("outputprefix"+"\t"+outputPrefix);
-        // Graph
-        if (graph!=null) {
-            out.println("genotype"+"\t"+graph.getGenotype());
-            if (graph.getGFAFilename()!=null) out.println("gfafile"+"\t"+graph.getGFAFilename());
-            if (graph.getPathLabelsFilename()!=null) out.println("pathlabels"+"\t"+graph.getPathLabelsFilename());
-            // if (graph.jsonFile!=null) out.println("jsonfile"+"\t"+graph.jsonFile);
-            // if (graph.dotFile!=null) out.println("dotfile"+"\t"+graph.dotFile);
-            // if (graph.fastaFile!=null) out.println("fastafile"+"\t"+graph.fastaFile);
-        }
-        // FRFinder
-        out.println("alpha"+"\t"+alpha);
-        out.println("kappa"+"\t"+kappa);
-        out.println("kappabynodes"+"\t"+kappaByNodes);
-        out.println("prunedgraph"+"\t"+getPrunedGraph());
-        out.println("casectrl"+"\t"+caseCtrl);
-        if (inputPrefix!=null) {
-            // post-processing parameters
-            out.println("minsup"+"\t"+minSup);
-            out.println("minsize"+"\t"+minSize);
-            out.println("minlen"+"\t"+minLen);
-        }
-        // runtime stuff
-        out.println("date"+"\t"+ZonedDateTime.now().toString());
-        out.println("clocktime"+"\t"+formatTime(clockTime));
+        String comments = "alpha="+alpha+
+            "\n"+"kappa="+kappa+
+            "\n"+"date="+ZonedDateTime.now().toString()+
+            "\n"+"clocktime="+formatTime(clockTime);
+        parameters.store(out, comments);
     }
 
     /**
-     * Read in the parameters from a previous run.
+     * Return alpha from a previous run.
      */
-    void readParameters(String inputPrefix) throws Exception {
+    static double readAlpha(String inputPrefix) throws FileNotFoundException, IOException {
         String paramsFile = getParamsFilename(inputPrefix);
-        parameters.setProperty("paramsFile", paramsFile);
         BufferedReader reader = new BufferedReader(new FileReader(paramsFile));
         String line = null;
-        String jsonFile = null;
-        String gfaFilename = null;
-        String dotFile = null;
-        String fastaFile = null;
-        String labelsFilename = null;
-        int genotype = PangenomicGraph.BOTH_GENOTYPES;
+        double alpha = 0;
         while ((line=reader.readLine())!=null) {
-            String[] parts = line.split("\t");
-            if (parts[0].equals("jsonfile")) {
-                parameters.setProperty("jsonFile", parts[1]);
-            } else if (parts[0].equals("gfafile")) {
-                parameters.setProperty("gfaFilename", parts[1]);
-            } else if (parts[0].equals("dotFile")) {
-                parameters.setProperty("dotFile", parts[1]);
-            } else if (parts[0].equals("fastafile")) {
-                parameters.setProperty("fastaFile", parts[1]);
-            } else if (parts[0].equals("pathlabels")) {
-                parameters.setProperty("labelsFilename", parts[1]);
-            } else if (parts[0].equals("genotype")) {
-                parameters.setProperty("genotype", parts[1]);
-            } else if (parts[0].equals("alpha")) {
-                parameters.setProperty("alpha", parts[1]);
-            } else if (parts[0].equals("kappa")) {
-                parameters.setProperty("kappa", parts[1]);
-            } else if (parts[0].equals("kappabynodes")) {
-                parameters.setProperty("kappaByNodes", parts[1]);
-            } else if (parts[0].equals("prunedgraph")) {
-                parameters.setProperty("prunedGraph", parts[1]);
-            } else if (parts[0].equals("casectrl")) {
-                parameters.setProperty("caseCtrl", parts[1]);
-            } else if (parts[0].equals("minsup")) {
-                parameters.setProperty("minSup", parts[1]);
-            } else if (parts[0].equals("minsize")) {
-                parameters.setProperty("minSize", parts[1]);
-            } else if (parts[0].equals("minlen")) {
-                parameters.setProperty("minLen", parts[1]);
+            if (line.startsWith("alpha")) {
+                String[] parts = line.split("=");
+                alpha = Double.parseDouble(parts[1]);
             }
         }
-        // load the Graph if we've got the files
-        if (jsonFile!=null) {
-            System.err.println("JSON graph import is not currently enabled.");
-            System.exit(1);
-        } else if (gfaFilename!=null) {
-            if (verbose) System.out.println("Reading graph from "+gfaFilename);
-            File gfaFile = new File(gfaFilename);
-            graph = new PangenomicGraph();
-            graph.importGFA(gfaFile);
-            graph.setGenotype(genotype);
-        } else if (dotFile!=null && fastaFile!=null) {
-            System.err.println("DOT graph import is not currently enabled.");
-            System.exit(1);
+        return alpha;
+    }
+
+    /**
+     * Return kappa from a previous run.
+     */
+    static int readKappa(String inputPrefix) throws FileNotFoundException, IOException {
+        String paramsFile = getParamsFilename(inputPrefix);
+        BufferedReader reader = new BufferedReader(new FileReader(paramsFile));
+        String line = null;
+        int kappa = 0;
+        while ((line=reader.readLine())!=null) {
+            if (line.startsWith("kappa")) {
+                String[] parts = line.split("=");
+                kappa = Integer.parseInt(parts[1]);
+            }
         }
-        // load the path labels if we got 'em
-        if (labelsFilename!=null) {
-            if (verbose) System.out.println("Reading labels file from "+labelsFilename);
-            File labelsFile = new File(labelsFilename);
-            graph.readPathLabels(labelsFile);
-        }
+        return kappa;
+    }
+    
+    /**
+     * Read the parameters from a previous run.
+     */
+    void readParameters(String inputPrefix) throws FileNotFoundException, IOException {
+        String paramsFile = getParamsFilename(inputPrefix);
+        parameters.setProperty("paramsFile", paramsFile);
+        // composite params
+        setOutputPrefix(formOutputPrefix());
+        // BufferedReader reader = new BufferedReader(new FileReader(paramsFile));
+        // String line = null;
+        // while ((line=reader.readLine())!=null) {
+        //     String[] parts = line.split("\t");
+        //     if (parts[0].equals("gfafile")) {
+        //         parameters.setProperty("gfaFilename", parts[1]);
+        //     } else if (parts[0].equals("pathlabels")) {
+        //         parameters.setProperty("labelsFilename", parts[1]);
+        //     } else if (parts[0].equals("genotype")) {
+        //         parameters.setProperty("genotype", parts[1]);
+        //     } else if (parts[0].equals("alpha")) {
+        //         parameters.setProperty("alpha", parts[1]);
+        //     } else if (parts[0].equals("kappa")) {
+        //         parameters.setProperty("kappa", parts[1]);
+        //     } else if (parts[0].equals("prunedgraph")) {
+        //         parameters.setProperty("prunedGraph", parts[1]);
+        //     } else if (parts[0].equals("casectrl")) {
+        //         parameters.setProperty("caseCtrl", parts[1]);
+        //     } else if (parts[0].equals("minsup")) {
+        //         parameters.setProperty("minSup", parts[1]);
+        //     } else if (parts[0].equals("minsize")) {
+        //         parameters.setProperty("minSize", parts[1]);
+        //     } else if (parts[0].equals("minlen")) {
+        //         parameters.setProperty("minLen", parts[1]);
+        //     }
+        // }
+        // // load the Graph if we've got the files
+        // if (gfaFilename!=null) {
+        //     if (getVerbose()) System.out.println("Reading graph from "+gfaFilename);
+        //     File gfaFile = new File(gfaFilename);
+        //     graph = new PangenomicGraph();
+        //     graph.importGFA(gfaFile);
+        //     graph.setGenotype(genotype);
+        //     // load the path labels if we got 'em
+        //     if (labelsFilename!=null) {
+        //         if (getVerbose()) System.out.println("Reading labels file from "+labelsFilename);
+        //         File labelsFile = new File(labelsFilename);
+        //         graph.readPathLabels(labelsFile);
+        //     }
+        // }
     }
 
     /**
@@ -1008,7 +958,7 @@ public class FRFinder {
      * 628863.1.case:[18,20,21,23,24,26,27,29,30,33,34]
      * etc.
      */
-    void readFrequentedRegions(double alpha, double kappa) throws Exception {
+    void readFrequentedRegions(double alpha, int kappa) throws FileNotFoundException, IOException, NullNodeException, NullSequenceException {
         // do we have a Graph?
         if (graph.getNodes().size()==0) {
             throw new Exception("ERROR in readFrequentedRegions: graph has not been initialized.");
@@ -1023,7 +973,7 @@ public class FRFinder {
 	}
 	// build the FRs
         frequentedRegions = new TreeSet<>();
-        String frFilename = getFRSubpathsFilename(inputPrefix);
+        String frFilename = getFRSubpathsFilename(getInputPrefix());
         BufferedReader reader = new BufferedReader(new FileReader(frFilename));
         String line = null;
         while ((line=reader.readLine())!=null) {
@@ -1053,7 +1003,7 @@ public class FRFinder {
                 // add to the subpaths
                 subpaths.add(new PathWalk(graph, subNodes, name, genotype, label, false));
             }
-            FrequentedRegion fr = new FrequentedRegion(graph, nodes, subpaths, alpha, kappa, kappaByNodes, support, avgLength);
+            FrequentedRegion fr = new FrequentedRegion(graph, nodes, subpaths, alpha, kappa, support, avgLength);
             frequentedRegions.add(fr);
         }
     }
@@ -1061,56 +1011,56 @@ public class FRFinder {
     /**
      * Form the FRs output filename
      */
-    String getFRsFilename(String prefix) {
+    static String getFRsFilename(String prefix) {
         return prefix+".frs.txt";
     }
 
     /**
      * Form the FRSubpaths output filename
      */
-    String getFRSubpathsFilename(String prefix) {
+    static String getFRSubpathsFilename(String prefix) {
         return prefix+".subpaths.txt";
     }
 
     /**
      * Form the pathFRs output filename
      */
-    String getPathFRsFilename(String prefix) {
+    static String getPathFRsFilename(String prefix) {
         return prefix+".pathfrs.txt";
     }
 
     /**
      * Form the SVM version of the pathFRs output filename
      */
-    String getPathFRsSVMFilename(String prefix) {
+    static String getPathFRsSVMFilename(String prefix) {
         return prefix+".svm.txt";
     }
 
     /**
      * Form the ARFF version of the pathFRs output filename
      */
-    String getPathFRsARFFFilename(String prefix) {
+    static String getPathFRsARFFFilename(String prefix) {
         return prefix+".arff";
     }
 
     /**
      * Form the parameters output filename
      */
-    String getParamsFilename(String prefix) {
+    static String getParamsFilename(String prefix) {
         return prefix+".params.txt";
     }
 
     /**
-     * Form the new output prefix from the input prefix and post-processing parameters
+     * Form an outputPrefix from the inputPrefix and minSup, minSize, minLen.
      */
-    String getOutputPrefix(String inputPrefix) {
-        return inputPrefix+"-"+minSup+"."+minSize+"."+(int)minLen;
+    String formOutputPrefix() {
+        return getInputPrefix()+"-"+getMinSup()+"."+getMinSize()+"."+(int)getMinLen();
     }
 
     /**
      * Format a time duration given in milliseconds.
      */
-    public static String formatTime(long millis) {
+    static String formatTime(long millis) {
         DecimalFormat tf = new DecimalFormat("00"); // hours, minutes, seconds
         long hours = (millis / 1000) / 60 / 60;
 	long minutes = (millis / 1000 / 60) % 60;
