@@ -54,8 +54,8 @@ public class PangenomicGraph extends DirectedPseudograph<Node,Edge> {
     // each Path provides the ordered list of nodes that it traverses, along with its full sequence
     Set<PathWalk> paths; // (ordered simply for convenience)
     
-    // maps a Node to a set of Paths that traverse it -- NOT INTERESTING WHEN NODES HAVE THE SAME PATH MANY TIMES!!!
-    Map<Long,Set<PathWalk>> nodePaths; // keyed and ordered by Node Id
+    // maps a Node to a set of Paths that traverse it
+    Map<Long,Set<PathWalk>> nodePaths; // keyed and ordered by Node Id, synchronized when constructed
 
     // maps a path label to a count of paths that have that label
     Map<String,Integer> labelCounts; // keyed by label
@@ -130,11 +130,11 @@ public class PangenomicGraph extends DirectedPseudograph<Node,Edge> {
 	    }
             nodePaths.put(n.getId(), new HashSet<PathWalk>());
         }
-        // now load the paths (which are synchronized from GFAImport) in parallel
+        // now load the paths (which are already synchronized from GFAImport) in parallel
         paths.parallelStream().forEach((path) -> {
-                for (Node n : path.getNodes()) {
-                    nodePaths.get(n.getId()).add(path);
-                }
+                path.getNodes().parallelStream().forEach((n) -> {
+                        nodePaths.get(n.getId()).add(path);
+                    });
             });
     }
 

@@ -164,10 +164,10 @@ public class PathWalk extends GraphWalk<Node,Edge> implements Comparable {
     }
 
     /**
-     * Return the nodes that this path traverses, in order of traversal.
+     * Return the nodes that this path traverses, in order of traversal, in a synchronized List.
      */
     public List<Node> getNodes() {
-        return (List<Node>) getVertexList();
+        return Collections.synchronizedList((List<Node>) getVertexList());
     }
 
     /**
