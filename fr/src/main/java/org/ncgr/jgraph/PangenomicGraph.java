@@ -122,9 +122,6 @@ public class PangenomicGraph extends DirectedPseudograph<Node,Edge> {
      * Build the node paths: the set of paths that run through each node.
      * THIS MUST BE PARALLELIZED!
      */
-    // Set<FrequentedRegion> syncFrequentedRegions = Collections.synchronizedSet(new TreeSet<>());
-    // syncFrequentedRegions.parallelStream().forEach((fr1) -> {
-    // });
     void buildNodePaths() throws NullSequenceException {
 	if (verbose) System.out.println("Building node paths...");
         // initialize empty paths for each node
