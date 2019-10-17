@@ -156,7 +156,6 @@ public class GFAImporter implements GraphImporter<Node,Edge> {
 		try {
 		    PathWalk path = new PathWalk(g, nodeList, name, genotype, skipSequences);
 		    paths.add(path);
-		    if (verbose) System.out.println(path.getNameGenotypeLabel()+" "+nodeList.size()+" nodes");
 		} catch (Exception e) {
 		    System.err.println(e.toString());
 		}
@@ -177,7 +176,6 @@ public class GFAImporter implements GraphImporter<Node,Edge> {
                     }
                     lastNode = node;
                 }
-                if (verbose) System.out.println(path.getNameGenotypeLabel());
             }
         } else if (verbose) {
             System.out.println("Skipped adding edges to graph!");
@@ -192,7 +190,6 @@ public class GFAImporter implements GraphImporter<Node,Edge> {
         for (PathWalk path : paths) {
 	    try {
 		path.buildSequence();
-		if (verbose) System.out.println(path.getNameGenotypeLabel());
 	    } catch (Exception e) {
 		System.err.println(e.toString());
 	    }
