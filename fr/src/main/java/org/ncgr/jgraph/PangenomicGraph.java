@@ -65,7 +65,7 @@ public class PangenomicGraph extends DirectedPseudograph<Node,Edge> {
      */
     public PangenomicGraph() {
         super(Edge.class);
-        nodePaths = new HashMap<>();
+        nodePaths = Collections.synchronizedMap(new HashMap<Long,Set<PathWalk>>());
         labelCounts = new HashMap<>();
     }
 
@@ -120,7 +120,6 @@ public class PangenomicGraph extends DirectedPseudograph<Node,Edge> {
 
     /**
      * Build the node paths: the set of paths that run through each node.
-     * THIS MUST BE PARALLELIZED!
      */
     void buildNodePaths() throws NullSequenceException {
 	if (verbose) System.out.println("Building node paths...");
