@@ -128,7 +128,7 @@ public class PangenomicGraph extends DirectedPseudograph<Node,Edge> {
 	    if (n.getSequence()==null) {
 		throw new NullSequenceException("Node "+n.getId()+" has no sequence. Aborting.");
 	    }
-            nodePaths.put(n.getId(), new HashSet<PathWalk>());
+            nodePaths.put(n.getId(), Collections.synchronizedSet(new HashSet<PathWalk>()));
         }
         // now load the paths (which are already synchronized from GFAImport) in parallel
         paths.parallelStream().forEach((path) -> {
@@ -469,19 +469,24 @@ public class PangenomicGraph extends DirectedPseudograph<Node,Edge> {
             printLabelCounts(labelCountsOut);
         }
 
+        if (verbose) System.out.println("Writing nodes file...");
         PrintStream nodesOut = new PrintStream(outputPrefix+".nodes.txt");
         printNodes(nodesOut);
 
+        if (verbose) System.out.println("Writing nodes histogram...");
         PrintStream nodeHistogramOut = new PrintStream(outputPrefix+".nodehistogram.txt");
         printNodeHistogram(nodeHistogramOut);
 
+        if (verbose) System.out.println("Writing paths file...");
         PrintStream pathsOut = new PrintStream(outputPrefix+".paths.txt");
         printPaths(pathsOut);
 
+        if (verbose) System.out.println("Writing node paths file...");
         PrintStream nodePathsOut = new PrintStream(outputPrefix+".nodepaths.txt");
         printNodePaths(nodePathsOut);
         
         if (!skipSequences) {
+            if (verbose) System.out.println("Writing path sequences file...");
             PrintStream pathSequencesOut = new PrintStream(outputPrefix+".pathsequences.fasta");
             long printPathSequencesStart = System.currentTimeMillis();
             printPathSequences(pathSequencesOut);
@@ -489,6 +494,7 @@ public class PangenomicGraph extends DirectedPseudograph<Node,Edge> {
             if (verbose) System.out.println("printPathSequences took "+(printPathSequencesEnd-printPathSequencesStart)+" ms.");
         }
         
+        if (verbose) System.out.println("Writing path PCA file...");
         PrintStream pcaDataOut = new PrintStream(outputPrefix+".pathpca.txt");
         long printPcaDataStart = System.currentTimeMillis();
         printPcaData(pcaDataOut);
