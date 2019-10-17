@@ -507,7 +507,7 @@ public class FRFinder {
         CommandLine cmd;
 
         //
-        Option alphaOption = new Option("a", "alpha", true, "alpha=penetrance, fraction of a supporting path's sequence that supports the FR (this or alphastart required)");
+        Option alphaOption = new Option("a", "alpha", true, "alpha=penetrance, fraction of a supporting path's nodes that support the FR (this or alphastart required)");
         alphaOption.setRequired(false);
         options.addOption(alphaOption);
         //

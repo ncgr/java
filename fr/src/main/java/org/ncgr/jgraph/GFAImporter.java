@@ -146,8 +146,8 @@ public class GFAImporter implements GraphImporter<Node,Edge> {
 
         // build the paths (in parallel) from the nodeListMap
         if (verbose) System.out.println("Building PathWalks:");
+        if (verbose && skipSequences) System.out.println("Skipped building path sequences!");
         Set<String> nodeListPathNames = Collections.synchronizedSet(nodeListMap.keySet());
-
         nodeListPathNames.parallelStream().forEach((pathName) -> {
                 List<Node> nodeList = nodeListMap.get(pathName);
                 String[] parts = pathName.split(":"); // separate out the genotype
@@ -164,9 +164,7 @@ public class GFAImporter implements GraphImporter<Node,Edge> {
 
         // build the path-labeled graph edges from the paths
         // this can take a long time on a large graph, so skip if skipEdges==true
-        if (skipEdges) {
-            if (verbose) System.out.println("Skipping adding edges to graph!");
-        } else {
+        if (!skipEdges) {
             if (verbose) System.out.println("Adding pathwalk edges to graph:");
             for (PathWalk path : paths) {
                 boolean first = true;
@@ -181,6 +179,8 @@ public class GFAImporter implements GraphImporter<Node,Edge> {
                 }
                 if (verbose) System.out.println(path.getNameGenotypeLabel());
             }
+        } else if (verbose) {
+            System.out.println("Skipped adding edges to graph!");
         }
     }
 

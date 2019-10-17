@@ -7,6 +7,7 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.PrintStream;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.HashMap;
@@ -105,42 +106,48 @@ public class PangenomicGraph extends DirectedPseudograph<Node,Edge> {
         }
     }
 
-    // /**
-    //  * Return true if this and that PangenomicGraph come from the same file.
-    //  */
-    // public boolean equals(Object o) {
-    // 	PangenomicGraph that = (PangenomicGraph) o;
-    //     if (this.gfaFile!=null && that.gfaFile!=null) {
-    //         return this.gfaFile.equals(that.gfaFile);
-    //     } else {
-    //         return false;
-    //     }
-    // }
+    /**
+     * Return true if this and that PangenomicGraph come from GFA files of the same name.
+     */
+    public boolean equals(Object o) {
+    	PangenomicGraph that = (PangenomicGraph) o;
+        if (this.gfaFile!=null && that.gfaFile!=null) {
+            return this.gfaFile.getName().equals(that.gfaFile.getName());
+        } else {
+            return false;
+        }
+    }
 
     /**
      * Build the node paths: the set of paths that run through each node.
+     * THIS MUST BE PARALLELIZED!
      */
+    // Set<FrequentedRegion> syncFrequentedRegions = Collections.synchronizedSet(new TreeSet<>());
+    // syncFrequentedRegions.parallelStream().forEach((fr1) -> {
+    // });
     void buildNodePaths() throws NullSequenceException {
 	if (verbose) System.out.println("Building node paths...");
-        // init empty paths for each node
+        // initialize empty paths for each node
         for (Node n : vertexSet()) {
 	    if (n.getSequence()==null) {
 		throw new NullSequenceException("Node "+n.getId()+" has no sequence. Aborting.");
 	    }
             nodePaths.put(n.getId(), new HashSet<PathWalk>());
         }
-        // now load the paths
-        for (PathWalk path : paths) {
-            for (Node n : path.getNodes()) {
-                nodePaths.get(n.getId()).add(path);
-            }
-        }
+        // now load the paths in parallel
+        Set<PathWalk> syncPaths = Collections.synchronizedSet(paths);
+        syncPaths.parallelStream().forEach((path) -> {
+                for (Node n : path.getNodes()) {
+                    nodePaths.get(n.getId()).add(path);
+                }
+            });
     }
 
     /**
      * Read path labels from a tab-delimited file. Comment lines start with #.
      */
     public void readPathLabels(File labelsFile) throws FileNotFoundException, IOException {
+	if (verbose) System.out.println("Reading path labels...");
         this.labelsFile = labelsFile;
         labelCounts = new HashMap<>();
         BufferedReader reader = new BufferedReader(new FileReader(labelsFile));
@@ -235,6 +242,7 @@ public class PangenomicGraph extends DirectedPseudograph<Node,Edge> {
      * @return the number of removed nodes
      */
     public int prune() throws NoPathsException, NoNodePathsException {
+        if (verbose) System.out.println("Pruning graph...");
         if (paths==null || paths.size()==0) {
             throw new NoPathsException("PangenomicGraph.paths is not populated; cannot prune.");
         }
@@ -329,7 +337,9 @@ public class PangenomicGraph extends DirectedPseudograph<Node,Edge> {
         if (out==System.out) printHeading("PATHS");
         for (PathWalk path : paths) {
             StringBuilder builder = new StringBuilder();
-            builder.append(path.getNameGenotype()+"\t"+path.getLabel()+"\t"+path.getSequence().length());
+            builder.append(path.getNameGenotype());
+            builder.append("\t"+path.getLabel());
+            if (!skipSequences) builder.append("\t"+path.getSequence().length());
             for (Node node : path.getNodes()) {
                 builder.append("\t"+node.getId());
             }
@@ -476,11 +486,13 @@ public class PangenomicGraph extends DirectedPseudograph<Node,Edge> {
         PrintStream nodePathsOut = new PrintStream(outputPrefix+".nodepaths.txt");
         printNodePaths(nodePathsOut);
         
-        PrintStream pathSequencesOut = new PrintStream(outputPrefix+".pathsequences.fasta");
-        long printPathSequencesStart = System.currentTimeMillis();
-        printPathSequences(pathSequencesOut);
-        long printPathSequencesEnd = System.currentTimeMillis();
-        if (verbose) System.out.println("printPathSequences took "+(printPathSequencesEnd-printPathSequencesStart)+" ms.");
+        if (!skipSequences) {
+            PrintStream pathSequencesOut = new PrintStream(outputPrefix+".pathsequences.fasta");
+            long printPathSequencesStart = System.currentTimeMillis();
+            printPathSequences(pathSequencesOut);
+            long printPathSequencesEnd = System.currentTimeMillis();
+            if (verbose) System.out.println("printPathSequences took "+(printPathSequencesEnd-printPathSequencesStart)+" ms.");
+        }
         
         PrintStream pcaDataOut = new PrintStream(outputPrefix+".pathpca.txt");
         long printPcaDataStart = System.currentTimeMillis();
@@ -500,7 +512,7 @@ public class PangenomicGraph extends DirectedPseudograph<Node,Edge> {
         printNodeHistogram(System.out);
         printPaths(System.out);
         printNodePaths(System.out);
-        printPathSequences(System.out);
+        if (!skipSequences) printPathSequences(System.out);
         printPcaData(System.out);
     }
 
