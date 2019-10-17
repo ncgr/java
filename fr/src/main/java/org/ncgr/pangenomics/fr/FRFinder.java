@@ -109,7 +109,8 @@ public class FRFinder {
      *                alternatively, `1-alpha` is the fraction of inserted sequence
      * int kappa = maximum insertion: the maximum number of inserted nodes that a supporting path may have.
       */
-    public void findFRs(double alpha, int kappa) throws FileNotFoundException, IOException, NullNodeException, NullSequenceException, NoPathsException, NoNodePathsException {
+    public void findFRs(double alpha, int kappa) throws FileNotFoundException, IOException,
+                                                        NullNodeException, NullSequenceException, NoPathsException, NoNodePathsException {
         System.out.println("# alpha="+alpha+" kappa="+kappa);
         if (getPrunedGraph()) {
 	    int nRemoved = graph.prune();
@@ -209,20 +210,26 @@ public class FRFinder {
                 int oldFRSize = frequentedRegions.size();
                 ////////////////////////////////////////
                 // spin through FRs in a parallel manner
-                syncFrequentedRegions.parallelStream().forEach((fr1) -> {
-                        syncFrequentedRegions.parallelStream().forEach((fr2) -> {
+                syncFrequentedRegions.parallelStream().forEach(fr1 -> {
+                        syncFrequentedRegions.parallelStream().forEach(fr2 -> {
                                 if (fr1.compareTo(fr2)>0) {
                                     FRPair frpair = new FRPair(fr1, fr2, graph, alpha, kappa, getCaseCtrl());
                                     String nodesKey = frpair.nodes.toString();
                                     if (!usedNodeSets.contains(nodesKey)) {
                                         usedNodeSets.add(nodesKey);
-					try {
-					    frpair.merge();
-					} catch (Exception e) {
-					    System.err.println(e.toString());
-					}
+                                        try {
+                                            frpair.merge();
+                                        } catch (NullNodeException e) {
+                                            System.err.println(e);
+                                            System.exit(1);
+                                        } catch (NullSequenceException e) {
+                                            System.err.println(e);
+                                            System.exit(1);
+                                        }
                                         loopFRs.add(frpair.merged);
-                                        if (frpair.merged.support>=getMinSup() && frpair.merged.avgLength>=getMinLen() && frpair.merged.nodes.size()>=getMinSize()) frequentedRegions.add(frpair.merged);
+                                        if (frpair.merged.support>=getMinSup() &&
+                                            frpair.merged.avgLength>=getMinLen() &&
+                                            frpair.merged.nodes.size()>=getMinSize()) frequentedRegions.add(frpair.merged);
                                     }
                                 }
                             });
@@ -288,8 +295,8 @@ public class FRFinder {
                 PriorityBlockingQueue<FRPair> pq = new PriorityBlockingQueue<>();
                 ////////////////////////////////////////
                 // spin through FRs in a parallel manner
-                syncFrequentedRegions.parallelStream().forEach((fr1) -> {
-                        syncFrequentedRegions.parallelStream().forEach((fr2) -> {
+                syncFrequentedRegions.parallelStream().forEach(fr1 -> {
+                        syncFrequentedRegions.parallelStream().forEach(fr2 -> {
                                 if (fr2.compareTo(fr1)>=0 && !usedFRs.contains(fr1) && !usedFRs.contains(fr2)) {
                                     // no merge or rejection test here
                                     FRPair frpair = new FRPair(fr1, fr2, graph, alpha, kappa, getCaseCtrl());
