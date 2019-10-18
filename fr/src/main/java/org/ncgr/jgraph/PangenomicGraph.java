@@ -45,6 +45,9 @@ public class PangenomicGraph extends DirectedPseudograph<Node,Edge> {
     // skip building sequences (reduces RAM)
     boolean skipSequences = false;
 
+    // skip building list of paths per node
+    boolean skipNodePaths = false;
+
     // the GFA file that holds this graph
     File gfaFile;
 
@@ -81,7 +84,11 @@ public class PangenomicGraph extends DirectedPseudograph<Node,Edge> {
         importer.setGenotype(genotype);
         importer.importGraph(this, gfaFile);
         paths = importer.getPaths();
-        buildNodePaths();
+        if (!skipNodePaths) {
+            buildNodePaths();
+        } else {
+            System.out.println("Skipped building node paths!");
+        }
     }
 
     /**
@@ -221,6 +228,13 @@ public class PangenomicGraph extends DirectedPseudograph<Node,Edge> {
      */
     public void setSkipSequences() {
 	skipSequences = true;
+    }
+
+    /**
+     * Set the skipNodePaths flag.
+     */
+    public void setSkipNodePaths() {
+	skipNodePaths = true;
     }
 
     /**
@@ -557,6 +571,10 @@ public class PangenomicGraph extends DirectedPseudograph<Node,Edge> {
         Option skipSequencesOption = new Option("ss", "skipsequences", false, "skip building sequences of paths (false)");
         skipSequencesOption.setRequired(false);
         options.addOption(skipSequencesOption);
+        //
+        Option skipNodePathsOption = new Option("ss", "skipnodepaths", false, "skip building list of paths per node (false)");
+        skipNodePathsOption.setRequired(false);
+        options.addOption(skipNodePathsOption);
 
         try {
             cmd = parser.parse(options, args);
@@ -590,6 +608,7 @@ public class PangenomicGraph extends DirectedPseudograph<Node,Edge> {
         if (cmd.hasOption("verbose")) pg.setVerbose();
         if (cmd.hasOption("skipedges")) pg.setSkipEdges();
 	if (cmd.hasOption("skipsequences")) pg.setSkipSequences();
+        if (cmd.hasOption("skipnodepaths")) pg.setSkipNodePaths();
         if (cmd.hasOption("genotype")) pg.setGenotype(Integer.parseInt(cmd.getOptionValue("genotype")));
         long importStart = System.currentTimeMillis();
         pg.importGFA(gfaFile);
