@@ -198,7 +198,7 @@ public class PangenomicGraph extends DirectedPseudograph<Node,Edge> {
                 }
             }
         }
-        // check that we've labeled all the paths
+        // flag paths that are not labeled
         boolean pathsAllLabeled = true;
         for (PathWalk path : paths) {
             if (path.getLabel()==null) {
@@ -206,7 +206,6 @@ public class PangenomicGraph extends DirectedPseudograph<Node,Edge> {
                 System.err.println("ERROR: the path "+path.getName()+" has no label in the labels file.");
             }
         }
-        if (!pathsAllLabeled) System.exit(1);
     }
 
     /**
