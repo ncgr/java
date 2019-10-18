@@ -513,28 +513,19 @@ public class FRFinder {
         HelpFormatter formatter = new HelpFormatter();
         CommandLine cmd;
 
-        //
-        Option alphaOption = new Option("a", "alpha", true, "alpha=penetrance, fraction of a supporting path's nodes that support the FR (this or alphastart required)");
-        alphaOption.setRequired(false);
-        options.addOption(alphaOption);
-        //
-        Option alphaStartOption = new Option("as", "alphastart", true, "starting value of alpha for a scan (this or alpha required)");
+        Option alphaStartOption = new Option("as", "alphastart", true, "starting value of alpha for a scan (can equal alphaend)");
         alphaStartOption.setRequired(false);
         options.addOption(alphaStartOption);
         //
-        Option alphaEndOption = new Option("ae", "alphaend", true, "ending value of alpha for a scan (this or alpha required)");
+        Option alphaEndOption = new Option("ae", "alphaend", true, "ending value of alpha for a scan (can equal alphastart)");
         alphaEndOption.setRequired(false);
         options.addOption(alphaEndOption);
         //
-        Option kappaOption = new Option("k", "kappa", true, "maximum insertion length that any supporting path may have (required)");
-        kappaOption.setRequired(false);
-        options.addOption(kappaOption);
-        //
-        Option kappaStartOption = new Option("ks", "kappastart", true, "starting value of kappa for a scan (this or kappa required)");
+        Option kappaStartOption = new Option("ks", "kappastart", true, "starting value of kappa for a scan (can equal kappaend)");
         kappaStartOption.setRequired(false);
         options.addOption(kappaStartOption);
         //
-        Option kappaEndOption = new Option("ke", "kappaend", true, "ending value of kappa for a scan (this or kappa required)");
+        Option kappaEndOption = new Option("ke", "kappaend", true, "ending value of kappa for a scan (can equal kappastart)");
         kappaEndOption.setRequired(false);
         options.addOption(kappaEndOption);
         //
@@ -641,21 +632,19 @@ public class FRFinder {
         if (cmd.hasOption("pathlabels")) labelsFile = new File(cmd.getOptionValue("pathlabels"));
 
         // required run parameters
-        double alpha = 0.0;
         double alphaStart = 0.0;
         double alphaEnd = 0.0;
-        int kappa = 0;
         int kappaStart = 0;
         int kappaEnd = 0;
-        if (cmd.hasOption("alpha")) alpha = Double.parseDouble(cmd.getOptionValue("alpha"));
         if (cmd.hasOption("alphastart")) alphaStart = Double.parseDouble(cmd.getOptionValue("alphastart"));
         if (cmd.hasOption("alphaend")) alphaEnd = Double.parseDouble(cmd.getOptionValue("alphaend"));
-        if (cmd.hasOption("kappa")) kappa = Integer.parseInt(cmd.getOptionValue("kappa"));
         if (cmd.hasOption("kappastart")) kappaStart = Integer.parseInt(cmd.getOptionValue("kappastart"));
         if (cmd.hasOption("kappaend")) kappaEnd = Integer.parseInt(cmd.getOptionValue("kappaend"));
 
         FRFinder frf = null;
         boolean postProcess = false;
+        double alpha = 0.0;
+        int kappa = 0;
         if (cmd.hasOption("inputprefix")) {
             postProcess = true;
             String inputPrefix = cmd.getOptionValue("inputprefix");
@@ -710,7 +699,7 @@ public class FRFinder {
                 frf.findFRs(alpha, kappa);
             } else if (alphaStart!=alphaEnd && kappaStart==kappaEnd) {
                 // scan alpha at fixed kappa
-                for (double a=alphaStart; a<=alphaEnd; a+=0.1) {
+                for (double a=alphaStart; a<=alphaEnd; a+=0.1000) {
                     frf.findFRs(a, kappa);
                 }
             } else if (alphaStart==alphaEnd && kappaStart!=kappaEnd) {
@@ -1056,7 +1045,8 @@ public class FRFinder {
      * Form an outputPrefix with given alpha and kappa.
      */
     String formOutputPrefix(double alpha, int kappa) {
-        return getGraphName()+"-"+alpha+"-"+kappa;
+        DecimalFormat af = new DecimalFormat("0.0");
+        return getGraphName()+"-"+af.format(alpha)+"-"+kappa;
     }
 
     /**
