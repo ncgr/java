@@ -27,6 +27,7 @@
 # -r,--resume              resume from a previous run [false]
 # -s,--minsize <arg>       minimum number of nodes that a FR must contain
 #                          to be considered interesting [1]
+# -snp,--skipnodepaths     skip building list of paths per node (false)
 # -sr,--serial             find FRs serially for testing/experiments
 #                          [false]
 # -v,--verbose             verbose output [false]
@@ -47,7 +48,7 @@ kappaend=3
 echo "# $prefix alpha=$alphastart-$alphaend kappa=$kappastart-$kappaend"
 
 java -server -Xmx160g -XX:+UseParallelGC -Xms2g -XX:SoftRefLRUPolicyMSPerMB=1 -XX:MaxHeapFreeRatio=99 -cp "build/install/fr/lib/*" org.ncgr.pangenomics.fr.FRFinder \
-     --pathlabels SchizophreniaSwedish_Sklar/labels.txt --casectrl \
+     --pathlabels SchizophreniaSwedish_Sklar/labels.txt --casectrl --skipnodepaths \
      --gfa SchizophreniaSwedish_Sklar/$prefix.paths.gfa \
      --alphastart $alphastart --alphaend $alphaend --kappastart $kappastart --kappaend $kappaend # --resume
 

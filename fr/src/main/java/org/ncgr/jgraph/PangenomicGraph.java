@@ -221,6 +221,12 @@ public class PangenomicGraph extends DirectedPseudograph<Node,Edge> {
     public void setSkipEdges() {
         skipEdges = true;
     }
+    /**
+     * Return the skipEdges boolean.
+     */
+    public boolean getSkipEdges() {
+        return skipEdges;
+    }
 
     /**
      * Set the skipSequences flag.
@@ -228,12 +234,24 @@ public class PangenomicGraph extends DirectedPseudograph<Node,Edge> {
     public void setSkipSequences() {
 	skipSequences = true;
     }
+    /**
+     * Return the skipSequences boolean.
+     */
+    public boolean getSkipSequences() {
+        return skipSequences;
+    }
 
     /**
      * Set the skipNodePaths flag.
      */
     public void setSkipNodePaths() {
 	skipNodePaths = true;
+    }
+    /**
+     * Return the skipNodePaths boolean.
+     */
+    public boolean getSkipNodePaths() {
+        return skipNodePaths;
     }
 
     /**
@@ -497,9 +515,11 @@ public class PangenomicGraph extends DirectedPseudograph<Node,Edge> {
         PrintStream pathsOut = new PrintStream(outputPrefix+".paths.txt");
         printPaths(pathsOut);
 
-        if (verbose) System.out.println("Writing node paths file...");
-        PrintStream nodePathsOut = new PrintStream(outputPrefix+".nodepaths.txt");
-        printNodePaths(nodePathsOut);
+        if (!skipNodePaths) {
+            if (verbose) System.out.println("Writing node paths file...");
+            PrintStream nodePathsOut = new PrintStream(outputPrefix+".nodepaths.txt");
+            printNodePaths(nodePathsOut);
+        }
         
         if (!skipSequences) {
             if (verbose) System.out.println("Writing path sequences file...");
@@ -528,7 +548,7 @@ public class PangenomicGraph extends DirectedPseudograph<Node,Edge> {
         printNodes(System.out);
         printNodeHistogram(System.out);
         printPaths(System.out);
-        printNodePaths(System.out);
+        if (!skipNodePaths) printNodePaths(System.out);
         if (!skipSequences) printPathSequences(System.out);
         printPcaData(System.out);
     }
@@ -571,7 +591,7 @@ public class PangenomicGraph extends DirectedPseudograph<Node,Edge> {
         skipSequencesOption.setRequired(false);
         options.addOption(skipSequencesOption);
         //
-        Option skipNodePathsOption = new Option("ss", "skipnodepaths", false, "skip building list of paths per node (false)");
+        Option skipNodePathsOption = new Option("snp", "skipnodepaths", false, "skip building list of paths per node (false)");
         skipNodePathsOption.setRequired(false);
         options.addOption(skipNodePathsOption);
 

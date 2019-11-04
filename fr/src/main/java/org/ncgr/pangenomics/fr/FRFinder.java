@@ -124,7 +124,7 @@ public class FRFinder {
         if (getVerbose()) {
             graph.printNodes(System.out);
             graph.printPaths(System.out);
-            graph.printNodePaths(System.out);
+            if (!graph.getSkipNodePaths()) graph.printNodePaths(System.out);
         }
 
         // store the saved FRs in a TreeSet
@@ -589,6 +589,10 @@ public class FRFinder {
         Option prunedGraphOption = new Option("pr", "prunedgraph", false, "prune graph -- remove all common nodes (false)");
         prunedGraphOption.setRequired(false);
         options.addOption(prunedGraphOption);
+        //
+        Option skipNodePathsOption = new Option("snp", "skipnodepaths", false, "skip building list of paths per node (false)");
+        skipNodePathsOption.setRequired(false);
+        options.addOption(skipNodePathsOption);
 
         try {
             cmd = parser.parse(options, args);
@@ -658,6 +662,7 @@ public class FRFinder {
             PangenomicGraph pg = new PangenomicGraph();
             if (cmd.hasOption("verbose")) pg.setVerbose();
             if (cmd.hasOption("genotype")) pg.setGenotype(Integer.parseInt(cmd.getOptionValue("genotype")));
+            if (cmd.hasOption("skipnodepaths")) pg.setSkipNodePaths();
             // import the graph from a GFA
             pg.importGFA(gfaFile);
             // if a labels file is given, add them to the paths
