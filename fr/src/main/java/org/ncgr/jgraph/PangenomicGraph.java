@@ -139,9 +139,6 @@ public class PangenomicGraph extends DirectedPseudograph<Node,Edge> {
         }
         // now load the paths (which are already synchronized from GFAImport) in parallel
         paths.parallelStream().forEach(path -> {
-                // DEBUG
-                System.out.println(path.getNameGenotype());
-                //
                 path.getNodes().parallelStream().forEach(n -> {
                         nodePaths.get(n.getId()).add(path);
                     });
