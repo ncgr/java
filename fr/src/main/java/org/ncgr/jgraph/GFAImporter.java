@@ -167,22 +167,20 @@ public class GFAImporter implements GraphImporter<Node,Edge> {
 
         // build the path-labeled graph edges from the paths
         // this can take a long time on a large graph, so skip if skipEdges==true
-        if (!skipEdges) {
+        // cannot parallelize this because of building the path nodes in order
+        if (skipEdges) {
+            if (verbose) System.out.println("Skipped adding edges to graph!");
+        } else {
             if (verbose) System.out.println("Adding pathwalk edges to graph...");
-            paths.parallelStream().forEach(path -> {
-                    boolean first = true;
-                    Node lastNode = null;
-                    for (Node node : path.getNodes()) {
-                        if (first) {
-                            first = false;
-                        } else {
-                            g.addEdge(lastNode, node, new Edge(path));
-                        }
-                        lastNode = node;
-                    }
-                });
-        } else if (verbose) {
-            System.out.println("Skipped adding edges to graph!");
+            for (PathWalk path : paths) {
+                boolean first = true;
+                Node lastNode = null;
+                for (Node node : path.getNodes()) {
+                    if (!first) g.addEdge(lastNode, node, new Edge(path));
+                    first = false;
+                    lastNode = node;
+                }
+            }
         }
     }
 
