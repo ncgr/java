@@ -645,33 +645,35 @@ public class FRFinder {
         if (cmd.hasOption("kappastart")) kappaStart = Integer.parseInt(cmd.getOptionValue("kappastart"));
         if (cmd.hasOption("kappaend")) kappaEnd = Integer.parseInt(cmd.getOptionValue("kappaend"));
 
-        FRFinder frf = null;
-        boolean postProcess = false;
-        double alpha = 0.0;
-        int kappa = 0;
         if (cmd.hasOption("inputprefix")) {
-            postProcess = true;
+            // post-process an existing run
             String inputPrefix = cmd.getOptionValue("inputprefix");
             // get alpha, kappa from saved input file
-            alpha = readAlpha(inputPrefix);
-            kappa = readKappa(inputPrefix);
+            double alpha = readAlpha(inputPrefix);
+            int kappa = readKappa(inputPrefix);
             // instantiate the FRFinder from the saved files
-            frf = new FRFinder(inputPrefix, alpha, kappa);
+            FRFinder frf = new FRFinder(inputPrefix, alpha, kappa);
+            // set optional FRFinder parameters
+            if (cmd.hasOption("minsup")) frf.setMinSup(Integer.parseInt(cmd.getOptionValue("minsup")));
+            if (cmd.hasOption("minsize")) frf.setMinSize(Integer.parseInt(cmd.getOptionValue("minsize")));
+            if (cmd.hasOption("minlen")) frf.setMinLen(Double.parseDouble(cmd.getOptionValue("minlen")));
+            if (cmd.hasOption("verbose")) frf.setVerbose();
+            if (cmd.hasOption("debug")) frf.setDebug();
+            frf.postprocess(alpha, kappa);
+            
         } else if (gfaFile!=null) { 
-            // create a PangenomicGraph from a GFA file
+            // do a new run creating a PangenomicGraph from a GFA file
             PangenomicGraph pg = new PangenomicGraph();
             if (cmd.hasOption("verbose")) pg.setVerbose();
             if (cmd.hasOption("genotype")) pg.setGenotype(Integer.parseInt(cmd.getOptionValue("genotype")));
             if (cmd.hasOption("skipnodepaths")) pg.setSkipNodePaths();
-            // import the graph from a GFA
             pg.importGFA(gfaFile);
             // if a labels file is given, add them to the paths
             if (labelsFile!=null) {
                 pg.readPathLabels(labelsFile);
             }
             // instantiate the FRFinder with this PangenomicGraph
-            postProcess = false;
-            frf = new FRFinder(pg);
+            FRFinder frf = new FRFinder(pg);
             frf.setGfaFile(gfaFile.getName());
             frf.setGraphName(graphName);
             if (cmd.hasOption("casectrl")) {
@@ -682,33 +684,30 @@ public class FRFinder {
             } else if (cmd.hasOption("serial")) {
                 frf.setSerial();
             }
-        }
-
-        // set optional FRFinder parameters
-        if (cmd.hasOption("minsup")) frf.setMinSup(Integer.parseInt(cmd.getOptionValue("minsup")));
-        if (cmd.hasOption("minsize")) frf.setMinSize(Integer.parseInt(cmd.getOptionValue("minsize")));
-        if (cmd.hasOption("minlen")) frf.setMinLen(Double.parseDouble(cmd.getOptionValue("minlen")));
-        if (cmd.hasOption("maxround")) frf.setMaxRound(Integer.parseInt(cmd.getOptionValue("maxround")));
-        
-        if (cmd.hasOption("verbose")) frf.setVerbose();
-        if (cmd.hasOption("debug")) frf.setDebug();
-        if (cmd.hasOption("resume")) frf.setResume();
-        if (cmd.hasOption("prunedgraph")) frf.setPrunedGraph();
-
-        // run the requested job
-        if (postProcess) {
-            frf.postprocess(alpha, kappa);
-        } else {
+            // set optional FRFinder parameters
+            if (cmd.hasOption("minsup")) frf.setMinSup(Integer.parseInt(cmd.getOptionValue("minsup")));
+            if (cmd.hasOption("minsize")) frf.setMinSize(Integer.parseInt(cmd.getOptionValue("minsize")));
+            if (cmd.hasOption("minlen")) frf.setMinLen(Double.parseDouble(cmd.getOptionValue("minlen")));
+            if (cmd.hasOption("maxround")) frf.setMaxRound(Integer.parseInt(cmd.getOptionValue("maxround")));
+            if (cmd.hasOption("verbose")) frf.setVerbose();
+            if (cmd.hasOption("debug")) frf.setDebug();
+            if (cmd.hasOption("resume")) frf.setResume();
+            if (cmd.hasOption("prunedgraph")) frf.setPrunedGraph();
+            // run the requested job
             if (alphaStart==alphaEnd && kappaStart==kappaEnd) {
                 // single run
+                double alpha = alphaStart;
+                int kappa = kappaStart;
                 frf.findFRs(alpha, kappa);
             } else if (alphaStart!=alphaEnd && kappaStart==kappaEnd) {
                 // scan alpha at fixed kappa
+                int kappa = kappaStart;
                 for (double a=alphaStart; a<=alphaEnd; a+=0.1000) {
                     frf.findFRs(a, kappa);
                 }
             } else if (alphaStart==alphaEnd && kappaStart!=kappaEnd) {
                 // scan kappa at fixed alpha
+                double alpha = alphaStart;
                 for (int k=kappaStart; k<=kappaEnd; k+=1) {
                     frf.findFRs(alpha, k);
                 }
