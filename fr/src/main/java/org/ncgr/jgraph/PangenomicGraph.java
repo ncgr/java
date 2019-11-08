@@ -88,7 +88,7 @@ public class PangenomicGraph extends DirectedPseudograph<Node,Edge> {
         if (!skipNodePaths) {
             buildNodePaths();
         } else {
-            System.out.println("Skipped building node paths!");
+            System.out.println("# skipped building node paths");
         }
     }
 
