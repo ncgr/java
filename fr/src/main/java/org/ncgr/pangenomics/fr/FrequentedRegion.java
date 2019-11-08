@@ -185,7 +185,7 @@ public class FrequentedRegion implements Comparable {
      */
     public String columnHeading() {
         String s = "nodes\tsupport\tavgLen";
-        if (graph.getLabelCounts().size()>0) {
+        if (graph!=null && graph.getLabelCounts().size()>0) {
             for (String label : graph.getLabelCounts().keySet()) {
                 s += "\t"+label;
             }
@@ -233,7 +233,7 @@ public class FrequentedRegion implements Comparable {
         if (support>0) {
             s += "\t"+df.format(avgLength);
             // show label support if available
-            if (graph.getLabelCounts().size()>0) {
+            if (graph!=null && graph.getLabelCounts().size()>0) {
                 // count the support per label
                 Map<String,Integer> labelCounts = new TreeMap<>();
                 for (PathWalk subpath : subpaths) {

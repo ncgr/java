@@ -69,10 +69,10 @@ public class PathWalk extends GraphWalk<Node,Edge> implements Comparable {
     }
 
     /**
-     * Create a shell walk with only identifying info (empty graph).
+     * Create a shell walk with only a node list and identifying info (empty graph).
      */
-    public PathWalk(String name, int genotype, String label) {
-        super(new PangenomicGraph(), new ArrayList<Node>(), 1.0);
+    public PathWalk(List<Node> nodeList, String name, int genotype, String label) {
+        super(new PangenomicGraph(), nodeList, 1.0);
         this.name = name;
         this.genotype = genotype;
         this.label = label;

@@ -9,6 +9,7 @@ import java.io.PrintStream;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.ArrayList;
 import java.util.Map;
 import java.util.HashMap;
 import java.util.TreeMap;
@@ -338,7 +339,6 @@ public class PangenomicGraph extends DirectedPseudograph<Node,Edge> {
      * 1       C
      * 2       T
      * 3       TCCTTCTGCTCAACTTTC
-     * ...     ...     
      */
     public static Map<Long,Node> readNodes(File nodesFile) throws IOException {
         BufferedReader reader = new BufferedReader(new FileReader(nodesFile));
@@ -392,6 +392,35 @@ public class PangenomicGraph extends DirectedPseudograph<Node,Edge> {
             }
             out.println(builder.toString());
         }
+    }
+
+    /**
+     * Return a set of paths read from a file written by printPaths(). Assume that sequences are NOT included.
+     * 0        1       2       3       4       ...
+     * 974679.0 case    473     1       3       4
+     * 128686.1 case    473     1       3       4
+     * 412119.0 ctrl    406     1       3       4
+     * 434159.1 case    461     1       3       4
+     */
+    public static Set<PathWalk> readPaths(File pathsFile) throws IOException {
+        BufferedReader reader = new BufferedReader(new FileReader(pathsFile));
+        String line = null;
+        Set<PathWalk> paths = new HashSet<>();
+        while ((line=reader.readLine())!=null) {
+            String[] parts = line.split("\t");
+            String nameGenotype = parts[0];
+            String label = parts[1];
+            int sequenceLength = Integer.parseInt(parts[2]);
+            String[] pieces = nameGenotype.split("\\.");
+            String name = pieces[0];
+            int genotype = Integer.parseInt(pieces[1]);
+            List<Node> nodeList = new ArrayList<>();
+            for (int i=3; i<parts.length; i++) {
+                nodeList.add(new Node(Long.parseLong(parts[i]), parts[i]));
+            }
+            paths.add(new PathWalk(nodeList, name, genotype, label));
+        }
+        return paths;
     }
 
     /**

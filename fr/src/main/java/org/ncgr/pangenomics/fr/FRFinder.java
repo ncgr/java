@@ -52,8 +52,11 @@ import org.apache.commons.cli.ParseException;
  */
 public class FRFinder {
 
-    // a PangenomicGraph must be supplied to the constructor
-    PangenomicGraph graph;  // the Graph we're analyzing
+    // a PangenomicGraph must be supplied to the constructor unless post-processing
+    PangenomicGraph graph;
+
+    // store paths locally since post-processing doesn't build a graph
+    Set<PathWalk> paths;
 
     // parameters are stored in a Properties object
     Properties parameters = new Properties();
@@ -75,6 +78,7 @@ public class FRFinder {
     public FRFinder(PangenomicGraph graph) {
         initializeParameters();
         this.graph = graph;
+        this.paths = graph.getPaths();
     }
 
     /**
@@ -117,7 +121,7 @@ public class FRFinder {
 	    int nRemoved = graph.prune();
 	    System.out.println("# graph has been pruned ("+nRemoved+" fully common nodes removed).");
         }
-	System.out.println("# graph has "+graph.vertexSet().size()+" nodes and "+graph.getPaths().size()+" paths.");
+	System.out.println("# graph has "+graph.vertexSet().size()+" nodes and "+paths.size()+" paths.");
         if (graph.getLabelCounts().get("case")!=null && graph.getLabelCounts().get("ctrl")!=null) {
             System.out.println("# graph has "+graph.getLabelCounts().get("case")+" case paths and "+
                                graph.getLabelCounts().get("ctrl")+" ctrl paths.");
@@ -188,7 +192,7 @@ public class FRFinder {
                 NodeSet c = new NodeSet();
                 c.add(node);
                 Set<PathWalk> s = new HashSet<>();
-                for (PathWalk p : graph.getPaths()) {
+                for (PathWalk p : paths) {
                     Set<PathWalk> support = p.computeSupport(c, alpha, kappa);
                     s.addAll(support);
                 }
@@ -736,7 +740,7 @@ public class FRFinder {
         PrintStream out = new PrintStream(getPathFRsFilename(outputPrefix));
         // columns are paths
         boolean first = true;
-        for (PathWalk path : graph.getPaths()) {
+        for (PathWalk path : paths) {
             if (first) {
                 first = false;
             } else {
@@ -749,7 +753,7 @@ public class FRFinder {
         int c = 1;
         for (FrequentedRegion fr : frequentedRegions) {
             out.print("FR"+(c++));
-            for (PathWalk path : graph.getPaths()) {
+            for (PathWalk path : paths) {
                 out.print("\t"+fr.countSubpathsOf(path));
             }
             out.println("");
@@ -769,7 +773,7 @@ public class FRFinder {
     void printPathFRsSVM(String outputPrefix) throws IOException {
         PrintStream out = new PrintStream(getPathFRsSVMFilename(outputPrefix));
         // only rows, one per path
-        for (PathWalk path : graph.getPaths()) {
+        for (PathWalk path : paths) {
             out.print(path.getNameGenotype());
             // TODO: update these to strings along with fixing the SVM code to handle strings
             String group = "";
@@ -822,7 +826,7 @@ public class FRFinder {
         out.println("");
         // data
         out.println("@DATA");
-        for (PathWalk path : graph.getPaths()) {
+        for (PathWalk path : paths) {
             out.print(path.getNameGenotype()+",");
             c = 0;
             for (FrequentedRegion fr : frequentedRegions) {
@@ -956,6 +960,9 @@ public class FRFinder {
         // get the nodes from the nodes file
         File nodesFile = new File(getNodesFilename(getInputPrefix()));
         Map<Long,Node> nodeMap = PangenomicGraph.readNodes(nodesFile);
+        // get the paths from the paths file
+        File pathsFile = new File(getPathsFilename(getInputPrefix()));
+        paths = PangenomicGraph.readPaths(pathsFile);
 	// build the FRs
         frequentedRegions = new TreeSet<>();
         String frFilename = getFRSubpathsFilename(getInputPrefix());
@@ -979,14 +986,14 @@ public class FRFinder {
                 if (nameParts.length>1) genotype = Integer.parseInt(nameParts[1]);
                 String label = null;
                 if (nameParts.length>2) label = nameParts[2];
-                // List<Node> subNodes = new LinkedList<>();
-                // String[] nodesAsStrings = nodeString.replace("[","").replace("]","").split(",");
-                // for (String nodeAsString : nodesAsStrings) {
-		//     long nodeId = Long.parseLong(nodeAsString);
-                //     subNodes.add(nodeMap.get(nodeId));
-                // }
+                List<Node> subNodes = new LinkedList<>();
+                String[] nodesAsStrings = nodeString.replace("[","").replace("]","").split(",");
+                for (String nodeAsString : nodesAsStrings) {
+		    long nodeId = Long.parseLong(nodeAsString);
+                    subNodes.add(nodeMap.get(nodeId));
+                }
                 // add to the subpaths
-                subpaths.add(new PathWalk(name, genotype, label));
+                subpaths.add(new PathWalk(subNodes, name, genotype, label));
             }
             FrequentedRegion fr = new FrequentedRegion(nodes, subpaths, alpha, kappa, support, avgLength);
             frequentedRegions.add(fr);
@@ -1040,6 +1047,13 @@ public class FRFinder {
      */
     static String getNodesFilename(String prefix) {
         return prefix+".nodes.txt";
+    }
+
+    /**
+     * Form the paths output filename
+     */
+    static String getPathsFilename(String prefix) {
+        return prefix+".paths.txt";
     }
 
     /**
