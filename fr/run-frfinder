@@ -1,5 +1,5 @@
 #!/bin/sh
-#usage: FRFinder
+# usage: FRFinder
 # -ae,--alphaend <arg>     ending value of alpha for a scan (can equal
 #                          alphastart)
 # -as,--alphastart <arg>   starting value of alpha for a scan (can equal
@@ -32,15 +32,23 @@
 #                          [false]
 # -v,--verbose             verbose output [false]
 
-## supply prefix at invocation
-prefix=$1
+dir=$1
+prefix=$2
+
+# alphastart=0.1
+# alphaend=1.0
+# kappastart=0
+# kappaend=10
+
 alphastart=0.8
 alphaend=0.8
 kappastart=3
 kappaend=3
 
-echo "# $prefix alpha=$alphastart-$alphaend kappa=$kappastart-$kappaend"
+echo "# $dir $prefix alpha=$alphastart-$alphaend kappa=$kappastart-$kappaend"
 
-java -server -cp "build/install/fr/lib/*" org.ncgr.pangenomics.fr.FRFinder --pathlabels CIDR_HD_Modifiers/labels.txt --gfa CIDR_HD_Modifiers/$prefix.paths.gfa \
-	--casectrl --skipnodepaths \
-	--alphastart $alphastart --alphaend $alphaend --kappastart $kappastart --kappaend $kappaend
+java -server -Xmx160g -XX:+UseParallelGC -Xms2g -XX:SoftRefLRUPolicyMSPerMB=1 -XX:MaxHeapFreeRatio=99 -cp "build/install/fr/lib/*" org.ncgr.pangenomics.fr.FRFinder \
+     --casectrl --skipnodepaths \
+     --pathlabels $dir/labels.txt --gfa $dir/$prefix.paths.gfa \
+     --alphastart $alphastart --alphaend $alphaend --kappastart $kappastart --kappaend $kappaend # --resume
+
