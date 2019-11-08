@@ -2,6 +2,10 @@
 ## load an FR file along with its parameters
 ##
 
+## for plotting and analysis
+library(ggfortify)
+library(factoextra)
+
 prefix = readline(prompt="FR file prefix (ex. HTT.400-0.5-1): ")
 
 ## FRs
@@ -22,7 +26,6 @@ for (i in 1:length(rownames(frs))) {
 ## debug=false
 ## caseCtrl=true
 ## minSup=1
-## outputPrefix=HTT.400-0.8-3
 ## bruteForce=false
 ## verbose=false
 ## maxRound=0
@@ -48,7 +51,6 @@ for (i in 1:length(rownames(params))) {
         if (params$V1[i]=="debug") debug = as.logical(params$V2[i])
         if (params$V1[i]=="caseCtrl") caseCtrl = as.logical(params$V2[i])
         if (params$V1[i]=="minSup") minSup = as.numeric(params$V2[i])
-        if (params$V1[i]=="outputPrefix") outputPrefix = params$V2[i]
         if (params$V1[i]=="bruteForce") bruteForce = as.logical(params$V2[i])
         if (params$V1[i]=="verbose") verbose = as.logical(params$V2[i])
         if (params$V1[i]=="maxRound") maxRound = as.numeric(params$V2[i])
@@ -60,16 +62,44 @@ for (i in 1:length(rownames(params))) {
     }
 }
 
+prefixParts = strsplit(prefix,"-")[[1]]
+outputPrefix = prefixParts[1]
+if (length(prefixParts)>3) {
+  for (i in 2:(length(prefixParts)-2)) {
+      outputPrefix = paste(outputPrefix, prefixParts[i], sep="-")
+  }
+}
+
 ## path FRs
 pathfrs = read.table(file=paste(prefix,".pathfrs.txt",sep=""), stringsAsFactors=FALSE, check.names=FALSE)
-pca = prcomp(pathfrs, center=TRUE, scale.=FALSE)
 
-## get the path labels
-pathLabels = c()
-dotParts = strsplit(colnames(pathfrs), ".", fixed=TRUE)
-for (i in 1:length(dotParts)) {
-    pathLabels = c(pathLabels, dotParts[[i]][3])
-}
+## PCA on path FR vectors
+paths = as.data.frame(t(pathfrs))
+pca = prcomp(paths, center=TRUE)
+
+## get the results for variables (nodes)
+## res.var$coord          # Coordinates
+## res.var$contrib        # Contributions to the PCs
+## res.var$cos2           # Quality of representation 
+pca.var = get_pca_var(pca)
+
+## get the results for individuals
+## res.ind$coord          # Coordinates
+## res.ind$contrib        # Contributions to the PCs
+## res.ind$cos2           # Quality of representation
+pca.ind = get_pca_ind(pca)
+
+## which are cases and which are controls
+cases = endsWith(rownames(paths), "case")
+cases.0 = endsWith(rownames(paths), "0.case")
+cases.1 = endsWith(rownames(paths), "1.case")
+controls = endsWith(rownames(paths), "ctrl")
+controls.0 = endsWith(rownames(paths), "0.ctrl")
+controls.1 = endsWith(rownames(paths), "1.ctrl")
+
+## append case/control label to paths
+paths$Label[cases] = "case"
+paths$Label[controls] = "ctrl"
 
 ## label counts (if exists)
 labelFile = paste(prefix,".labelcounts.txt",sep="")
