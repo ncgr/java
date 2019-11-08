@@ -154,7 +154,7 @@ public class PangenomicGraph extends DirectedPseudograph<Node,Edge> {
         labelCounts = new HashMap<>();
         BufferedReader reader = new BufferedReader(new FileReader(labelsFile));
         String line = null;
-        Map<String,String> labels = new HashMap<String,String>();
+        Map<String,String> labels = new HashMap<>();
         while ((line=reader.readLine())!=null) {
             if (!line.startsWith("#")) {
                 String[] fields = line.split("\t");
@@ -331,6 +331,27 @@ public class PangenomicGraph extends DirectedPseudograph<Node,Edge> {
         for (Node n : vertexSet()) {
             out.println(n.getId()+"\t"+n.getSequence());
         }
+    }
+
+    /**
+     * Return a map of nodes read from a file written by printNodes().
+     * 1       C
+     * 2       T
+     * 3       TCCTTCTGCTCAACTTTC
+     * ...     ...     
+     */
+    public static Map<Long,Node> readNodes(File nodesFile) throws IOException {
+        BufferedReader reader = new BufferedReader(new FileReader(nodesFile));
+        String line = null;
+        Map<Long,Node> nodes = new HashMap<>();
+        while ((line=reader.readLine())!=null) {
+            String[] parts = line.split("\t");
+            long id = Long.parseLong(parts[0]);
+            String sequence = parts[1];
+            Node n = new Node(id, sequence);
+            nodes.put(id, n);
+        }
+        return nodes;
     }
 
     /**

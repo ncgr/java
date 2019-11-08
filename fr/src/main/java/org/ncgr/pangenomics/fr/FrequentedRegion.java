@@ -107,10 +107,22 @@ public class FrequentedRegion implements Comparable {
     /**
      * Construct given only a NodeSet, used for various post-processing routines.
      */
-    FrequentedRegion(NodeSet nodes) {
+    // FrequentedRegion(NodeSet nodes) {
+    //     this.nodes = nodes;
+    //     this.nodes.update();
+    // }
+
+    /**
+     * Construct given only basic information, used for post-processing.
+     */
+    FrequentedRegion(NodeSet nodes, Set<PathWalk> subpaths, double alpha, int kappa, int support, double avgLength) {
         this.nodes = nodes;
-        this.nodes.update();
-    }
+        this.subpaths = subpaths;
+        this.alpha = alpha;
+        this.kappa = kappa;
+        this.support = support;
+        this.avgLength = avgLength;
+    }        
 
     /**
      * Equality is simply based on the NodeSets.

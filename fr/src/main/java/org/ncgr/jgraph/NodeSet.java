@@ -27,7 +27,7 @@ public class NodeSet extends TreeSet<Node> implements Comparable {
     }
     
     /**
-     * Construct given a TreeSet of Nodes.
+     * Construct given a Collection of Nodes.
      */
     public NodeSet(Collection<Node> nodes) {
         this.addAll(nodes);
@@ -45,6 +45,17 @@ public class NodeSet extends TreeSet<Node> implements Comparable {
         for (String s : nodeStrings) {
             long id = Long.parseLong(s);
             if (graphNodeMap.containsKey(id)) this.add(graphNodeMap.get(id));
+        }
+    }
+
+    /**
+     * Construct from a map of id to Nodes and a string representation, e.g. "[5,7,15,33]".
+     */
+    public NodeSet(Map<Long,Node> nodeMap, String str) {
+        Set<String> nodeStrings = new HashSet<>(Arrays.asList(str.replace("[","").replace("]","").split(",")));
+        for (String s : nodeStrings) {
+            long id = Long.parseLong(s);
+            if (nodeMap.containsKey(id)) this.add(nodeMap.get(id));
         }
     }
 
