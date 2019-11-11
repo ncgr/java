@@ -89,8 +89,9 @@ public class WekaTest {
         };
  
         // Run for each model
+	boolean first = true;
         for (int j = 0; j < models.length; j++) {
- 
+
             // Collect every group of predictions for current model in a FastVector
             FastVector<Prediction> predictions = new FastVector<>();
  
@@ -101,17 +102,19 @@ public class WekaTest {
                 predictions.appendElements(validation.predictions());
  
                 // Uncomment to see the summary for each training-testing pair.
-                //System.out.println(models[j].toString());
+                // System.out.println(models[j].toString());
             }
  
             // Calculate overall accuracy of current classifier on all splits
             double accuracy = calculateAccuracy(predictions);
  
-            // Print current classifier's name and accuracy in a complicated,
-            // but nice-looking way.
-            System.out.println("Accuracy of " + models[j].getClass().getSimpleName() + ": "
-                               + String.format("%.2f%%", accuracy)
-                               + "\n---------------------------------");
+            // Print current classifier's name and accuracy in a complicated, but nice-looking way.
+	    if (first) {
+		System.out.println("---------------------------------");
+		first = false;
+	    }
+            System.out.println("Accuracy of " + models[j].getClass().getSimpleName() + ": " + String.format("%.2f%%", accuracy));
+	    System.out.println("---------------------------------");
         }
  
     }
