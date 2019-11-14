@@ -19,22 +19,22 @@ then
     java -server -cp "build/install/fr/lib/*" org.ncgr.pangenomics.fr.FRFinder --inputprefix $INPUTPREFIX \
 	    --debug --minsup $minsup --minsize $minsize --minlen $minlen
     
-    ## run SVM
-    if [ -s $SVMFRFILE ]
-    then
-        for i in 1 2 3
-        do
-	    ./run-svm $SVMROOT > "$SVMROOT-$i.crossvalidation.txt"
-        done
-    fi
+    # ## run SVM
+    # if [ -s $SVMFRFILE ]
+    # then
+    #     for i in 1 2 3
+    #     do
+    # 	    ./run-svm $SVMROOT > "$SVMROOT-$i.crossvalidation.txt"
+    #     done
+    # fi
     
-    ## clean up
-    rm -f "$SVMROOT.frs.txt"
-    rm -f "$SVMROOT.arff"
-    rm -f "$SVMROOT.svm.txt"
-    rm -f "$SVMROOT.svm.range.txt"
-    rm -f "$SVMROOT.svm.scale.txt"
-    rm -f "$SVMROOT.svm.grid.txt"
+    # ## clean up
+    # rm -f "$SVMROOT.frs.txt"
+    # rm -f "$SVMROOT.arff"
+    # rm -f "$SVMROOT.svm.txt"
+    # rm -f "$SVMROOT.svm.range.txt"
+    # rm -f "$SVMROOT.svm.scale.txt"
+    # rm -f "$SVMROOT.svm.grid.txt"
 
 fi
 
