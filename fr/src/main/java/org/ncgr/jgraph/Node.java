@@ -41,12 +41,12 @@ public class Node implements Comparable {
     }
 
     /**
-     * Two nodes are equal if they have the same sequence.
+     * Two nodes are equal if they have the same id.
      */
     @Override
     public boolean equals(Object o) {
 	Node that = (Node)o;
-        return this.sequence.equals(that.sequence);
+        return this.id==that.id;
     }
 
     /**
@@ -58,12 +58,12 @@ public class Node implements Comparable {
     }
 
     /**
-     * Compare based on sequence.
+     * Compare based on id.
      */
     @Override
     public int compareTo(Object o) {
 	Node that = (Node) o;
-        return this.sequence.compareTo(that.sequence);
+        return (int)(this.id-that.id);
     }
 
     /**

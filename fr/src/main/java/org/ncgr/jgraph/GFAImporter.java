@@ -95,8 +95,9 @@ public class GFAImporter implements GraphImporter<Node,Edge> {
                         // new node, add to the by-sequence map
                         nodesBySequence.put(sequence, node);
                     } else {
-                        // node already in graph, so associate that one with this ID
-                        node = nodesBySequence.get(sequence);
+                        // ERROR: each node in GFA should be unique
+                        System.err.println("ERROR: node"+node+" returned false when added to graph.");
+                        System.exit(1);
                     }
                     nodes.put(nodeId, node);
                 } else if (recordType.equals("P") && parts.length==4) {
