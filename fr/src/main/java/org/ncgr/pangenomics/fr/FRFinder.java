@@ -386,7 +386,7 @@ public class FRFinder {
             printFrequentedRegions(formOutputPrefix(alpha, kappa));
             printFRSubpaths(formOutputPrefix(alpha, kappa));
             printPathFRs(formOutputPrefix(alpha, kappa));
-	    graph.printAll(formOutputPrefix(alpha, kappa));
+	    graph.printAll(getGraphName());
 	}
     }
 
