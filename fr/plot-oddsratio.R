@@ -13,7 +13,6 @@
 caseSamples = labelCounts["case",1]/2
 ctrlSamples = labelCounts["ctrl",1]/2
 
-
 oddsratio = data.frame(row.names=colnames(sampleSupport))
 oddsratio = oddsratio[rownames(oddsratio)!="label",]
 
@@ -31,8 +30,8 @@ plot(oddsratio$OR,
      xlab="FR number",
      ylab="<--more controls     Odds ratio     more cases-->",
      xlim=c(0,nrow(oddsratio)+1),
-     main=mergeMode,
-     pch=19
+     pch=19,
+     main=paste("Odds Ratio",graphPrefix,"alpha =",alpha,"kappa =",kappa), cex.main=1.0
      )
 
 lines(c(1,nrow(oddsratio)), c(1,1), lty=2)

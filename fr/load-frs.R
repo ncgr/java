@@ -18,9 +18,9 @@ for (i in 1:length(rownames(frs))) {
 
 ## divine alpha, kappa from filename like HTT.400-0.8-3
 prefix.parts = strsplit(prefix, "-", fixed=TRUE)
+graphPrefix = prefix.parts[[1]][1]
 alpha = as.numeric(prefix.parts[[1]][2])
 kappa = as.numeric(prefix.parts[[1]][3])
-graphPrefix = prefix.parts[[1]][1]
 
 ## parameters
 ##
@@ -105,15 +105,4 @@ labelsExist = file.exists(labelFile)
 if (labelsExist) {
     labelCounts = read.delim(file=labelFile, header=FALSE, stringsAsFactors=FALSE, row.names=1)
     colnames(labelCounts) = c("count")
-}
-
-## chi-squared test
-pcase = labelCounts["case",1]/(labelCounts["case",1]+labelCounts["ctrl",1]) # null hypothesis for case fraction
-pctrl = labelCounts["ctrl",1]/(labelCounts["case",1]+labelCounts["ctrl",1]) # null hypothesis for ctrl fraction
-for (i in 1:length(frs$case)) {
-    scase = frs$case[i]
-    sctrl = frs$ctrl[i]
-    chisq = chisq.test(x=c(scase,sctrl), p=c(pcase,pctrl))
-    frs$chisq[i] = chisq$statistic
-    frs$p.value[i] = chisq$p.value
 }
