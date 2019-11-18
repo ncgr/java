@@ -7,7 +7,7 @@ plot(-log10(frs$p.value),
 	pch=19
 	)
 
-title(main=paste(outputPrefix," alpha=",alpha," kappa=",kappa, sep=""), cex.main=cex.main)
+title(main=paste("chi-squared test",outputPrefix,"alpha =",alpha,"kappa =",kappa), cex.main=1.0)
 lines(c(0,length(frs$p.value)), rep(-log10(0.01),2), lty=2)
 lines(c(0,length(frs$p.value)), rep(-log10(0.05),2), lty=2)
 

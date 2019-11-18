@@ -20,6 +20,7 @@ for (i in 1:length(rownames(frs))) {
 prefix.parts = strsplit(prefix, "-", fixed=TRUE)
 alpha = as.numeric(prefix.parts[[1]][2])
 kappa = as.numeric(prefix.parts[[1]][3])
+graphPrefix = prefix.parts[[1]][1]
 
 ## parameters
 ##
@@ -67,14 +68,6 @@ for (i in 1:length(rownames(params))) {
     }
 }
 
-prefixParts = strsplit(prefix,"-")[[1]]
-outputPrefix = prefixParts[1]
-if (length(prefixParts)>3) {
-  for (i in 2:(length(prefixParts)-2)) {
-      outputPrefix = paste(outputPrefix, prefixParts[i], sep="-")
-  }
-}
-
 ## path FRs
 pathfrs = read.table(file=paste(prefix,".pathfrs.txt",sep=""), stringsAsFactors=FALSE, check.names=FALSE)
 
@@ -107,14 +100,14 @@ paths$Label[cases] = "case"
 paths$Label[controls] = "ctrl"
 
 ## label counts (if exists)
-labelFile = paste(prefix,".labelcounts.txt",sep="")
+labelFile = paste(graphPrefix,".labelcounts.txt",sep="")
 labelsExist = file.exists(labelFile)
 if (labelsExist) {
     labelCounts = read.delim(file=labelFile, header=FALSE, stringsAsFactors=FALSE, row.names=1)
     colnames(labelCounts) = c("count")
 }
 
-## chi-squared
+## chi-squared test
 pcase = labelCounts["case",1]/(labelCounts["case",1]+labelCounts["ctrl",1]) # null hypothesis for case fraction
 pctrl = labelCounts["ctrl",1]/(labelCounts["case",1]+labelCounts["ctrl",1]) # null hypothesis for ctrl fraction
 for (i in 1:length(frs$case)) {
