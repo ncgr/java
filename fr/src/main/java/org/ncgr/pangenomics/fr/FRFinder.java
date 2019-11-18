@@ -127,9 +127,8 @@ public class FRFinder {
                                graph.getLabelCounts().get("ctrl")+" ctrl paths.");
         }
 
-        // output some files
+        // output the graph files
         graph.printAll(getGraphName());
-        printParameters(formOutputPrefix(alpha, kappa));
 
         // store the saved FRs in a TreeSet
         frequentedRegions = new TreeSet<>();
@@ -162,7 +161,10 @@ public class FRFinder {
             while ((line=frReader.readLine())!=null) {
                 String[] parts = line.split("\t");
                 NodeSet nodes = new NodeSet(graph, parts[0]);
-                frequentedRegions.add(new FrequentedRegion(graph, nodes, alpha, kappa));
+                FrequentedRegion fr = new FrequentedRegion(graph, nodes, alpha, kappa);
+                frequentedRegions.add(fr);
+                // DEBUG
+                System.out.println("Added "+fr);
                 round++;
             }
             System.out.println(frequentedRegions.size());
@@ -381,6 +383,7 @@ public class FRFinder {
         
 	// final output
 	if (frequentedRegions.size()>0) {
+            printParameters(formOutputPrefix(alpha, kappa));
             printFrequentedRegions(formOutputPrefix(alpha, kappa));
             printFRSubpaths(formOutputPrefix(alpha, kappa));
             printPathFRs(formOutputPrefix(alpha, kappa));
