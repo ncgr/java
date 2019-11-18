@@ -62,9 +62,9 @@ public class FRFinder {
     Properties parameters = new Properties();
 
     // save files
+    String FREQUENTED_REGIONS_SAVE = "frequentedRegions.save.txt";
     String SYNC_FREQUENTED_REGIONS_SAVE = "syncFrequentedRegions.save.txt";
     String USED_FRS_SAVE = "usedFRs.save.txt";
-    String FREQUENTED_REGIONS_SAVE = "frequentedRegions.save.txt";
 
     // the FRs, sorted for convenience
     TreeSet<FrequentedRegion> frequentedRegions;
@@ -126,11 +126,10 @@ public class FRFinder {
             System.out.println("# graph has "+graph.getLabelCounts().get("case")+" case paths and "+
                                graph.getLabelCounts().get("ctrl")+" ctrl paths.");
         }
-        if (getVerbose()) {
-            graph.printNodes(System.out);
-            graph.printPaths(System.out);
-            if (!graph.getSkipNodePaths()) graph.printNodePaths(System.out);
-        }
+
+        // output some files
+        graph.printAll(getGraphName());
+        printParameters(formOutputPrefix(alpha, kappa));
 
         // store the saved FRs in a TreeSet
         frequentedRegions = new TreeSet<>();
@@ -382,11 +381,9 @@ public class FRFinder {
         
 	// final output
 	if (frequentedRegions.size()>0) {
-            printParameters(formOutputPrefix(alpha, kappa));
             printFrequentedRegions(formOutputPrefix(alpha, kappa));
             printFRSubpaths(formOutputPrefix(alpha, kappa));
             printPathFRs(formOutputPrefix(alpha, kappa));
-	    graph.printAll(getGraphName());
 	}
     }
 
