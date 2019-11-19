@@ -116,16 +116,8 @@ public class FRFinder {
       */
     public void findFRs(double alpha, int kappa) throws FileNotFoundException, IOException,
                                                         NullNodeException, NullSequenceException, NoPathsException, NoNodePathsException {
-        System.out.println("# alpha="+alpha+" kappa="+kappa);
-        if (getPrunedGraph()) {
-	    int nRemoved = graph.prune();
-	    System.out.println("# graph has been pruned ("+nRemoved+" fully common nodes removed).");
-        }
-	System.out.println("# graph has "+graph.vertexSet().size()+" nodes and "+paths.size()+" paths.");
-        if (graph.getLabelCounts().get("case")!=null && graph.getLabelCounts().get("ctrl")!=null) {
-            System.out.println("# graph has "+graph.getLabelCounts().get("case")+" case paths and "+
-                               graph.getLabelCounts().get("ctrl")+" ctrl paths.");
-        }
+
+	System.out.println("# Starting findFRs: alpha="+alpha+" kappa="+kappa);
 
         // output the graph files
         graph.printAll(getGraphName());
@@ -152,41 +144,42 @@ public class FRFinder {
         int round = 0;
 
         if (getResume()) {
+	    
             // resume from a previous run
-            System.out.println("# resuming from previous run");
+            System.out.println("# Resuming from previous run");
             String line = null;
             // frequentedRegions
-            System.out.print("#   frequentedRegions...");
+	    // 0                                                                                                1   2         3  4       
+	    // [1353,1355,1356,1357,1359,1360,1361,1363,1364,1366,1367,1368,...,1463,1464,1465,1467,1468,1469]	27  18621.00  1	 26
+            System.out.println("# Loading frequentedRegions...");
             BufferedReader frReader = new BufferedReader(new FileReader(FREQUENTED_REGIONS_SAVE));
             while ((line=frReader.readLine())!=null) {
                 String[] parts = line.split("\t");
                 NodeSet nodes = new NodeSet(graph, parts[0]);
                 FrequentedRegion fr = new FrequentedRegion(graph, nodes, alpha, kappa);
                 frequentedRegions.add(fr);
-                // DEBUG
-                System.out.println("Added "+fr);
                 round++;
             }
-            System.out.println(frequentedRegions.size());
+            System.out.println("# Loaded "+frequentedRegions.size()+" frequentedRegions.");
             // syncFrequentedRegions
-            System.out.print("#   syncFrequentedRegions...");
+            System.out.println("# Loading syncFrequentedRegions...");
             BufferedReader sfrReader = new BufferedReader(new FileReader(SYNC_FREQUENTED_REGIONS_SAVE));
             while ((line=sfrReader.readLine())!=null) {
                 String[] parts = line.split("\t");
                 NodeSet nodes = new NodeSet(graph, parts[0]);
                 syncFrequentedRegions.add(new FrequentedRegion(graph, nodes, alpha, kappa));
             }
-            System.out.println(syncFrequentedRegions.size());
+            System.out.println("# Loaded "+syncFrequentedRegions.size()+" syncFrequentedRegions.");
             // usedFRs
-            System.out.print("#   usedFRs...");
+            System.out.println("# Loading usedFRs...");
             BufferedReader usedFRsReader = new BufferedReader(new FileReader(USED_FRS_SAVE));
             while ((line=usedFRsReader.readLine())!=null) {
                 String[] parts = line.split("\t");
                 NodeSet nodes = new NodeSet(graph, parts[0]);
                 usedFRs.add(new FrequentedRegion(graph, nodes, alpha, kappa));
             }
-            System.out.println(usedFRs.size());
-            System.out.println("# now continuing...");
+            System.out.println("# Loaded "+usedFRs.size()+" usedFRs.");
+            System.out.println("# Now continuing with FR finding...");
         } else {
             // initialize syncFrequentedRegions with single-node FRs that have alpha/kappa support
             for (Node node : graph.getNodes()) {
@@ -668,10 +661,18 @@ public class FRFinder {
             if (cmd.hasOption("verbose")) pg.setVerbose();
             if (cmd.hasOption("genotype")) pg.setGenotype(Integer.parseInt(cmd.getOptionValue("genotype")));
             if (cmd.hasOption("skipnodepaths")) pg.setSkipNodePaths();
+	    System.out.println("# Loading GFA file "+gfaFile.getName());
             pg.importGFA(gfaFile);
+	    // prune the graph if so commanded
+	    if (cmd.hasOption("prunedgraph")) {
+		int nRemoved = pg.prune();
+		System.out.println("# Graph has been pruned ("+nRemoved+" fully common nodes removed).");
+	    }
+	    System.out.println("# Graph has "+pg.vertexSet().size()+" nodes and "+pg.getPaths().size()+" paths.");
             // if a labels file is given, add them to the paths
             if (labelsFile!=null) {
                 pg.readPathLabels(labelsFile);
+		System.out.println("# Graph has "+pg.getLabelCounts().get("case")+" case paths and "+pg.getLabelCounts().get("ctrl")+" ctrl paths.");
             }
             // instantiate the FRFinder with this PangenomicGraph
             FRFinder frf = new FRFinder(pg);

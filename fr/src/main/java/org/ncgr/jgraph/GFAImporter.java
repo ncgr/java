@@ -143,7 +143,7 @@ public class GFAImporter implements GraphImporter<Node,Edge> {
 
         // build the paths (in parallel) from the nodeListMap
         if (verbose) System.out.println("Building paths...");
-        if (verbose && skipSequences) System.out.println("# skipped building path sequences");
+        if (verbose && skipSequences) System.out.println("# Skipped building path sequences");
         Set<String> nodeListPathNames = Collections.synchronizedSet(nodeListMap.keySet());
         nodeListPathNames.parallelStream().forEach(pathName -> {
                 List<Node> nodeList = nodeListMap.get(pathName);
@@ -166,9 +166,9 @@ public class GFAImporter implements GraphImporter<Node,Edge> {
         // this can take a long time on a large graph, so skip if skipEdges==true
         // cannot parallelize this because of building the path nodes in order
         if (skipEdges) {
-            if (verbose) System.out.println("# skipped adding edges to graph");
+            if (verbose) System.out.println("# Skipped adding edges to graph");
         } else {
-            if (verbose) System.out.println("Adding pathwalk edges to graph...");
+            if (verbose) System.out.println("# Adding pathwalk edges to graph...");
             for (PathWalk path : paths) {
                 boolean first = true;
                 Node lastNode = null;

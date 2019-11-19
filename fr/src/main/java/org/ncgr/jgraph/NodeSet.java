@@ -35,7 +35,8 @@ public class NodeSet extends TreeSet<Node> implements Comparable {
     }
 
     /**
-     * Construct from a string representation, e.g. "[5,7,15,33]" and the underlying graph.
+     * Construct from a string representation and the underlying graph.
+     * [1350,1352,1353,1355,1356,1357,1359,1360,...,1447,1449,1450,1451,1453,1454,1456,1457,1459,1460,1463,1464,1465,1467,1468,1469]
      */
     public NodeSet(PangenomicGraph graph, String str) {
         Set<Node> graphNodes = graph.vertexSet();
@@ -44,7 +45,13 @@ public class NodeSet extends TreeSet<Node> implements Comparable {
         Set<String> nodeStrings = new HashSet<>(Arrays.asList(str.replace("[","").replace("]","").split(",")));
         for (String s : nodeStrings) {
             long id = Long.parseLong(s);
-            if (graphNodeMap.containsKey(id)) this.add(graphNodeMap.get(id));
+            if (graphNodeMap.containsKey(id)) {
+		this.add(graphNodeMap.get(id));
+	    } else {
+		// bail, we're asked for a node that is not in the graph
+		System.err.println("ERROR: graph does not contain node "+id);
+		System.exit(1);
+	    }
         }
     }
 

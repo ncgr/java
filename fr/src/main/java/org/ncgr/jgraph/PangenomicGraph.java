@@ -94,7 +94,7 @@ public class PangenomicGraph extends DirectedMultigraph<Node,Edge> {
         if (!skipNodePaths) {
             buildNodePaths();
         } else {
-            System.out.println("# skipped building node paths");
+            System.out.println("# Skipped building node paths");
         }
     }
 
@@ -104,7 +104,7 @@ public class PangenomicGraph extends DirectedMultigraph<Node,Edge> {
     public void importTXT(File nodesFile, File pathsFile) throws IOException, NullSequenceException {
         this.nodesFile = nodesFile;
         this.pathsFile = pathsFile;
-        System.out.println("# loading graph from "+nodesFile.getName()+" and "+pathsFile.getName());
+        System.out.println("# Loading graph from "+nodesFile.getName()+" and "+pathsFile.getName());
         Map<Long,Node> nodes = readNodes(nodesFile);
         for (Node n : nodes.values()) {
             addVertex(n);
@@ -113,7 +113,7 @@ public class PangenomicGraph extends DirectedMultigraph<Node,Edge> {
         if (!skipNodePaths) {
             buildNodePaths();
         } else {
-            System.out.println("# skipped building node paths");
+            System.out.println("# Skipped building node paths");
         }
     }
 
