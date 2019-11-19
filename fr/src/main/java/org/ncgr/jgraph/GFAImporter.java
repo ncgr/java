@@ -72,7 +72,6 @@ public class GFAImporter implements GraphImporter<Node,Edge> {
      */
     public void importGraph(Graph<Node,Edge> g, Reader reader) {
         Map<Long,Node> nodes = new HashMap<>();
-	Map<String,Node> nodesBySequence = new HashMap<>();
         Map<String,LinkedList<Node>> nodeListMap = Collections.synchronizedMap(new HashMap<String,LinkedList<Node>>());
         paths = Collections.synchronizedSet(new HashSet<PathWalk>());
         try {
@@ -91,10 +90,7 @@ public class GFAImporter implements GraphImporter<Node,Edge> {
                     String sequence = parts[2];
                     Node node = new Node(nodeId, sequence);
                     boolean added = g.addVertex(node);
-                    if (added) {
-                        // new node, add to the by-sequence map
-                        nodesBySequence.put(sequence, node);
-                    } else {
+                    if (!added) {
                         // ERROR: each node in GFA should be unique
                         System.err.println("ERROR: node"+node+" returned false when added to graph.");
                         System.exit(1);
