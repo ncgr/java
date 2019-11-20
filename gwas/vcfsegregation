@@ -1,0 +1,4 @@
+#!/bin/sh
+## Usage: VCFSegregation <vcf-file> <sample1> <sample2> <maxSize> <tsv|wig>
+java -server -cp "build/install/gwas/lib/*" org.ncgr.gwas.VCFSegregation \
+	/home/shokin/EvansLab/ig1/gsnap-B73v4-merged.vcf.gz gsnap-B73v4-FMig1NT.f2.sorted.bam gsnap-B73v4-FMTig1.f2.sorted.bam 645 tsv
