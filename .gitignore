@@ -1,15 +1,13 @@
 # class files and dirs
-class/
+build
+class
 *.class 
-
-# my usual testing script
-go
 
 # Emacs
 *~
 
 # Mobile Tools for Java (J2ME)
-.mtj.tmp/
+.mtj.tmp
 
 # Package Files #
 
