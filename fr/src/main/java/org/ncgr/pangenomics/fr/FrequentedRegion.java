@@ -107,10 +107,22 @@ public class FrequentedRegion implements Comparable {
     /**
      * Construct given only a NodeSet, used for various post-processing routines.
      */
-    FrequentedRegion(NodeSet nodes) {
+    // FrequentedRegion(NodeSet nodes) {
+    //     this.nodes = nodes;
+    //     this.nodes.update();
+    // }
+
+    /**
+     * Construct given only basic information, used for post-processing.
+     */
+    FrequentedRegion(NodeSet nodes, Set<PathWalk> subpaths, double alpha, int kappa, int support, double avgLength) {
         this.nodes = nodes;
-        this.nodes.update();
-    }
+        this.subpaths = subpaths;
+        this.alpha = alpha;
+        this.kappa = kappa;
+        this.support = support;
+        this.avgLength = avgLength;
+    }        
 
     /**
      * Equality is simply based on the NodeSets.
@@ -173,7 +185,7 @@ public class FrequentedRegion implements Comparable {
      */
     public String columnHeading() {
         String s = "nodes\tsupport\tavgLen";
-        if (graph.getLabelCounts().size()>0) {
+        if (graph!=null && graph.getLabelCounts().size()>0) {
             for (String label : graph.getLabelCounts().keySet()) {
                 s += "\t"+label;
             }
@@ -221,7 +233,7 @@ public class FrequentedRegion implements Comparable {
         if (support>0) {
             s += "\t"+df.format(avgLength);
             // show label support if available
-            if (graph.getLabelCounts().size()>0) {
+            if (graph!=null && graph.getLabelCounts().size()>0) {
                 // count the support per label
                 Map<String,Integer> labelCounts = new TreeMap<>();
                 for (PathWalk subpath : subpaths) {

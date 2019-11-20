@@ -1,16 +1,21 @@
 #!/bin/sh
-## usage: PangenomicGraph
-##  -g,--gfa <arg>            vg GFA file
-##  -gt,--genotype <arg>      which genotype to include (0,1) from the GFA
-##                            file; -1 to include both (-1)
-##  -o,--outputprefix <arg>   output file prefix (stdout)
-##  -p,--pathlabels <arg>     tab-delimited file containing one
-##                            pathname<tab>label per line
-##  -se,--skipedges           skip adding edges to graph (false)
-##  -ss,--skipsequences       skip building sequences of paths (false)
-##  -v,--verbose              verbose output (false)
+# usage: PangenomicGraph
+#  -g,--gfa <arg>            vg GFA file
+#  -gt,--genotype <arg>      which genotype to include (0,1) from the GFA
+#                            file; -1 to include both (-1)
+#  -o,--outputprefix <arg>   output file prefix (stdout)
+#  -p,--pathlabels <arg>     tab-delimited file containing one
+#                            pathname<tab>label per line
+#  -se,--skipedges           skip adding edges to graph (false)
+#  -snp,--skipnodepaths      skip building list of paths per node (false)
+#  -ss,--skipsequences       skip building sequences of paths (false)
+#  -t,--txt <arg>            prefix of previously dumped TXT files
+#  -v,--verbose              verbose output (false)
 
 dir=$1
 prefix=$2
 
-java -server -cp "build/install/fr/lib/*" org.ncgr.jgraph.PangenomicGraph --verbose --gfa $dir/$prefix.paths.gfa --pathlabels $dir/labels.txt --outputprefix $prefix # --skipedges --skipsequences
+java -server -cp "build/install/fr/lib/*" org.ncgr.jgraph.PangenomicGraph --verbose \
+     --gfa $dir/$prefix.paths.gfa --pathlabels $dir/labels.txt --outputprefix $prefix --skipedges --skipsequences --skipnodepaths
+
+

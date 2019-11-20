@@ -53,7 +53,7 @@ public class GFAImporter implements GraphImporter<Node,Edge> {
             FileReader reader = new FileReader(file);
             importGraph(g, reader);
         } catch (FileNotFoundException e) {
-            System.err.println(e.toString());
+            System.err.println(e);
             System.exit(1);
         }
     }
@@ -72,7 +72,6 @@ public class GFAImporter implements GraphImporter<Node,Edge> {
      */
     public void importGraph(Graph<Node,Edge> g, Reader reader) {
         Map<Long,Node> nodes = new HashMap<>();
-	Map<String,Node> nodesBySequence = new HashMap<>();
         Map<String,LinkedList<Node>> nodeListMap = Collections.synchronizedMap(new HashMap<String,LinkedList<Node>>());
         paths = Collections.synchronizedSet(new HashSet<PathWalk>());
         try {
@@ -90,15 +89,13 @@ public class GFAImporter implements GraphImporter<Node,Edge> {
                     long nodeId = Long.parseLong(parts[1]);
                     String sequence = parts[2];
                     Node node = new Node(nodeId, sequence);
-		    boolean added = g.addVertex(node);
-		    if (added) {
-			// new node, add to the by-sequence map
-			nodesBySequence.put(sequence, node);
-		    } else {
-			// node already in graph, so associate that one with this ID
-			node = nodesBySequence.get(sequence);
-		    }
-		    nodes.put(nodeId, node);
+                    boolean added = g.addVertex(node);
+                    if (!added) {
+                        // ERROR: each node in GFA should be unique
+                        System.err.println("ERROR: node"+node+" returned false when added to graph.");
+                        System.exit(1);
+                    }
+                    nodes.put(nodeId, node);
                 } else if (recordType.equals("P") && parts.length==4) {
                     // Path line
                     // Sometimes path entries do not contain any nodes, so required parts.length==4.
@@ -140,46 +137,46 @@ public class GFAImporter implements GraphImporter<Node,Edge> {
             }
             br.close();
         } catch (IOException e) {
-            System.err.println(e.toString());
+            System.err.println(e);
             System.exit(1);
         }
 
         // build the paths (in parallel) from the nodeListMap
-        if (verbose) System.out.println("Building PathWalks:");
+        if (verbose) System.out.println("Building paths...");
+        if (verbose && skipSequences) System.out.println("# Skipped building path sequences");
         Set<String> nodeListPathNames = Collections.synchronizedSet(nodeListMap.keySet());
-
-        nodeListPathNames.parallelStream().forEach((pathName) -> {
+        nodeListPathNames.parallelStream().forEach(pathName -> {
                 List<Node> nodeList = nodeListMap.get(pathName);
                 String[] parts = pathName.split(":"); // separate out the genotype
                 String name = parts[0];
                 int genotype = Integer.parseInt(parts[1]);
-		try {
-		    PathWalk path = new PathWalk(g, nodeList, name, genotype, skipSequences);
-		    paths.add(path);
-		    if (verbose) System.out.println(path.getNameGenotypeLabel()+" "+nodeList.size()+" nodes");
-		} catch (Exception e) {
-		    System.err.println(e.toString());
-		}
+                try {
+                    PathWalk path = new PathWalk(g, nodeList, name, genotype, skipSequences);
+                    paths.add(path);
+                } catch (NullNodeException e) {
+                    System.err.println(e);
+                    System.exit(1);
+                } catch (NullSequenceException e) {
+                    System.err.println(e);
+                    System.exit(1);
+                }                    
             });
 
         // build the path-labeled graph edges from the paths
         // this can take a long time on a large graph, so skip if skipEdges==true
+        // cannot parallelize this because of building the path nodes in order
         if (skipEdges) {
-            if (verbose) System.out.println("Skipping adding edges to graph!");
+            if (verbose) System.out.println("# Skipped adding edges to graph");
         } else {
-            if (verbose) System.out.println("Adding pathwalk edges to graph:");
+            if (verbose) System.out.println("# Adding pathwalk edges to graph...");
             for (PathWalk path : paths) {
                 boolean first = true;
                 Node lastNode = null;
                 for (Node node : path.getNodes()) {
-                    if (first) {
-                        first = false;
-                    } else {
-                        g.addEdge(lastNode, node, new Edge(path));
-                    }
+                    if (!first) g.addEdge(lastNode, node, new Edge(path));
+                    first = false;
                     lastNode = node;
                 }
-                if (verbose) System.out.println(path.getNameGenotypeLabel());
             }
         }
     }
@@ -188,15 +185,18 @@ public class GFAImporter implements GraphImporter<Node,Edge> {
      * Build the path sequences - just calls PathWalk.buildSequence() for each path.
      */
     void buildPathSequences() {
-        if (verbose) System.out.println("Building path sequences:");
-        for (PathWalk path : paths) {
-	    try {
-		path.buildSequence();
-		if (verbose) System.out.println(path.getNameGenotypeLabel());
-	    } catch (Exception e) {
-		System.err.println(e.toString());
-	    }
-        }
+        if (verbose) System.out.println("Building path sequences...");
+        paths.parallelStream().forEach(path -> {
+                try {
+                    path.buildSequence();
+                } catch (NullNodeException e) {
+                    System.err.println(e);
+                    System.exit(1);
+                } catch (NullSequenceException e) {
+                    System.err.println(e);
+                    System.exit(1);
+                }
+            });
     }
 
     /**

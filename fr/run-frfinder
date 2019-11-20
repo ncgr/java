@@ -1,0 +1,57 @@
+#!/bin/sh
+## usage: FRFinder
+## -ae,--alphaend <arg>     ending value of alpha for a scan (can equal
+##                          alphastart)
+## -as,--alphastart <arg>   starting value of alpha for a scan (can equal
+##                          alphaend)
+## -bf,--bruteforce         find FRs comprehensively via brute force -
+##                          testing only! [false]
+## -cc,--casectrl           emphasize FRs that have large case vs. control
+##                          support [false]
+## -do,--debug              debug output [false]
+## -g,--genotype <arg>      which genotype to include (0,1) from the input
+##                          file; -1 to include all [-1]
+## -gfa,--gfa <arg>         GFA file
+## -i,--inputprefix <arg>   input file prefix for further processing
+## -ke,--kappaend <arg>     ending value of kappa for a scan (can equal
+##                          kappastart)
+## -ks,--kappastart <arg>   starting value of kappa for a scan (can equal
+##                          kappaend)
+## -l,--minlen <arg>        minimum allowed average length (bp) of an FR's
+##                          subpaths [1.0]
+## -m,--minsup <arg>        minimum number of supporting paths for a region
+##                          to be considered interesting [1]
+## -mr,--maxround <arg>     maximum FR-finding round to run (0=unlimited)
+## -p,--pathlabels <arg>    tab-delimited file with pathname<tab>label
+## -pr,--prunedgraph        prune graph -- remove all common nodes (false)
+## -r,--resume              resume from a previous run [false]
+## -s,--minsize <arg>       minimum number of nodes that a FR must contain
+##                          to be considered interesting [1]
+## -snp,--skipnodepaths     skip building list of paths per node (false)
+## -sr,--serial             find FRs serially for testing/experiments
+##                          [false]
+## -v,--verbose             verbose output [false]
+
+## perfect path matching to FR is alpha=1, kappa=0
+
+dir=$1
+prefix=$2
+
+# use $3 for something like --resume
+
+# alphastart=0.1
+# alphaend=1.0
+# kappastart=0
+# kappaend=10
+
+alphastart=1.0
+alphaend=1.0
+kappastart=0
+kappaend=0
+
+echo "# $dir $prefix alpha=$alphastart-$alphaend kappa=$kappastart-$kappaend"
+
+java -server -Xmx160g -XX:+UseParallelGC -Xms2g -XX:SoftRefLRUPolicyMSPerMB=1 -XX:MaxHeapFreeRatio=99 -cp "build/install/fr/lib/*" org.ncgr.pangenomics.fr.FRFinder \
+     --casectrl --skipnodepaths $3 \
+     --pathlabels $dir/labels.txt --gfa $dir/$prefix.paths.gfa \
+     --alphastart $alphastart --alphaend $alphaend --kappastart $kappastart --kappaend $kappaend
