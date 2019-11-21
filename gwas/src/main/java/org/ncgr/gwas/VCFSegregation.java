@@ -32,16 +32,18 @@ public class VCFSegregation {
      * Main class outputs a tab-delimited summary of segregation per locus that has calls for both samples.
      */
     public static void main(String[] args) throws FileNotFoundException, IOException {
-        if (args.length!=5) {
-            System.out.println("Usage VCFSegregation <segregating variable> <control value> <HET|HOM> <vcf file> <dbGaP phenotype file>");
+        if (args.length!=6) {
+            System.out.println("Usage VCFSegregation <segregating variable> <case value> <control value> <HET|HOM> <vcf file> <dbGaP phenotype file>");
             System.exit(0);
         }
 
+        // NOTE: this only allows a single value of case or control in the segregating variable!
         String segVar = args[0];
-        String controlValue = args[1];
-        boolean callHomOnly = args[2].toUpperCase().equals("HOM");
-        String vcfFilename = args[3];
-        String phenoFilename = args[4];
+        String caseValue = args[1];
+        String controlValue = args[2];
+        boolean callHomOnly = args[3].toUpperCase().equals("HOM");
+        String vcfFilename = args[4];
+        String phenoFilename = args[5];
 
         VCFFileReader vcfReader = new VCFFileReader(new File(vcfFilename));
         BufferedReader phenoReader = new BufferedReader(new FileReader(phenoFilename));
@@ -88,12 +90,15 @@ public class VCFSegregation {
                 String[] data = line.split("\t");
                 String sampleName = data[1];
                 String segValue = data[segVarOffset];
-                boolean isCase = !segValue.equals(controlValue);
-                subjectStatus.put(sampleName, isCase); // true = case
-                if (isCase) {
-                    nCases++;
-                } else {
-                    nControls++;
+                boolean isCase = segValue.equals(caseValue);
+                boolean isControl = segValue.equals(controlValue);
+                if (isCase || isControl) {
+                    subjectStatus.put(sampleName, isCase); // true = case
+                    if (isCase) {
+                        nCases++;
+                    } else {
+                        nControls++;
+                    }
                 }
             }
         }
