@@ -1,9 +1,33 @@
 #!/bin/sh
-## Usage: VCFSegregation <vcf-file> <sample1> <sample2> <maxSize> <tsv|wig>
-java -server -cp "build/install/gwas/lib/*" org.ncgr.gwas.VCFSegregation affected 3 het \
-	/home/shokin/dbGaP/SchizophreniaSwedish_Sklar/
-	/home/shokin/dbGaP/SchizophreniaSwedish_Sklar/phs000473.v2.pht002600.v2.p2.c1.Schizophrenia_Swedish_Subject_Phenotypes.GRU.txt
+# usage: VCFSegregation
+#  -caseval <arg>                case value in dbGaP phenotype file (e.g.
+#                                Case)
+#  -controlval <arg>             control value in dbGaP phenotype file (e.g.
+#                                Control)
+#  -ccv,--casecontrolvar <arg>   case/control variable in dbGaP phenotype
+#                                file (e.g. ANALYSIS_CAT)
+#  -dn,--diseasename <arg>       desired case disease name in dbGaP
+#                                phenotype file (e.g. Schizophrenia;
+#                                required if -dv)
+#  -dv,--diseasevar <arg>        disease variable in dbGaP phenotype file
+#                                (e.g. PRIMARY_DISEASE; required if -dn)
+#  -pf,--phenofile <arg>         dbGaP phenotype file
+#  -sf,--samplefile <arg>        dbGaP samples file (needed if contains
+#                                mapping from dbGaP_Subject_ID to sample ID
+#                                used in VCF file)
+#  -sv,--samplevar <arg>         study sample ID variable in dbGaP samples
+#                                file (e.g. SAMPID; required if -sf)
+#  -vf,--vcffile <arg>           VCF file
+#  -z,--zygosity <arg>           zygosity for VAR call: HET or HOM
 
+java -server -cp "build/install/gwas/lib/*" org.ncgr.gwas.VCFSegregation \
+     -vf /erdos/shokin/ncbi/dbGaP-20036/PhenoGenotypeFiles/RootStudyConsentSet_phs000473.SchizophreniaSwedish_Sklar.v2.p2.c1.GRU/GenotypeFiles/sub/sub20160809/swe.vcf.gz \
+     -pf /erdos/shokin/ncbi/dbGaP-20036/PhenoGenotypeFiles/RootStudyConsentSet_phs000473.SchizophreniaSwedish_Sklar.v2.p2.c1.GRU/PhenotypeFiles/phs000473.v2.pht002600.v2.p2.c1.Schizophrenia_Swedish_Subject_Phenotypes.GRU.txt \
+     -sf /erdos/shokin/ncbi/dbGaP-20036/PhenoGenotypeFiles/RootStudyConsentSet_phs000473.SchizophreniaSwedish_Sklar.v2.p2.c1.GRU/PhenotypeFiles/phs000473.v2.pht002599.v2.p2.Schizophrenia_Swedish_Sample.MULTI.txt \
+     -sv "SAMPID" \
+     -ccv "ANALYSIS_CAT" -caseval "Case" -controlval "Control" \
+     -z HET \
+     -dv "PRIMARY_DISEASE" -dn "Schizophrenia" # > SchizophreniaSwedish_Sklar.seg.txt
 
 #	/home/shokin/dbGaP/CIDR_HD_Modifiers/Finkbeiner_HD_SeqWholeGenome_110313_1.REFINED.FIXED.Nodup.SAMPLES.vcf.gz \
 #	/home/shokin/dbGaP/CIDR_HD_Modifiers/phs001071.v1.pht005347.v1.p1.c1.CIDR_HD_Onset_Age_Subject_Phenotypes.GRU.txt > CIDR_HD_Modifiers.seg.txt 
