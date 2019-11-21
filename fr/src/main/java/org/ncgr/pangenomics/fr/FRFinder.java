@@ -151,7 +151,6 @@ public class FRFinder {
             // frequentedRegions
 	    // 0                                                                                                1   2         3  4       
 	    // [1353,1355,1356,1357,1359,1360,1361,1363,1364,1366,1367,1368,...,1463,1464,1465,1467,1468,1469]	27  18621.00  1	 26
-            System.out.println("# Loading frequentedRegions...");
             BufferedReader frReader = new BufferedReader(new FileReader(FREQUENTED_REGIONS_SAVE));
             while ((line=frReader.readLine())!=null) {
                 String[] parts = line.split("\t");
@@ -162,7 +161,6 @@ public class FRFinder {
             }
             System.out.println("# Loaded "+frequentedRegions.size()+" frequentedRegions.");
             // syncFrequentedRegions
-            System.out.println("# Loading syncFrequentedRegions...");
             BufferedReader sfrReader = new BufferedReader(new FileReader(SYNC_FREQUENTED_REGIONS_SAVE));
             while ((line=sfrReader.readLine())!=null) {
                 String[] parts = line.split("\t");
@@ -171,7 +169,6 @@ public class FRFinder {
             }
             System.out.println("# Loaded "+syncFrequentedRegions.size()+" syncFrequentedRegions.");
             // usedFRs
-            System.out.println("# Loading usedFRs...");
             BufferedReader usedFRsReader = new BufferedReader(new FileReader(USED_FRS_SAVE));
             while ((line=usedFRsReader.readLine())!=null) {
                 String[] parts = line.split("\t");

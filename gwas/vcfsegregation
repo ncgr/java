@@ -1,4 +1,9 @@
 #!/bin/sh
 ## Usage: VCFSegregation <vcf-file> <sample1> <sample2> <maxSize> <tsv|wig>
-java -server -cp "build/install/gwas/lib/*" org.ncgr.gwas.VCFSegregation \
-	/home/shokin/EvansLab/ig1/gsnap-B73v4-merged.vcf.gz gsnap-B73v4-FMig1NT.f2.sorted.bam gsnap-B73v4-FMTig1.f2.sorted.bam 645 tsv
+java -server -cp "build/install/gwas/lib/*" org.ncgr.gwas.VCFSegregation affected 3 het \
+	/home/shokin/dbGaP/SchizophreniaSwedish_Sklar/
+	/home/shokin/dbGaP/SchizophreniaSwedish_Sklar/phs000473.v2.pht002600.v2.p2.c1.Schizophrenia_Swedish_Subject_Phenotypes.GRU.txt
+
+
+#	/home/shokin/dbGaP/CIDR_HD_Modifiers/Finkbeiner_HD_SeqWholeGenome_110313_1.REFINED.FIXED.Nodup.SAMPLES.vcf.gz \
+#	/home/shokin/dbGaP/CIDR_HD_Modifiers/phs001071.v1.pht005347.v1.p1.c1.CIDR_HD_Onset_Age_Subject_Phenotypes.GRU.txt > CIDR_HD_Modifiers.seg.txt 

@@ -1,0 +1,3 @@
+#!/bin/sh
+java -cp classes:/usr/share/java/commons-lang.jar:/usr/share/java/xstream.jar:/usr/share/java/xpp3.jar org.ncgr.interpro.InterproSearch interpro-chunk.xml
+

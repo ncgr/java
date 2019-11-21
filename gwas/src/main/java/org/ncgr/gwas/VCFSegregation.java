@@ -1,23 +1,28 @@
 package org.ncgr.gwas;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileReader;
+import java.io.FileNotFoundException;
+import java.io.IOException;
 
-import java.util.Arrays;
 import java.util.List;
-import java.util.ArrayList;
-import java.util.Set;
+import java.util.Map;
+import java.util.HashMap;
 
-import htsjdk.samtools.util.CloseableIterator;
-import htsjdk.samtools.util.IntervalList;
-import htsjdk.variant.variantcontext.Allele;
+import htsjdk.variant.variantcontext.Genotype;
+import htsjdk.variant.variantcontext.GenotypeType;
+import htsjdk.variant.variantcontext.GenotypesContext;
 import htsjdk.variant.variantcontext.VariantContext;
+
 import htsjdk.variant.vcf.VCFFileReader;
+import htsjdk.variant.vcf.VCFHeader;
 
 import org.mskcc.cbio.portal.stats.FisherExact;
 
 /**
  * Loads a VCF file and computes segregation between the case and control sammples using Fisher's exact test.
- * Cases and controls are given by a phenotype file.
+ * Cases and controls are given by a phenotype file in dbGaP format.
  *
  * @author Sam Hokin
  */
@@ -26,76 +31,125 @@ public class VCFSegregation {
     /**
      * Main class outputs a tab-delimited summary of segregation per locus that has calls for both samples.
      */
-    public static void main(String[] args) {
+    public static void main(String[] args) throws FileNotFoundException, IOException {
         if (args.length!=5) {
-            System.out.println("Usage VCFSegregation <vcf-file> <phenotype-file>");
+            System.out.println("Usage VCFSegregation <segregating variable> <control value> <HET|HOM> <vcf file> <dbGaP phenotype file>");
             System.exit(0);
         }
 
-        String vcfFilename = args[0];
-        VCFFileReader reader = new VCFFileReader(new File(vcfFilename));
+        String segVar = args[0];
+        String controlValue = args[1];
+        boolean callHomOnly = args[2].toUpperCase().equals("HOM");
+        String vcfFilename = args[3];
+        String phenoFilename = args[4];
 
-        String sample1 = args[1];
-        String sample2 = args[2];
-        int maxSize = Integer.parseInt(args[3]);
-        String filetype = args[4];
+        VCFFileReader vcfReader = new VCFFileReader(new File(vcfFilename));
+        BufferedReader phenoReader = new BufferedReader(new FileReader(phenoFilename));
 
-        boolean tsvOutput = filetype.equals("tsv");
-        boolean wiggleOutput = filetype.equals("wig");
+        // header stuff
+        VCFHeader header = vcfReader.getFileHeader();
+        List<String> genotypeSamples = header.getGenotypeSamples();
 
-        FisherExact fisherExact = new FisherExact(maxSize);
+        // # Study accession: phs001071.v1.p1
+        // # Table accession: pht005347.v1.p1.c1
+        // # Consent group: General Research Use
+        // # Citation instructions: The study accession (phs001071.v1.p1) is used to cite the study and its data tables and documents. The data in this file should be cited using the accession pht005347.v1.p1.c1.
+        // # To cite columns of data within this file, please use the variable (phv#) accessions below:
+        // #
+        // # 1) the table name and the variable (phv#) accessions below; or
+        // # 2) you may cite a variable as phv#.v1.p1.c1.
+        //
+        // ## phv00259733.v1.p1.c1 phv00259734.v1.p1.c1 phv00259735.v1.p1.c1 phv00259736.v1.p1.c1 phv00259737.v1.p1.c1 phv00259738.v1.p1.c1 phv00259739.v1.p1.c1 phv00259740.v1.p1.c1
+        // dbGaP_Subject_ID SUBJECT_ID affected age_onset age_assessed sex race      CAG_repeat_size_1 CAG_repeat_size_2
+        // 1527550          131922     1        66        73           1   Caucasian 40                17
+        // 1527552          219281     2        0         47           1   Caucasian 40                19
+        // 1527570          436024     3        1         47           2   Caucasian 22                20
 
-        // output heading
-        if (tsvOutput) {
-            System.out.println("contig\tstart\tREF\tALT\ta\tb\tc\td\tsize\tp\tmlog10p\tsignif");
-        } else if (wiggleOutput) {
-            System.out.println("track type=wiggle_0 name="+sample1+"_x_"+sample2);
+        // phenotype data
+        Map<String,Boolean> subjectStatus = new HashMap<>(); // true if case, false if control
+        String line = "";
+        boolean headerLine = true;
+        int segVarOffset = -1;
+        int nCases = 0;
+        int nControls = 0;
+        while ((line=phenoReader.readLine())!=null) {
+            if (line.startsWith("#")) {
+                continue; // comment
+            } else if (line.trim().length()==0) {
+                continue; // blank
+            } else if (headerLine) {
+                // variable header
+                String[] vars = line.split("\t");
+                for (int i=0; i<vars.length; i++) {
+                    if (vars[i].equals(segVar)) segVarOffset = i;
+                }
+                headerLine = false;
+            } else {
+                String[] data = line.split("\t");
+                String sampleName = data[1];
+                String segValue = data[segVarOffset];
+                boolean isCase = !segValue.equals(controlValue);
+                subjectStatus.put(sampleName, isCase); // true = case
+                if (isCase) {
+                    nCases++;
+                } else {
+                    nControls++;
+                }
+            }
         }
 
-        String lastContig = "";
-        int lastStart = 0;
-        for (VariantContext vc : reader) {
+        // initialize FisherExact with max a+b+c+d
+        FisherExact fisherExact = new FisherExact(nCases+nControls);
+
+        // GenotypeType:
+        // HET         The sample is heterozygous, with at least one ref and at least one one alt in any order
+        // HOM_REF     The sample is homozygous reference
+        // HOM_VAR     All alleles are non-reference
+        // MIXED       Some chromosomes are NO_CALL and others are called
+        // NO_CALL     The sample is no-called (all alleles are NO_CALL
+        // UNAVAILABLE There is no allele data availble for this sample (alleles.isEmpty)
+        
+        for (VariantContext vc : vcfReader) {
             String id = vc.getID();
             String source = vc.getSource();
             String contig = vc.getContig();
-            if (!contig.equals(lastContig)) {
-                lastContig = contig;
-                lastStart = 0;
-                if (wiggleOutput) {
-                    System.out.println("variableStep chrom="+contig);
-                }
-            }
-            Set<String> sampleNames = vc.getSampleNames();
-            if (sampleNames.contains(sample1) && sampleNames.contains(sample2)) {
-                int start = vc.getStart();
-                if (start!=lastStart) {
-                    lastStart = start;
-                    Allele ref = vc.getReference();
-                    List<Allele> alts = vc.getAlternateAlleles();
-                    List<Integer> dp4List = vc.getAttributeAsIntList("DP4", 0);
-                    if (dp4List.size()==8) {
-                        // output
-                        String altString = "";
-                        for (Allele alt : alts) {
-                            if (altString.length()>0) altString += ",";
-                            altString += alt.getBaseString();
-                        }
-                        int size = dp4List.get(0)+dp4List.get(1)+dp4List.get(2)+dp4List.get(3)+dp4List.get(4)+dp4List.get(5)+dp4List.get(6)+dp4List.get(7);
-                        int a = dp4List.get(0)+dp4List.get(1);
-                        int b = dp4List.get(2)+dp4List.get(3);
-                        int c = dp4List.get(4)+dp4List.get(5);
-                        int d = dp4List.get(6)+dp4List.get(7);
-                        double p = fisherExact.getP(a, b, c, d);
-                        double minusLog10p = -Math.log10(p);
-                        boolean significant = (p<0.05);
-                        if (tsvOutput) {
-                            System.out.println(contig+"\t"+start+"\t"+ref.getBaseString()+"\t"+altString+"\t"+
-                                               a+"\t"+b+"\t"+c+"\t"+d+"\t"+size+"\t"+p+"\t"+minusLog10p+"\t"+significant);
-                        } else if (wiggleOutput) {
-                            System.out.println(start+"\t"+minusLog10p);
+            int start = vc.getStart();
+            GenotypesContext gc = vc.getGenotypes();
+            boolean noCall = false;
+            boolean mixed = false;
+            boolean unavailable = false;
+            int caseRefs = 0;
+            int caseVars = 0;
+            int ctrlRefs = 0;
+            int ctrlVars = 0;
+            for (Genotype g : gc) {
+                String sampleName = g.getSampleName();
+                if (subjectStatus.containsKey(sampleName)) {
+                    boolean isCase = subjectStatus.get(sampleName);
+                    GenotypeType type = g.getType();
+                    if (type.equals(GenotypeType.NO_CALL)) {
+                        noCall = true;
+                    } else if (type.equals(GenotypeType.MIXED)) {
+                        mixed = true;
+                    } else if (type.equals(GenotypeType.UNAVAILABLE)) {
+                        unavailable = true;
+                    } else if (type.equals(GenotypeType.HOM_REF)) {
+                        if (isCase) caseRefs++; else ctrlRefs++;
+                    } else if (type.equals(GenotypeType.HOM_VAR)) {
+                        if (isCase) caseVars++; else ctrlVars++;
+                    } else if (type.equals(GenotypeType.HET)) {
+                        if (callHomOnly) {
+                            if (isCase) caseRefs++; else ctrlRefs++;
+                        } else {
+                            if (isCase) caseVars++; else ctrlVars++;
                         }
                     }
                 }
+            }
+            if (!noCall && !mixed && !unavailable) {
+                // Fisher's exact test on this contingency table
+                double p = fisherExact.getP(caseVars, ctrlVars, caseRefs, ctrlRefs);
+                System.out.println(contig+"\t"+start+"\t"+caseVars+"\t"+ctrlVars+"\t"+caseRefs+"\t"+ctrlRefs+"\t"+p);
             }
         }
     }
