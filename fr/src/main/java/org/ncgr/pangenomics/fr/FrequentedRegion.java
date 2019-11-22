@@ -105,14 +105,6 @@ public class FrequentedRegion implements Comparable {
     }
 
     /**
-     * Construct given only a NodeSet, used for various post-processing routines.
-     */
-    // FrequentedRegion(NodeSet nodes) {
-    //     this.nodes = nodes;
-    //     this.nodes.update();
-    // }
-
-    /**
      * Construct given only basic information, used for post-processing.
      */
     FrequentedRegion(NodeSet nodes, Set<PathWalk> subpaths, double alpha, int kappa, int support, double avgLength) {
@@ -313,5 +305,12 @@ public class FrequentedRegion implements Comparable {
             if (sp.getLabel().equals(label)) count++;
         }
         return count;
+    }
+
+    /**
+     * Return the NodeSet associated with this FR.
+     */
+    public NodeSet getNodes() {
+        return nodes;
     }
 }

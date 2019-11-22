@@ -1,8 +1,7 @@
 ##
 ## plot log Fisher p value of each seg call on a single chromosome in the given start,finish range
 ##
-
-plot.seg.region = function(chr="1", start=1, finish=10000000, gene="") {
+plot.p.region = function(chr="1", start=1, finish=10000000, gene="") {
     
     pMax = 1	
     pRed = 1e-4

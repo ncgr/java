@@ -61,7 +61,7 @@ public class FRFinder {
     // parameters are stored in a Properties object
     Properties parameters = new Properties();
 
-    // save files
+    // save filename suffixes
     String FREQUENTED_REGIONS_SAVE = "save.frs.txt";
     String SYNC_FREQUENTED_REGIONS_SAVE = "save.syncFrequentedRegions.txt";
     String USED_FRS_SAVE = "save.usedFRs.txt";
@@ -300,6 +300,9 @@ public class FRFinder {
                 ////////////////////////////////////////
                 // spin through FRs in a parallel manner
                 syncFrequentedRegions.parallelStream().forEach(fr1 -> {
+                        // DEBUG
+                        if (getDebug()) System.out.println("fr1="+fr1.getNodes().toString());
+                        //
                         syncFrequentedRegions.parallelStream().forEach(fr2 -> {
                                 if (fr2.compareTo(fr1)>=0 && !usedFRs.contains(fr1) && !usedFRs.contains(fr2)) {
                                     // no merge or rejection test here
@@ -356,31 +359,33 @@ public class FRFinder {
             }
 
             // output current state for continuation if aborted
-            // usedFRs
-            PrintStream usedFRsOut = new PrintStream(getGraphName()+"."+USED_FRS_SAVE);
-            for (FrequentedRegion fr : usedFRs) {
-                usedFRsOut.println(fr.toString());
+            if (!getSkipSaveFiles()) {
+                // usedFRs
+                PrintStream usedFRsOut = new PrintStream(getGraphName()+"."+USED_FRS_SAVE);
+                for (FrequentedRegion fr : usedFRs) {
+                    usedFRsOut.println(fr.toString());
+                }
+                usedFRsOut.close();
+                // syncFrequentedRegions
+                PrintStream sfrOut = new PrintStream(getGraphName()+"."+SYNC_FREQUENTED_REGIONS_SAVE);
+                for (FrequentedRegion fr : syncFrequentedRegions) {
+                    sfrOut.println(fr.toString());
+                }
+                sfrOut.close();
+                // rejectedNodeSets
+                PrintStream rnsOut = new PrintStream(getGraphName()+"."+REJECTED_NODESETS_SAVE);
+                for (String nodesKey : rejectedNodeSets) {
+                    rnsOut.println(nodesKey);
+                }
+                rnsOut.close();
+                // frequentedRegions
+                PrintStream frOut = new PrintStream(getGraphName()+"."+FREQUENTED_REGIONS_SAVE);
+                frOut.println(frequentedRegions.first().columnHeading()); // header
+                for (FrequentedRegion fr : frequentedRegions) {
+                    frOut.println(fr.toString());
+                }
+                frOut.close();
             }
-            usedFRsOut.close();
-            // syncFrequentedRegions
-            PrintStream sfrOut = new PrintStream(getGraphName()+"."+SYNC_FREQUENTED_REGIONS_SAVE);
-            for (FrequentedRegion fr : syncFrequentedRegions) {
-                sfrOut.println(fr.toString());
-            }
-            sfrOut.close();
-	    // rejectedNodeSets
-	    PrintStream rnsOut = new PrintStream(getGraphName()+"."+REJECTED_NODESETS_SAVE);
-	    for (String nodesKey : rejectedNodeSets) {
-		rnsOut.println(nodesKey);
-	    }
-	    rnsOut.close();
-            // frequentedRegions
-            PrintStream frOut = new PrintStream(getGraphName()+"."+FREQUENTED_REGIONS_SAVE);
-	    frOut.println(frequentedRegions.first().columnHeading()); // header
-            for (FrequentedRegion fr : frequentedRegions) {
-                frOut.println(fr.toString());
-            }
-            frOut.close();
         }
 
 	clockTime = System.currentTimeMillis() - startTime;
@@ -439,8 +444,14 @@ public class FRFinder {
     public boolean getVerbose() {
         return Boolean.parseBoolean(parameters.getProperty("verbose"));
     }
+    public boolean getDebug() {
+        return Boolean.parseBoolean(parameters.getProperty("debug"));
+    }
     public boolean getPrunedGraph() {
         return Boolean.parseBoolean(parameters.getProperty("prunedGraph"));
+    }
+    public boolean getSkipSaveFiles() {
+        return Boolean.parseBoolean(parameters.getProperty("skipSaveFiles"));
     }
     public int getMinSup() {
         return Integer.parseInt(parameters.getProperty("minSup"));
@@ -494,6 +505,9 @@ public class FRFinder {
     }
     public void setPrunedGraph() {
         parameters.setProperty("prunedGraph", "true");
+    }
+    public void setSkipSaveFiles() {
+        parameters.setProperty("skipSaveFiles", "true");
     }
     public void setMinSup(int minSup) {
         parameters.setProperty("minSup", String.valueOf(minSup));
@@ -604,6 +618,10 @@ public class FRFinder {
         Option skipNodePathsOption = new Option("snp", "skipnodepaths", false, "skip building list of paths per node (false)");
         skipNodePathsOption.setRequired(false);
         options.addOption(skipNodePathsOption);
+        //
+        Option skipSaveFilesOption = new Option("ssf", "skipsavefiles", false, "skip saving files after each FR is found (to save time; false)");
+        skipSaveFilesOption.setRequired(false);
+        options.addOption(skipSaveFilesOption);
 
         try {
             cmd = parser.parse(options, args);
@@ -667,6 +685,7 @@ public class FRFinder {
             if (cmd.hasOption("minlen")) frf.setMinLen(Double.parseDouble(cmd.getOptionValue("minlen")));
             if (cmd.hasOption("verbose")) frf.setVerbose();
             if (cmd.hasOption("debug")) frf.setDebug();
+            if (cmd.hasOption("skipSaveFiles")) frf.setSkipSaveFiles();
             frf.postprocess();
         } else {
             // import a PangenomicGraph from a GFA file
@@ -708,6 +727,7 @@ public class FRFinder {
             if (cmd.hasOption("debug")) frf.setDebug();
             if (cmd.hasOption("resume")) frf.setResume();
             if (cmd.hasOption("prunedgraph")) frf.setPrunedGraph();
+            if (cmd.hasOption("skipSaveFiles")) frf.setSkipSaveFiles();
             // run the requested job
             if (alphaStart==alphaEnd && kappaStart==kappaEnd) {
                 // single run
