@@ -26,13 +26,22 @@
 ## }
 
 
-legend(x="topleft", bty="n",
-	c(date,
-	  gfaFile,
-          paste("clock time:\t",clocktime),
-          paste("FRs:\t\t",length(frs$nodes)),
-          paste("case paths:\t",labelCounts["case",1]),
-          paste("ctrl paths:\t",labelCounts["ctrl",1])
-	  )
-	  )
+if (isSaveSet) {
+    legend(x="topleft", bty="n",
+           c(paste("FRs:\t\t",length(frs$nodes)),
+             paste("case paths:\t",labelCounts["case",1]),
+             paste("ctrl paths:\t",labelCounts["ctrl",1])
+             )
+           )
+} else {
+    legend(x="topleft", bty="n",
+           c(date,
+             gfaFile,
+             paste("clock time:\t",clocktime),
+             paste("FRs:\t\t",length(frs$nodes)),
+             paste("case paths:\t",labelCounts["case",1]),
+             paste("ctrl paths:\t",labelCounts["ctrl",1])
+             )
+           )
+}
 

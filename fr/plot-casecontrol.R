@@ -37,7 +37,11 @@ if (labelsExist) {
          xlab="ctrl sample support",  ylab="case sample support",
          col=alpha("black",0.5), cex.axis=cex.axis, cex.lab=cex.lab
          )
-    title(main=paste(outputPrefix," alpha=",alpha," kappa=",kappa, sep=""), cex.main=cex.main)
+    if (isSaveSet) {
+        title(main=prefix)
+    } else {
+        title(main=paste(outputPrefix," alpha=",alpha," kappa=",kappa, sep=""), cex.main=cex.main)
+    } 
     
     ## text(frs$ctrl, frs$case,
     ##      paste(rownames(frs),":",frs$size,",",frs$avgLen,sep=""),
