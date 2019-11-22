@@ -65,6 +65,7 @@ public class FRFinder {
     String FREQUENTED_REGIONS_SAVE = "frequentedRegions.save.txt";
     String SYNC_FREQUENTED_REGIONS_SAVE = "syncFrequentedRegions.save.txt";
     String USED_FRS_SAVE = "usedFRs.save.txt";
+    String REJECTED_NODESETS_SAVE = "rejectedNodeSets.save.txt";
 
     // the FRs, sorted for convenience
     TreeSet<FrequentedRegion> frequentedRegions;
@@ -144,22 +145,16 @@ public class FRFinder {
         int round = 0;
 
         if (getResume()) {
-	    
             // resume from a previous run
             System.out.println("# Resuming from previous run");
             String line = null;
-            // frequentedRegions
-	    // 0                                                                                                1   2         3  4       
-	    // [1353,1355,1356,1357,1359,1360,1361,1363,1364,1366,1367,1368,...,1463,1464,1465,1467,1468,1469]	27  18621.00  1	 26
-            BufferedReader frReader = new BufferedReader(new FileReader(FREQUENTED_REGIONS_SAVE));
-            while ((line=frReader.readLine())!=null) {
+	    // usedFRs
+            BufferedReader usedFRsReader = new BufferedReader(new FileReader(USED_FRS_SAVE));
+            while ((line=usedFRsReader.readLine())!=null) {
                 String[] parts = line.split("\t");
                 NodeSet nodes = new NodeSet(graph, parts[0]);
-                FrequentedRegion fr = new FrequentedRegion(graph, nodes, alpha, kappa);
-                frequentedRegions.add(fr);
-                round++;
+                usedFRs.add(new FrequentedRegion(graph, nodes, alpha, kappa));
             }
-            System.out.println("# Loaded "+frequentedRegions.size()+" frequentedRegions.");
             // syncFrequentedRegions
             BufferedReader sfrReader = new BufferedReader(new FileReader(SYNC_FREQUENTED_REGIONS_SAVE));
             while ((line=sfrReader.readLine())!=null) {
@@ -167,15 +162,26 @@ public class FRFinder {
                 NodeSet nodes = new NodeSet(graph, parts[0]);
                 syncFrequentedRegions.add(new FrequentedRegion(graph, nodes, alpha, kappa));
             }
-            System.out.println("# Loaded "+syncFrequentedRegions.size()+" syncFrequentedRegions.");
-            // usedFRs
-            BufferedReader usedFRsReader = new BufferedReader(new FileReader(USED_FRS_SAVE));
-            while ((line=usedFRsReader.readLine())!=null) {
+	    // rejectedNodeSets
+	    BufferedReader rnsReader = new BufferedReader(new FileReader(REJECTED_NODESETS_SAVE));
+	    while ((line=rnsReader.readLine())!=null) {
+		rejectedNodeSets.add(line);
+	    }
+            // frequentedRegions
+	    // 0                                                                                                1   2         3  4       
+	    // [1353,1355,1356,1357,1359,1360,1361,1363,1364,1366,1367,1368,...,1463,1464,1465,1467,1468,1469]	27  18621.00  1	 26
+            BufferedReader frReader = new BufferedReader(new FileReader(FREQUENTED_REGIONS_SAVE));
+            while ((line=frReader.readLine())!=null) {
                 String[] parts = line.split("\t");
                 NodeSet nodes = new NodeSet(graph, parts[0]);
-                usedFRs.add(new FrequentedRegion(graph, nodes, alpha, kappa));
+                frequentedRegions.add(new FrequentedRegion(graph, nodes, alpha, kappa));
+                round++;
             }
-            System.out.println("# Loaded "+usedFRs.size()+" usedFRs.");
+	    // informativationalism
+	    System.out.println("# Loaded "+usedFRs.size()+" usedFRs.");
+            System.out.println("# Loaded "+syncFrequentedRegions.size()+" syncFrequentedRegions.");
+	    System.out.println("# Loaded "+rejectedNodeSets.size()+" rejectedNodeSets.");
+            System.out.println("# Loaded "+frequentedRegions.size()+" frequentedRegions.");
             System.out.println("# Now continuing with FR finding...");
         } else {
             // initialize syncFrequentedRegions with single-node FRs that have alpha/kappa support
@@ -319,7 +325,9 @@ public class FRFinder {
 						System.err.println(e.toString());
 					    }
                                             acceptedFRPairs.put(nodesKey, frpair);
-                                            pq.add(frpair);
+					    if (!frequentedRegions.contains(frpair.merged)) {
+						pq.add(frpair);
+					    }
                                         }
                                     }
                                     
@@ -346,19 +354,24 @@ public class FRFinder {
             }
 
             // output current state for continuation if aborted
-            // [8,72]	219	1.00	136	83
-            // syncFrequentedRegions
-            PrintStream sfrOut = new PrintStream(SYNC_FREQUENTED_REGIONS_SAVE);
-            for (FrequentedRegion fr : syncFrequentedRegions) {
-                sfrOut.println(fr.toString());
-            }
-            sfrOut.close();
             // usedFRs
             PrintStream usedFRsOut = new PrintStream(USED_FRS_SAVE);
             for (FrequentedRegion fr : usedFRs) {
                 usedFRsOut.println(fr.toString());
             }
             usedFRsOut.close();
+            // syncFrequentedRegions
+            PrintStream sfrOut = new PrintStream(SYNC_FREQUENTED_REGIONS_SAVE);
+            for (FrequentedRegion fr : syncFrequentedRegions) {
+                sfrOut.println(fr.toString());
+            }
+            sfrOut.close();
+	    // rejectedNodeSets
+	    PrintStream rnsOut = new PrintStream(REJECTED_NODESETS_SAVE);
+	    for (String nodesKey : rejectedNodeSets) {
+		rnsOut.println(nodesKey);
+	    }
+	    rnsOut.close();
             // frequentedRegions
             PrintStream frOut = new PrintStream(FREQUENTED_REGIONS_SAVE);
             for (FrequentedRegion fr : frequentedRegions) {

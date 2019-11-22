@@ -125,7 +125,7 @@ public class FrequentedRegion implements Comparable {
     }        
 
     /**
-     * Equality is simply based on the NodeSets.
+     * Equality is based on NodeSet equality.
      */
     public boolean equals(Object o) {
 	FrequentedRegion that = (FrequentedRegion) o;

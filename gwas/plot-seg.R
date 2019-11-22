@@ -2,11 +2,11 @@
 ## plot log Fisher p value of each seg call on each chromosome, stacked plots
 ##
     
-opar = par(mfrow=c(25,1))
+opar = par(mfrow=c(10,1))
 par(mar=c(0.4,4,0.4,0.4))
 
-pMax = 1e-1
-pRed = 1e-3
+pMax = 1
+pRed = 1e-4
 
 ## full chromosomes
 xmin = 1
@@ -19,7 +19,7 @@ xmax = max(seg$start[seg$chr==1])
 ymax = max(seg$mlog10p)
 
 xlim = c(xmin,xmax)
-ylim = c(-log10(pMax),ymax)
+ylim = c(0,ymax)
 
 yline1 = rep(2, 2)
 yline2 = rep(-log10(pRed), 2)
@@ -29,7 +29,7 @@ yline2 = rep(-log10(pRed), 2)
 for (chr in chrs) {
 
     pts = (seg$chr==chr & seg$p<pMax & seg$start>=xmin & seg$start<=xmax)
-    highpts = (pts & seg$p<1e-3)
+    highpts = (pts & seg$p<pRed)
     
     plot(seg$start[pts], seg$mlog10p[pts],
          pch=1, cex=0.5, col="black", ylab=paste(chr), xlim=xlim, ylim=ylim,  xaxt='n', xaxs='i')
