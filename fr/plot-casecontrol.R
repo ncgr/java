@@ -40,7 +40,7 @@ if (labelsExist) {
     if (isSaveSet) {
         title(main=prefix)
     } else {
-        title(main=paste(outputPrefix," alpha=",alpha," kappa=",kappa, sep=""), cex.main=cex.main)
+        title(main=paste(graphPrefix," alpha=",alpha," kappa=",kappa, sep=""), cex.main=cex.main)
     } 
     
     ## text(frs$ctrl, frs$case,

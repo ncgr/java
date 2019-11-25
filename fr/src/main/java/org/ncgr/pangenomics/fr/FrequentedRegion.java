@@ -214,7 +214,9 @@ public class FrequentedRegion implements Comparable {
      * |control paths*case support - case paths*control support|
      */
     public int caseControlDifference() {
-        return Math.abs(getLabelCount("case")*ctrlPaths - getLabelCount("ctrl")*casePaths);
+        // Test case-control without abs
+        // return Math.abs(getLabelCount("case")*ctrlPaths - getLabelCount("ctrl")*casePaths);
+        return getLabelCount("case")*ctrlPaths - getLabelCount("ctrl")*casePaths;
     }
 
     /**

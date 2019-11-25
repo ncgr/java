@@ -28,19 +28,19 @@
 
 if (isSaveSet) {
     legend(x="topleft", bty="n",
-           c(paste("FRs:\t\t",length(frs$nodes)),
-             paste("case paths:\t",labelCounts["case",1]),
-             paste("ctrl paths:\t",labelCounts["ctrl",1])
+           c(paste("FRs:",length(frs$nodes)),
+             paste("case paths:",labelCounts["case",1]),
+             paste("control paths:",labelCounts["ctrl",1])
              )
            )
 } else {
     legend(x="topleft", bty="n",
            c(date,
              gfaFile,
-             paste("clock time:\t",clocktime),
-             paste("FRs:\t\t",length(frs$nodes)),
-             paste("case paths:\t",labelCounts["case",1]),
-             paste("ctrl paths:\t",labelCounts["ctrl",1])
+             paste("clock time:",clocktime),
+             paste("FRs:",length(frs$nodes)),
+             paste("case paths:",labelCounts["case",1]),
+             paste("control paths:",labelCounts["ctrl",1])
              )
            )
 }
