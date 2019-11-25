@@ -294,7 +294,6 @@ public class FRFinder {
                 ////////////////////////////////////////
                 // spin through FRs in a parallel manner
                 syncFrequentedRegions.parallelStream().forEach(fr1 -> {
-                        if (getDebug()) System.out.println("fr1="+fr1.getNodes().toString()); // DEBUG
                         syncFrequentedRegions.parallelStream().forEach(fr2 -> {
                                 if (fr2.compareTo(fr1)>=0 && !usedFRs.contains(fr1) && !usedFRs.contains(fr2)) {
                                     // no merge or rejection test here
