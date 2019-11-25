@@ -25,20 +25,20 @@ public class FRPair implements Comparable {
     PangenomicGraph graph;
     double alpha;
     int kappa;
-    boolean caseCtrl;
+    int priority; // 0=support; 1=|case support - control support|; 2=(case support - control support)
 
     NodeSet nodes;
     FrequentedRegion merged;
 
     boolean alphaReject;
     
-    FRPair(FrequentedRegion fr1, FrequentedRegion fr2, PangenomicGraph graph, double alpha, int kappa, boolean caseCtrl) {
+    FRPair(FrequentedRegion fr1, FrequentedRegion fr2, PangenomicGraph graph, double alpha, int kappa, int priority) {
         this.fr1 = fr1;
         this.fr2 = fr2;
         this.graph = graph;
         this.alpha = alpha;
         this.kappa = kappa;
-        this.caseCtrl = caseCtrl;
+        this.priority = priority;
         this.nodes = NodeSet.merge(fr1.nodes, fr2.nodes);
         // nothing to do if an identity merge
         if (fr1.equals(fr2)) this.merged = fr1;
@@ -93,26 +93,23 @@ public class FRPair implements Comparable {
      * A comparator for PriorityQueue use -- note that it is the opposite of normal comparison because
      * PriorityQueue allows you to take the top (least) object with peek() but not the bottom (most) object.
      *
-     * caseCtrl: balanced case vs. control difference; else default.
-     * default: support, avgLength, nodes.size()
+     * priority values:
+     *
+     * 0=total support
+     * 1=|case support - control support|
+     * 2=(case support - control support)
      */
     @Override
     public int compareTo(Object o) {
 	FRPair that = (FRPair) o;
-        if (this.equals(that)) return 0;
-        if (caseCtrl) {
-            int thisDifference = this.merged.caseControlDifference();
-            int thatDifference = that.merged.caseControlDifference();
-            if (thisDifference!=thatDifference) return thatDifference - thisDifference;
-        }
-        // default: total support then avgLength then size
-        if (that.merged.support!=this.merged.support) {
-            return Integer.compare(that.merged.support, this.merged.support);
-        } else if (that.merged.avgLength!=this.merged.avgLength) {
-            return Double.compare(that.merged.avgLength, this.merged.avgLength);
+        int diff = 0;
+        if (priority==0) {
+            // total support
+            diff = that.merged.support - this.merged.support;
         } else {
-            return Integer.compare(that.merged.nodes.size(), this.merged.nodes.size());
+            diff = that.merged.caseControlDifference(priority) - this.merged.caseControlDifference(priority);
         }
+        return diff;
     }
 
     /**

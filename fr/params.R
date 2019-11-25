@@ -38,6 +38,7 @@ if (isSaveSet) {
            c(date,
              gfaFile,
              paste("clock time:",clocktime),
+             paste("priority:",priority),
              paste("FRs:",length(frs$nodes)),
              paste("case paths:",labelCounts["case",1]),
              paste("control paths:",labelCounts["ctrl",1])

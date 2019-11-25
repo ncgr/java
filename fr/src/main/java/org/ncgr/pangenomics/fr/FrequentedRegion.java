@@ -211,12 +211,22 @@ public class FrequentedRegion implements Comparable {
 
     /**
      * The metric used for case vs. control comparisons
-     * |control paths*case support - case paths*control support|
+     * priority=1: |control paths*case support - case paths*control support|
+     * priority=2: control paths*case support - case paths*control support
+     * 
      */
-    public int caseControlDifference() {
-        // Test case-control without abs
-        // return Math.abs(getLabelCount("case")*ctrlPaths - getLabelCount("ctrl")*casePaths);
-        return getLabelCount("case")*ctrlPaths - getLabelCount("ctrl")*casePaths;
+    public int caseControlDifference(int priority) {
+        int diff = 0;
+        if (priority==1) {
+            diff = Math.abs(getLabelCount("case")*ctrlPaths - getLabelCount("ctrl")*casePaths);
+        } else if (priority==2) {
+            diff = getLabelCount("case")*ctrlPaths - getLabelCount("ctrl")*casePaths;
+        } else {
+            // we've got an unallowed priority key for case/control comparison
+            System.err.println("ERROR: priority="+priority+" is not supported by FrequentedRegion.caseControlDifference(priority).");
+            System.exit(1);
+        }
+        return diff;
     }
 
     /**

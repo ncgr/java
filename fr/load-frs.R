@@ -40,7 +40,7 @@ if (isSaveSet) {
 ## #Mon Oct 07 11:43:15 MDT 2019
 ## resume=false
 ## debug=false
-## caseCtrl=true
+## priority=1
 ## minSup=1
 ## bruteForce=false
 ## verbose=false
@@ -66,7 +66,7 @@ if (!isSaveSet) {
             ## main parameters section
             if (params$V1[i]=="resume") resume = as.logical(params$V2[i])
             if (params$V1[i]=="debug") debug = as.logical(params$V2[i])
-            if (params$V1[i]=="caseCtrl") caseCtrl = as.logical(params$V2[i])
+            if (params$V1[i]=="priority") priority = as.numeric(params$V2[i])
             if (params$V1[i]=="minSup") minSup = as.numeric(params$V2[i])
             if (params$V1[i]=="bruteForce") bruteForce = as.logical(params$V2[i])
             if (params$V1[i]=="verbose") verbose = as.logical(params$V2[i])

@@ -63,6 +63,11 @@ public class WekaTest {
  
     public static void main(String[] args) throws Exception {
 
+        if (args.length!=1) {
+            System.out.println("Usage: WekaTest <arff filename>");
+            System.exit(0);
+        }
+
         String arffFile = args[0];
         BufferedReader datafile = readDataFile(arffFile);
  

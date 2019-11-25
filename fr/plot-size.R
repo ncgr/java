@@ -12,7 +12,7 @@ plot(frs$avgLen, frs$size,
      xlab="FR subpath average length (bp)", ylab="FR node cluster size",
      col="darkgray"
      )
-title(main=paste(outputprefix,": alpha=",alpha," kappa=",kappa," case/ctrl=",casectrl, sep=""), cex.main=0.9)
+title(main=paste(outputprefix,": alpha=",alpha," kappa=",kappa," priority=",priority, sep=""), cex.main=0.9)
 
 source("params.R")
 

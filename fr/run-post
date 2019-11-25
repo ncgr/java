@@ -1,15 +1,16 @@
 #!/bin/sh
 
-prefix=$1
+graph=$1
 alpha=$2
 kappa=$3
 minsup=$4
 minsize=$5
 minlen=$6
+priority=$7
 
-FRFILE="$prefix-$alpha-$kappa.frs.txt"
-INPUTPREFIX="$prefix-$alpha-$kappa"
-SVMROOT="$prefix-$minsup.$minsize.$minlen"
+FRFILE="$graph-$alpha-$kappa.frs.txt"
+INPUTPREFIX="$graph-$alpha-$kappa"
+SVMROOT="$graph-$minsup.$minsize.$minlen"
 SVMFRFILE="$SVMROOT.frs.txt"
 
 if [ -s $FRFILE ]
@@ -17,7 +18,7 @@ then
 
     ## post-process
     java -server -cp "build/install/fr/lib/*" org.ncgr.pangenomics.fr.FRFinder --inputprefix $INPUTPREFIX \
-	    --debug --minsup $minsup --minsize $minsize --minlen $minlen
+	    --debug --minsup=$minsup --minsize=$minsize --minlen=$minlen --priority=$priority
     
     # ## run SVM
     # if [ -s $SVMFRFILE ]

@@ -46,7 +46,7 @@ for (i in (num-1):1) {
     xlabel = paste("PC",i,  " ",round(summary(pca)$importance["Proportion of Variance",i]*100,1),"% of variance", sep="")
     ylabel = paste("PC",i+1," ",round(summary(pca)$importance["Proportion of Variance",i+1]*100,1),"% of variance", sep="")
     plot(pca$rotation[,i], pca$rotation[,i+1], xlab=xlabel, ylab=ylabel, pch=20, cex=1.2, col=colors)
-    title(main=paste(graphPrefix,": alpha=",alpha," kappa=",kappa," case/ctrl=",caseCtrl, sep=""), cex.main=0.9)
+    title(main=paste(graphPrefix,": alpha=",alpha," kappa=",kappa," priority=",priority, sep=""), cex.main=0.9)
     ## colors!
     points(pca$rotation[,i], pca$rotation[,i+1], xlab=xlabel, ylab=ylabel, pch=20, col=colors)
     text(pca$rotation[,i], pca$rotation[,i+1], labels, pos=1, col=colors, cex=0.5)

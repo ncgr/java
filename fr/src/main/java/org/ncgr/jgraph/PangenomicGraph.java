@@ -76,7 +76,7 @@ public class PangenomicGraph extends DirectedMultigraph<Node,Edge> {
     public PangenomicGraph() {
         super(Edge.class);
         nodePaths = Collections.synchronizedMap(new HashMap<Long,Set<PathWalk>>());
-        labelCounts = new HashMap<>();
+        labelCounts = new TreeMap<>(); // order alphabetically by label
     }
 
     /**
@@ -177,7 +177,7 @@ public class PangenomicGraph extends DirectedMultigraph<Node,Edge> {
     public void readPathLabels(File labelsFile) throws FileNotFoundException, IOException {
 	if (verbose) System.out.println("Reading path labels...");
         this.labelsFile = labelsFile;
-        labelCounts = new HashMap<>();
+        labelCounts = new TreeMap<>();
         BufferedReader reader = new BufferedReader(new FileReader(labelsFile));
         String line = null;
         Map<String,String> labels = new HashMap<>();

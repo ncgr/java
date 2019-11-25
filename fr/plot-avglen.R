@@ -12,7 +12,7 @@ plot(frs$support, frs$avgLen,
      xlab="FR subpath support",  ylab="FR subpath average length (bp)",
      col="darkgray"
      )
-title(main=paste(outputprefix,": alpha=",alpha," kappa=",kappa," case/ctrl=",casectrl, sep=""), cex.main=0.9)
+title(main=paste(outputprefix,": alpha=",alpha," kappa=",kappa," priority=",priority, sep=""), cex.main=0.9)
 
 source("params.R")
 

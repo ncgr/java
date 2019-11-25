@@ -102,7 +102,7 @@ public class FRFinder {
         parameters.setProperty("minSize", "1");
         parameters.setProperty("minLen", "1.0");
         parameters.setProperty("maxRound", "0");
-        parameters.setProperty("caseCtrl", "false");
+        parameters.setProperty("priority", "0");
         parameters.setProperty("bruteForce", "false");
         parameters.setProperty("serial", "false");
         parameters.setProperty("resume", "false");
@@ -217,7 +217,7 @@ public class FRFinder {
                 syncFrequentedRegions.parallelStream().forEach(fr1 -> {
                         syncFrequentedRegions.parallelStream().forEach(fr2 -> {
                                 if (fr1.compareTo(fr2)>0) {
-                                    FRPair frpair = new FRPair(fr1, fr2, graph, alpha, kappa, getCaseCtrl());
+                                    FRPair frpair = new FRPair(fr1, fr2, graph, alpha, kappa, getPriority());
                                     String nodesKey = frpair.nodes.toString();
                                     if (!usedNodeSets.contains(nodesKey)) {
                                         usedNodeSets.add(nodesKey);
@@ -240,7 +240,6 @@ public class FRFinder {
                     });
                 ////////////////////////////////////////
                 syncFrequentedRegions.addAll(loopFRs);
-                added = syncFrequentedRegions.size()>oldSyncSize;
                 System.out.println(round+":"+(syncFrequentedRegions.size()-oldSyncSize)+" sync FRs added; "+(frequentedRegions.size()-oldFRSize)+" supported FRs added.");
             } else if (getSerial()) {
                 // serial processing with extra output for demo purposes or other experiments
@@ -251,7 +250,7 @@ public class FRFinder {
                     for (FrequentedRegion fr2 : syncFrequentedRegions) {
                         if (fr2.compareTo(fr1)>=0 && !usedFRs.contains(fr1) && !usedFRs.contains(fr2)) {
                             // no merge or rejection test here
-                            FRPair frpair = new FRPair(fr1, fr2, graph, alpha, kappa, getCaseCtrl());
+                            FRPair frpair = new FRPair(fr1, fr2, graph, alpha, kappa, getPriority());
                             String nodesKey = frpair.nodes.toString();
                             if (rejectedNodeSets.contains(nodesKey)) {
                                 // do nothing
@@ -260,6 +259,7 @@ public class FRFinder {
                                 frpair = acceptedFRPairs.get(nodesKey);
                                 if (!frequentedRegions.contains(frpair.merged)) {
                                     pq.add(frpair);
+                                    added = true;
                                 }
                             } else {
                                 // see if this pair is rejected
@@ -272,6 +272,7 @@ public class FRFinder {
                                     frpair.merge();
                                     acceptedFRPairs.put(nodesKey, frpair);
                                     pq.add(frpair);
+                                    added = true;
                                 }
                             }
                         }
@@ -280,18 +281,11 @@ public class FRFinder {
                 // add our new FR
                 if (pq.size()>0) {
                     FRPair frpair = pq.peek();
-                    if (getCaseCtrl()) {
-                        added = frpair.merged.caseControlDifference()>0;
-                    } else {
-                        added = frpair.merged.support>0;
-                    }
-                    if (added) {
-                        usedFRs.add(frpair.fr1);
-                        usedFRs.add(frpair.fr2);
-                        syncFrequentedRegions.add(frpair.merged);
-                        frequentedRegions.add(frpair.merged);
-                        System.out.println(round+":"+frpair.merged.toString());
-                    }
+                    usedFRs.add(frpair.fr1);
+                    usedFRs.add(frpair.fr2);
+                    syncFrequentedRegions.add(frpair.merged);
+                    frequentedRegions.add(frpair.merged);
+                    System.out.println(round+":"+frpair.merged.toString());
                 }
             } else {
                 // default: parallel processing
@@ -304,7 +298,7 @@ public class FRFinder {
                         syncFrequentedRegions.parallelStream().forEach(fr2 -> {
                                 if (fr2.compareTo(fr1)>=0 && !usedFRs.contains(fr1) && !usedFRs.contains(fr2)) {
                                     // no merge or rejection test here
-                                    FRPair frpair = new FRPair(fr1, fr2, graph, alpha, kappa, getCaseCtrl());
+                                    FRPair frpair = new FRPair(fr1, fr2, graph, alpha, kappa, getPriority());
                                     String nodesKey = frpair.nodes.toString();
                                     if (rejectedNodeSets.contains(nodesKey)) {
                                         // do nothing
@@ -338,15 +332,11 @@ public class FRFinder {
                             });
                     });
                 ////////////////////////////////////////
-                // add our new FR
+                // add our new FR if it has support>0
                 if (pq.size()>0) {
                     FRPair frpair = pq.peek();
-                    if (getCaseCtrl()) {
-                        added = frpair.merged.caseControlDifference()>0;
-                    } else {
-                        added = frpair.merged.support>0;
-                    }
-                    if (added) {
+                    if (frpair.merged.support>0) {
+                        added = true;
                         usedFRs.add(frpair.fr1);
                         usedFRs.add(frpair.fr2);
                         syncFrequentedRegions.add(frpair.merged);
@@ -357,7 +347,7 @@ public class FRFinder {
             }
 
             // output current state for continuation if aborted
-            if (!getSkipSaveFiles()) {
+            if (frequentedRegions.size()>0 && !getSkipSaveFiles()) {
                 // usedFRs
                 PrintStream usedFRsOut = new PrintStream(getGraphName()+"."+USED_FRS_SAVE);
                 for (FrequentedRegion fr : usedFRs) {
@@ -469,8 +459,8 @@ public class FRFinder {
     public boolean getSerial() {
         return Boolean.parseBoolean(parameters.getProperty("serial"));
     }
-    public boolean getCaseCtrl() {
-        return Boolean.parseBoolean(parameters.getProperty("caseCtrl"));
+    public int getPriority() {
+        return Integer.parseInt(parameters.getProperty("priority"));
     }
     public String getInputPrefix() {
         return parameters.getProperty("inputPrefix");
@@ -489,8 +479,8 @@ public class FRFinder {
     public void setDebug() {
         parameters.setProperty("debug", "true");
     }
-    public void setCaseCtrl() {
-        parameters.setProperty("caseCtrl", "true");
+    public void setPriority(int priority) {
+        parameters.setProperty("priority", String.valueOf(priority));
     }
     public void setBruteForce() {
         parameters.setProperty("bruteForce", "true");
@@ -589,9 +579,9 @@ public class FRFinder {
         debugOption.setRequired(false);
         options.addOption(debugOption);
         //
-        Option caseCtrlOption = new Option("cc", "casectrl", false, "emphasize FRs that have large case vs. control support [false]");
-        caseCtrlOption.setRequired(false);
-        options.addOption(caseCtrlOption);
+        Option priorityOption = new Option("pri", "priority", true, "priority of FRs: 0=support; 1=|case-control|; 2=case-control (0)");
+        priorityOption.setRequired(true);
+        options.addOption(priorityOption);
         //
         Option bruteForceOption = new Option("bf", "bruteforce", false, "find FRs comprehensively via brute force - testing only! [false]");
         bruteForceOption.setRequired(false);
@@ -708,8 +698,8 @@ public class FRFinder {
             FRFinder frf = new FRFinder(pg);
             frf.setGfaFile(gfaFile.getName());
             frf.setGraphName(graphName);
-            if (cmd.hasOption("casectrl")) {
-                frf.setCaseCtrl();
+            if (cmd.hasOption("priority")) {
+                frf.setPriority(Integer.parseInt(cmd.getOptionValue("priority")));
             }
             if (cmd.hasOption("bruteforce")) {
                 frf.setBruteForce();
@@ -1075,17 +1065,21 @@ public class FRFinder {
     }
 
     /**
-     * Form the nodes output filename
+     * Form the graph nodes filename
+     * if prefix = HTT.1k-1.0-0 then filename = HTT.nodes.txt
      */
     static String getNodesFilename(String prefix) {
-        return prefix+".nodes.txt";
+        String[] parts = prefix.split("-");
+        return parts[0]+".nodes.txt";
     }
 
     /**
-     * Form the paths output filename
+     * Form the graph paths filename
+     * if prefix = HTT.1k-1.0-0 then filename = HTT.paths.txt
      */
     static String getPathsFilename(String prefix) {
-        return prefix+".paths.txt";
+        String[] parts = prefix.split("-");
+        return parts[0]+".paths.txt";
     }
 
     /**
