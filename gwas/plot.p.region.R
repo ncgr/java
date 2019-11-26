@@ -2,8 +2,8 @@
 ## plot log Fisher p value of each seg call on a single chromosome in the given start,end range
 ## we focus on loci with positive odds ratio since we're interested in ALTs that lead to the condition
 ##
-plot.p.region = function(chr="1", start=1, end=0, label=FALSE, minCalls=0, gene="", pMax=1) {
-    
+plot.p.region = function(chr="1", start=1, end=0, label=FALSE, minCalls=0, showGenes=FALSE, pMax=1) {
+   
     pRed = 1e-4
     
     if (end==0) end = max(seg$start[seg$chr==chr])
@@ -13,7 +13,7 @@ plot.p.region = function(chr="1", start=1, end=0, label=FALSE, minCalls=0, gene=
 
     plot(seg$start[pts], seg$mlog10p[pts],
          xlab="POS", ylab="-log10(p)",
-         main=paste(gene," ",(end-start+1),"bp ",chr,":",start,"-",end," (GRCh37)", sep=""),
+         main=paste("GRCh37 ",chr,":",start,"-",end," ",(end-start+1),"bp", sep=""),
          pch=1, cex=0.5, col="black")
 
     ## significance line at 1e-2
@@ -27,6 +27,17 @@ plot.p.region = function(chr="1", start=1, end=0, label=FALSE, minCalls=0, gene=
         text(seg$start[hpts], seg$mlog10p[hpts], col="darkred", pos=4, cex=0.6, offset=0.2,
              paste(seg$start[hpts],"(",seg$caseVars[hpts],"/",seg$ctrlVars[hpts],"|",seg$caseRefs[hpts],"/",seg$ctrlRefs[hpts],";OR=",signif(seg$OR[hpts],3),")",sep="")
              )
+    }
+
+    ## show genes if requested
+    ## REQUIRES load-genes!!
+    if (showGenes) {
+        within = genes$seqid==chr & genes$end>=start & genes$start<=end
+        genesWithin = genes[within,]
+        for (i in 1:nrow(genesWithin)) {
+            lines(c(genesWithin$start[i],genesWithin$end[i]), c(5,5))
+            text(mean(genesWithin$start[i],genesWithin$end[i]), 5, genesWithin$name[i], pos=3)
+        }
     }
 }
 

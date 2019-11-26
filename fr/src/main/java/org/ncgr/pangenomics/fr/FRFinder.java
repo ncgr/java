@@ -118,7 +118,7 @@ public class FRFinder {
     public void findFRs(double alpha, int kappa) throws FileNotFoundException, IOException,
                                                         NullNodeException, NullSequenceException, NoPathsException, NoNodePathsException {
 
-	System.out.println("# Starting findFRs: alpha="+alpha+" kappa="+kappa);
+	System.out.println("# Starting findFRs: alpha="+alpha+" kappa="+kappa+" priority="+getPriority());
 
         // output the graph files
         graph.printAll(getGraphName());
