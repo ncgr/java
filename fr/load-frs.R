@@ -1,5 +1,6 @@
 ##
 ## load an FR file along with its parameters
+## nodes support avgLen case ctrl size
 ##
 
 ## for plotting and analysis
@@ -116,4 +117,11 @@ labelsExist = file.exists(labelFile)
 if (labelsExist) {
     labelCounts = read.delim(file=labelFile, header=FALSE, stringsAsFactors=FALSE, row.names=1)
     colnames(labelCounts) = c("count")
+}
+
+## odds ratio (if label counts exists)
+if (labelsExist) {
+    casePaths = labelCounts["case",1]
+    ctrlPaths = labelCounts["ctrl",1]
+    frs$OR = (frs$case/frs$ctrl) / (casePaths/ctrlPaths)
 }
