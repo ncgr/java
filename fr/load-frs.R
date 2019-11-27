@@ -119,9 +119,21 @@ if (labelsExist) {
     colnames(labelCounts) = c("count")
 }
 
-## odds ratio (if label counts exists)
+## odds ratio (if label counts exist)
 if (labelsExist) {
     casePaths = labelCounts["case",1]
     ctrlPaths = labelCounts["ctrl",1]
     frs$OR = (frs$case/frs$ctrl) / (casePaths/ctrlPaths)
+}
+
+## Fisher's exact test p-value (if label counts exist) for the contingency table: case/ctrl / casePaths/ctrlPaths
+if (labelsExist) {
+    casePaths = labelCounts["case",1]
+    ctrlPaths = labelCounts["ctrl",1]
+    for (i in 1:nrow(frs)) {
+        ## DEBUG
+        print(c(frs$case[i],frs$ctrl[i],casePaths,ctrlPaths))
+        ##
+        frs$p[i] = as.numeric(fisher.test(matrix(c(frs$case[i],frs$ctrl[i],casePaths,ctrlPaths), nrow=2))["p.value"])
+    }
 }
