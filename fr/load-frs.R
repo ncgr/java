@@ -131,9 +131,6 @@ if (labelsExist) {
     casePaths = labelCounts["case",1]
     ctrlPaths = labelCounts["ctrl",1]
     for (i in 1:nrow(frs)) {
-        ## DEBUG
-        print(c(frs$case[i],frs$ctrl[i],casePaths,ctrlPaths))
-        ##
         frs$p[i] = as.numeric(fisher.test(matrix(c(frs$case[i],frs$ctrl[i],casePaths,ctrlPaths), nrow=2))["p.value"])
     }
 }

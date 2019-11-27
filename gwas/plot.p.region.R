@@ -8,7 +8,7 @@ plot.p.region = function(chr="1", start=1, end=0, label=FALSE, minCalls=0, showG
     
     if (end==0) end = max(seg$start[seg$chr==chr])
     
-    pts = seg$p<pMax & seg$chr==chr & !is.na(seg$OR) & seg$OR>1 & seg$start>=start & seg$start<=end & (seg$caseVars+seg$ctrlVars)>=minCalls & (seg$caseRefs+seg$ctrlRefs)>=minCalls
+    pts = seg$p<pMax & seg$chr==chr & is.finite(seg$OR) & seg$start>=start & seg$start<=end & (seg$caseVars+seg$ctrlVars)>=minCalls & (seg$caseRefs+seg$ctrlRefs)>=minCalls
     hpts = pts & seg$p<pRed
 
     plot(seg$start[pts], seg$mlog10p[pts],
@@ -36,7 +36,14 @@ plot.p.region = function(chr="1", start=1, end=0, label=FALSE, minCalls=0, showG
         genesWithin = genes[within,]
         for (i in 1:nrow(genesWithin)) {
             lines(c(genesWithin$start[i],genesWithin$end[i]), c(5,5))
-            text(mean(genesWithin$start[i],genesWithin$end[i]), 5, genesWithin$name[i], pos=3)
+            text((genesWithin$start[i]+genesWithin$end[i])/2, 5, genesWithin$name[i], pos=3)
+            lines(rep(genesWithin$start[i],2), c(4.5,5.5))
+            lines(rep(genesWithin$end[i],2), c(4.5,5.5))
+            if (genesWithin$strand[i]=="-") {
+                text((genesWithin$start[i]+genesWithin$end[i])/2, 5, "<")
+            } else {
+                text((genesWithin$start[i]+genesWithin$end[i])/2, 5, ">")
+            }
         }
     }
 }

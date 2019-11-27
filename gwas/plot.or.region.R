@@ -1,14 +1,13 @@
 ##
 ## plot the odds ratio of each seg call on a single chromosome in the given start,end range
 ##
-plot.or.region = function(chr="1", start=1, end=0, label=FALSE, minCalls=0, gene="") {
+plot.or.region = function(chr="1", start=1, end=0, label=FALSE, minCalls=0, showGenes=FALSE) {
     
     pRed = 1e-4
     
     if (end==0) end = max(seg$start[seg$chr==chr])
 
-    nonzeros = seg$caseVars>0 & seg$ctrlVars>0 & seg$caseRefs>0 & seg$ctrlRefs>0
-    pts = nonzeros & seg$chr==chr & !is.na(seg$OR) & seg$start>=start & seg$start<=end & (seg$caseVars+seg$ctrlVars)>=minCalls & (seg$caseRefs+seg$ctrlRefs)>=minCalls
+    pts = is.finite(seg$log10OR) & seg$chr==chr & seg$start>=start & seg$start<=end & (seg$caseVars+seg$ctrlVars)>=minCalls & (seg$caseRefs+seg$ctrlRefs)>=minCalls
     hpts = pts & seg$p<pRed
     
     xmin = start
@@ -23,7 +22,7 @@ plot.or.region = function(chr="1", start=1, end=0, label=FALSE, minCalls=0, gene
     plot(seg$start[pts], seg$log10OR[pts],
          xlim=xlim, ylim=ylim,
          xlab="POS", ylab="log10(OR)",
-         main=paste(gene," ",(end-start+1),"bp ",chr,":",start,"-",end," (GRCh37)", sep=""),
+         main=paste("GRCh37 ",chr,":",start,"-",end," ",(end-start+1),"bp", sep=""),
          pch=1, cex=0.5, col="black")
 
     ## highlight highly significant p values
@@ -34,6 +33,17 @@ plot.or.region = function(chr="1", start=1, end=0, label=FALSE, minCalls=0, gene
         text(seg$start[hpts], seg$log10OR[hpts], col="darkred", pos=4, cex=0.6, offset=0.2,
              paste(seg$start[hpts],"(",seg$caseVars[hpts],"/",seg$ctrlVars[hpts],"|",seg$caseRefs[hpts],"/",seg$ctrlRefs[hpts],";p=",signif(seg$p[hpts],3),")",sep="")
              )
+    }
+
+    ## show genes if requested
+    ## REQUIRES load-genes!!
+    if (showGenes) {
+        within = genes$seqid==chr & genes$end>=start & genes$start<=end
+        genesWithin = genes[within,]
+        for (i in 1:nrow(genesWithin)) {
+            lines(c(genesWithin$start[i],genesWithin$end[i]), c(1,1))
+            text((genesWithin$start[i]+genesWithin$end[i])/2, 1, genesWithin$name[i], pos=3)
+        }
     }
 }
 

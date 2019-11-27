@@ -36,7 +36,6 @@ genes$ID = NULL
 genes$source = NULL
 genes$type = NULL
 genes$score = NULL
-genes$strand = NULL
 genes$phase = NULL
 genes$attributes = NULL
 
