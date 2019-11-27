@@ -40,7 +40,7 @@ dir=$1
 prefix=$2
 priority=$3
 
-## use $4 for extra stuff like --resume
+## use $4, $5, $6 for extra stuff like --resume --debug
 
 # alphastart=0.1
 # alphaend=1.0
@@ -55,6 +55,6 @@ kappaend=0
 echo "# $dir $prefix alpha=$alphastart-$alphaend kappa=$kappastart-$kappaend priority=$priority"
 
 java -server -Xmx160g -XX:+UseParallelGC -Xms2g -XX:SoftRefLRUPolicyMSPerMB=1 -XX:MaxHeapFreeRatio=99 -cp "build/install/fr/lib/*" org.ncgr.pangenomics.fr.FRFinder \
-     --priority=$priority --skipnodepaths $4 \
+     --priority=$priority --skipnodepaths $4 $5 $6 \
      --pathlabels=$dir/labels.txt --gfa=$dir/$prefix.paths.gfa \
      --alphastart=$alphastart --alphaend=$alphaend --kappastart=$kappastart --kappaend=$kappaend

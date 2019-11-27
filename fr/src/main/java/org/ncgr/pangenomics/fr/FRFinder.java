@@ -297,15 +297,28 @@ public class FRFinder {
                         syncFrequentedRegions.parallelStream().forEach(fr2 -> {
                                 if (fr2.compareTo(fr1)>=0 && !usedFRs.contains(fr1) && !usedFRs.contains(fr2)) {
                                     // no merge or rejection test here
+                                    if (getDebug()) {
+                                        System.out.print(fr1.toString()+"\t"+fr2.toString()+"\t");
+                                    }
                                     FRPair frpair = new FRPair(fr1, fr2, graph, alpha, kappa, getPriority());
                                     String nodesKey = frpair.nodes.toString();
                                     if (rejectedNodeSets.contains(nodesKey)) {
                                         // do nothing
+                                        if (getDebug()) {
+                                            System.out.println("REJECTED");
+                                        }
                                     } else if (acceptedFRPairs.containsKey(nodesKey)) {
                                         // use stored FRPair
                                         frpair = acceptedFRPairs.get(nodesKey);
-                                        if (!frequentedRegions.contains(frpair.merged)) {
+                                        if (frequentedRegions.contains(frpair.merged)) {
+                                            if (getDebug()) {
+                                                System.out.println("FROM STORED; ALREADY IN");
+                                            }
+                                        } else {
                                             pq.add(frpair);
+                                            if (getDebug()) {
+                                                System.out.println("FROM STORED; ADDED");
+                                            }
                                         }
                                     } else {
                                         // see if this pair is rejected
@@ -313,6 +326,9 @@ public class FRFinder {
                                         if (frpair.alphaReject) {
                                             // add to rejected set
                                             rejectedNodeSets.add(nodesKey);
+                                            if (getDebug()) {
+                                                System.out.println("ALPHA REJECTED");
+                                            }
                                         } else {
                                             // merge and add to accepted set
 					    try {
@@ -321,8 +337,16 @@ public class FRFinder {
 						System.err.println(e.toString());
 					    }
                                             acceptedFRPairs.put(nodesKey, frpair);
-					    if (!frequentedRegions.contains(frpair.merged)) {
+					    if (frequentedRegions.contains(frpair.merged)) {
+                                                // do nothing
+                                                if (getDebug()) {
+                                                    System.out.println("MERGED; ALREADY IN");
+                                                }
+                                            } else {
 						pq.add(frpair);
+                                                if (getDebug()) {
+                                                    System.out.println("MERGED; ADDED");
+                                                }
 					    }
                                         }
                                     }
@@ -562,7 +586,7 @@ public class FRFinder {
         minSizeOption.setRequired(false);
         options.addOption(minSizeOption);
         //
-        Option inputprefixOption = new Option("i", "inputprefix", true, "input file prefix for further processing");
+        Option inputprefixOption = new Option("i", "inputprefix", true, "input file prefix for post-processing");
         inputprefixOption.setRequired(false);
         options.addOption(inputprefixOption);
         //
@@ -627,7 +651,7 @@ public class FRFinder {
         
         // parameter validation
         if (!cmd.hasOption("inputprefix") && !cmd.hasOption("gfa")) {
-            System.err.println("You must specify a vg GFA file (--gfa)");
+            System.err.println("You must specify a vg GFA file (--gfa) or in input prefix for post-processing (--inputPrefix)");
             System.exit(1);
         }
         
