@@ -28,7 +28,7 @@ cexText = 0.9
 if (labelsExist) {
 
     xmin = 0
-    xmax = max(frs$ctrl)
+    xmax = max(frs$ctrl)*1.05
     ymin = 0
     ymax = max(frs$case)
 
@@ -43,12 +43,20 @@ if (labelsExist) {
         title(main=paste(graphPrefix," alpha=",alpha," kappa=",kappa, sep=""), cex.main=cex.main)
     } 
     
+    #### fr:size,avglen
     ## text(frs$ctrl, frs$case,
     ##      paste(rownames(frs),":",frs$size,",",frs$avgLen,sep=""),
     ##      cex=cexText, pos=1, offset=0.4, col=alpha("black",0.5)
     ##      )
 
-    text(frs$ctrl, frs$case, rownames(frs),
+    ## ## fr
+    ## text(frs$ctrl, frs$case, rownames(frs),
+    ##      cex=cexText, pos=1, offset=0.4, col=alpha("black",0.5)
+    ##      )
+
+    ## fr:p
+    text(frs$ctrl, frs$case,
+         paste(rownames(frs),":",signif(frs$p,2),sep=""),
          cex=cexText, pos=1, offset=0.4, col=alpha("black",0.5)
          )
 

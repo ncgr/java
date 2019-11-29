@@ -25,7 +25,7 @@ public class FRPair implements Comparable {
     PangenomicGraph graph;
     double alpha;
     int kappa;
-    int priority; // 0=support; 1=|case support - control support|; 2=(case support - control support)
+    int priority; // determines which comparator to use to compare two FRs
 
     NodeSet nodes;
     FrequentedRegion merged;
@@ -92,12 +92,6 @@ public class FRPair implements Comparable {
     /**
      * A comparator for PriorityQueue use -- note that it is the opposite of normal comparison because
      * PriorityQueue allows you to take the top (least) object with peek() but not the bottom (most) object.
-     *
-     * priority values:
-     *
-     * 0=total support
-     * 1=|case support - control support|
-     * 2=(case support - control support)
      */
     @Override
     public int compareTo(Object o) {
@@ -106,7 +100,8 @@ public class FRPair implements Comparable {
         if (priority==0) {
             // total support
             diff = that.merged.support - this.merged.support;
-        } else {
+        } else if (priority==3) {
+            // based on cases vs. controls
             diff = that.merged.caseControlDifference(priority) - this.merged.caseControlDifference(priority);
         }
         return diff;

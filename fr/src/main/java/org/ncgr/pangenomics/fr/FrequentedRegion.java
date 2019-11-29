@@ -17,6 +17,8 @@ import java.util.Set;
 import java.util.HashSet;
 import java.util.TreeSet;
 
+import org.mskcc.cbio.portal.stats.FisherExact;
+
 /**
  * Represents a cluster of nodes along with the supporting subpaths of the full set of strain/subject/subspecies paths.
  *
@@ -210,10 +212,11 @@ public class FrequentedRegion implements Comparable {
     }
 
     /**
-     * The metric used for case vs. control comparisons
-     * priority=1: |control paths*case support - case paths*control support|
-     * priority=2: control paths*case support - case paths*control support
-     * 
+     * The metric used for case vs. control comparisons, with priority option:
+     * 0 = total support
+     * 1 = |case support - control support|
+     * 2 = case support - control support
+     * 3 = Fisher's exact test on case/control support vs. case/control paths
      */
     public int caseControlDifference(int priority) {
         int diff = 0;
@@ -221,6 +224,11 @@ public class FrequentedRegion implements Comparable {
             diff = Math.abs(getLabelCount("case")*ctrlPaths - getLabelCount("ctrl")*casePaths);
         } else if (priority==2) {
             diff = getLabelCount("case")*ctrlPaths - getLabelCount("ctrl")*casePaths;
+        } else if (priority==3) {
+            int maxSize = casePaths + ctrlPaths + getLabelCount("case") + getLabelCount("ctrl");
+            FisherExact fisherExact = new FisherExact(maxSize);
+            double p = fisherExact.getP(casePaths, ctrlPaths, getLabelCount("case"), getLabelCount("ctrl"));
+            diff = -(int)Math.round(Math.log10(p));
         } else {
             // we've got an unallowed priority key for case/control comparison
             System.err.println("ERROR: priority="+priority+" is not supported by FrequentedRegion.caseControlDifference(priority).");

@@ -26,12 +26,12 @@ plot.or.region = function(chr="1", start=1, end=0, label=FALSE, minCalls=0, show
          pch=1, cex=0.5, col="black")
 
     ## highlight highly significant p values
-    points(seg$start[hpts], seg$log10OR[hpts], pch=19, cex=0.5, col="darkred")
+    points(seg$start[hpts], seg$log10OR[hpts], pch=19, cex=0.8, col="darkred")
 
     ## label them with position if requested
     if (label) {
-        text(seg$start[hpts], seg$log10OR[hpts], col="darkred", pos=4, cex=0.6, offset=0.2,
-             paste(seg$start[hpts],"(",seg$caseVars[hpts],"/",seg$ctrlVars[hpts],"|",seg$caseRefs[hpts],"/",seg$ctrlRefs[hpts],";p=",signif(seg$p[hpts],3),")",sep="")
+        text(seg$start[hpts], seg$log10OR[hpts], col="darkred", pos=4, cex=0.8, offset=0.2,
+             paste(seg$start[hpts]," (",seg$caseVars[hpts],"/",seg$caseRefs[hpts],"|",seg$ctrlVars[hpts],"/",seg$ctrlRefs[hpts],";p=",signif(seg$p[hpts],3),")",sep="")
              )
     }
 
@@ -41,8 +41,16 @@ plot.or.region = function(chr="1", start=1, end=0, label=FALSE, minCalls=0, show
         within = genes$seqid==chr & genes$end>=start & genes$start<=end
         genesWithin = genes[within,]
         for (i in 1:nrow(genesWithin)) {
-            lines(c(genesWithin$start[i],genesWithin$end[i]), c(1,1))
-            text((genesWithin$start[i]+genesWithin$end[i])/2, 1, genesWithin$name[i], pos=3)
+            lines(c(genesWithin$start[i],genesWithin$end[i]), c(0,0))
+            x = (genesWithin$start[i]+genesWithin$end[i])/2
+            text(x, 0, genesWithin$name[i], pos=3)
+            lines(rep(genesWithin$start[i],2), c(-0.05,+0.05))
+            lines(rep(genesWithin$end[i],2), c(-0.05,+0.05))
+            if (genesWithin$strand[i]=="-") {
+                text((genesWithin$start[i]+genesWithin$end[i])/2, 0, "<")
+            } else {
+                text((genesWithin$start[i]+genesWithin$end[i])/2, 0, ">")
+            }
         }
     }
 }

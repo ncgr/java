@@ -3,9 +3,14 @@
 ##
 
 plot(frs$support, log10(frs$OR),
-     xlab="Total Support",
+     xlab="total support",
      ylab="case/control log10(odds ratio)",
      main=graphPrefix
+     )
+
+text(frs$support, log10(frs$OR),
+     rownames(frs),
+     pos=1
      )
 
 source("params.R")

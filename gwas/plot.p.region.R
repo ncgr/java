@@ -13,6 +13,7 @@ plot.p.region = function(chr="1", start=1, end=0, label=FALSE, minCalls=0, showG
 
     plot(seg$start[pts], seg$mlog10p[pts],
          xlab="POS", ylab="-log10(p)",
+         xlim=c(start,end),
          main=paste("GRCh37 ",chr,":",start,"-",end," ",(end-start+1),"bp", sep=""),
          pch=1, cex=0.5, col="black")
 
@@ -20,12 +21,12 @@ plot.p.region = function(chr="1", start=1, end=0, label=FALSE, minCalls=0, showG
     lines(c(1,1e9), rep(2,2), col="gray", lty=2)
     
     ## highlight highly significant p values
-    points(seg$start[hpts], seg$mlog10p[hpts], pch=19, cex=0.5, col="darkred")
+    points(seg$start[hpts], seg$mlog10p[hpts], pch=19, cex=0.8, col="darkred")
 
     ## label them with position if requested
     if (label) {
-        text(seg$start[hpts], seg$mlog10p[hpts], col="darkred", pos=4, cex=0.6, offset=0.2,
-             paste(seg$start[hpts],"(",seg$caseVars[hpts],"/",seg$ctrlVars[hpts],"|",seg$caseRefs[hpts],"/",seg$ctrlRefs[hpts],";OR=",signif(seg$OR[hpts],3),")",sep="")
+        text(seg$start[hpts], seg$mlog10p[hpts], col="darkred", pos=4, cex=0.8, offset=0.5,
+             paste(seg$start[hpts]," (",seg$caseVars[hpts],"/",seg$ctrlVars[hpts],"|",seg$caseRefs[hpts],"/",seg$ctrlRefs[hpts],";OR=",signif(seg$OR[hpts],3),")",sep="")
              )
     }
 
@@ -36,7 +37,8 @@ plot.p.region = function(chr="1", start=1, end=0, label=FALSE, minCalls=0, showG
         genesWithin = genes[within,]
         for (i in 1:nrow(genesWithin)) {
             lines(c(genesWithin$start[i],genesWithin$end[i]), c(5,5))
-            text((genesWithin$start[i]+genesWithin$end[i])/2, 5, genesWithin$name[i], pos=3)
+            x = (genesWithin$start[i]+genesWithin$end[i])/2
+            text(x, 5, genesWithin$name[i], pos=3)
             lines(rep(genesWithin$start[i],2), c(4.5,5.5))
             lines(rep(genesWithin$end[i],2), c(4.5,5.5))
             if (genesWithin$strand[i]=="-") {
