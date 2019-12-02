@@ -371,6 +371,9 @@ public class FRFinder {
 
             // output current state for continuation if aborted
             if (frequentedRegions.size()>0 && !getSkipSaveFiles()) {
+                // params with current clock time
+                clockTime = System.currentTimeMillis() - startTime;
+                printParameters(getGraphName()+".save");
                 // usedFRs
                 PrintStream usedFRsOut = new PrintStream(getGraphName()+"."+USED_FRS_SAVE);
                 for (FrequentedRegion fr : usedFRs) {

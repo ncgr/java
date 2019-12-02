@@ -29,6 +29,7 @@
 if (isSaveSet) {
     legend(x="topleft", bty="n",
            c(paste("FRs:",length(frs$nodes)),
+             paste("priority:",priority),
              paste("case paths:",labelCounts["case",1]),
              paste("control paths:",labelCounts["ctrl",1])
              )

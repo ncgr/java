@@ -333,4 +333,11 @@ public class FrequentedRegion implements Comparable {
     public NodeSet getNodes() {
         return nodes;
     }
+
+    /**
+     * Return this FR's average length.
+     */
+    public double getAvgLength() {
+        return avgLength;
+    }
 }

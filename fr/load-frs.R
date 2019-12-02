@@ -35,49 +35,46 @@ if (isSaveSet) {
 
 ## parameters
 ##
-## #alpha=0.8
-## #kappa=3
-## #clocktime=00:00:02
-## #Mon Oct 07 11:43:15 MDT 2019
-## resume=false
-## debug=false
-## priority=1
+## #clocktime=00:00:00
+## #Mon Dec 02 10:13:22 MST 2019
 ## minSup=1
-## bruteForce=false
-## verbose=false
-## maxRound=0
+## debug=false
 ## serial=false
-## prunedGraph=false
+## minSize=1
 ## gfaFile=HTT.400.paths.gfa
 ## minLen=1.0
-## minSize=1
-if (!isSaveSet) {
-    params = read.delim(file=paste(prefix,".params.txt",sep=""), header=FALSE, stringsAsFactors=FALSE, sep="=")
-    for (i in 1:length(rownames(params))) {
-        ## comments section
-        if (params$V1[i]=="#alpha") {
-            alpha = as.numeric(params$V2[i])
-        } else if (params$V1[i]=="#kappa") {
-            kappa = as.numeric(params$V2[i])
-        } else if (params$V1[i]=="#clocktime") {
-            clocktime = params$V2[i]
-        } else if (substr(params$V1[i], 1, 1)=="#") {
-            date = substr(params$V1[i], 2, 1000)
-        } else {
-            ## main parameters section
-            if (params$V1[i]=="resume") resume = as.logical(params$V2[i])
-            if (params$V1[i]=="debug") debug = as.logical(params$V2[i])
-            if (params$V1[i]=="priority") priority = as.numeric(params$V2[i])
-            if (params$V1[i]=="minSup") minSup = as.numeric(params$V2[i])
-            if (params$V1[i]=="bruteForce") bruteForce = as.logical(params$V2[i])
-            if (params$V1[i]=="verbose") verbose = as.logical(params$V2[i])
-            if (params$V1[i]=="maxRound") maxRound = as.numeric(params$V2[i])
-            if (params$V1[i]=="serial") serial = as.logical(params$V2[i])
-            if (params$V1[i]=="prunedGraph") prunedGraph = as.logical(params$V2[i])
-            if (params$V1[i]=="gfaFile") gfaFile = params$V2[i]
-            if (params$V1[i]=="minLen") minLen = as.numeric(params$V2[i])
-            if (params$V1[i]=="minSize") minSize = as.numeric(params$V2[i])
-        }
+## resume=false
+## verbose=false
+## bruteForce=false
+## graphName=HTT.400
+## prunedGraph=false
+## maxRound=0
+## priority=3
+params = read.delim(file=paste(prefix,".params.txt",sep=""), header=FALSE, stringsAsFactors=FALSE, sep="=")
+for (i in 1:length(rownames(params))) {
+    ## comments section
+    if (params$V1[i]=="#alpha") {
+        alpha = as.numeric(params$V2[i])
+    } else if (params$V1[i]=="#kappa") {
+        kappa = as.numeric(params$V2[i])
+    } else if (params$V1[i]=="#clocktime") {
+        clocktime = params$V2[i]
+    } else if (substr(params$V1[i], 1, 1)=="#") {
+        date = substr(params$V1[i], 2, 1000)
+    } else {
+        ## main parameters section
+        if (params$V1[i]=="resume") resume = as.logical(params$V2[i])
+        if (params$V1[i]=="debug") debug = as.logical(params$V2[i])
+        if (params$V1[i]=="priority") priority = as.numeric(params$V2[i])
+        if (params$V1[i]=="minSup") minSup = as.numeric(params$V2[i])
+        if (params$V1[i]=="bruteForce") bruteForce = as.logical(params$V2[i])
+        if (params$V1[i]=="verbose") verbose = as.logical(params$V2[i])
+        if (params$V1[i]=="maxRound") maxRound = as.numeric(params$V2[i])
+        if (params$V1[i]=="serial") serial = as.logical(params$V2[i])
+        if (params$V1[i]=="prunedGraph") prunedGraph = as.logical(params$V2[i])
+        if (params$V1[i]=="gfaFile") gfaFile = params$V2[i]
+        if (params$V1[i]=="minLen") minLen = as.numeric(params$V2[i])
+        if (params$V1[i]=="minSize") minSize = as.numeric(params$V2[i])
     }
 }
 

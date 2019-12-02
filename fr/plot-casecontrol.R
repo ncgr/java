@@ -63,6 +63,10 @@ if (labelsExist) {
     lines(c(0,labelCounts["ctrl",1]*100),c(0,labelCounts["case",1]*100), col="gray")
 
     source("params.R")
+
+    ## highlight low-p values on top
+    lowp = frs$p<1e-2
+    points(frs$ctrl[lowp], frs$case[lowp], pch=19, col="darkred")
     
 } else {
 

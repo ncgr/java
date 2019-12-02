@@ -100,9 +100,17 @@ public class FRPair implements Comparable {
         if (priority==0) {
             // total support
             diff = that.merged.support - this.merged.support;
-        } else if (priority==3) {
-            // based on cases vs. controls
+        } else {
+            // based on cases vs. controls and priority choice
             diff = that.merged.caseControlDifference(priority) - this.merged.caseControlDifference(priority);
+        }
+        // first tie-breaker is smaller size
+        if (diff==0) {
+            diff = this.merged.getNodes().size() - that.merged.getNodes().size(); // want smaller so that < this is positive
+        }
+        // second tie-breaker is smaller average length
+        if (diff==0) {
+            diff = (int)Math.round(this.merged.getAvgLength() - that.merged.getAvgLength()); // want smaller so that < this is positive
         }
         return diff;
     }
