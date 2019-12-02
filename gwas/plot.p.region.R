@@ -26,7 +26,7 @@ plot.p.region = function(chr="1", start=1, end=0, label=FALSE, minCalls=0, showG
     ## label them with position if requested
     if (label) {
         text(seg$start[hpts], seg$mlog10p[hpts], col="darkred", pos=4, cex=0.8, offset=0.5,
-             paste(seg$start[hpts]," (",seg$caseVars[hpts],"/",seg$ctrlVars[hpts],"|",seg$caseRefs[hpts],"/",seg$ctrlRefs[hpts],";OR=",signif(seg$OR[hpts],3),")",sep="")
+             paste(seg$start[hpts]," (",seg$caseVars[hpts],"/",seg$caseRefs[hpts],"|",seg$ctrlVars[hpts],"/",seg$ctrlRefs[hpts],";OR=",signif(seg$OR[hpts],3),")",sep="")
              )
     }
 
