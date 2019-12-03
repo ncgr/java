@@ -9,7 +9,6 @@ library(factoextra)
 
 prefix = readline(prompt="FR file prefix (ex. HTT.400-0.5-1 or HTT.save): ")
 isSaveSet = grepl("save", prefix, fixed=TRUE)
-
 frFilename = paste(prefix, ".frs.txt", sep="")
 
 ## read the FRs table, either a save file or a proper output file
@@ -22,10 +21,8 @@ for (i in 1:length(rownames(frs))) {
 
 ## divine alpha, kappa from filename like HTT.400-0.8-3
 if (isSaveSet) {
-    prefix.parts = strsplit(prefix, ".", fixed=TRUE);
+    prefix.parts = strsplit(prefix, ".save", fixed=TRUE);
     graphPrefix = prefix.parts[[1]][1]
-    alpha = "NA"
-    kappa = "NA"
 } else {
     prefix.parts = strsplit(prefix, "-", fixed=TRUE)
     graphPrefix = prefix.parts[[1]][1]
@@ -33,10 +30,10 @@ if (isSaveSet) {
     kappa = as.numeric(prefix.parts[[1]][3])
 }
 
-## parameters
-##
+## #alpha=1.0
+## #kappa=0
 ## #clocktime=00:00:00
-## #Mon Dec 02 10:13:22 MST 2019
+## #Mon Dec 02 10:33:40 MST 2019
 ## minSup=1
 ## debug=false
 ## serial=false
@@ -63,18 +60,19 @@ for (i in 1:length(rownames(params))) {
         date = substr(params$V1[i], 2, 1000)
     } else {
         ## main parameters section
-        if (params$V1[i]=="resume") resume = as.logical(params$V2[i])
-        if (params$V1[i]=="debug") debug = as.logical(params$V2[i])
-        if (params$V1[i]=="priority") priority = as.numeric(params$V2[i])
         if (params$V1[i]=="minSup") minSup = as.numeric(params$V2[i])
-        if (params$V1[i]=="bruteForce") bruteForce = as.logical(params$V2[i])
-        if (params$V1[i]=="verbose") verbose = as.logical(params$V2[i])
-        if (params$V1[i]=="maxRound") maxRound = as.numeric(params$V2[i])
+        if (params$V1[i]=="debug") debug = as.logical(params$V2[i])
         if (params$V1[i]=="serial") serial = as.logical(params$V2[i])
-        if (params$V1[i]=="prunedGraph") prunedGraph = as.logical(params$V2[i])
+        if (params$V1[i]=="minSize") minSize = as.numeric(params$V2[i])
         if (params$V1[i]=="gfaFile") gfaFile = params$V2[i]
         if (params$V1[i]=="minLen") minLen = as.numeric(params$V2[i])
-        if (params$V1[i]=="minSize") minSize = as.numeric(params$V2[i])
+        if (params$V1[i]=="resume") resume = as.logical(params$V2[i])
+        if (params$V1[i]=="verbose") verbose = as.logical(params$V2[i])
+        if (params$V1[i]=="bruteForce") bruteForce = as.logical(params$V2[i])
+        if (params$V1[i]=="graphName") graphName = params$V2[i]
+        if (params$V1[i]=="prunedGraph") prunedGraph = as.logical(params$V2[i])
+        if (params$V1[i]=="maxRound") maxRound = as.numeric(params$V2[i])
+        if (params$V1[i]=="priority") priority = as.numeric(params$V2[i])
     }
 }
 

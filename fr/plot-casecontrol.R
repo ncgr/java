@@ -70,7 +70,7 @@ if (labelsExist) {
     
 } else {
 
-    print("This experiment has no labels.")
+    print("This experiment has no labels; it's likely loaded from a save set.");
 
 }
 

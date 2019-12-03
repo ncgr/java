@@ -373,7 +373,7 @@ public class FRFinder {
             if (frequentedRegions.size()>0 && !getSkipSaveFiles()) {
                 // params with current clock time
                 clockTime = System.currentTimeMillis() - startTime;
-                printParameters(getGraphName()+".save");
+                printParameters(getGraphName()+".save", alpha, kappa);
                 // usedFRs
                 PrintStream usedFRsOut = new PrintStream(getGraphName()+"."+USED_FRS_SAVE);
                 for (FrequentedRegion fr : usedFRs) {
@@ -408,7 +408,7 @@ public class FRFinder {
         
 	// final output
 	if (frequentedRegions.size()>0) {
-            printParameters(formOutputPrefix(alpha, kappa));
+            printParameters(formOutputPrefix(alpha, kappa), alpha, kappa);
             printFrequentedRegions(formOutputPrefix(alpha, kappa));
             printFRSubpaths(formOutputPrefix(alpha, kappa));
             printPathFRs(formOutputPrefix(alpha, kappa));
@@ -942,9 +942,9 @@ public class FRFinder {
     /**
      * Print out the parameters.
      */
-    public void printParameters(String outputPrefix) throws IOException {
+    public void printParameters(String outputPrefix, double alpha, int kappa) throws IOException {
         PrintStream out = new PrintStream(getParamsFilename(outputPrefix));
-        String comments = "clocktime="+formatTime(clockTime);
+        String comments = "alpha="+alpha+"\n"+"kappa="+kappa+"\n"+"clocktime="+formatTime(clockTime);
         parameters.store(out, comments);
         out.close();
     }
