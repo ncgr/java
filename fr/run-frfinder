@@ -39,18 +39,20 @@
 dir=$1
 prefix=$2
 priority=$3
+alpha=$4
+kappa=$5
 
-## use $4, $5, $6 for extra stuff like --resume --debug
+## use $6 for extra stuff like --resume --debug
 
 # alphastart=0.1
 # alphaend=1.0
 # kappastart=0
 # kappaend=10
 
-alphastart=1.0
-alphaend=1.0
-kappastart=0
-kappaend=0
+alphastart=$alpha
+alphaend=$alpha
+kappastart=$kappa
+kappaend=$kappa
 
 echo "# $dir $prefix alpha=$alphastart-$alphaend kappa=$kappastart-$kappaend priority=$priority"
 
