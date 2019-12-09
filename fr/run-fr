@@ -1,21 +1,28 @@
 #!/bin/sh
-##usage: FrequentedRegion
-## -a,--alpha <arg>       starting value of alpha for a scan (can equal
-##                         alphaend)
-## -g,--genotype <arg>     which genotype to include (0,1) from the input
-##                         file; -1 to include all [-1]
-## -gfa,--gfa <arg>        GFA file
-## -k,--kappa <arg>       starting value of kappa for a scan (can equal
-##                         kappaend)
-## -n,--nodes <arg>        set of nodes to calculate FR e.g. [1,2,3,4,5]
-## -p,--pathlabels <arg>   tab-delimited file with pathname<tab>label
+## usage: FrequentedRegion
+##  -a,--alpha <arg>              starting value of alpha for a scan (can
+##                                equal alphaend)
+##  -g,--genotype <arg>           which genotype to include (0,1) from the
+##                                input file; -1 to include all [-1]
+##  -gfa,--gfa <arg>              GFA file
+##  -k,--kappa <arg>              starting value of kappa for a scan (can
+##                                equal kappaend)
+##  -n,--nodes <arg>              set of nodes to calculate FR e.g.
+##                                [1,2,3,4,5]
+##  -p,--pathlabels <arg>         tab-delimited file with pathname<tab>label
+##  -pri,--priorityOption <arg>   option for priority weighting of FRs:
+##                                0=total support, 1=case support-control
+##                                support, 2=|case support-control support|,
+##                                3=Fisher's exact test double-sided p value,
+##                                4=control support (descending)
 
 dir=$1
 prefix=$2
 alpha=$3
 kappa=$4
-nodes=$5
+priority=$5
+nodes=$6
 
 java -server -Xmx160g -XX:+UseParallelGC -Xms2g -XX:SoftRefLRUPolicyMSPerMB=1 -XX:MaxHeapFreeRatio=99 -cp "build/install/fr/lib/*" org.ncgr.pangenomics.fr.FrequentedRegion \
      --pathlabels=$dir/labels.txt --gfa=$dir/$prefix.paths.gfa \
-     --alpha=$alpha --kappa=$kappa --nodes=$nodes
+     --alpha=$alpha --kappa=$kappa --priorityOption=$priority --nodes=$nodes
