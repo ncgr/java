@@ -23,31 +23,35 @@ public class FRPair implements Comparable {
     FrequentedRegion fr1;
     FrequentedRegion fr2;
     PangenomicGraph graph;
-    double alpha;
+    double alpha, oneMinusAlpha;
     int kappa;
-    int priority; // determines which comparator to use to compare two FRs
+    int priorityOption;
 
     NodeSet nodes;
     FrequentedRegion merged;
 
     boolean alphaReject;
     
-    FRPair(FrequentedRegion fr1, FrequentedRegion fr2, PangenomicGraph graph, double alpha, int kappa, int priority) {
+    /**
+     * Construct from a pair of FrequentedRegions and run parameters.
+     */
+    FRPair(FrequentedRegion fr1, FrequentedRegion fr2) {
         this.fr1 = fr1;
         this.fr2 = fr2;
-        this.graph = graph;
-        this.alpha = alpha;
-        this.kappa = kappa;
-        this.priority = priority;
+        this.graph = fr1.graph;
+        this.alpha = fr1.alpha;
+        this.kappa = fr1.kappa;
+        this.priorityOption = fr1.priorityOption;
+        this.oneMinusAlpha = 1.0 - alpha;
         this.nodes = NodeSet.merge(fr1.nodes, fr2.nodes);
         // nothing to do if an identity merge
         if (fr1.equals(fr2)) this.merged = fr1;
     }
 
     /**
-     * Compute rejection booleans without merging.
+     * Compute alpha rejection booleans without merging.
      */
-    public void computeRejection() {
+    public void computeAlphaRejection() {
         // defaults
         alphaReject = false;
         if (nodes.size()>1) {
@@ -69,7 +73,7 @@ public class FRPair implements Comparable {
                     }
                 }
             }
-            alphaReject = minMissing>(int)(alpha*nodes.size());
+            alphaReject = minMissing>(int)(nodes.size()*oneMinusAlpha);
         }
     }
     
@@ -78,7 +82,7 @@ public class FRPair implements Comparable {
      * @returns the set of supporting path segments
      */
     public void merge() throws NullNodeException, NullSequenceException {
-        merged = new FrequentedRegion(graph, NodeSet.merge(fr1.nodes,fr2.nodes), alpha, kappa);
+        merged = new FrequentedRegion(graph, NodeSet.merge(fr1.nodes,fr2.nodes), alpha, kappa, priorityOption);
     }
 
     /**
@@ -92,34 +96,20 @@ public class FRPair implements Comparable {
     /**
      * A comparator for PriorityQueue use -- note that it is the opposite of normal comparison because
      * PriorityQueue allows you to take the top (least) object with peek() but not the bottom (most) object.
+     * Uses the priorty set with the priorityOption value.
      */
     @Override
     public int compareTo(Object o) {
 	FRPair that = (FRPair) o;
-        int diff = 0;
-        if (priority==0) {
-            // total support
-            diff = that.merged.support - this.merged.support;
-        } else {
-            // based on cases vs. controls and priority choice
-            diff = that.merged.caseControlDifference(priority) - this.merged.caseControlDifference(priority);
-        }
-        // first tie-breaker is smaller size
-        if (diff==0) {
-            diff = this.merged.getNodes().size() - that.merged.getNodes().size(); // want smaller so that < this is positive
-        }
-        // second tie-breaker is smaller average length
-        if (diff==0) {
-            diff = (int)Math.round(this.merged.getAvgLength() - that.merged.getAvgLength()); // want smaller so that < this is positive
-        }
-        return diff;
+        // DEBUG: NORMAL COMPARISON
+        return this.merged.compareTo(that.merged);
     }
 
     /**
      * Reader-friendly string summary.
      */
     public String toString() {
-        return nodes.toString();
-        // return "fr1="+fr1.toString()+";fr2="+fr2.toString()+";merged.support="+merged.support+";merged.avgLength="+merged.avgLength+";merged.nodes.size="+merged.nodes.size();
+        // return nodes.toString();
+        return "fr1="+fr1.toString()+";fr2="+fr2.toString()+";merged.support="+merged.support+";merged.avgLength="+merged.avgLength+";merged.nodes.size="+merged.nodes.size();
     }
 }

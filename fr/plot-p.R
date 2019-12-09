@@ -15,3 +15,4 @@ source("params.R")
 ## highlight low-p values on top
 lowp = frs$p<1e-2
 points(frs$support[lowp], -log10(frs$p[lowp]), pch=19, col="darkred")
+text(frs$support[lowp], -log10(frs$p[lowp]), rownames(frs)[lowp], pos=1, col="darkred")

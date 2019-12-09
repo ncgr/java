@@ -8,10 +8,7 @@ plot(frs$support, log10(frs$OR),
      main=graphPrefix
      )
 
-text(frs$support, log10(frs$OR),
-     rownames(frs),
-     pos=1
-     )
+text(frs$support, log10(frs$OR), rownames(frs), pos=1)
 
 ## zero line
 lines(c(min(frs$support),max(frs$support)), c(0,0), lty=3, col="gray")
@@ -21,3 +18,4 @@ source("params.R")
 ## highlight low-p values on top
 lowp = frs$p<1e-2
 points(frs$support[lowp], log10(frs$OR[lowp]), pch=19, col="darkred")
+text(frs$support[lowp], log10(frs$OR[lowp]), rownames(frs)[lowp], pos=1, col="darkred")

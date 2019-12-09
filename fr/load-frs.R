@@ -46,7 +46,7 @@ if (isSaveSet) {
 ## graphName=HTT.400
 ## prunedGraph=false
 ## maxRound=0
-## priority=3
+## priorityOption=3
 params = read.delim(file=paste(prefix,".params.txt",sep=""), header=FALSE, stringsAsFactors=FALSE, sep="=")
 for (i in 1:length(rownames(params))) {
     ## comments section
@@ -72,7 +72,7 @@ for (i in 1:length(rownames(params))) {
         if (params$V1[i]=="graphName") graphName = params$V2[i]
         if (params$V1[i]=="prunedGraph") prunedGraph = as.logical(params$V2[i])
         if (params$V1[i]=="maxRound") maxRound = as.numeric(params$V2[i])
-        if (params$V1[i]=="priority") priority = as.numeric(params$V2[i])
+        if (params$V1[i]=="priorityOption") priorityOption = as.numeric(params$V2[i])
     }
 }
 
@@ -121,11 +121,11 @@ if (labelsExist) {
     frs$OR = (frs$case/frs$ctrl) / (casePaths/ctrlPaths)
 }
 
-## Fisher's exact test p-value (if label counts exist) for the contingency table: case/ctrl / casePaths/ctrlPaths
-if (labelsExist) {
-    casePaths = labelCounts["case",1]
-    ctrlPaths = labelCounts["ctrl",1]
-    for (i in 1:nrow(frs)) {
-        frs$p[i] = as.numeric(fisher.test(matrix(c(frs$case[i],frs$ctrl[i],casePaths,ctrlPaths), nrow=2))["p.value"])
-    }
-}
+## ## Fisher's exact test p-value (if label counts exist) for the contingency table: case/ctrl / casePaths/ctrlPaths
+## if (labelsExist) {
+##     casePaths = labelCounts["case",1]
+##     ctrlPaths = labelCounts["ctrl",1]
+##     for (i in 1:nrow(frs)) {
+##         frs$p[i] = as.numeric(fisher.test(matrix(c(frs$case[i],frs$ctrl[i],casePaths,ctrlPaths), nrow=2))["p.value"])
+##     }
+## }

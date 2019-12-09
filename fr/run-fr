@@ -1,0 +1,21 @@
+#!/bin/sh
+##usage: FrequentedRegion
+## -a,--alpha <arg>       starting value of alpha for a scan (can equal
+##                         alphaend)
+## -g,--genotype <arg>     which genotype to include (0,1) from the input
+##                         file; -1 to include all [-1]
+## -gfa,--gfa <arg>        GFA file
+## -k,--kappa <arg>       starting value of kappa for a scan (can equal
+##                         kappaend)
+## -n,--nodes <arg>        set of nodes to calculate FR e.g. [1,2,3,4,5]
+## -p,--pathlabels <arg>   tab-delimited file with pathname<tab>label
+
+dir=$1
+prefix=$2
+alpha=$3
+kappa=$4
+nodes=$5
+
+java -server -Xmx160g -XX:+UseParallelGC -Xms2g -XX:SoftRefLRUPolicyMSPerMB=1 -XX:MaxHeapFreeRatio=99 -cp "build/install/fr/lib/*" org.ncgr.pangenomics.fr.FrequentedRegion \
+     --pathlabels=$dir/labels.txt --gfa=$dir/$prefix.paths.gfa \
+     --alpha=$alpha --kappa=$kappa --nodes=$nodes

@@ -1,48 +1,45 @@
 #!/bin/sh
 ## usage: FRFinder
-##  -ae,--alphaend <arg>     ending value of alpha for a scan (can equal
-##                           alphastart)
-##  -as,--alphastart <arg>   starting value of alpha for a scan (can equal
-##                           alphaend)
-##  -bf,--bruteforce         find FRs comprehensively via brute force -
-##                           testing only! [false]
-##  -do,--debug              debug output [false]
-##  -g,--genotype <arg>      which genotype to include (0,1) from the input
-##                           file; -1 to include all [-1]
-##  -gfa,--gfa <arg>         GFA file
-##  -i,--inputprefix <arg>   input file prefix for further processing
-##  -ke,--kappaend <arg>     ending value of kappa for a scan (can equal
-##                           kappastart)
-##  -ks,--kappastart <arg>   starting value of kappa for a scan (can equal
-##                           kappaend)
-##  -l,--minlen <arg>        minimum allowed average length (bp) of an FR's
-##                           subpaths [1.0]
-##  -m,--minsup <arg>        minimum number of supporting paths for a region
-##                           to be considered interesting [1]
-##  -mr,--maxround <arg>     maximum FR-finding round to run (0=unlimited)
-##  -p,--pathlabels <arg>    tab-delimited file with pathname<tab>label
-##  -pr,--prunedgraph        prune graph -- remove all common nodes (false)
-##  -pri,--priority          priority of FRs: 0=support; 1=|case-control|;
-##                           2=case-control (0)
-##  -r,--resume              resume from a previous run [false]
-##  -s,--minsize <arg>       minimum number of nodes that a FR must contain
-##                           to be considered interesting [1]
-##  -snp,--skipnodepaths     skip building list of paths per node (false)
-##  -sr,--serial             find FRs serially for testing/experiments
-##                           [false]
-##  -ssf,--skipsavefiles     skip saving files after each FR is found (to
-##                           save time; false)
-##  -v,--verbose             verbose output [false]
+## -ae,--alphaend <arg>     ending value of alpha for a scan (can equal
+##                          alphastart)
+## -as,--alphastart <arg>   starting value of alpha for a scan (can equal
+##                          alphaend)
+## -do,--debug              debug output [false]
+## -g,--genotype <arg>      which genotype to include (0,1) from the input
+##                          file; -1 to include all [-1]
+## -gfa,--gfa <arg>         GFA file
+## -i,--inputprefix <arg>   input file prefix for post-processing
+## -ke,--kappaend <arg>     ending value of kappa for a scan (can equal
+##                          kappastart)
+## -ks,--kappastart <arg>   starting value of kappa for a scan (can equal
+##                          kappaend)
+## -l,--minlen <arg>        minimum allowed average length (bp) of an FR's
+##                          subpaths [1.0]
+## -m,--minsup <arg>        minimum number of supporting paths for a region
+##                          to be considered interesting [1]
+## -mr,--maxround <arg>     maximum FR-finding round to run (0=unlimited)
+## -p,--pathlabels <arg>    tab-delimited file with pathname<tab>label
+## -pr,--prunedgraph        prune graph -- remove all common nodes (false)
+## -pri,--priority <arg>    priority of FRs:
+##                          0=support;1=|case-control|;2=case/control odds
+##                          ratio;3=case/control Fisher p-value [0]
+## -r,--resume              resume from a previous run [false]
+## -s,--minsize <arg>       minimum number of nodes that a FR must contain
+##                          to be considered interesting [1]
+## -snp,--skipnodepaths     skip building list of paths per node (false)
+## -ssf,--skipsavefiles     skip saving files after each FR is found (to
+##                          save time; false)
+## -v,--verbose             verbose output [false]
 
 ## perfect path matching to FR is alpha=1, kappa=0
 
 dir=$1
 prefix=$2
-priority=$3
-alpha=$4
-kappa=$5
+alpha=$3
+kappa=$4
+priority=$5
 
-## use $6 for extra stuff like --resume --debug
+## use $6 and $7 for extra stuff like --resume --debug
 
 # alphastart=0.1
 # alphaend=1.0
@@ -57,6 +54,6 @@ kappaend=$kappa
 echo "# $dir $prefix alpha=$alphastart-$alphaend kappa=$kappastart-$kappaend priority=$priority"
 
 java -server -Xmx160g -XX:+UseParallelGC -Xms2g -XX:SoftRefLRUPolicyMSPerMB=1 -XX:MaxHeapFreeRatio=99 -cp "build/install/fr/lib/*" org.ncgr.pangenomics.fr.FRFinder \
-     --priority=$priority --skipnodepaths $4 $5 $6 \
+     --priority=$priority --skipnodepaths $6 $7 \
      --pathlabels=$dir/labels.txt --gfa=$dir/$prefix.paths.gfa \
      --alphastart=$alphastart --alphaend=$alphaend --kappastart=$kappastart --kappaend=$kappaend
