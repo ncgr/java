@@ -15,9 +15,6 @@ frFilename = paste(prefix, ".frs.txt", sep="")
 frs = read.table(frFilename, header=TRUE, stringsAsFactors=FALSE)
 rownames(frs) = frs$FR
 frs$FR = NULL
-for (i in 1:length(rownames(frs))) {
-    frs$size[i] = length(strsplit(frs$nodes[i],",")[[1]])
-}
 
 ## divine alpha, kappa from filename like HTT.400-0.8-3
 if (isSaveSet) {

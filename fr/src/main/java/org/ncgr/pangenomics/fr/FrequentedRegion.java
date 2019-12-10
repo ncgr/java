@@ -74,7 +74,8 @@ public class FrequentedRegion implements Comparable {
     int casePaths;
     int ctrlPaths;
 
-    // the priority option for comparison
+    // the priority and priority option for comparison
+    int priority;
     int priorityOption;
 
     /**
@@ -94,6 +95,7 @@ public class FrequentedRegion implements Comparable {
         this.nodes.update();
         updateSupport();
         updateAvgLength();
+        priority = getPriority();
     }
 
     /**
@@ -112,6 +114,7 @@ public class FrequentedRegion implements Comparable {
         }
         support = subpaths.size();
         updateAvgLength();
+        priority = getPriority();
     }
 
     /**
@@ -130,6 +133,7 @@ public class FrequentedRegion implements Comparable {
             this.casePaths = graph.getLabelCounts().get("case");
             this.ctrlPaths = graph.getLabelCounts().get("ctrl");
         }
+        priority = getPriority();
     }
 
     /**
@@ -143,28 +147,29 @@ public class FrequentedRegion implements Comparable {
         this.priorityOption = priorityOption;
         this.support = support;
         this.avgLength = avgLength;
+        priority = getPriority();
     }        
 
     /**
-     * Equality is based on priority. MANY FRs are equal!
+     * Equality is based on nodes.
      */
     public boolean equals(Object o) {
 	FrequentedRegion that = (FrequentedRegion) o;
-        return this.getPriority()==that.getPriority();
+        return this.nodes.equals(that.nodes);
     }
 
     /**
-     * Comparison is based on priority; favor size as tie-breaker.
+     * Comparison is based on priority; with node size then nodes as tie-breaker.
      */
     @Override
     public int compareTo(Object o) {
 	FrequentedRegion that = (FrequentedRegion) o;
-        int thisPriority = this.getPriority();
-        int thatPriority = that.getPriority();
-        if (thisPriority!=thatPriority) {
-            return thisPriority - thatPriority;
-        } else {
+        if (this.priority!=that.priority) {
+            return this.priority - that.priority;
+        } else if (this.nodes.size()!=that.nodes.size()) {
             return -(this.nodes.size() - that.nodes.size());
+        } else {
+            return this.nodes.compareTo(that.nodes);
         }
     }
     
@@ -213,7 +218,7 @@ public class FrequentedRegion implements Comparable {
      * Return the column heading for the toString() fields
      */
     public String columnHeading() {
-        String s = "nodes\tsupport\tavgLen";
+        String s = "nodes\tsize\tsupport\tavgLen";
         if (graph!=null && graph.getLabelCounts().size()>0) {
             for (String label : graph.getLabelCounts().keySet()) {
                 s += "\t"+label;
@@ -258,26 +263,26 @@ public class FrequentedRegion implements Comparable {
      *   4 = -log10(p) where p = Fisher's exact test double-sided p value
      */
     public int getPriority() {
-        int priority = 0;
+        int p = 0;
         switch(priorityOption) {
         case 0 :
-            priority = support;
+            p = support;
             break;
         case 1 :
-            priority = caseSupport - ctrlSupport;
+            p = caseSupport - ctrlSupport;
             break;
         case 2 :
-            priority = Math.abs(caseSupport - ctrlSupport);
+            p = Math.abs(caseSupport - ctrlSupport);
             break;
         case 3 :
             if (ctrlSupport==0) {
-                priority = caseSupport;
+                p = caseSupport;
             } else {
-                priority = (int)Math.round(Math.log10(oddsRatio()));
+                p = (int)Math.round(Math.log10(oddsRatio()));
             }
             break;
         case 4 :
-            priority = -(int)Math.round(Math.log10(fisherExactP())*100);
+            p = -(int)Math.round(Math.log10(fisherExactP())*100);
             break;
         default :
             // we've got an unallowed priority key for case/control comparison
@@ -285,7 +290,7 @@ public class FrequentedRegion implements Comparable {
             System.exit(1);
             break;
         }
-        return priority;
+        return p;
     }
 
     /**
@@ -309,7 +314,7 @@ public class FrequentedRegion implements Comparable {
      * Return a string summary of this frequented region.
      */
     public String toString() {
-        String s = nodes.toString()+"\t"+support;
+        String s = nodes.toString()+"\t"+nodes.size()+"\t"+support;
         if (support>0) {
             s += "\t"+df.format(avgLength);
             // show label support if available
@@ -331,7 +336,7 @@ public class FrequentedRegion implements Comparable {
                     }
                 }
                 // add the priority
-                s += "\t"+getPriority();
+                s += "\t"+priority;
                 // add the odds ratio
                 s += "\t"+orf.format(oddsRatio());
                 // add the Fisher's exact test p value

@@ -30,6 +30,7 @@ if (isSaveSet) {
     legend(x="topleft", bty="n",
            c(paste("FRs:",length(frs$nodes)),
              paste("priority option:",priorityOption),
+             paste("min. support:",minSup),
              paste("case paths:",labelCounts["case",1]),
              paste("control paths:",labelCounts["ctrl",1])
              )
@@ -40,6 +41,7 @@ if (isSaveSet) {
              gfaFile,
              paste("clock time:",clocktime),
              paste("priority option:",priorityOption),
+             paste("min. support:",minSup),
              paste("FRs:",length(frs$nodes)),
              paste("case paths:",labelCounts["case",1]),
              paste("control paths:",labelCounts["ctrl",1])

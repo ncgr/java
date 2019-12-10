@@ -78,31 +78,19 @@ public class NodeSet extends TreeSet<Node> implements Comparable {
     }
 
     /**
-     * Equality if exactly the same nodes.
+     * Equality if exactly the same nodes, meaning the same string.
      */
     public boolean equals(Object o) {
 	NodeSet that = (NodeSet) o;
-        return this.containsAll(that) && that.containsAll(this);
+        return this.toString().equals(that.toString());
     }
 
     /**
-     * Compare based on size, then node IDs, one by one.
+     * Compare alphabetically.
      */
     public int compareTo(Object o) {
 	NodeSet that = (NodeSet) o;
-        if (this.equals(that)) {
-            return 0;
-        } else if (this.size()!=that.size()) {
-            return this.size() - that.size();
-        } else {
-            Node thisNode = this.first();
-            Node thatNode = that.first();
-            while (thisNode.equals(thatNode)) {
-                thisNode = this.higher(thisNode);
-                thatNode = that.higher(thatNode);
-            }
-            return thisNode.compareTo(thatNode);
-        }
+        return this.toString().compareTo(that.toString());
     }
 
     /**
