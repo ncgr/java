@@ -48,7 +48,7 @@ priorityoption=$5
 
 ## use $6 and $7 for extra stuff like --resume --debug
 
-echo "# $dir $prefix alpha=$alphastart-$alphaend kappa=$kappastart-$kappaend priority=$priority"
+echo "# $dir $prefix alpha=$alpha kappa=$kappa priorityOption=$priorityoption"
 
 java -server -Xmx160g -XX:+UseParallelGC -Xms2g -XX:SoftRefLRUPolicyMSPerMB=1 -XX:MaxHeapFreeRatio=99 -cp "build/install/fr/lib/*" org.ncgr.pangenomics.fr.FRFinder \
      --priorityoption=$priorityoption --skipnodepaths $6 $7 \
