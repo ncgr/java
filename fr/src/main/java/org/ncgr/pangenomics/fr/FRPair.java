@@ -25,7 +25,7 @@ public class FRPair implements Comparable {
     PangenomicGraph graph;
     double alpha, oneMinusAlpha;
     int kappa;
-    int priorityOption;
+    String priorityOption;
 
     NodeSet nodes;
     FrequentedRegion merged;

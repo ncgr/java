@@ -38,7 +38,12 @@ import org.mskcc.cbio.portal.stats.FisherExact;
  */
 public class FrequentedRegion implements Comparable {
 
-    static String PRIORITY_OPTIONS = "0=total support, 1=case support-control support, 2=|case support-control support|, 3=Fisher's exact test double-sided p value, 4=control support (descending)";
+    static String PRIORITY_OPTIONS =
+        "0=total support, " +
+        "1=case support-control support, " +
+        "2=|case support-control support|, " +
+        "3:label=support by given label [case]," +
+        "4=Fisher's exact test double-sided p value";
 
     // static utility stuff
     static DecimalFormat df = new DecimalFormat("0.00");
@@ -76,70 +81,67 @@ public class FrequentedRegion implements Comparable {
 
     // the priority and priority option for comparison
     int priority;
-    int priorityOption;
+    String priorityOption;
+    String priorityLabel;
 
     /**
      * Construct given a PangenomicGraph, NodeSet and alpha and kappa filter parameters.
      */
-    FrequentedRegion(PangenomicGraph graph, NodeSet nodes, double alpha, int kappa, int priorityOption) throws NullNodeException, NullSequenceException {
+    FrequentedRegion(PangenomicGraph graph, NodeSet nodes, double alpha, int kappa, String priorityOption) throws NullNodeException, NullSequenceException {
         this.graph = graph;
         this.nodes = nodes;
         this.alpha = alpha;
         this.kappa = kappa;
         this.priorityOption = priorityOption;
-        if (graph.getLabelCounts().get("case")!=null && graph.getLabelCounts().get("ctrl")!=null) {
-            this.casePaths = graph.getLabelCounts().get("case");
-            this.ctrlPaths = graph.getLabelCounts().get("ctrl");
-        }
+        getPriorityLabel();
+        getCaseCtrlPaths();
         // compute the subpaths, average length, support, etc.
         this.nodes.update();
         updateSupport();
         updateAvgLength();
-        priority = getPriority();
+        getPriority();
     }
 
     /**
      * Construct given a PangenomicGraph, NodeSet and Subpaths
      */
-    FrequentedRegion(PangenomicGraph graph, NodeSet nodes, Set<PathWalk> subpaths, double alpha, int kappa, int priorityOption) {
+    FrequentedRegion(PangenomicGraph graph, NodeSet nodes, Set<PathWalk> subpaths, double alpha, int kappa, String priorityOption) {
         this.graph = graph;
         this.nodes = nodes;
         this.subpaths = subpaths;
         this.alpha = alpha;
         this.kappa = kappa;
         this.priorityOption = priorityOption;
-        if (graph.getLabelCounts().get("case")!=null && graph.getLabelCounts().get("ctrl")!=null) {
-            this.casePaths = graph.getLabelCounts().get("case");
-            this.ctrlPaths = graph.getLabelCounts().get("ctrl");
-        }
+        getPriorityLabel();
+        getCaseCtrlPaths();
         support = subpaths.size();
+        caseSupport = getLabelSupport("case");
+        ctrlSupport = getLabelSupport("ctrl");
         updateAvgLength();
-        priority = getPriority();
+        getPriority();
     }
 
     /**
      * Construct given a PangenomicGraph, NodeSet and Subpaths and already known support and avgLength
      */
-    FrequentedRegion(PangenomicGraph graph, NodeSet nodes, Set<PathWalk> subpaths, double alpha, int kappa, int priorityOption, int support, double avgLength) {
+    FrequentedRegion(PangenomicGraph graph, NodeSet nodes, Set<PathWalk> subpaths, double alpha, int kappa, String priorityOption, int support, double avgLength) {
         this.graph = graph;
         this.nodes = nodes;
         this.subpaths = subpaths;
         this.alpha = alpha;
         this.kappa = kappa;
-        this.priorityOption = priorityOption;
         this.support = support;
         this.avgLength = avgLength;
-        if (graph.getLabelCounts().get("case")!=null && graph.getLabelCounts().get("ctrl")!=null) {
-            this.casePaths = graph.getLabelCounts().get("case");
-            this.ctrlPaths = graph.getLabelCounts().get("ctrl");
-        }
-        priority = getPriority();
+        this.priorityOption = priorityOption;
+        getPriorityLabel();
+        getCaseCtrlPaths();
+        getPriority();
     }
 
     /**
-     * Construct given only basic information, used for post-processing.
+     * Construct given only basic information, used for post-processing. NO GRAPH.
      */
-    FrequentedRegion(NodeSet nodes, Set<PathWalk> subpaths, double alpha, int kappa, int priorityOption, int support, double avgLength) {
+    FrequentedRegion(NodeSet nodes, Set<PathWalk> subpaths, double alpha, int kappa, String priorityOption, int support, double avgLength) {
         this.nodes = nodes;
         this.subpaths = subpaths;
         this.alpha = alpha;
@@ -147,7 +149,9 @@ public class FrequentedRegion implements Comparable {
         this.priorityOption = priorityOption;
         this.support = support;
         this.avgLength = avgLength;
-        priority = getPriority();
+        this.priorityOption = priorityOption;
+        getPriorityLabel();
+        getPriority();
     }        
 
     /**
@@ -170,6 +174,16 @@ public class FrequentedRegion implements Comparable {
             return -(this.nodes.size() - that.nodes.size());
         } else {
             return this.nodes.compareTo(that.nodes);
+        }
+    }
+
+    /**
+     * Compute the total case and control paths in the graph.
+     */
+    void getCaseCtrlPaths() {
+        if (graph.getLabelCounts().get("case")!=null && graph.getLabelCounts().get("ctrl")!=null) {
+            casePaths = graph.getLabelCounts().get("case");
+            ctrlPaths = graph.getLabelCounts().get("ctrl");
         }
     }
     
@@ -254,43 +268,58 @@ public class FrequentedRegion implements Comparable {
     }
 
     /**
-     * The integer metric used for case vs. control comparisons.
+     * Set the label to base label-based priority on.
+     */
+    void getPriorityLabel() {
+        String[] parts = priorityOption.split(":");
+        if (parts.length>1) {
+            priorityLabel = parts[1];
+        } else {
+            priorityLabel = "case"; // default
+        }
+    }
+
+    /**
+     * Get the integer metric used for case vs. control comparisons.
      * priorityOption:
      *   0 = total support
      *   1 =  case support - control support
      *   2 = |case support - control support|
-     *   3 = case support if control support is zero, else log10(odds ratio)
+     *   3:label = label support if other label support is zero, else log10(odds ratio)
      *   4 = -log10(p) where p = Fisher's exact test double-sided p value
      */
-    public int getPriority() {
-        int p = 0;
-        switch(priorityOption) {
-        case 0 :
-            p = support;
-            break;
-        case 1 :
-            p = caseSupport - ctrlSupport;
-            break;
-        case 2 :
-            p = Math.abs(caseSupport - ctrlSupport);
-            break;
-        case 3 :
-            if (ctrlSupport==0) {
-                p = caseSupport;
+    void getPriority() {
+        priority = 0;
+        if (priorityOption.startsWith("0")) {
+            priority = support;
+        } else if (priorityOption.startsWith("1")) {
+            priority = caseSupport - ctrlSupport;
+        } else if (priorityOption.startsWith("2")) {
+            priority = Math.abs(caseSupport - ctrlSupport);
+        } else if (priorityOption.startsWith("3")) {
+            if (priorityLabel.equals("case")) {
+                if (ctrlSupport==0) {
+                    priority = caseSupport;
+                } else {
+                    priority = (int)Math.round(Math.log10(oddsRatio()));
+                }
+            } else if (priorityLabel.equals("ctrl")) {
+                if (caseSupport==0) {
+                    priority = ctrlSupport;
+                } else {
+                    priority = -(int)Math.round(Math.log10(oddsRatio()));
+                }
             } else {
-                p = (int)Math.round(Math.log10(oddsRatio()));
+                System.err.println("ERROR: priority label "+priorityLabel+" is not supported by FrequentedRegion.getPriority().");
+                System.exit(1);
             }
-            break;
-        case 4 :
-            p = -(int)Math.round(Math.log10(fisherExactP())*100);
-            break;
-        default :
+        } else if (priorityOption.startsWith("4")) {
+            priority = -(int)Math.round(Math.log10(fisherExactP())*100);
+        } else {
             // we've got an unallowed priority key for case/control comparison
-            System.err.println("ERROR: priority option "+priorityOption+" is not supported by FrequentedRegion.getPriority(priorityOption).");
+            System.err.println("ERROR: priority option "+priorityOption+" is not supported by FrequentedRegion.getPriority().");
             System.exit(1);
-            break;
         }
-        return p;
     }
 
     /**
@@ -434,9 +463,9 @@ public class FrequentedRegion implements Comparable {
         kappaOption.setRequired(true);
         options.addOption(kappaOption);
         //
-        Option priorityOption = new Option("pri", "priorityOption", true, "option for priority weighting of FRs: "+FrequentedRegion.PRIORITY_OPTIONS);
-        priorityOption.setRequired(true);
-        options.addOption(priorityOption);
+        Option priorityOptionOption = new Option("pri", "priorityoption", true, "option for priority weighting of FRs: "+FrequentedRegion.PRIORITY_OPTIONS);
+        priorityOptionOption.setRequired(true);
+        options.addOption(priorityOptionOption);
         //
         Option genotypeOption = new Option("g", "genotype", true, "which genotype to include (0,1) from the input file; "+
                                            PangenomicGraph.BOTH_GENOTYPES+" to include all ["+PangenomicGraph.BOTH_GENOTYPES+"]");
@@ -495,7 +524,7 @@ public class FrequentedRegion implements Comparable {
         // alpha, kappa, priorityOption
         double alpha = Double.parseDouble(cmd.getOptionValue("alpha"));
         int kappa = Integer.parseInt(cmd.getOptionValue("kappa"));
-        int priority = Integer.parseInt(cmd.getOptionValue("priorityOption"));
+        String priorityOption = cmd.getOptionValue("priorityoption");
         
         // import a PangenomicGraph from the GFA file
         PangenomicGraph pg = new PangenomicGraph();
@@ -514,7 +543,7 @@ public class FrequentedRegion implements Comparable {
         NodeSet nodes = new NodeSet(pg, nodeString);
         
         // create the FrequentedRegion with this PangenomicGraph
-        FrequentedRegion fr = new FrequentedRegion(pg, nodes, alpha, kappa, priority);
+        FrequentedRegion fr = new FrequentedRegion(pg, nodes, alpha, kappa, priorityOption);
 
         // print it out
         System.out.println(fr.columnHeading());

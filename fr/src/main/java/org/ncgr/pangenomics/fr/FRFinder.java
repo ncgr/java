@@ -18,7 +18,6 @@ import java.io.IOException;
 import java.io.PrintStream;
 
 import java.util.Collections;
-import java.util.Iterator;
 import java.util.List;
 import java.util.LinkedList;
 import java.util.Map;
@@ -65,6 +64,7 @@ public class FRFinder {
     // save filename suffixes
     String FREQUENTED_REGIONS_SAVE = "save.frs.txt";
     String SYNC_FREQUENTED_REGIONS_SAVE = "save.syncFrequentedRegions.txt";
+    String USED_FRS_SAVE = "save.usedFRs.txt";
     String REJECTED_NODESETS_SAVE = "save.rejectedNodeSets.txt";
 
     // the output FRs
@@ -114,23 +114,28 @@ public class FRFinder {
      *                alternatively, `1-alpha` is the fraction of inserted sequence
      * int kappa = maximum insertion: the maximum number of inserted nodes that a supporting path may have.
       */
-    public void findFRs(double alpha, int kappa) throws FileNotFoundException, IOException {
+    public void findFRs(double alpha, int kappa) throws FileNotFoundException, IOException,
+                                                        NullNodeException, NullSequenceException, NoPathsException, NoNodePathsException {
+
 	System.out.println("# Starting findFRs: alpha="+alpha+" kappa="+kappa+" priorityOption="+getPriorityOption());
 
         // output the graph files
         graph.printAll(getGraphName());
 
-        // store the saved FRs in a HashMap keyed by the nodes
+        // store the saved FRs in a TreeSet
         frequentedRegions = new HashMap<>();
 
-        // store the studied FRs in a synchronized List
-        List<FrequentedRegion> syncFrequentedRegions = Collections.synchronizedList(new LinkedList<>());
+        // keep track of FRs we've already looked at
+        Set<FrequentedRegion> usedFRs = new HashSet<>();
         
+        // store the studied FRs in a synchronized TreeSet
+        Map<String,FrequentedRegion> syncFrequentedRegions = new HashMap<>();
+
         // rejected NodeSets, so we don't bother scanning them more than once
         Set<String> rejectedNodeSets = Collections.synchronizedSet(new HashSet<>());
 
-        // accepted FRs so we don't merge them more than once
-        Map<String,FrequentedRegion> acceptedFRs = Collections.synchronizedMap(new HashMap<>());
+        // accepted FRPairs so we don't merge them more than once
+        Map<String,FRPair> acceptedFRPairs = Collections.synchronizedMap(new HashMap<>());
 
         // used NodeSets for brute force
         Set<String> usedNodeSets = Collections.synchronizedSet(new HashSet<>());
@@ -142,17 +147,19 @@ public class FRFinder {
             // resume from a previous run
             System.out.println("# Resuming from previous run");
             String line = null;
+	    // usedFRs
+            BufferedReader usedFRsReader = new BufferedReader(new FileReader(getGraphName()+"."+USED_FRS_SAVE));
+            while ((line=usedFRsReader.readLine())!=null) {
+                String[] parts = line.split("\t");
+                NodeSet nodes = new NodeSet(graph, parts[0]);
+                usedFRs.add(new FrequentedRegion(graph, nodes, alpha, kappa, getPriorityOption()));
+            }
             // syncFrequentedRegions
             BufferedReader sfrReader = new BufferedReader(new FileReader(getGraphName()+"."+SYNC_FREQUENTED_REGIONS_SAVE));
             while ((line=sfrReader.readLine())!=null) {
                 String[] parts = line.split("\t");
                 NodeSet nodes = new NodeSet(graph, parts[0]);
-                try {
-                    syncFrequentedRegions.add(new FrequentedRegion(graph, nodes, alpha, kappa, getPriorityOption()));
-                } catch (Exception e) {
-                    System.err.println(e);
-                    System.exit(1);
-                }
+                syncFrequentedRegions.put(nodes.toString(), new FrequentedRegion(graph, nodes, alpha, kappa, getPriorityOption()));
             }
 	    // rejectedNodeSets
 	    BufferedReader rnsReader = new BufferedReader(new FileReader(getGraphName()+"."+REJECTED_NODESETS_SAVE));
@@ -168,15 +175,11 @@ public class FRFinder {
             while ((line=frReader.readLine())!=null) {
                 String[] parts = line.split("\t");
                 NodeSet nodes = new NodeSet(graph, parts[0]);
-                try {
-                    frequentedRegions.put(nodes.toString(), new FrequentedRegion(graph, nodes, alpha, kappa, getPriorityOption()));
-                } catch (Exception e) {
-                    System.err.println(e);
-                    System.exit(1);
-                }                    
+                frequentedRegions.put(nodes.toString(), new FrequentedRegion(graph, nodes, alpha, kappa, getPriorityOption()));
                 round++;
             }
 	    // informativationalism
+	    System.out.println("# Loaded "+usedFRs.size()+" usedFRs.");
             System.out.println("# Loaded "+syncFrequentedRegions.size()+" syncFrequentedRegions.");
 	    System.out.println("# Loaded "+rejectedNodeSets.size()+" rejectedNodeSets.");
             System.out.println("# Loaded "+frequentedRegions.size()+" frequentedRegions.");
@@ -186,12 +189,8 @@ public class FRFinder {
             for (Node node : graph.getNodes()) {
                 NodeSet c = new NodeSet();
                 c.add(node);
-                try {
-                    syncFrequentedRegions.add(new FrequentedRegion(graph, c, alpha, kappa, getPriorityOption()));
-                } catch (Exception e) {
-                    System.err.println(e);
-                    System.exit(1);
-                }                    
+                FrequentedRegion fr = new FrequentedRegion(graph, c, alpha, kappa, getPriorityOption());
+                syncFrequentedRegions.put(c.toString(), fr);
             }
         }
 
@@ -202,58 +201,62 @@ public class FRFinder {
             round++;
             added = false;
             // put FR pairs into a PriorityBlockingQueue which sorts them by decreasing interest (defined by the FRPair comparator and the priority option)
-            TreeSet<FrequentedRegion> sortedFRSet = new TreeSet<>();
-            Set<FrequentedRegion> syncFRSet = Collections.synchronizedSet(sortedFRSet);
-            ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            TreeSet<FRPair> frpairSet = new TreeSet<>();
+            ////////////////////////////////////////
             // spin through FRs
-            syncFrequentedRegions.parallelStream().forEach(fr1 -> {
-                    syncFrequentedRegions.parallelStream().forEach(fr2 -> {
-                            if (fr2.nodes.compareTo(fr1.nodes)>=0) {
-                                FRPair frpair = new FRPair(fr1, fr2); // avoid merging just yet
-                                String nodesKey = frpair.nodes.toString();
-                                if (rejectedNodeSets.contains(nodesKey)) {
-                                    // do nothing
-                                } else if (frequentedRegions.containsKey(nodesKey)) {
-                                    // do nothing
-                                } else if (acceptedFRs.containsKey(nodesKey)) {
-                                    // pull stored FR
-                                    syncFRSet.add(acceptedFRs.get(nodesKey));
-                                } else {
-                                    // see if this pair is alpha-rejected (before merging)
-                                    frpair.computeAlphaRejection();
-                                    if (frpair.alphaReject) {
-                                        // add to rejected set
-                                        rejectedNodeSets.add(nodesKey);
-                                    } else {
-                                        // merge this pair
-                                        try {
-                                            frpair.merge();
-                                        } catch (Exception e) {
-                                            System.err.println(e);
-                                            System.exit(1);
-                                        }
-                                        // if insufficient support then reject
-                                        if (frpair.merged.support<getMinSup()) {
-                                            // add to rejected set
-                                            rejectedNodeSets.add(nodesKey);
-                                        } else {
-                                            // add this candidate merge
-                                            acceptedFRs.put(nodesKey, frpair.merged);
-                                            syncFRSet.add(frpair.merged);
-                                        }
-                                    }
-                                }
+            int alreadyRejectedCount = 0;
+            int alreadyAcceptedCount = 0;
+            int alreadyFoundCount = 0;
+            int alphaRejectedCount = 0;
+            int rejectedCount = 0;
+            for (FrequentedRegion fr1 : syncFrequentedRegions.values()) {
+                for (FrequentedRegion fr2 : syncFrequentedRegions.values()) {
+                    FRPair frpair = new FRPair(fr1, fr2);
+                    String nodesKey = frpair.nodes.toString();
+                    if (rejectedNodeSets.contains(nodesKey)) {
+                        alreadyRejectedCount++;
+                    } else if (frequentedRegions.containsKey(nodesKey)) {
+                        alreadyFoundCount++;
+                    } else if (acceptedFRPairs.containsKey(nodesKey)) {
+                        // pull stored FRPair since already merged
+                        frpair = acceptedFRPairs.get(nodesKey);
+                        frpairSet.add(frpair);
+                        alreadyAcceptedCount++;
+                    } else {
+                        // see if this pair is alpha-rejected (before merging)
+                        frpair.computeAlphaRejection();
+                        if (frpair.alphaReject) {
+                            // add to rejected set
+                            rejectedNodeSets.add(nodesKey);
+                            alphaRejectedCount++;
+                        } else {
+                            // merge this pair
+                            frpair.merge();
+                            // if insufficient support then reject
+                            if (frpair.merged.support<getMinSup()) {
+                                // add to rejected set
+                                rejectedNodeSets.add(nodesKey);
+                                rejectedCount++;
+                            } else {
+                                // add this candidate merged pair
+                                acceptedFRPairs.put(nodesKey, frpair);
+                                frpairSet.add(frpair);
                             }
-                        });
-                });
-            ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-            // add our new best FR
-            if (sortedFRSet.size()>0) {
-                FrequentedRegion fr = sortedFRSet.last();
+                        }
+                    }
+                }
+            }
+            /////////////////////////////////////////////////
+            // add our new best merged FR
+            if (frpairSet.size()>0) {
+                FRPair frpair= frpairSet.last();
+                FrequentedRegion fr = frpair.merged;
                 // first we need to have the minimum support and priority
                 if (fr.support>=getMinSup() && fr.priority>=getMinPriority()) {
                     added = true;
-                    syncFrequentedRegions.add(fr);
+                    syncFrequentedRegions.put(fr.nodes.toString(), fr);
+                    // usedFRs.add(frpair.fr1);
+                    // usedFRs.add(frpair.fr2);
                     // don't output FRs with node sets that are children with the same or less support than ones already stored
                     boolean dupe = false;
                     for (FrequentedRegion frOld : frequentedRegions.values()) {
@@ -268,8 +271,12 @@ public class FRFinder {
                     }
                     if (!dupe) {
                         frequentedRegions.put(fr.nodes.toString(), fr);
-                        // console output
-                        System.out.println(round+":"+fr);
+                        System.out.print(round+":"+fr);
+                        if (getDebug()) {
+                            System.out.println(" rejec="+alreadyRejectedCount+" accept="+alreadyAcceptedCount+" found="+alreadyFoundCount+" alpha="+alphaRejectedCount+" kappa="+rejectedCount);
+                        } else {
+                            System.out.println("");
+                        }
                     }
                 }
             }
@@ -279,9 +286,15 @@ public class FRFinder {
                 // params with current clock time
                 clockTime = System.currentTimeMillis() - startTime;
                 printParameters(getGraphName()+".save", alpha, kappa);
+                // usedFRs
+                PrintStream usedFRsOut = new PrintStream(getGraphName()+"."+USED_FRS_SAVE);
+                for (FrequentedRegion fr : usedFRs) {
+                    usedFRsOut.println(fr.toString());
+                }
+                usedFRsOut.close();
                 // syncFrequentedRegions
                 PrintStream sfrOut = new PrintStream(getGraphName()+"."+SYNC_FREQUENTED_REGIONS_SAVE);
-                for (FrequentedRegion fr : syncFrequentedRegions) {
+                for (FrequentedRegion fr : syncFrequentedRegions.values()) {
                     sfrOut.println(fr.toString());
                 }
                 sfrOut.close();
@@ -382,8 +395,8 @@ public class FRFinder {
     public boolean getResume() {
         return Boolean.parseBoolean(parameters.getProperty("resume"));
     }
-    public int getPriorityOption() {
-        return Integer.parseInt(parameters.getProperty("priorityOption"));
+    public String getPriorityOption() {
+        return parameters.getProperty("priorityOption");
     }
     public String getInputPrefix() {
         return parameters.getProperty("inputPrefix");
@@ -405,8 +418,8 @@ public class FRFinder {
     public void setDebug() {
         parameters.setProperty("debug", "true");
     }
-    public void setPriorityOption(int priorityOption) {
-        parameters.setProperty("priorityOption", String.valueOf(priorityOption));
+    public void setPriorityOption(String priorityOption) {
+        parameters.setProperty("priorityOption", priorityOption);
     }
     public void setResume() {
         parameters.setProperty("resume", "true");
@@ -502,9 +515,9 @@ public class FRFinder {
         debugOption.setRequired(false);
         options.addOption(debugOption);
         //
-        Option priorityOption = new Option("pri", "priorityoption", true, "option for priority weighting of FRs: "+FrequentedRegion.PRIORITY_OPTIONS);
-        priorityOption.setRequired(true);
-        options.addOption(priorityOption);
+        Option priorityOptionOption = new Option("pri", "priorityoption", true, "option for priority weighting of FRs: "+FrequentedRegion.PRIORITY_OPTIONS);
+        priorityOptionOption.setRequired(true);
+        options.addOption(priorityOptionOption);
         //
         Option resumeOption = new Option("r", "resume", false, "resume from a previous run [false]");
         resumeOption.setRequired(false);
@@ -618,7 +631,7 @@ public class FRFinder {
             frf.setGfaFile(gfaFile.getName());
             frf.setGraphName(graphName);
             if (cmd.hasOption("priorityoption")) {
-                frf.setPriorityOption(Integer.parseInt(cmd.getOptionValue("priorityoption")));
+                frf.setPriorityOption(cmd.getOptionValue("priorityoption"));
             }
             // set optional FRFinder parameters
             if (cmd.hasOption("minsup")) frf.setMinSup(Integer.parseInt(cmd.getOptionValue("minsup")));
