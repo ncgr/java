@@ -406,7 +406,7 @@ public class PangenomicGraph extends DirectedMultigraph<Node,Edge> {
      * 412119.0 ctrl    406     1       3       4 ...
      */
     public static List<PathWalk> readPaths(File pathsFile) throws IOException {
-        List<PathWalk> paths = new ArrayList<>();
+        List<PathWalk> paths = Collections.synchronizedList(new ArrayList<>());
         // load the lines into a synchronized list so we can create the paths in parallel
         BufferedReader reader = new BufferedReader(new FileReader(pathsFile));
         String line = null;
