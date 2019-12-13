@@ -14,12 +14,10 @@ import java.io.IOException;
 import java.text.DecimalFormat;
 
 import java.util.List;
-import java.util.LinkedList;
+import java.util.ArrayList;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.Set;
-import java.util.HashSet;
-import java.util.TreeSet;
 
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
@@ -57,7 +55,7 @@ public class FrequentedRegion implements Comparable {
     NodeSet nodes;
     
     // the subpaths, identified by their originating path name and label, that start and end on this FR's nodes
-    Set<PathWalk> subpaths;
+    List<PathWalk> subpaths;
     
     // the subpath support of this FR
     int support = 0;
@@ -105,7 +103,7 @@ public class FrequentedRegion implements Comparable {
     /**
      * Construct given a PangenomicGraph, NodeSet and Subpaths
      */
-    FrequentedRegion(PangenomicGraph graph, NodeSet nodes, Set<PathWalk> subpaths, double alpha, int kappa, String priorityOption) {
+    FrequentedRegion(PangenomicGraph graph, NodeSet nodes, List<PathWalk> subpaths, double alpha, int kappa, String priorityOption) {
         this.graph = graph;
         this.nodes = nodes;
         this.subpaths = subpaths;
@@ -124,7 +122,7 @@ public class FrequentedRegion implements Comparable {
     /**
      * Construct given a PangenomicGraph, NodeSet and Subpaths and already known support and avgLength
      */
-    FrequentedRegion(PangenomicGraph graph, NodeSet nodes, Set<PathWalk> subpaths, double alpha, int kappa, String priorityOption, int support, double avgLength) {
+    FrequentedRegion(PangenomicGraph graph, NodeSet nodes, List<PathWalk> subpaths, double alpha, int kappa, String priorityOption, int support, double avgLength) {
         this.graph = graph;
         this.nodes = nodes;
         this.subpaths = subpaths;
@@ -141,7 +139,7 @@ public class FrequentedRegion implements Comparable {
     /**
      * Construct given only basic information, used for post-processing. NO GRAPH.
      */
-    FrequentedRegion(NodeSet nodes, Set<PathWalk> subpaths, double alpha, int kappa, String priorityOption, int support, double avgLength) {
+    FrequentedRegion(NodeSet nodes, List<PathWalk> subpaths, double alpha, int kappa, String priorityOption, int support, double avgLength) {
         this.nodes = nodes;
         this.subpaths = subpaths;
         this.alpha = alpha;
@@ -204,9 +202,9 @@ public class FrequentedRegion implements Comparable {
      * Update the subpaths and support from the graph paths for the current alpha and kappa values.
      */
     void updateSupport() throws NullNodeException, NullSequenceException {
-        subpaths = new HashSet<>();
+        subpaths = new ArrayList<>();
         for (PathWalk p : graph.getPaths()) {
-            Set<PathWalk> supportPaths = p.computeSupport(nodes, alpha, kappa);
+            List<PathWalk> supportPaths = p.computeSupport(nodes, alpha, kappa);
             subpaths.addAll(supportPaths);
         }
         support = subpaths.size();

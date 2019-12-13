@@ -7,7 +7,8 @@
 #  -do,--debug                   debug output [false]
 #  -g,--genotype <arg>           which genotype to include (0,1) from the
 #                                input file; -1 to include all [-1]
-#  -gfa,--gfa <arg>              GFA file
+#  -gfa,--gfa                    load from [graph].paths.gfa
+#  -graph,--graph <arg>          graph name
 #  -i,--inputprefix <arg>        input file prefix for post-processing
 #  -ke,--kappaend <arg>          ending value of kappa for a scan (can equal
 #                                kappastart)
@@ -24,10 +25,11 @@
 #  -pr,--prunedgraph             prune graph -- remove all common nodes
 #                                [false]
 #  -pri,--priorityoption <arg>   option for priority weighting of FRs:
-#                                0=total support, 1=case support-control
-#                                support, 2=|case support-control support|,
-#                                3=Fisher's exact test double-sided p value,
-#                                4=control support (descending)
+#                                0=total support, 1:label=label
+#                                support-other support [case], 2=|case
+#                                support-control support|, 3:label=label
+#                                support then odds ratio [case],4=Fisher's
+#                                exact test double-sided p value
 #  -r,--resume                   resume from a previous run [false]
 #  -s,--minsize <arg>            minimum number of nodes that a FR must
 #                                contain to be considered interesting [1]
@@ -35,22 +37,22 @@
 #                                [false]
 #  -ssf,--skipsavefiles          skip saving files after each FR is found,
 #                                to save time [false]
+#  -txt,--txt                    load from [graph].nodes.txt and
+#                                [graph].paths.txt
 #  -v,--verbose                  verbose output [false]
-
 
 ## perfect path matching to FR is alpha=1, kappa=0
 
-dir=$1
-prefix=$2
-alpha=$3
-kappa=$4
-priorityoption=$5
+graph=$1
+alpha=$2
+kappa=$3
+priorityoption=$4
 
-## use $6 and $7 for extra stuff like --resume --debug
+## use $5 and $6 for extra stuff like --resume --debug
 
-echo "# $dir $prefix alpha=$alpha kappa=$kappa priorityOption=$priorityoption"
+echo "# $graph alpha=$alpha kappa=$kappa priorityOption=$priorityoption"
 
 java -server -Xmx160g -XX:+UseParallelGC -Xms2g -XX:SoftRefLRUPolicyMSPerMB=1 -XX:MaxHeapFreeRatio=99 -cp "build/install/fr/lib/*" org.ncgr.pangenomics.fr.FRFinder \
-     --priorityoption=$priorityoption --skipnodepaths $6 $7 \
-     --pathlabels=$dir/labels.txt --gfa=$dir/$prefix.paths.gfa \
+     --priorityoption=$priorityoption --skipnodepaths $5 $6 \
+     --graph=$graph --txt \
      --alphastart=$alpha --alphaend=$alpha --kappastart=$kappa --kappaend=$kappa

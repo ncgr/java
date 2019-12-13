@@ -19,14 +19,13 @@ import java.io.PrintStream;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.LinkedList;
+import java.util.ArrayList;
 import java.util.Map;
 import java.util.HashMap;
 import java.util.TreeMap;
 import java.util.PriorityQueue;
 import java.util.Properties;
 import java.util.Set;
-import java.util.HashSet;
 import java.util.TreeSet;
 
 import java.util.concurrent.PriorityBlockingQueue;
@@ -56,7 +55,7 @@ public class FRFinder {
     PangenomicGraph graph;
 
     // store paths locally since post-processing doesn't build a graph
-    Set<PathWalk> paths;
+    List<PathWalk> paths;
 
     // parameters are stored in a Properties object
     Properties parameters = new Properties();
@@ -64,7 +63,6 @@ public class FRFinder {
     // save filename suffixes
     String FREQUENTED_REGIONS_SAVE = "save.frs.txt";
     String SYNC_FREQUENTED_REGIONS_SAVE = "save.syncFrequentedRegions.txt";
-    String USED_FRS_SAVE = "save.usedFRs.txt";
     String REJECTED_NODESETS_SAVE = "save.rejectedNodeSets.txt";
 
     // the output FRs
@@ -119,26 +117,20 @@ public class FRFinder {
 
 	System.out.println("# Starting findFRs: alpha="+alpha+" kappa="+kappa+" priorityOption="+getPriorityOption());
 
-        // output the graph files
-        graph.printAll(getGraphName());
+        // output the graph files if graph loaded from GFA
+        if (getGfaFilename()!=null) graph.printAll(getGraphName());
 
-        // store the saved FRs in a TreeSet
+        // store the saved FRs in a map
         frequentedRegions = new HashMap<>();
 
-        // keep track of FRs we've already looked at
-        Set<FrequentedRegion> usedFRs = new HashSet<>();
-        
-        // store the studied FRs in a synchronized TreeSet
+        // store the studied FRs in a map
         Map<String,FrequentedRegion> syncFrequentedRegions = new HashMap<>();
 
-        // rejected NodeSets, so we don't bother scanning them more than once
-        Set<String> rejectedNodeSets = Collections.synchronizedSet(new HashSet<>());
+        // rejected NodeSets (strings), so we don't bother scanning them more than once
+        List<String> rejectedNodeSets = Collections.synchronizedList(new ArrayList<>());
 
         // accepted FRPairs so we don't merge them more than once
         Map<String,FRPair> acceptedFRPairs = Collections.synchronizedMap(new HashMap<>());
-
-        // used NodeSets for brute force
-        Set<String> usedNodeSets = Collections.synchronizedSet(new HashSet<>());
 
         // FR-finding round counter
         int round = 0;
@@ -147,13 +139,6 @@ public class FRFinder {
             // resume from a previous run
             System.out.println("# Resuming from previous run");
             String line = null;
-	    // usedFRs
-            BufferedReader usedFRsReader = new BufferedReader(new FileReader(getGraphName()+"."+USED_FRS_SAVE));
-            while ((line=usedFRsReader.readLine())!=null) {
-                String[] parts = line.split("\t");
-                NodeSet nodes = new NodeSet(graph, parts[0]);
-                usedFRs.add(new FrequentedRegion(graph, nodes, alpha, kappa, getPriorityOption()));
-            }
             // syncFrequentedRegions
             BufferedReader sfrReader = new BufferedReader(new FileReader(getGraphName()+"."+SYNC_FREQUENTED_REGIONS_SAVE));
             while ((line=sfrReader.readLine())!=null) {
@@ -179,7 +164,6 @@ public class FRFinder {
                 round++;
             }
 	    // informativationalism
-	    System.out.println("# Loaded "+usedFRs.size()+" usedFRs.");
             System.out.println("# Loaded "+syncFrequentedRegions.size()+" syncFrequentedRegions.");
 	    System.out.println("# Loaded "+rejectedNodeSets.size()+" rejectedNodeSets.");
             System.out.println("# Loaded "+frequentedRegions.size()+" frequentedRegions.");
@@ -255,8 +239,6 @@ public class FRFinder {
                 if (fr.support>=getMinSup() && fr.priority>=getMinPriority()) {
                     added = true;
                     syncFrequentedRegions.put(fr.nodes.toString(), fr);
-                    // usedFRs.add(frpair.fr1);
-                    // usedFRs.add(frpair.fr2);
                     // don't output FRs with node sets that are children with the same or less support than ones already stored
                     boolean dupe = false;
                     for (FrequentedRegion frOld : frequentedRegions.values()) {
@@ -286,12 +268,6 @@ public class FRFinder {
                 // params with current clock time
                 clockTime = System.currentTimeMillis() - startTime;
                 printParameters(getGraphName()+".save", alpha, kappa);
-                // usedFRs
-                PrintStream usedFRsOut = new PrintStream(getGraphName()+"."+USED_FRS_SAVE);
-                for (FrequentedRegion fr : usedFRs) {
-                    usedFRsOut.println(fr.toString());
-                }
-                usedFRsOut.close();
                 // syncFrequentedRegions
                 PrintStream sfrOut = new PrintStream(getGraphName()+"."+SYNC_FREQUENTED_REGIONS_SAVE);
                 for (FrequentedRegion fr : syncFrequentedRegions.values()) {
@@ -410,6 +386,12 @@ public class FRFinder {
     public int getMinPriority() {
         return Integer.parseInt(parameters.getProperty("minPriority"));
     }
+    public String getGfaFilename() {
+        return parameters.getProperty("gfaFile");
+    }
+    public String getTxtFilename() {
+        return parameters.getProperty("txtFile");
+    }
     
     // parameter setters
     public void setVerbose() {
@@ -445,11 +427,14 @@ public class FRFinder {
     public void setMinPriority(int minPriority) {
         parameters.setProperty("minPriority", String.valueOf(minPriority));
     }
-    public void setGfaFile(String gfaFilename) {
-        parameters.setProperty("gfaFile", gfaFilename);
-    }
     public void setGraphName(String graphName) {
         parameters.setProperty("graphName", graphName);
+    }
+    public void setGfaFilename(String gfaFilename) {
+        parameters.setProperty("gfaFile", gfaFilename);
+    }
+    public void setTxtFilename(String txtFilename) {
+        parameters.setProperty("txtFile", txtFilename);
     }
 
     /**
@@ -483,9 +468,17 @@ public class FRFinder {
         genotypeOption.setRequired(false);
         options.addOption(genotypeOption);
         //
-        Option gfaOption = new Option("gfa", "gfa", true, "GFA file");
+        Option graphOption = new Option("graph", "graph", true, "graph name");
+        graphOption.setRequired(true);
+        options.addOption(graphOption);
+        //
+        Option gfaOption = new Option("gfa", "gfa", false, "load from [graph].paths.gfa");
         gfaOption.setRequired(false);
         options.addOption(gfaOption);
+        //
+        Option txtOption = new Option("txt", "txt", false, "load from [graph].nodes.txt and [graph].paths.txt");
+        txtOption.setRequired(false);
+        options.addOption(txtOption);
         //
         Option minLenOption = new Option("l", "minlen", true, "minimum allowed average length (bp) of an FR's subpaths [1.0]");
         minLenOption.setRequired(false);
@@ -559,25 +552,9 @@ public class FRFinder {
         }
         
         // parameter validation
-        if (!cmd.hasOption("inputprefix") && !cmd.hasOption("gfa")) {
-            System.err.println("You must specify a vg GFA file (--gfa) or in input prefix for post-processing (--inputPrefix)");
+        if (!cmd.hasOption("inputprefix") && !cmd.hasOption("gfa") && !cmd.hasOption("txt")) {
+            System.err.println("You must specify loading from a vg GFA file (--gfa) or TXT files (--txt), or provide input prefix for post-processing (--inputPrefix)");
             System.exit(1);
-        }
-        
-        // GFA file
-        // CIDR_HD_Modifiers/HTT.400.paths.gfa
-        File gfaFile = null;
-        String gfaFilename = null;
-        String graphName = null;
-        if (cmd.hasOption("gfa")) {
-            gfaFilename = cmd.getOptionValue("gfa");
-            gfaFile = new File(gfaFilename);
-            // get graphName from filename assuming graphName.paths.gfa
-            String[] dirParts = gfaFilename.split("/");
-            String filename = dirParts[dirParts.length-1];
-            String[] dotParts = filename.split("\\.");
-            graphName = dotParts[0];
-            for (int i=1; i<dotParts.length-2; i++) graphName += "."+dotParts[i];
         }
 
         // path labels file
@@ -608,28 +585,40 @@ public class FRFinder {
             if (cmd.hasOption("skipSaveFiles")) frf.setSkipSaveFiles();
             frf.postprocess();
         } else {
-            // import a PangenomicGraph from a GFA file
+            // import a PangenomicGraph from a GFA file or pair of TXT files
             PangenomicGraph pg = new PangenomicGraph();
+            // graph name
+            String graphName = cmd.getOptionValue("graph");
+            // GFA file
+            if (cmd.hasOption("gfa")) {
+                File gfaFile = new File(graphName+".paths.gfa");
+                pg.importGFA(gfaFile);
+                // if a labels file is given, add them to the paths
+                if (labelsFile!=null) {
+                    pg.readPathLabels(labelsFile);
+                    System.out.println("# Graph has "+pg.getLabelCounts().get("case")+" case paths and "+pg.getLabelCounts().get("ctrl")+" ctrl paths.");
+                }
+            } else if (cmd.hasOption("txt")) {
+                File nodesFile = new File(graphName+".nodes.txt");
+                File pathsFile = new File(graphName+".paths.txt");
+                pg.importTXT(nodesFile, pathsFile);
+                System.out.println("# Graph has "+pg.getLabelCounts().get("case")+" case paths and "+pg.getLabelCounts().get("ctrl")+" ctrl paths.");
+            }
+            // set graph options
             if (cmd.hasOption("verbose")) pg.setVerbose();
             if (cmd.hasOption("genotype")) pg.setGenotype(Integer.parseInt(cmd.getOptionValue("genotype")));
             if (cmd.hasOption("skipnodepaths")) pg.setSkipNodePaths();
-	    System.out.println("# Loading GFA file "+gfaFile.getName());
-            pg.importGFA(gfaFile);
 	    // prune the graph if so commanded
 	    if (cmd.hasOption("prunedgraph")) {
 		int nRemoved = pg.prune();
 		System.out.println("# Graph has been pruned ("+nRemoved+" fully common nodes removed).");
 	    }
 	    System.out.println("# Graph has "+pg.vertexSet().size()+" nodes and "+pg.getPaths().size()+" paths.");
-            // if a labels file is given, add them to the paths
-            if (labelsFile!=null) {
-                pg.readPathLabels(labelsFile);
-		System.out.println("# Graph has "+pg.getLabelCounts().get("case")+" case paths and "+pg.getLabelCounts().get("ctrl")+" ctrl paths.");
-            }
             // instantiate the FRFinder with this PangenomicGraph
             FRFinder frf = new FRFinder(pg);
-            frf.setGfaFile(gfaFile.getName());
             frf.setGraphName(graphName);
+            if (cmd.hasOption("gfa")) frf.setGfaFilename(graphName+".paths.gfa");
+            if (cmd.hasOption("txt")) frf.setTxtFilename(graphName+".nodes.txt");
             if (cmd.hasOption("priorityoption")) {
                 frf.setPriorityOption(cmd.getOptionValue("priorityoption"));
             }
@@ -927,7 +916,7 @@ public class FRFinder {
             NodeSet nodes = new NodeSet(nodeMap, fields[0]);
             int support = Integer.parseInt(fields[1]);
             double avgLength = Double.parseDouble(fields[2]);
-            Set<PathWalk> subpaths = new HashSet<>();
+            List<PathWalk> subpaths = new ArrayList<>();
             for (int i=0; i<support; i++) {
                 line = reader.readLine();
                 String[] parts = line.split(":");
@@ -940,7 +929,7 @@ public class FRFinder {
                 if (nameParts.length>1) genotype = Integer.parseInt(nameParts[1]);
                 String label = null;
                 if (nameParts.length>2) label = nameParts[2];
-                List<Node> subNodes = new LinkedList<>();
+                List<Node> subNodes = new ArrayList<>();
                 String[] nodesAsStrings = nodeString.replace("[","").replace("]","").split(",");
                 for (String nodeAsString : nodesAsStrings) {
 		    long nodeId = Long.parseLong(nodeAsString);

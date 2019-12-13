@@ -1,9 +1,12 @@
 package org.ncgr.jgraph;
 
-import org.jgrapht.*;
-import org.jgrapht.graph.*;
+import java.util.Collections;
+import java.util.List;
+import java.util.ArrayList;
+import java.util.StringJoiner;
 
-import java.util.*;
+import org.jgrapht.Graph;
+import org.jgrapht.graph.GraphWalk;
 
 /**
  * An extension of GraphWalk to provide a genomic path through the graph and methods appropriate for frequented regions.
@@ -219,7 +222,7 @@ public class PathWalk extends GraphWalk<Node,Edge> implements Comparable {
      * @return the PathWalk inclusively between nl and nr
      */
     public PathWalk subpath(Node nl, Node nr) throws NullNodeException, NullSequenceException {
-        List<Node> subnodes = new LinkedList<>();
+        List<Node> subnodes = new ArrayList<>();
         if (getNodes().contains(nl) && getNodes().contains(nr)) {
             if (nl.equals(nr)) {
                 subnodes.add(nl);
@@ -285,10 +288,10 @@ public class PathWalk extends GraphWalk<Node,Edge> implements Comparable {
      * @param kappa the insertion parameter = maximum inserted number of nodes
      * @returns the set of supporting path segments
      */
-    public Set<PathWalk> computeSupport(NodeSet nodes, double alpha, int kappa) throws NullNodeException, NullSequenceException {
-        Set<PathWalk> s = new HashSet<>();
+    public List<PathWalk> computeSupport(NodeSet nodes, double alpha, int kappa) throws NullNodeException, NullSequenceException {
+        List<PathWalk> s = new ArrayList<>();
         // m = the list of p's nodes that are in c
-        LinkedList<Node> m = new LinkedList<>();
+        ArrayList<Node> m = new ArrayList<>();
         for (Node n : getNodes()) {
             if (nodes.contains(n)) m.add(n);
         }

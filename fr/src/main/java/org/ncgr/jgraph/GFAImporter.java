@@ -12,11 +12,10 @@ import java.io.Reader;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.LinkedList;
+import java.util.ArrayList;
 import java.util.Map;
 import java.util.HashMap;
 import java.util.Set;
-import java.util.HashSet;
 
 /**
  * Importer for GFA files as output from vg view --gfa.
@@ -39,7 +38,7 @@ public class GFAImporter implements GraphImporter<Node,Edge> {
     private boolean skipSequences = false;
 
     // we keep track of the genomic paths here since it's the only place we follow them
-    Set<PathWalk> paths;
+    List<PathWalk> paths;
 
     /**
      * Import a Graph from a GFA file.
@@ -72,8 +71,8 @@ public class GFAImporter implements GraphImporter<Node,Edge> {
      */
     public void importGraph(Graph<Node,Edge> g, Reader reader) {
         Map<Long,Node> nodes = new HashMap<>();
-        Map<String,LinkedList<Node>> nodeListMap = Collections.synchronizedMap(new HashMap<String,LinkedList<Node>>());
-        paths = Collections.synchronizedSet(new HashSet<PathWalk>());
+        Map<String,ArrayList<Node>> nodeListMap = Collections.synchronizedMap(new HashMap<String,ArrayList<Node>>());
+        paths = Collections.synchronizedList(new ArrayList<PathWalk>());
         try {
             BufferedReader br = new BufferedReader(reader);
             String line = null;
@@ -117,7 +116,7 @@ public class GFAImporter implements GraphImporter<Node,Edge> {
                         pathName += ":"+gtype;
                         // build/append this path's node list
                         if (genotype==BOTH_GENOTYPES || gtype==genotype) {
-                            LinkedList<Node> newNodeList = new LinkedList<>();
+                            ArrayList<Node> newNodeList = new ArrayList<>();
                             String[] nodeStrings = parts[2].split(","); // e.g. 27+,29+,30+
                             for (String nodeString : nodeStrings) {
                                 // NOTE: we're assuming no reverse-complement entries, which would have minus sign!
@@ -125,7 +124,7 @@ public class GFAImporter implements GraphImporter<Node,Edge> {
                                 newNodeList.add(nodes.get(nodeId)); // nodes should already be loaded from S lines above P lines
                             }
                             if (nodeListMap.containsKey(pathName)) {
-                                LinkedList<Node> nodeList = nodeListMap.get(pathName);
+                                ArrayList<Node> nodeList = nodeListMap.get(pathName);
                                 nodeList.addAll(newNodeList);
                                 nodeListMap.put(pathName, nodeList);
                             } else {
@@ -234,7 +233,7 @@ public class GFAImporter implements GraphImporter<Node,Edge> {
     /**
      * Get the paths.
      */
-    public Set<PathWalk> getPaths() {
+    public List<PathWalk> getPaths() {
         return paths;
     }
 }
