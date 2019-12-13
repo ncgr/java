@@ -40,9 +40,9 @@ public class FrequentedRegion implements Comparable {
 
     static String PRIORITY_OPTIONS =
         "0=total support, " +
-        "1=case support-control support, " +
+        "1:label=label support-other support [case], " +
         "2=|case support-control support|, " +
-        "3:label=support by given label [case]," +
+        "3:label=label support then odds ratio [case]," +
         "4=Fisher's exact test double-sided p value";
 
     // static utility stuff
@@ -293,7 +293,14 @@ public class FrequentedRegion implements Comparable {
         if (priorityOption.startsWith("0")) {
             priority = support;
         } else if (priorityOption.startsWith("1")) {
-            priority = caseSupport - ctrlSupport;
+            if (priorityLabel.equals("case")) {
+                priority = caseSupport - ctrlSupport;
+            } else if (priorityLabel.equals("ctrl")) {
+                priority = ctrlSupport - caseSupport;
+            } else {
+                System.err.println("ERROR: priority label "+priorityLabel+" is not supported by FrequentedRegion.getPriority().");
+                System.exit(1);
+            }
         } else if (priorityOption.startsWith("2")) {
             priority = Math.abs(caseSupport - ctrlSupport);
         } else if (priorityOption.startsWith("3")) {
