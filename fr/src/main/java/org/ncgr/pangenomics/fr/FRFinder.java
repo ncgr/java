@@ -29,6 +29,9 @@ import java.util.Set;
 import java.util.TreeSet;
 
 import java.util.concurrent.PriorityBlockingQueue;
+import java.util.concurrent.ConcurrentHashMap;
+
+
 import java.text.DecimalFormat;
 import java.time.ZonedDateTime;
 
@@ -83,8 +86,8 @@ public class FRFinder {
     /**
      * Construct with the output from a previous run. Be sure to set minSup, minSize, minLen filters as needed before running postprocess().
      */
-    public FRFinder(String inputPrefix)
-        throws FileNotFoundException, IOException, NullNodeException, NullSequenceException, NoNodesException {
+    public FRFinder(String inputPrefix) throws FileNotFoundException, IOException,
+                                               NullNodeException, NullSequenceException, NoNodesException {
         initializeParameters();
         readParameters(inputPrefix); // sets properties from file
         readFrequentedRegions();
@@ -123,8 +126,8 @@ public class FRFinder {
         // store the saved FRs in a map
         frequentedRegions = new HashMap<>();
 
-        // store the studied FRs in a map
-        Map<String,FrequentedRegion> syncFrequentedRegions = new HashMap<>();
+        // store the studied FRs in a synchronized map
+        ConcurrentHashMap<String,FrequentedRegion> syncFrequentedRegions = new ConcurrentHashMap<>();
 
         // rejected NodeSets (strings), so we don't bother scanning them more than once
         List<String> rejectedNodeSets = Collections.synchronizedList(new ArrayList<>());
@@ -184,52 +187,53 @@ public class FRFinder {
         while (added && (round<getMaxRound() || getMaxRound()==0)) {
             round++;
             added = false;
-            // put FR pairs into a PriorityBlockingQueue which sorts them by decreasing interest (defined by the FRPair comparator and the priority option)
+            // back the set of FR pairs by a sychronized Set for parallel operation and sorting
             TreeSet<FRPair> frpairSet = new TreeSet<>();
+            Set<FRPair> syncFRPairSet = Collections.synchronizedSet(frpairSet);
             ////////////////////////////////////////
-            // spin through FRs
-            int alreadyRejectedCount = 0;
-            int alreadyAcceptedCount = 0;
-            int alreadyFoundCount = 0;
-            int alphaRejectedCount = 0;
-            int rejectedCount = 0;
-            for (FrequentedRegion fr1 : syncFrequentedRegions.values()) {
-                for (FrequentedRegion fr2 : syncFrequentedRegions.values()) {
-                    FRPair frpair = new FRPair(fr1, fr2);
-                    String nodesKey = frpair.nodes.toString();
-                    if (rejectedNodeSets.contains(nodesKey)) {
-                        alreadyRejectedCount++;
-                    } else if (frequentedRegions.containsKey(nodesKey)) {
-                        alreadyFoundCount++;
-                    } else if (acceptedFRPairs.containsKey(nodesKey)) {
-                        // pull stored FRPair since already merged
-                        frpair = acceptedFRPairs.get(nodesKey);
-                        frpairSet.add(frpair);
-                        alreadyAcceptedCount++;
-                    } else {
-                        // see if this pair is alpha-rejected (before merging)
-                        frpair.computeAlphaRejection();
-                        if (frpair.alphaReject) {
-                            // add to rejected set
-                            rejectedNodeSets.add(nodesKey);
-                            alphaRejectedCount++;
-                        } else {
-                            // merge this pair
-                            frpair.merge();
-                            // if insufficient support then reject
-                            if (frpair.merged.support<getMinSup()) {
-                                // add to rejected set
-                                rejectedNodeSets.add(nodesKey);
-                                rejectedCount++;
+            // spin through FRs in a double-parallel loop
+            syncFrequentedRegions.entrySet().parallelStream().forEach(entry1 -> {
+                    FrequentedRegion fr1 = entry1.getValue();
+                    syncFrequentedRegions.entrySet().parallelStream().forEach(entry2 -> {
+                            FrequentedRegion fr2 = entry2.getValue();
+                            FRPair frpair = new FRPair(fr1, fr2);
+                            String nodesKey = frpair.nodes.toString();
+                            if (rejectedNodeSets.contains(nodesKey)) {
+                                // do nothing
+                            } else if (frequentedRegions.containsKey(nodesKey)) {
+                                // do nothing
+                            } else if (acceptedFRPairs.containsKey(nodesKey)) {
+                                // pull stored FRPair since already merged
+                                frpair = acceptedFRPairs.get(nodesKey);
+                                syncFRPairSet.add(frpair);
                             } else {
-                                // add this candidate merged pair
-                                acceptedFRPairs.put(nodesKey, frpair);
-                                frpairSet.add(frpair);
+                                // see if this pair is alpha-rejected (before merging)
+                                frpair.computeAlphaRejection();
+                                if (frpair.alphaReject) {
+                                    // add to rejected set
+                                    rejectedNodeSets.add(nodesKey);
+                                } else {
+                                    // merge this pair
+                                    try {
+                                        // have to catch Exceptions here since in a parallel stream
+                                        frpair.merge();
+                                    } catch (Exception e) {
+                                        System.err.println(e);
+                                        System.exit(1);
+                                    }
+                                    // if insufficient support then reject
+                                    if (frpair.merged.support<getMinSup()) {
+                                        // add to rejected set
+                                        rejectedNodeSets.add(nodesKey);
+                                    } else {
+                                        // add this candidate merged pair
+                                        acceptedFRPairs.put(nodesKey, frpair);
+                                        syncFRPairSet.add(frpair);
+                                    }
+                                }
                             }
-                        }
-                    }
-                }
-            }
+                        });
+                });
             /////////////////////////////////////////////////
             // add our new best merged FR
             if (frpairSet.size()>0) {
@@ -253,12 +257,7 @@ public class FRFinder {
                     }
                     if (!dupe) {
                         frequentedRegions.put(fr.nodes.toString(), fr);
-                        System.out.print(round+":"+fr);
-                        if (getDebug()) {
-                            System.out.println(" rejec="+alreadyRejectedCount+" accept="+alreadyAcceptedCount+" found="+alreadyFoundCount+" alpha="+alphaRejectedCount+" kappa="+rejectedCount);
-                        } else {
-                            System.out.println("");
-                        }
+                        System.out.println(round+":"+fr);
                     }
                 }
             }
