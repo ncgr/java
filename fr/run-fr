@@ -16,13 +16,11 @@
 ##                                3=Fisher's exact test double-sided p value,
 ##                                4=control support (descending)
 
-dir=$1
-prefix=$2
-alpha=$3
-kappa=$4
-priority=$5
-nodes=$6
+graph=$1
+alpha=$2
+kappa=$3
+priority=$4
+nodes=$5
 
 java -server -Xmx160g -XX:+UseParallelGC -Xms2g -XX:SoftRefLRUPolicyMSPerMB=1 -XX:MaxHeapFreeRatio=99 -cp "build/install/fr/lib/*" org.ncgr.pangenomics.fr.FrequentedRegion \
-     --pathlabels=$dir/labels.txt --gfa=$dir/$prefix.paths.gfa \
-     --alpha=$alpha --kappa=$kappa --priorityOption=$priority --nodes=$nodes
+     --txt --graph=$graph --alpha=$alpha --kappa=$kappa --priorityoption=$priority --nodes=$nodes

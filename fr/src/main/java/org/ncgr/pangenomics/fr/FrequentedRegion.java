@@ -477,9 +477,17 @@ public class FrequentedRegion implements Comparable {
         genotypeOption.setRequired(false);
         options.addOption(genotypeOption);
         //
-        Option gfaOption = new Option("gfa", "gfa", true, "GFA file");
-        gfaOption.setRequired(true);
+        Option graphOption = new Option("graph", "graph", true, "graph name");
+        graphOption.setRequired(true);
+        options.addOption(graphOption);
+        //
+        Option gfaOption = new Option("gfa", "gfa", false, "load from [graph].paths.gfa");
+        gfaOption.setRequired(false);
         options.addOption(gfaOption);
+        //
+        Option txtOption = new Option("txt", "txt", false, "load from [graph].nodes.txt and [graph].paths.txt");
+        txtOption.setRequired(false);
+        options.addOption(txtOption);
         //
         Option labelsOption = new Option("p", "pathlabels", true, "tab-delimited file with pathname<tab>label");
         labelsOption.setRequired(false);
@@ -507,21 +515,6 @@ public class FrequentedRegion implements Comparable {
             return;
         }
         
-        // GFA file
-        File gfaFile = null;
-        String gfaFilename = null;
-        String graphName = null;
-        if (cmd.hasOption("gfa")) {
-            gfaFilename = cmd.getOptionValue("gfa");
-            gfaFile = new File(gfaFilename);
-            // get graphName from filename assuming graphName.paths.gfa
-            String[] dirParts = gfaFilename.split("/");
-            String filename = dirParts[dirParts.length-1];
-            String[] dotParts = filename.split("\\.");
-            graphName = dotParts[0];
-            for (int i=1; i<dotParts.length-2; i++) graphName += "."+dotParts[i];
-        }
-
         // path labels file
         File labelsFile = null;
         if (cmd.hasOption("pathlabels")) labelsFile = new File(cmd.getOptionValue("pathlabels"));
@@ -533,15 +526,26 @@ public class FrequentedRegion implements Comparable {
         
         // import a PangenomicGraph from the GFA file
         PangenomicGraph pg = new PangenomicGraph();
+	// graph name
+	String graphName = cmd.getOptionValue("graph");
+	// GFA file
+	if (cmd.hasOption("gfa")) {
+	    File gfaFile = new File(graphName+".paths.gfa");
+	    pg.importGFA(gfaFile);
+	    // if a labels file is given, add them to the paths
+	    if (labelsFile!=null) {
+		pg.readPathLabels(labelsFile);
+		System.out.println("# Graph has "+pg.getLabelCounts().get("case")+" case paths and "+pg.getLabelCounts().get("ctrl")+" ctrl paths.");
+	    }
+	} else if (cmd.hasOption("txt")) {
+	    File nodesFile = new File(graphName+".nodes.txt");
+	    File pathsFile = new File(graphName+".paths.txt");
+	    pg.importTXT(nodesFile, pathsFile);
+	    System.out.println("# Graph has "+pg.getLabelCounts().get("case")+" case paths and "+pg.getLabelCounts().get("ctrl")+" ctrl paths.");
+	}
+	
+	// other options
         if (cmd.hasOption("genotype")) pg.setGenotype(Integer.parseInt(cmd.getOptionValue("genotype")));
-        System.out.println("# Loading GFA file "+gfaFile.getName());
-        pg.importGFA(gfaFile);
-        System.out.println("# Graph has "+pg.vertexSet().size()+" nodes and "+pg.getPaths().size()+" paths.");
-        // if a labels file is given, add them to the paths
-        if (labelsFile!=null) {
-            pg.readPathLabels(labelsFile);
-            System.out.println("# Graph has "+pg.getLabelCounts().get("case")+" case paths and "+pg.getLabelCounts().get("ctrl")+" ctrl paths.");
-        }
 
         // create the NodeSet
         String nodeString = cmd.getOptionValue("nodes");
