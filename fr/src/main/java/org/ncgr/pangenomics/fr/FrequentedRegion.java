@@ -526,6 +526,8 @@ public class FrequentedRegion implements Comparable {
         
         // import a PangenomicGraph from the GFA file
         PangenomicGraph pg = new PangenomicGraph();
+	// apply options
+        if (cmd.hasOption("genotype")) pg.setGenotype(Integer.parseInt(cmd.getOptionValue("genotype")));
 	// graph name
 	String graphName = cmd.getOptionValue("graph");
 	if (cmd.hasOption("gfa")) {
@@ -536,7 +538,6 @@ public class FrequentedRegion implements Comparable {
 	    if (labelsFile!=null) {
 		pg.readPathLabels(labelsFile);
                 pg.tallyLabelCounts();
-		System.out.println("# Graph has "+pg.getLabelCounts().get("case")+" case paths and "+pg.getLabelCounts().get("ctrl")+" ctrl paths.");
 	    }
 	} else if (cmd.hasOption("txt")) {
             // TXT file
@@ -544,17 +545,13 @@ public class FrequentedRegion implements Comparable {
 	    File pathsFile = new File(graphName+".paths.txt");
             pg.importTXT(nodesFile, pathsFile);
             pg.tallyLabelCounts();
-            System.out.println("# Graph has "+pg.getLabelCounts().get("case")+" case paths and "+pg.getLabelCounts().get("ctrl")+" ctrl paths.");
         }
-	
-	// other options
-        if (cmd.hasOption("genotype")) pg.setGenotype(Integer.parseInt(cmd.getOptionValue("genotype")));
+        System.out.println("# Graph has "+pg.getNodes().size()+" nodes and "+pg.getPaths().size()+" paths.");
+        System.out.println("# Graph has "+pg.getLabelCounts().get("case")+" case paths and "+pg.getLabelCounts().get("ctrl")+" ctrl paths.");
 
-        // create the NodeSet
+        // create the FrequentedRegion with this PangenomicGraph
         String nodeString = cmd.getOptionValue("nodes");
         NodeSet nodes = new NodeSet(pg, nodeString);
-        
-        // create the FrequentedRegion with this PangenomicGraph
         FrequentedRegion fr = new FrequentedRegion(pg, nodes, alpha, kappa, priorityOption);
 
         // print it out
