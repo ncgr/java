@@ -70,7 +70,6 @@ public class PangenomicGraph extends DirectedMultigraph<Node,Edge> {
      */
     public PangenomicGraph() {
         super(Edge.class);
-        nodePaths = new ConcurrentHashMap<>();
     }
 
     /**
@@ -127,16 +126,15 @@ public class PangenomicGraph extends DirectedMultigraph<Node,Edge> {
      */
     void buildNodePaths() throws NullSequenceException {
 	if (verbose) System.out.println("Building node paths...");
+        nodePaths = new ConcurrentHashMap<>();
         // initialize empty paths for each node
         for (Node n : vertexSet()) {
-	    if (n.getSequence()==null) {
-		throw new NullSequenceException("Node "+n.getId()+" has no sequence. Aborting.");
-	    }
             nodePaths.put(n.getId(), Collections.synchronizedList(new ArrayList<PathWalk>()));
         }
-        // now load the paths (which are already synchronized from GFAImport) in parallel
+        // now load the paths (which are already synchronized from the importer) in parallel
         paths.parallelStream().forEach(path -> {
-                path.getNodes().parallelStream().forEach(n -> {
+                List<Node> nodeList = Collections.synchronizedList(path.getNodes());
+                nodeList.parallelStream().forEach(n -> {
                         nodePaths.get(n.getId()).add(path);
                     });
             });

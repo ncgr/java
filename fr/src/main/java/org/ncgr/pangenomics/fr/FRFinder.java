@@ -238,6 +238,7 @@ public class FRFinder {
                 FrequentedRegion fr = frpair.merged;
                 // first we need to have the minimum support and priority
                 if (fr.support>=getMinSup() && fr.priority>=getMinPriority()) {
+                    // add this FR to the map of ones to merge
                     added = true;
                     allFrequentedRegions.put(fr.nodes.toString(), fr);
                     // don't output FRs with node sets that are children with the same or less support than ones already stored
@@ -246,9 +247,7 @@ public class FRFinder {
                         if (fr.nodes.childOf(frOld.nodes) && fr.support<=frOld.support) {
                             dupe = true;
                             rejectedNodeSets.add(fr.nodes.toString());
-                            if (getDebug()) {
-                                System.out.println("DUPE:"+fr.nodes+"("+fr.support+") "+frOld.nodes+"("+frOld.support+")");
-                            }
+                            if (getDebug()) System.out.println("DUPE:"+fr.toString()+"|"+frOld.toString());
                             break;
                         }
                     }

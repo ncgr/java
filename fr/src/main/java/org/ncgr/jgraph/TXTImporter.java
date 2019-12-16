@@ -48,7 +48,7 @@ public class TXTImporter {
      * @param pathsFile the paths file (typically [graph].paths.txt)
      */
     public void importGraph(Graph<Node,Edge> g, File nodesFile, File pathsFile) throws IOException, NullSequenceException {
-        if (verbose) System.out.println("# Loading graph from "+nodesFile.getName()+" and "+pathsFile.getName());
+        if (verbose) System.out.println("Loading graph from "+nodesFile.getName()+" and "+pathsFile.getName());
         // read the nodes, storing in a map for path building
         Map<Long,Node> nodeMap = new HashMap<>();
         BufferedReader nodesReader = new BufferedReader(new FileReader(nodesFile));
@@ -91,7 +91,7 @@ public class TXTImporter {
         if (skipEdges) {
             if (verbose) System.out.println("# Skipped adding edges to graph");
         } else {
-            if (verbose) System.out.println("# Adding pathwalk edges to graph...");
+            if (verbose) System.out.println("Adding pathwalk edges to graph...");
             // this cannot be done in parallel because of g.addEdge() inside
             for (PathWalk path : paths) {
                 boolean first = true;

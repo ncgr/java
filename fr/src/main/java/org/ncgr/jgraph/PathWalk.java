@@ -182,10 +182,10 @@ public class PathWalk extends GraphWalk<Node,Edge> implements Comparable {
     }
 
     /**
-     * Return the nodes that this path traverses, in order of traversal, in a synchronized List.
+     * Return the nodes that this path traverses, in order of traversal.
      */
     public List<Node> getNodes() {
-        return Collections.synchronizedList((List<Node>) getVertexList());
+        return (List<Node>) getVertexList();
     }
 
     /**
@@ -211,7 +211,8 @@ public class PathWalk extends GraphWalk<Node,Edge> implements Comparable {
      * @return the subsequence inclusively between nl and nr
      */
     public String subsequence(Node nl, Node nr) throws NullNodeException, NullSequenceException {
-        if (!getNodes().contains(nl) || !getNodes().contains(nr)) return "";
+        List<Node> nodeList = getNodes();
+        if (!nodeList.contains(nl) || !nodeList.contains(nr)) return "";
         return subpath(nl,nr).sequence;
     }
 
@@ -223,13 +224,14 @@ public class PathWalk extends GraphWalk<Node,Edge> implements Comparable {
      */
     public PathWalk subpath(Node nl, Node nr) throws NullNodeException, NullSequenceException {
         List<Node> subnodes = new ArrayList<>();
-        if (getNodes().contains(nl) && getNodes().contains(nr)) {
+        List<Node> nodeList = getNodes();
+        if (nodeList.contains(nl) && nodeList.contains(nr)) {
             if (nl.equals(nr)) {
                 subnodes.add(nl);
             } else {
                 boolean started = false;
                 boolean finished = false;
-                for (Node node : getNodes()) {
+                for (Node node : nodeList) {
                     if (!started && node.equals(nl)) {
                         started = true;
                         subnodes.add(node);
@@ -289,9 +291,10 @@ public class PathWalk extends GraphWalk<Node,Edge> implements Comparable {
      * @returns the set of supporting path segments
      */
     public List<PathWalk> computeSupport(NodeSet nodes, double alpha, int kappa) throws NullNodeException, NullSequenceException {
+        // s = the supporting subpaths
         List<PathWalk> s = new ArrayList<>();
-        // m = the list of p's nodes that are in c
-        ArrayList<Node> m = new ArrayList<>();
+        // m = the list of this path's nodes that are in C=nodes
+        List<Node> m = new ArrayList<>();
         for (Node n : getNodes()) {
             if (nodes.contains(n)) m.add(n);
         }
