@@ -241,10 +241,10 @@ public class FRFinder {
                     // add this FR to the map of ones to merge
                     added = true;
                     allFrequentedRegions.put(fr.nodes.toString(), fr);
-                    // don't output FRs with node sets that are children with the same or less support than ones already stored
+                    // don't output FRs with node sets that are children with the same or larger p-value
                     boolean dupe = false;
                     for (FrequentedRegion frOld : frequentedRegions.values()) {
-                        if (fr.nodes.childOf(frOld.nodes) && fr.support<=frOld.support) {
+                        if (fr.nodes.childOf(frOld.nodes) && fr.fisherExactP()>=frOld.fisherExactP()) {
                             dupe = true;
                             rejectedNodeSets.add(fr.nodes.toString());
                             if (getDebug()) System.out.println("DUPE:"+fr.toString()+"|"+frOld.toString());
