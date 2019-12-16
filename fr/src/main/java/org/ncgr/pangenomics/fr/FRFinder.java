@@ -592,12 +592,14 @@ public class FRFinder {
                 // if a labels file is given, add them to the paths
                 if (labelsFile!=null) {
                     pg.readPathLabels(labelsFile);
+                    pg.tallyLabelCounts();
                     System.out.println("# Graph has "+pg.getLabelCounts().get("case")+" case paths and "+pg.getLabelCounts().get("ctrl")+" ctrl paths.");
                 }
             } else if (cmd.hasOption("txt")) {
                 File nodesFile = new File(graphName+".nodes.txt");
                 File pathsFile = new File(graphName+".paths.txt");
                 pg.importTXT(nodesFile, pathsFile);
+                pg.tallyLabelCounts();
                 System.out.println("# Graph has "+pg.getLabelCounts().get("case")+" case paths and "+pg.getLabelCounts().get("ctrl")+" ctrl paths.");
             }
             // set graph options

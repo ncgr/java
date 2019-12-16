@@ -84,10 +84,10 @@ public class PangenomicGraph extends DirectedMultigraph<Node,Edge> {
         importer.setGenotype(genotype);
         importer.importGraph(this, gfaFile);
         paths = importer.getPaths();
-        if (!skipNodePaths) {
-            buildNodePaths();
-        } else {
+        if (skipNodePaths) {
             System.out.println("# Skipped building node paths");
+        } else {
+            buildNodePaths();
         }
         dsp = new DijkstraShortestPath<Node,Edge>(this);
     }
@@ -103,11 +103,10 @@ public class PangenomicGraph extends DirectedMultigraph<Node,Edge> {
         importer.setGenotype(genotype);
         importer.importGraph(this, nodesFile, pathsFile);
         paths = importer.getPaths();
-        tallyLabelCounts();
-        if (!skipNodePaths) {
-            buildNodePaths();
-        } else {
+        if (skipNodePaths) {
             System.out.println("# Skipped building node paths");
+        } else {
+            buildNodePaths();
         }
         dsp = new DijkstraShortestPath<Node,Edge>(this);
     }
@@ -145,14 +144,15 @@ public class PangenomicGraph extends DirectedMultigraph<Node,Edge> {
 
     /**
      * Read path labels from a tab-delimited file. Comment lines start with #.
+     * 28304	case
+     * 60372	ctrl
      */
     public void readPathLabels(File labelsFile) throws FileNotFoundException, IOException {
 	if (verbose) System.out.println("Reading path labels...");
         this.labelsFile = labelsFile;
-        labelCounts = new TreeMap<>();
         BufferedReader reader = new BufferedReader(new FileReader(labelsFile));
         String line = null;
-        Map<String,String> labels = new HashMap<>();
+        ConcurrentHashMap<String,String> labels = new ConcurrentHashMap<>();
         while ((line=reader.readLine())!=null) {
             if (!line.startsWith("#")) {
                 String[] fields = line.split("\t");
@@ -161,52 +161,26 @@ public class PangenomicGraph extends DirectedMultigraph<Node,Edge> {
                 }
             }
         }
+        reader.close();
         // set the labels for each path
-        for (PathWalk path : paths) {
-            for (String sample : labels.keySet()) {
-                String label = labels.get(sample); 
-                if (sample.equals(path.getName())) {
-                    // sample = path name labeling
-                    path.setLabel(label);
-                    if (labelCounts.containsKey(label)) {
-                        int count = labelCounts.get(label);
-                        labelCounts.put(label, count+1);
-                    } else {
-                        labelCounts.put(label, 1);
-                    }
+        paths.parallelStream().forEach(path -> {
+                if (labels.containsKey(path.getName())) {
+                    path.setLabel(labels.get(path.getName()));
+                } else if (labels.containsKey(path.getName()+".0")) {
+                    path.setLabel(labels.get(path.getName()+".0"));
+                } else if (labels.containsKey(path.getName()+".1")) {
+                    path.setLabel(labels.get(path.getName()+".1"));
                 } else {
-                    // sample = path name.genotype labeling
-                    String[] parts = sample.split("\\.");
-                    String sampleName = parts[0];
-                    if (parts.length>1) {
-                        int sampleGenotype = Integer.parseInt(parts[1]);
-                        if (sampleName.equals(path.getName()) && sampleGenotype==path.getGenotype()) {
-                            path.setLabel(label);
-                            if (labelCounts.containsKey(label)) {
-                                int count = labelCounts.get(label);
-                                labelCounts.put(label, count+1);
-                            } else {
-                                labelCounts.put(label, 1);
-                            }
-                        }
-                    }
+                    System.err.println("ERROR: the path "+path.getName()+" has no label in the labels file.");
                 }
-            }
-        }
-        // flag paths that are not labeled
-        boolean pathsAllLabeled = true;
-        for (PathWalk path : paths) {
-            if (path.getLabel()==null) {
-                pathsAllLabeled = false;
-                System.err.println("ERROR: the path "+path.getName()+" has no label in the labels file.");
-            }
-        }
+            });
     }
 
     /**
      * Tally the label counts from the labeled paths.
+     * NOTE: this has to be done serially since it's an increasing tally.
      */
-    void tallyLabelCounts() {
+    public void tallyLabelCounts() {
         labelCounts = new TreeMap<>();
         for (PathWalk path : paths) {
             String label = path.getLabel();
@@ -663,11 +637,13 @@ public class PangenomicGraph extends DirectedMultigraph<Node,Edge> {
             if (cmd.hasOption("pathlabels")) {
                 File labelsFile = new File(cmd.getOptionValue("pathlabels"));
                 graph.readPathLabels(labelsFile);
+                graph.tallyLabelCounts();
             }
         } else if (cmd.hasOption("txt")) {
             File nodesFile = new File(graphName+".nodes.txt");
             File pathsFile = new File(graphName+".paths.txt");
             graph.importTXT(nodesFile, pathsFile);
+            graph.tallyLabelCounts();
         }
         long importEnd = System.currentTimeMillis();
         if (graph.verbose) System.out.println("Graph import took "+(importEnd-importStart)+" ms.");

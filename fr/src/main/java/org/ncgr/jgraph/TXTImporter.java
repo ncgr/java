@@ -58,8 +58,8 @@ public class TXTImporter {
             long id = Long.parseLong(parts[0]);
             String sequence = parts[1];
             Node n = new Node(id, sequence);
-            g.addVertex(n);
             nodeMap.put(id, n);
+            g.addVertex(n);
         }
         nodesReader.close();
         // read the paths file lines into a list
