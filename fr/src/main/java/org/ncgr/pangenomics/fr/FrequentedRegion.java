@@ -528,21 +528,24 @@ public class FrequentedRegion implements Comparable {
         PangenomicGraph pg = new PangenomicGraph();
 	// graph name
 	String graphName = cmd.getOptionValue("graph");
-	// GFA file
 	if (cmd.hasOption("gfa")) {
+            // GFA file
 	    File gfaFile = new File(graphName+".paths.gfa");
 	    pg.importGFA(gfaFile);
 	    // if a labels file is given, add them to the paths
 	    if (labelsFile!=null) {
 		pg.readPathLabels(labelsFile);
+                pg.tallyLabelCounts();
 		System.out.println("# Graph has "+pg.getLabelCounts().get("case")+" case paths and "+pg.getLabelCounts().get("ctrl")+" ctrl paths.");
 	    }
 	} else if (cmd.hasOption("txt")) {
+            // TXT file
 	    File nodesFile = new File(graphName+".nodes.txt");
 	    File pathsFile = new File(graphName+".paths.txt");
-	    pg.importTXT(nodesFile, pathsFile);
-	    System.out.println("# Graph has "+pg.getLabelCounts().get("case")+" case paths and "+pg.getLabelCounts().get("ctrl")+" ctrl paths.");
-	}
+            pg.importTXT(nodesFile, pathsFile);
+            pg.tallyLabelCounts();
+            System.out.println("# Graph has "+pg.getLabelCounts().get("case")+" case paths and "+pg.getLabelCounts().get("ctrl")+" ctrl paths.");
+        }
 	
 	// other options
         if (cmd.hasOption("genotype")) pg.setGenotype(Integer.parseInt(cmd.getOptionValue("genotype")));
