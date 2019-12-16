@@ -12,7 +12,6 @@ import org.ncgr.jgraph.NullSequenceException;
 import org.ncgr.jgraph.PangenomicGraph;
 
 import org.jgrapht.GraphPath;
-import org.jgrapht.alg.shortestpath.DijkstraShortestPath;
 
 /**
  * Container for a pair of FrequentedRegions and their merged result with a comparator for ranking it.
@@ -52,15 +51,13 @@ public class FRPair implements Comparable {
      * Compute alpha rejection booleans without merging.
      */
     public void computeAlphaRejection() {
-        // defaults
         alphaReject = false;
         if (nodes.size()>1) {
-            DijkstraShortestPath<Node,Edge> dsp = new DijkstraShortestPath<Node,Edge>(graph);
             int minMissing = Integer.MAX_VALUE;
             for (Node n1 : nodes) {
                 for (Node n2 : nodes) {
                     if (n1.getId()<n2.getId()) {
-                        GraphPath<Node,Edge> subpath = dsp.getPath(n1, n2);
+                        GraphPath<Node,Edge> subpath = graph.getDSP().getPath(n1, n2);
                         if (subpath!=null) {
                             List<Node> missingNodes = new LinkedList<>();
                             for (Node n : subpath.getVertexList()) {

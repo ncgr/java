@@ -14,6 +14,7 @@ import java.util.Map;
 import java.util.HashMap;
 import java.util.TreeMap;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
@@ -24,6 +25,7 @@ import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 
 import org.jgrapht.graph.DirectedMultigraph;
+import org.jgrapht.alg.shortestpath.DijkstraShortestPath;
 
 /**
  * Storage of a pan-genomic graph in a JGraphT object.
@@ -55,17 +57,20 @@ public class PangenomicGraph extends DirectedMultigraph<Node,Edge> {
     List<PathWalk> paths;
     
     // maps a Node to the Paths that traverse it
-    Map<Long,List<PathWalk>> nodePaths; // keyed and ordered by Node Id, synchronized when constructed
+    ConcurrentHashMap<Long,List<PathWalk>> nodePaths; // keyed and ordered by Node Id, synchronized when constructed
 
     // maps a path label to a count of paths that have that label
     Map<String,Integer> labelCounts; // keyed by label
-    
+
+    // computed once here to save time
+    DijkstraShortestPath<Node,Edge> dsp;
+
     /**
      * Constructor instantiates collections; then use read methods to populate the graph from files.
      */
     public PangenomicGraph() {
         super(Edge.class);
-        nodePaths = Collections.synchronizedMap(new HashMap<Long,List<PathWalk>>());
+        nodePaths = new ConcurrentHashMap<>();
     }
 
     /**
@@ -84,24 +89,27 @@ public class PangenomicGraph extends DirectedMultigraph<Node,Edge> {
         } else {
             System.out.println("# Skipped building node paths");
         }
+        dsp = new DijkstraShortestPath<Node,Edge>(this);
     }
 
     /**
-     * Import from paths.txt and nodes.txt files.
+     * Import from a pair of TXT files.
      */
     public void importTXT(File nodesFile, File pathsFile) throws IOException, NullSequenceException {
-        System.out.println("# Loading graph from "+nodesFile.getName()+" and "+pathsFile.getName());
-        Map<Long,Node> nodes = readNodes(nodesFile);
-        for (Node n : nodes.values()) {
-            addVertex(n);
-        }
-        paths = readPaths(pathsFile);
+        TXTImporter importer = new TXTImporter();
+        if (verbose) importer.setVerbose();
+        if (skipEdges) importer.setSkipEdges();
+	if (skipSequences) importer.setSkipSequences();
+        importer.setGenotype(genotype);
+        importer.importGraph(this, nodesFile, pathsFile);
+        paths = importer.getPaths();
         tallyLabelCounts();
         if (!skipNodePaths) {
             buildNodePaths();
         } else {
             System.out.println("# Skipped building node paths");
         }
+        dsp = new DijkstraShortestPath<Node,Edge>(this);
     }
 
     /**
@@ -258,6 +266,13 @@ public class PangenomicGraph extends DirectedMultigraph<Node,Edge> {
     }
 
     /**
+     * Return the DijkstraShortestPath of this graph
+     */
+    public DijkstraShortestPath<Node,Edge> getDSP() {
+        return dsp;
+    }
+
+    /**
      * Set the genotype preference: -1=both; 0 and 1
      */
     public void setGenotype(int g) throws IllegalArgumentException {
@@ -340,26 +355,6 @@ public class PangenomicGraph extends DirectedMultigraph<Node,Edge> {
     }
 
     /**
-     * Return a map of nodes read from a file written by printNodes().
-     * 1       C
-     * 2       T
-     * 3       TCCTTCTGCTCAACTTTC
-     */
-    public static Map<Long,Node> readNodes(File nodesFile) throws IOException {
-        BufferedReader reader = new BufferedReader(new FileReader(nodesFile));
-        String line = null;
-        Map<Long,Node> nodes = new HashMap<>();
-        while ((line=reader.readLine())!=null) {
-            String[] parts = line.split("\t");
-            long id = Long.parseLong(parts[0]);
-            String sequence = parts[1];
-            Node n = new Node(id, sequence);
-            nodes.put(id, n);
-        }
-        return nodes;
-    }
-
-    /**
      * Print out a histogram of node sizes.
      */
     public void printNodeHistogram(PrintStream out) {
@@ -397,40 +392,6 @@ public class PangenomicGraph extends DirectedMultigraph<Node,Edge> {
             }
             out.println(builder.toString());
         }
-    }
-
-    /**
-     * Return a set of paths read from a file written by printPaths(). Assume that sequences are NOT included.
-     * 0        1       2       3       4       ...
-     * 974679.0 case    473     1       3       4 ...
-     * 412119.0 ctrl    406     1       3       4 ...
-     */
-    public static List<PathWalk> readPaths(File pathsFile) throws IOException {
-        List<PathWalk> paths = Collections.synchronizedList(new ArrayList<>());
-        // load the lines into a synchronized list so we can create the paths in parallel
-        BufferedReader reader = new BufferedReader(new FileReader(pathsFile));
-        String line = null;
-        List<String> lines = Collections.synchronizedList(new ArrayList<>());
-        while ((line=reader.readLine())!=null) {
-            lines.add(line);
-        }
-        // now create the paths in parallel
-        lines.parallelStream().forEach(l -> {
-                String[] parts = l.split("\t");
-                String nameGenotype = parts[0];
-                String label = parts[1];
-                int sequenceLength = Integer.parseInt(parts[2]);
-                String[] pieces = nameGenotype.split("\\.");
-                String name = pieces[0];
-                int genotype = Integer.parseInt(pieces[1]);
-                List<Node> nodeList = new ArrayList<>();
-                for (int i=3; i<parts.length; i++) {
-                    nodeList.add(new Node(Long.parseLong(parts[i]), parts[i]));
-                }
-                PathWalk path = new PathWalk(nodeList, name, genotype, label);
-                paths.add(path);
-            });
-        return paths;
     }
 
     /**

@@ -56,3 +56,8 @@ java -server -Xmx160g -XX:+UseParallelGC -Xms2g -XX:SoftRefLRUPolicyMSPerMB=1 -X
      --priorityoption=$priorityoption --skipnodepaths $5 $6 \
      --graph=$graph --txt \
      --alphastart=$alpha --alphaend=$alpha --kappastart=$kappa --kappaend=$kappa
+
+#java -server -Xmx160g -XX:+UseParallelGC -Xms2g -XX:SoftRefLRUPolicyMSPerMB=1 -XX:MaxHeapFreeRatio=99 -cp "build/install/fr/lib/*" org.ncgr.pangenomics.fr.FRFinder \
+#     --priorityoption=$priorityoption --skipnodepaths $5 $6 \
+#     --graph=CIDR_HD_Modifiers/$graph --pathlabels=CIDR_HD_Modifiers/labels.txt --gfa \
+#     --alphastart=$alpha --alphaend=$alpha --kappastart=$kappa --kappaend=$kappa

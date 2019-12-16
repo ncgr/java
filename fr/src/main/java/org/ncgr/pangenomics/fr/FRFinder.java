@@ -9,6 +9,7 @@ import org.ncgr.jgraph.NullNodeException;
 import org.ncgr.jgraph.NullSequenceException;
 import org.ncgr.jgraph.PangenomicGraph;
 import org.ncgr.jgraph.PathWalk;
+import org.ncgr.jgraph.TXTImporter;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -17,20 +18,16 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.PrintStream;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Map;
 import java.util.HashMap;
 import java.util.TreeMap;
-import java.util.PriorityQueue;
 import java.util.Properties;
 import java.util.Set;
 import java.util.TreeSet;
-
-import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
-
+import java.util.concurrent.ConcurrentSkipListSet;
 
 import java.text.DecimalFormat;
 import java.time.ZonedDateTime;
@@ -65,11 +62,11 @@ public class FRFinder {
 
     // save filename suffixes
     String FREQUENTED_REGIONS_SAVE = "save.frs.txt";
-    String SYNC_FREQUENTED_REGIONS_SAVE = "save.syncFrequentedRegions.txt";
+    String ALL_FREQUENTED_REGIONS_SAVE = "save.allFrequentedRegions.txt";
     String REJECTED_NODESETS_SAVE = "save.rejectedNodeSets.txt";
 
     // the output FRs
-    Map<String,FrequentedRegion> frequentedRegions;
+    ConcurrentHashMap<String,FrequentedRegion> frequentedRegions;
 
     // diagnostic
     long clockTime;
@@ -124,16 +121,16 @@ public class FRFinder {
         if (getGfaFilename()!=null) graph.printAll(getGraphName());
 
         // store the saved FRs in a map
-        frequentedRegions = new HashMap<>();
+        frequentedRegions = new ConcurrentHashMap<>();
 
-        // store the studied FRs in a synchronized map
-        ConcurrentHashMap<String,FrequentedRegion> syncFrequentedRegions = new ConcurrentHashMap<>();
+        // store the studied FRs in a ConcurrentHashMap for thread-safe ops
+        ConcurrentHashMap<String,FrequentedRegion> allFrequentedRegions = new ConcurrentHashMap<>();
 
         // rejected NodeSets (strings), so we don't bother scanning them more than once
-        List<String> rejectedNodeSets = Collections.synchronizedList(new ArrayList<>());
+        ConcurrentSkipListSet<String> rejectedNodeSets = new ConcurrentSkipListSet<>();
 
         // accepted FRPairs so we don't merge them more than once
-        Map<String,FRPair> acceptedFRPairs = Collections.synchronizedMap(new HashMap<>());
+        ConcurrentHashMap<String,FRPair> acceptedFRPairs = new ConcurrentHashMap<>();
 
         // FR-finding round counter
         int round = 0;
@@ -142,12 +139,12 @@ public class FRFinder {
             // resume from a previous run
             System.out.println("# Resuming from previous run");
             String line = null;
-            // syncFrequentedRegions
-            BufferedReader sfrReader = new BufferedReader(new FileReader(getGraphName()+"."+SYNC_FREQUENTED_REGIONS_SAVE));
+            // allFrequentedRegions
+            BufferedReader sfrReader = new BufferedReader(new FileReader(getGraphName()+"."+ALL_FREQUENTED_REGIONS_SAVE));
             while ((line=sfrReader.readLine())!=null) {
                 String[] parts = line.split("\t");
                 NodeSet nodes = new NodeSet(graph, parts[0]);
-                syncFrequentedRegions.put(nodes.toString(), new FrequentedRegion(graph, nodes, alpha, kappa, getPriorityOption()));
+                allFrequentedRegions.put(nodes.toString(), new FrequentedRegion(graph, nodes, alpha, kappa, getPriorityOption()));
             }
 	    // rejectedNodeSets
 	    BufferedReader rnsReader = new BufferedReader(new FileReader(getGraphName()+"."+REJECTED_NODESETS_SAVE));
@@ -167,7 +164,7 @@ public class FRFinder {
                 round++;
             }
 	    // informativationalism
-            System.out.println("# Loaded "+syncFrequentedRegions.size()+" syncFrequentedRegions.");
+            System.out.println("# Loaded "+allFrequentedRegions.size()+" allFrequentedRegions.");
 	    System.out.println("# Loaded "+rejectedNodeSets.size()+" rejectedNodeSets.");
             System.out.println("# Loaded "+frequentedRegions.size()+" frequentedRegions.");
             System.out.println("# Now continuing with FR finding...");
@@ -177,7 +174,7 @@ public class FRFinder {
                 NodeSet c = new NodeSet();
                 c.add(node);
                 FrequentedRegion fr = new FrequentedRegion(graph, c, alpha, kappa, getPriorityOption());
-                syncFrequentedRegions.put(c.toString(), fr);
+                allFrequentedRegions.put(c.toString(), fr);
             }
         }
 
@@ -187,14 +184,13 @@ public class FRFinder {
         while (added && (round<getMaxRound() || getMaxRound()==0)) {
             round++;
             added = false;
-            // back the set of FR pairs by a sychronized Set for parallel operation and sorting
-            TreeSet<FRPair> frpairSet = new TreeSet<>();
-            Set<FRPair> syncFRPairSet = Collections.synchronizedSet(frpairSet);
+            // store FRPairs in a map keyed by merged nodes in THIS round for parallel operation and sorting
+            ConcurrentHashMap<String,FRPair> frpairMap = new ConcurrentHashMap<>();
             ////////////////////////////////////////
             // spin through FRs in a double-parallel loop
-            syncFrequentedRegions.entrySet().parallelStream().forEach(entry1 -> {
+            allFrequentedRegions.entrySet().parallelStream().forEach(entry1 -> {
                     FrequentedRegion fr1 = entry1.getValue();
-                    syncFrequentedRegions.entrySet().parallelStream().forEach(entry2 -> {
+                    allFrequentedRegions.entrySet().parallelStream().forEach(entry2 -> {
                             FrequentedRegion fr2 = entry2.getValue();
                             FRPair frpair = new FRPair(fr1, fr2);
                             String nodesKey = frpair.nodes.toString();
@@ -203,9 +199,9 @@ public class FRFinder {
                             } else if (frequentedRegions.containsKey(nodesKey)) {
                                 // do nothing
                             } else if (acceptedFRPairs.containsKey(nodesKey)) {
-                                // pull stored FRPair since already merged
+                                // get stored FRPair since already merged in a previous round
                                 frpair = acceptedFRPairs.get(nodesKey);
-                                syncFRPairSet.add(frpair);
+                                frpairMap.put(nodesKey, frpair);
                             } else {
                                 // see if this pair is alpha-rejected (before merging)
                                 frpair.computeAlphaRejection();
@@ -228,21 +224,22 @@ public class FRFinder {
                                     } else {
                                         // add this candidate merged pair
                                         acceptedFRPairs.put(nodesKey, frpair);
-                                        syncFRPairSet.add(frpair);
+                                        frpairMap.put(nodesKey, frpair);
                                     }
                                 }
                             }
                         });
                 });
             /////////////////////////////////////////////////
-            // add our new best merged FR
-            if (frpairSet.size()>0) {
-                FRPair frpair= frpairSet.last();
+            // add our new best merged FR (if not a dupe)
+            if (frpairMap.size()>0) {
+                TreeSet<FRPair> frpairSet = new TreeSet<>(frpairMap.values());
+                FRPair frpair = frpairSet.last();
                 FrequentedRegion fr = frpair.merged;
                 // first we need to have the minimum support and priority
                 if (fr.support>=getMinSup() && fr.priority>=getMinPriority()) {
                     added = true;
-                    syncFrequentedRegions.put(fr.nodes.toString(), fr);
+                    allFrequentedRegions.put(fr.nodes.toString(), fr);
                     // don't output FRs with node sets that are children with the same or less support than ones already stored
                     boolean dupe = false;
                     for (FrequentedRegion frOld : frequentedRegions.values()) {
@@ -267,9 +264,9 @@ public class FRFinder {
                 // params with current clock time
                 clockTime = System.currentTimeMillis() - startTime;
                 printParameters(getGraphName()+".save", alpha, kappa);
-                // syncFrequentedRegions
-                PrintStream sfrOut = new PrintStream(getGraphName()+"."+SYNC_FREQUENTED_REGIONS_SAVE);
-                for (FrequentedRegion fr : syncFrequentedRegions.values()) {
+                // allFrequentedRegions
+                PrintStream sfrOut = new PrintStream(getGraphName()+"."+ALL_FREQUENTED_REGIONS_SAVE);
+                for (FrequentedRegion fr : allFrequentedRegions.values()) {
                     sfrOut.println(fr.toString());
                 }
                 sfrOut.close();
@@ -310,7 +307,7 @@ public class FRFinder {
      * Post-process a set of FRs for given minSup, minLen and minSize.
      */
     public void postprocess() throws FileNotFoundException, IOException {
-        Map<String,FrequentedRegion> filteredFRs = new HashMap<>();
+        ConcurrentHashMap<String,FrequentedRegion> filteredFRs = new ConcurrentHashMap<>();
         for (FrequentedRegion fr : frequentedRegions.values()) {
             boolean passes = true;
             String reason = "";
@@ -899,20 +896,24 @@ public class FRFinder {
         // get alpha, kappa from the input prefix
         double alpha = readAlpha(getInputPrefix());
         int kappa = readKappa(getInputPrefix());
-        // get the nodes from the nodes file
+        // get the graph from the nodes and paths files
         File nodesFile = new File(getNodesFilename(getInputPrefix()));
-        Map<Long,Node> nodeMap = PangenomicGraph.readNodes(nodesFile);
-        // get the paths from the paths file
         File pathsFile = new File(getPathsFilename(getInputPrefix()));
-        paths = PangenomicGraph.readPaths(pathsFile);
+        graph = new PangenomicGraph();
+        graph.importTXT(nodesFile, pathsFile);
+        // create a node map for building subpaths
+        Map<Long,Node> nodeMap = new HashMap<>();
+        for (Node n : graph.getNodes()) {
+            nodeMap.put(n.getId(), n);
+        }
 	// build the FRs
-        frequentedRegions = new HashMap<>();
+        frequentedRegions = new ConcurrentHashMap<>();
         String frFilename = getFRSubpathsFilename(getInputPrefix());
         BufferedReader reader = new BufferedReader(new FileReader(frFilename));
         String line = null;
         while ((line=reader.readLine())!=null) {
             String[] fields = line.split("\t");
-            NodeSet nodes = new NodeSet(nodeMap, fields[0]);
+            NodeSet nodes = new NodeSet(graph, fields[0]);
             int support = Integer.parseInt(fields[1]);
             double avgLength = Double.parseDouble(fields[2]);
             List<PathWalk> subpaths = new ArrayList<>();
