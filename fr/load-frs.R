@@ -27,23 +27,22 @@ if (isSaveSet) {
     kappa = as.numeric(prefix.parts[[1]][3])
 }
 
-## #alpha=1.0
+## #alpha=0.1
 ## #kappa=0
-## #clocktime=00:00:00
-## #Mon Dec 02 10:33:40 MST 2019
-## minSup=1
+## #clocktime=03:44:35
+## #Mon Dec 16 03:46:50 MST 2019
+## minSup=2
 ## debug=false
-## serial=false
 ## minSize=1
-## gfaFile=HTT.400.paths.gfa
 ## minLen=1.0
+## txtFile=BBS4+ADPGK.21151.nodes.txt
 ## resume=false
 ## verbose=false
-## bruteForce=false
-## graphName=HTT.400
+## graphName=BBS4+ADPGK.21151
 ## prunedGraph=false
 ## maxRound=0
-## priorityOption=3
+## priorityOption=4
+## minPriority=0
 params = read.delim(file=paste(prefix,".params.txt",sep=""), header=FALSE, stringsAsFactors=FALSE, sep="=")
 for (i in 1:length(rownames(params))) {
     ## comments section
@@ -59,17 +58,17 @@ for (i in 1:length(rownames(params))) {
         ## main parameters section
         if (params$V1[i]=="minSup") minSup = as.numeric(params$V2[i])
         if (params$V1[i]=="debug") debug = as.logical(params$V2[i])
-        if (params$V1[i]=="serial") serial = as.logical(params$V2[i])
         if (params$V1[i]=="minSize") minSize = as.numeric(params$V2[i])
         if (params$V1[i]=="gfaFile") gfaFile = params$V2[i]
+        if (params$V1[i]=="txtFile") txtFile = 
         if (params$V1[i]=="minLen") minLen = as.numeric(params$V2[i])
         if (params$V1[i]=="resume") resume = as.logical(params$V2[i])
         if (params$V1[i]=="verbose") verbose = as.logical(params$V2[i])
-        if (params$V1[i]=="bruteForce") bruteForce = as.logical(params$V2[i])
         if (params$V1[i]=="graphName") graphName = params$V2[i]
         if (params$V1[i]=="prunedGraph") prunedGraph = as.logical(params$V2[i])
         if (params$V1[i]=="maxRound") maxRound = as.numeric(params$V2[i])
         if (params$V1[i]=="priorityOption") priorityOption = as.numeric(params$V2[i])
+        if (params$V1[i]=="minPriority") minPriority = as.numeric(params$V2[i])
     }
 }
 

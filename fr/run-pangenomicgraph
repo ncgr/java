@@ -13,10 +13,11 @@
 #  -txt,--txt                load from previously dumped TXT files
 #  -v,--verbose              verbose output (false)
 
-graph=$1
-
-#java -server -cp "build/install/fr/lib/*" org.ncgr.jgraph.PangenomicGraph --verbose \
-#     --graph $dir/$graph --gfa --pathlabels $dir/labels.txt --outputprefix $graph --skipedges --skipsequences --skipnodepaths
+dir=$1
+graph=$2
 
 java -server -cp "build/install/fr/lib/*" org.ncgr.jgraph.PangenomicGraph --verbose \
-     --graph $graph --txt --outputprefix $graph --skipedges --skipsequences --skipnodepaths
+     --gfa --graph $dir/$graph --pathlabels $dir/labels.txt --outputprefix $graph --skipedges --skipsequences --skipnodepaths
+
+#java -server -cp "build/install/fr/lib/*" org.ncgr.jgraph.PangenomicGraph --verbose \
+#     --txt --graph $graph --outputprefix $graph --skipedges --skipsequences --skipnodepaths

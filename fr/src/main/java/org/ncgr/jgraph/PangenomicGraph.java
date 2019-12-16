@@ -647,42 +647,41 @@ public class PangenomicGraph extends DirectedMultigraph<Node,Edge> {
         // graph name
         String graphName = cmd.getOptionValue("graph");
         
-        // create a PangenomicGraph from a GFA file or pair of TXT files
-        PangenomicGraph pg = new PangenomicGraph();
+        PangenomicGraph graph = new PangenomicGraph();
+        // apply various options
+        if (cmd.hasOption("verbose")) graph.setVerbose();
+        if (cmd.hasOption("skipedges")) graph.setSkipEdges();
+	if (cmd.hasOption("skipsequences")) graph.setSkipSequences();
+        if (cmd.hasOption("skipnodepaths")) graph.setSkipNodePaths();
+        if (cmd.hasOption("genotype")) graph.setGenotype(Integer.parseInt(cmd.getOptionValue("genotype")));
+        // import the graph from a GFA file or pair of TXT files
         long importStart = System.currentTimeMillis();
         if (cmd.hasOption("gfa")) {
             File gfaFile = new File(graphName+".paths.gfa");
-            pg.importGFA(gfaFile);
+            graph.importGFA(gfaFile);
             // if a labels file is given, add them to the paths
             if (cmd.hasOption("pathlabels")) {
                 File labelsFile = new File(cmd.getOptionValue("pathlabels"));
-                pg.readPathLabels(labelsFile);
+                graph.readPathLabels(labelsFile);
             }
         } else if (cmd.hasOption("txt")) {
             File nodesFile = new File(graphName+".nodes.txt");
             File pathsFile = new File(graphName+".paths.txt");
-            pg.importTXT(nodesFile, pathsFile);
+            graph.importTXT(nodesFile, pathsFile);
         }
         long importEnd = System.currentTimeMillis();
-
-        // set other options
-        if (cmd.hasOption("verbose")) pg.setVerbose();
-        if (cmd.hasOption("skipedges")) pg.setSkipEdges();
-	if (cmd.hasOption("skipsequences")) pg.setSkipSequences();
-        if (cmd.hasOption("skipnodepaths")) pg.setSkipNodePaths();
-        if (cmd.hasOption("genotype")) pg.setGenotype(Integer.parseInt(cmd.getOptionValue("genotype")));
-        if (pg.verbose) System.out.println("Graph import took "+(importEnd-importStart)+" ms.");
+        if (graph.verbose) System.out.println("Graph import took "+(importEnd-importStart)+" ms.");
 
         // output
         if (cmd.hasOption("gfa")) {
             if (cmd.hasOption("outputprefix")) {
                 // verbosity
-                if (cmd.hasOption("verbose")) pg.printLabelCounts(System.out);
+                if (cmd.hasOption("verbose")) graph.printLabelCounts(System.out);
                 // files
-                pg.printAll(cmd.getOptionValue("outputprefix"));
+                graph.printAll(cmd.getOptionValue("outputprefix"));
             } else {
                 // stdout
-                pg.printAll();
+                graph.printAll();
             }
         }
     }
