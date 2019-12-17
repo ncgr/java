@@ -509,23 +509,16 @@ public class PangenomicGraph extends DirectedMultigraph<Node,Edge> {
             if (verbose) System.out.println("Writing node paths file...");
             PrintStream nodePathsOut = new PrintStream(outputPrefix+".nodepaths.txt");
             printNodePaths(nodePathsOut);
+            if (verbose) System.out.println("Writing path PCA file...");
+            PrintStream pcaDataOut = new PrintStream(outputPrefix+".pathpca.txt");
+            printPcaData(pcaDataOut);
         }
         
         if (!skipSequences) {
             if (verbose) System.out.println("Writing path sequences file...");
             PrintStream pathSequencesOut = new PrintStream(outputPrefix+".pathsequences.fasta");
-            long printPathSequencesStart = System.currentTimeMillis();
             printPathSequences(pathSequencesOut);
-            long printPathSequencesEnd = System.currentTimeMillis();
-            if (verbose) System.out.println("printPathSequences took "+(printPathSequencesEnd-printPathSequencesStart)+" ms.");
         }
-        
-        if (verbose) System.out.println("Writing path PCA file...");
-        PrintStream pcaDataOut = new PrintStream(outputPrefix+".pathpca.txt");
-        long printPcaDataStart = System.currentTimeMillis();
-        printPcaData(pcaDataOut);
-        long printPcaDataEnd = System.currentTimeMillis();
-        if (verbose) System.out.println("printPcaData took "+(printPcaDataEnd-printPcaDataStart)+" ms.");
     }
 
     /**
