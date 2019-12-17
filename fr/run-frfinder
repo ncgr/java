@@ -48,14 +48,14 @@ alpha=$2
 kappa=$3
 priorityoption=$4
 
-## use $5 and $6 for extra stuff like --resume --debug
+## use $5 and $6 and $7 for extra stuff
 
 echo "# $graph alpha=$alpha kappa=$kappa priorityOption=$priorityoption"
 
 java -server -Xmx160g -XX:+UseParallelGC -Xms2g -XX:SoftRefLRUPolicyMSPerMB=1 -XX:MaxHeapFreeRatio=99 -cp "build/install/fr/lib/*" org.ncgr.pangenomics.fr.FRFinder \
-     --priorityoption=$priorityoption --skipnodepaths $5 $6 \
+     --skipnodepaths $5 $6 $7 \
      --txt --graph=$graph \
-     --alphastart=$alpha --alphaend=$alpha --kappastart=$kappa --kappaend=$kappa
+     --alphastart=$alpha --alphaend=$alpha --kappastart=$kappa --kappaend=$kappa --priorityoption=$priorityoption
 
 #java -server -Xmx160g -XX:+UseParallelGC -Xms2g -XX:SoftRefLRUPolicyMSPerMB=1 -XX:MaxHeapFreeRatio=99 -cp "build/install/fr/lib/*" org.ncgr.pangenomics.fr.FRFinder \
 #     --priorityoption=$priorityoption --skipnodepaths $5 $6 \

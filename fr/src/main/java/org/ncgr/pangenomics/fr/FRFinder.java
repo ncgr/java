@@ -96,7 +96,7 @@ public class FRFinder {
     void initializeParameters() {
         parameters.setProperty("verbose", "false");
         parameters.setProperty("debug", "false");
-        parameters.setProperty("minSup", "2");
+        parameters.setProperty("minSup", "1");
         parameters.setProperty("minSize", "1");
         parameters.setProperty("minLen", "1.0");
         parameters.setProperty("maxRound", "0");
@@ -115,7 +115,8 @@ public class FRFinder {
     public void findFRs(double alpha, int kappa) throws FileNotFoundException, IOException,
                                                         NullNodeException, NullSequenceException, NoPathsException, NoNodePathsException {
 
-	System.out.println("# Starting findFRs: alpha="+alpha+" kappa="+kappa+" priorityOption="+getPriorityOption());
+	System.out.println("# Starting findFRs: alpha="+alpha+" kappa="+kappa+" priorityOption="+getPriorityOption()+" minPriority="+getMinPriority()+
+                           " minSup="+getMinSup()+" minSize="+getMinSize()+" minLen="+getMinLen());
 
         // output the graph files if graph loaded from GFA
         if (getGfaFilename()!=null) graph.printAll(getGraphName());
@@ -186,8 +187,8 @@ public class FRFinder {
             added = false;
             // store FRPairs in a map keyed by merged nodes in THIS round for parallel operation and sorting
             ConcurrentHashMap<String,FRPair> frpairMap = new ConcurrentHashMap<>();
-            ////////////////////////////////////////
-            // spin through FRs in a double-parallel loop
+            ////////////////////////////////////////////////////////////////////////////////////////////////
+            // start parallel streams
             allFrequentedRegions.entrySet().parallelStream().forEach(entry1 -> {
                     FrequentedRegion fr1 = entry1.getValue();
                     allFrequentedRegions.entrySet().parallelStream().forEach(entry2 -> {
@@ -217,33 +218,28 @@ public class FRFinder {
                                         System.err.println(e);
                                         System.exit(1);
                                     }
-                                    // if insufficient support then reject
-                                    if (frpair.merged.support<getMinSup()) {
-                                        // add to rejected set
-                                        rejectedNodeSets.add(nodesKey);
-                                    } else {
-                                        // add this candidate merged pair
-                                        acceptedFRPairs.put(nodesKey, frpair);
-                                        frpairMap.put(nodesKey, frpair);
-                                    }
+                                    // add this candidate merged pair
+                                    acceptedFRPairs.put(nodesKey, frpair);
+                                    frpairMap.put(nodesKey, frpair);
                                 }
                             }
                         });
                 });
-            /////////////////////////////////////////////////
-            // add our new best merged FR (if not a dupe)
+            // end parallelStreams
+            ////////////////////////////////////////////////////////////////////////////////////////////////
+            // add our new best merged FR (and store if not a dupe)
             if (frpairMap.size()>0) {
                 TreeSet<FRPair> frpairSet = new TreeSet<>(frpairMap.values());
                 FRPair frpair = frpairSet.last();
                 FrequentedRegion fr = frpair.merged;
-                // first we need to have the minimum support and priority
-                if (fr.support>=getMinSup() && fr.priority>=getMinPriority()) {
-                    // add this FR to the map of ones to merge
-                    added = true;
+                // we need to have the minimum support and priority, etc.
+                added = fr.support>=getMinSup() && fr.avgLength>=getMinLen() && fr.nodes.size()>=getMinSize() && fr.priority>=getMinPriority();
+                if (added) {
+                    // add this FR to the mergeable FRs map
                     allFrequentedRegions.put(fr.nodes.toString(), fr);
-                    // don't output FRs with node sets that are children with the same or lower priority
                     boolean dupe = false;
                     for (FrequentedRegion frOld : frequentedRegions.values()) {
+                        // don't output FRs with node sets that are children with the same or lower priority
                         if (fr.nodes.childOf(frOld.nodes) && fr.priority<=frOld.priority) {
                             dupe = true;
                             rejectedNodeSets.add(fr.nodes.toString());
@@ -257,7 +253,6 @@ public class FRFinder {
                     }
                 }
             }
-
             // output current state for continuation if aborted
             if (frequentedRegions.size()>0 && !getSkipSaveFiles()) {
                 // params with current clock time
@@ -289,6 +284,7 @@ public class FRFinder {
             }
         }
 
+        // timing
 	clockTime = System.currentTimeMillis() - startTime;
         System.out.println("Found "+frequentedRegions.size()+" FRs.");
 	System.out.println("Clock time: "+formatTime(clockTime));
