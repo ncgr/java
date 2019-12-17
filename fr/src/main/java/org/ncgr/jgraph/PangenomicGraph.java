@@ -294,6 +294,20 @@ public class PangenomicGraph extends DirectedMultigraph<Node,Edge> {
     }
 
     /**
+     * Return the node with the given id, else null.
+     */
+    public Node getNode(long id) {
+        Node node = null;
+        for (Node n : getNodes()) {
+            if (n.id==id) {
+                node = n;
+                break;
+            }
+        }
+        return node;
+    }
+
+    /**
      * Get this graph's paths.
      */
     public List<PathWalk> getPaths() {

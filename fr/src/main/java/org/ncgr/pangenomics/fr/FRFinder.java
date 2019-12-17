@@ -119,7 +119,7 @@ public class FRFinder {
 	System.out.println("# Starting findFRs: alpha="+alpha+" kappa="+kappa+
                            " priorityOption="+getPriorityOption()+" minPriority="+getMinPriority()+
                            " minSup="+getMinSup()+" minSize="+getMinSize()+" minLen="+getMinLen()+
-                           " requiredNode="+getRequiredNode());
+                           " requiredNode="+getRequiredNodeId());
 
         // output the graph files if graph loaded from GFA
         if (getGfaFilename()!=null) graph.printAll(getGraphName());
@@ -135,6 +135,9 @@ public class FRFinder {
 
         // accepted FRPairs so we don't merge them more than once
         ConcurrentHashMap<String,FRPair> acceptedFRPairs = new ConcurrentHashMap<>();
+
+        // optional required node, null if not set; must be final since used in the parallel stream loop
+        final Node requiredNode = graph.getNode(getRequiredNodeId());
 
         // FR-finding round counter
         int round = 0;
@@ -192,84 +195,59 @@ public class FRFinder {
             ConcurrentHashMap<String,FRPair> frpairMap = new ConcurrentHashMap<>();
             ////////////////////////////////////////////////////////////////////////////////////////////////
             // start parallel streams
-            if (getRequiredNode()==0) {
-                // normal parallel stream x parallel stream scan
-                allFrequentedRegions.entrySet().parallelStream().forEach(entry1 -> {
-                        FrequentedRegion fr1 = entry1.getValue();
-                        allFrequentedRegions.entrySet().parallelStream().forEach(entry2 -> {
-                                FrequentedRegion fr2 = entry2.getValue();
-                                FRPair frpair = new FRPair(fr1, fr2);
-                                String nodesKey = frpair.nodes.toString();
-                                if (rejectedNodeSets.contains(nodesKey)) {
-                                    // do nothing
-                                } else if (frequentedRegions.containsKey(nodesKey)) {
-                                    // do nothing
-                                } else if (acceptedFRPairs.containsKey(nodesKey)) {
-                                    // get stored FRPair since already merged in a previous round
-                                    frpair = acceptedFRPairs.get(nodesKey);
-                                    frpairMap.put(nodesKey, frpair);
+            allFrequentedRegions.entrySet().parallelStream().forEach(entry1 -> {
+                    FrequentedRegion fr1 = entry1.getValue();
+                    allFrequentedRegions.entrySet().parallelStream().forEach(entry2 -> {
+                            FrequentedRegion fr2 = entry2.getValue();
+                            FRPair frpair = new FRPair(fr1, fr2);
+                            String nodesKey = frpair.nodes.toString();
+                            if (rejectedNodeSets.contains(nodesKey)) {
+                                // do nothing
+                            } else if (frequentedRegions.containsKey(nodesKey)) {
+                                // do nothing
+                            } else if (acceptedFRPairs.containsKey(nodesKey)) {
+                                // get stored FRPair since already merged in a previous round
+                                frpair = acceptedFRPairs.get(nodesKey);
+                                frpairMap.put(nodesKey, frpair);
+                            } else if (requiredNode!=null && !frpair.nodes.contains(requiredNode)) {
+                                // add to rejected set if frpair doesn't contain the required node
+                                rejectedNodeSets.add(nodesKey);
+                            } else {
+                                // see if this pair is alpha-rejected (before merging)
+                                frpair.computeAlphaRejection();
+                                if (frpair.alphaReject) {
+                                    // add to rejected set
+                                    rejectedNodeSets.add(nodesKey);
                                 } else {
-                                    // see if this pair is alpha-rejected (before merging)
-                                    frpair.computeAlphaRejection();
-                                    if (frpair.alphaReject) {
-                                        // add to rejected set
-                                        rejectedNodeSets.add(nodesKey);
-                                    } else {
-                                        // merge this pair
-                                        try {
-                                            // have to catch Exceptions here since in a parallel stream
-                                            frpair.merge();
-                                        } catch (Exception e) {
-                                            System.err.println(e);
-                                            System.exit(1);
+                                    // merge this pair
+                                    try {
+                                        // have to catch Exceptions here since in a parallel stream
+                                        if (frpair.merged==null) frpair.merge();
+                                    } catch (Exception e) {
+                                        System.err.println(e);
+                                        System.exit(1);
+                                    }
+                                    // is this a dupe: nodes are child of another FR's nodes with the same or lower priority?
+                                    boolean dupe = false;
+                                    for (FrequentedRegion frOld : frequentedRegions.values()) {
+                                        if (frpair.nodes.childOf(frOld.nodes) && frpair.merged.priority<=frOld.priority) {
+                                            dupe = true;
+                                            rejectedNodeSets.add(nodesKey);
+                                            break;
                                         }
+                                    }
+                                    if (!dupe) {
                                         // add this candidate merged pair
                                         acceptedFRPairs.put(nodesKey, frpair);
                                         frpairMap.put(nodesKey, frpair);
                                     }
                                 }
-                            });
-                    });
-            } else {
-                // requiredNode x parallel stream scan
-                FrequentedRegion fr1 = allFrequentedRegions.get("["+getRequiredNode()+"]");
-                allFrequentedRegions.entrySet().parallelStream().forEach(entry2 -> {
-                        FrequentedRegion fr2 = entry2.getValue();
-                        FRPair frpair = new FRPair(fr1, fr2);
-                        String nodesKey = frpair.nodes.toString();
-                        if (rejectedNodeSets.contains(nodesKey)) {
-                            // do nothing
-                        } else if (frequentedRegions.containsKey(nodesKey)) {
-                            // do nothing
-                        } else if (acceptedFRPairs.containsKey(nodesKey)) {
-                            // get stored FRPair since already merged in a previous round
-                            frpair = acceptedFRPairs.get(nodesKey);
-                            frpairMap.put(nodesKey, frpair);
-                        } else {
-                            // see if this pair is alpha-rejected (before merging)
-                            frpair.computeAlphaRejection();
-                            if (frpair.alphaReject) {
-                                // add to rejected set
-                                rejectedNodeSets.add(nodesKey);
-                            } else {
-                                // merge this pair
-                                try {
-                                    // have to catch Exceptions here since in a parallel stream
-                                    frpair.merge();
-                                } catch (Exception e) {
-                                    System.err.println(e);
-                                    System.exit(1);
-                                }
-                                // add this candidate merged pair
-                                acceptedFRPairs.put(nodesKey, frpair);
-                                frpairMap.put(nodesKey, frpair);
                             }
-                        }
-                    });
-            }
+                        });
+                });
             // end parallelStreams
             ////////////////////////////////////////////////////////////////////////////////////////////////
-            // add our new best merged FR (and store if not a dupe)
+            // add our new best merged FR
             if (frpairMap.size()>0) {
                 TreeSet<FRPair> frpairSet = new TreeSet<>(frpairMap.values());
                 FRPair frpair = frpairSet.last();
@@ -279,20 +257,8 @@ public class FRFinder {
                 if (added) {
                     // add this FR to the mergeable FRs map
                     allFrequentedRegions.put(fr.nodes.toString(), fr);
-                    boolean dupe = false;
-                    for (FrequentedRegion frOld : frequentedRegions.values()) {
-                        // don't output FRs with node sets that are children with the same or lower priority
-                        if (fr.nodes.childOf(frOld.nodes) && fr.priority<=frOld.priority) {
-                            dupe = true;
-                            rejectedNodeSets.add(fr.nodes.toString());
-                            if (getDebug()) System.out.println("DUPE:"+fr.toString()+"|"+frOld.toString());
-                            break;
-                        }
-                    }
-                    if (!dupe) {
-                        frequentedRegions.put(fr.nodes.toString(), fr);
-                        System.out.println(round+":"+fr);
-                    }
+                    frequentedRegions.put(fr.nodes.toString(), fr);
+                    System.out.println(round+":"+fr);
                 }
             }
             // output current state for continuation if aborted
@@ -419,7 +385,7 @@ public class FRFinder {
     public int getMinPriority() {
         return Integer.parseInt(parameters.getProperty("minPriority"));
     }
-    public long getRequiredNode() {
+    public long getRequiredNodeId() {
         return Long.parseLong(parameters.getProperty("requiredNode"));
     }
     public String getGfaFilename() {
@@ -463,7 +429,7 @@ public class FRFinder {
     public void setMinPriority(int minPriority) {
         parameters.setProperty("minPriority", String.valueOf(minPriority));
     }
-    public void setRequiredNode(long requiredNode) {
+    public void setRequiredNodeId(long requiredNode) {
         parameters.setProperty("requiredNode", String.valueOf(requiredNode));
     }
     public void setGraphName(String graphName) {
@@ -674,7 +640,7 @@ public class FRFinder {
             if (cmd.hasOption("minlen")) frf.setMinLen(Double.parseDouble(cmd.getOptionValue("minlen")));
             if (cmd.hasOption("maxround")) frf.setMaxRound(Integer.parseInt(cmd.getOptionValue("maxround")));
             if (cmd.hasOption("minpriority")) frf.setMinPriority(Integer.parseInt(cmd.getOptionValue("minpriority")));
-            if (cmd.hasOption("requirednode")) frf.setRequiredNode(Long.parseLong(cmd.getOptionValue("requirednode")));
+            if (cmd.hasOption("requirednode")) frf.setRequiredNodeId(Long.parseLong(cmd.getOptionValue("requirednode")));
             if (cmd.hasOption("verbose")) frf.setVerbose();
             if (cmd.hasOption("debug")) frf.setDebug();
             if (cmd.hasOption("resume")) frf.setResume();
