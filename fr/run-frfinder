@@ -57,7 +57,8 @@ java -server -Xmx160g -XX:+UseParallelGC -Xms2g -XX:SoftRefLRUPolicyMSPerMB=1 -X
      --txt --graph=$graph \
      --alphastart=$alpha --alphaend=$alpha --kappastart=$kappa --kappaend=$kappa --priorityoption=$priorityoption
 
+#dir="SchizophreniaSwedish_Sklar"
 #java -server -Xmx160g -XX:+UseParallelGC -Xms2g -XX:SoftRefLRUPolicyMSPerMB=1 -XX:MaxHeapFreeRatio=99 -cp "build/install/fr/lib/*" org.ncgr.pangenomics.fr.FRFinder \
 #     --priorityoption=$priorityoption --skipnodepaths $5 $6 \
-#     --gfa --graph=CIDR_HD_Modifiers/$graph --pathlabels=CIDR_HD_Modifiers/labels.txt \
+#     --gfa --graph=$dir/$graph --pathlabels=$dir/labels.txt \
 #     --alphastart=$alpha --alphaend=$alpha --kappastart=$kappa --kappaend=$kappa
