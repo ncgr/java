@@ -110,10 +110,10 @@ public class NodeSet extends TreeSet<Node> implements Comparable {
     }
 
     /**
-     * Return true if this NodeSet is a subset of that NodeSet.
+     * Return true if this NodeSet is a superset of that NodeSet.
      */
-    public boolean isSubsetOf(NodeSet that) {
-        return that.size()>this.size() && that.containsAll(this);
+    public boolean isSupersetOf(NodeSet that) {
+        return this.size()>that.size() && this.containsAll(that);
     }
     
     /**

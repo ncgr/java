@@ -199,47 +199,54 @@ public class FRFinder {
                     FrequentedRegion fr1 = entry1.getValue();
                     allFrequentedRegions.entrySet().parallelStream().forEach(entry2 -> {
                             FrequentedRegion fr2 = entry2.getValue();
-                            FRPair frpair = new FRPair(fr1, fr2);
-                            String nodesKey = frpair.nodes.toString();
-                            if (rejectedNodeSets.contains(nodesKey)) {
-                                // do nothing
-                            } else if (frequentedRegions.containsKey(nodesKey)) {
-                                // do nothing
-                            } else if (requiredNode!=null && !frpair.nodes.contains(requiredNode)) {
-                                // add to rejected set if frpair doesn't contain the required node
-                                rejectedNodeSets.add(nodesKey);
-                            } else if (acceptedFRPairs.containsKey(nodesKey)) {
-                                // get stored FRPair since already merged in a previous round
-                                frpair = acceptedFRPairs.get(nodesKey);
-                                frpairMap.put(nodesKey, frpair);
-                            } else {
-                                // see if this pair is alpha-rejected (before merging)
-                                frpair.computeAlphaRejection();
-                                if (frpair.alphaReject) {
+                            if (fr2.nodes.compareTo(fr1.nodes)>0) {
+                                FRPair frpair = new FRPair(fr1, fr2);
+                                String nodesKey = frpair.nodes.toString();
+                                if (rejectedNodeSets.contains(nodesKey)) {
+                                    // do nothing, rejected
+                                } else if (frequentedRegions.containsKey(nodesKey)) {
+                                    // do nothing, already found
+                                } else if (requiredNode!=null && !frpair.nodes.contains(requiredNode)) {
                                     // add to rejected set
                                     rejectedNodeSets.add(nodesKey);
                                 } else {
-                                    // merge this pair
-                                    try {
-                                        // have to catch Exceptions here since in a parallel stream
-                                        if (frpair.merged==null) frpair.merge();
-                                    } catch (Exception e) {
-                                        System.err.println(e);
-                                        System.exit(1);
-                                    }
-                                    // is this a dupe: nodes are subset of another FR's nodes while the latter has the same or lower priority?
-                                    boolean dupe = false;
-                                    for (FrequentedRegion frOld : frequentedRegions.values()) {
-                                        if (frOld.nodes.isSubsetOf(frpair.merged.nodes) && frOld.priority>=frpair.merged.priority) {
-                                            dupe = true;
-                                            rejectedNodeSets.add(nodesKey);
-                                            break;
+                                    if (acceptedFRPairs.containsKey(nodesKey)) {
+                                        // get stored FRPair since already merged in a previous round
+                                        frpair = acceptedFRPairs.get(nodesKey);
+                                    } else {
+                                        // compute alpha-rejection before merging
+                                        frpair.computeAlphaRejection();
+                                        if (frpair.alphaReject) {
+                                            // add to rejected set
+                                            rejectedNodeSets.add(nodesKey);                                
+                                        } else {
+                                            // merge this pair
+                                            try {
+                                                // have to catch Exceptions here since in a parallel stream
+                                                if (frpair.merged==null) frpair.merge();
+                                            } catch (Exception e) {
+                                                System.err.println(e);
+                                                System.exit(1);
+                                            }
                                         }
                                     }
-                                    if (!dupe) {
-                                        // add this candidate merged pair
-                                        acceptedFRPairs.put(nodesKey, frpair);
-                                        frpairMap.put(nodesKey, frpair);
+                                    if (frpair.merged!=null) {
+                                        // is our merged FR a dupe? Yes if nodes are superset of another FR's nodes while having equal or lower priority.
+                                        boolean dupe = false;
+                                        if (frpair.merged.nodes.size()>2) {
+                                            for (FrequentedRegion frOld : frequentedRegions.values()) {
+                                                if (frpair.merged.nodes.isSupersetOf(frOld.nodes) && frpair.merged.priority<=frOld.priority) {
+                                                    dupe = true;
+                                                    rejectedNodeSets.add(nodesKey);
+                                                    break;
+                                                }
+                                            }
+                                        }
+                                        if (!dupe) {
+                                            // add this candidate merged pair
+                                            acceptedFRPairs.put(nodesKey, frpair);
+                                            frpairMap.put(nodesKey, frpair);
+                                        }
                                     }
                                 }
                             }
