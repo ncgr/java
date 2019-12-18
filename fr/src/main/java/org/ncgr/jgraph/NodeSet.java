@@ -110,35 +110,10 @@ public class NodeSet extends TreeSet<Node> implements Comparable {
     }
 
     /**
-     * Return true if this NodeSet is a parent of the given NodeSet, meaning its nodes are a subset of the latter.
+     * Return true if this NodeSet is a subset of that NodeSet.
      */
-    public boolean parentOf(NodeSet that) {
+    public boolean isSubsetOf(NodeSet that) {
         return that.size()>this.size() && that.containsAll(this);
-    }
-
-    /**
-     * Return true if this NodeSet is a child of the given NodeSet, meaning it contains the exact sequence without insertions, but is not equal.
-     * Example: [1,2,3,4,5,6,7,8,9,10] is a child of [4,5,6,7]
-     */
-    public boolean childOf(NodeSet that) {
-        if (this.size()<=that.size()) {
-            return false;
-        } else {
-            List<Node> thisList = new ArrayList<>(this);
-            List<Node> thatList = new ArrayList<>(that);
-            int i = 0;
-            for (i=0; i<thisList.size(); i++) {
-                if (thisList.get(i).equals(thatList.get(0))) {
-                    break;
-                }
-            }
-            boolean child = false;
-            for (int j=0; j<thatList.size(); j++) {
-                int k = i + j;
-                child = k<thisList.size() && thisList.get(k).equals(thatList.get(j));
-            }
-            return child;
-        }
     }
     
     /**

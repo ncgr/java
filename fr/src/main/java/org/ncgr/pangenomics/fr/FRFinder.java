@@ -205,13 +205,13 @@ public class FRFinder {
                                 // do nothing
                             } else if (frequentedRegions.containsKey(nodesKey)) {
                                 // do nothing
+                            } else if (requiredNode!=null && !frpair.nodes.contains(requiredNode)) {
+                                // add to rejected set if frpair doesn't contain the required node
+                                rejectedNodeSets.add(nodesKey);
                             } else if (acceptedFRPairs.containsKey(nodesKey)) {
                                 // get stored FRPair since already merged in a previous round
                                 frpair = acceptedFRPairs.get(nodesKey);
                                 frpairMap.put(nodesKey, frpair);
-                            } else if (requiredNode!=null && !frpair.nodes.contains(requiredNode)) {
-                                // add to rejected set if frpair doesn't contain the required node
-                                rejectedNodeSets.add(nodesKey);
                             } else {
                                 // see if this pair is alpha-rejected (before merging)
                                 frpair.computeAlphaRejection();
@@ -227,10 +227,10 @@ public class FRFinder {
                                         System.err.println(e);
                                         System.exit(1);
                                     }
-                                    // is this a dupe: nodes are child of another FR's nodes with the same or lower priority?
+                                    // is this a dupe: nodes are subset of another FR's nodes while the latter has the same or lower priority?
                                     boolean dupe = false;
                                     for (FrequentedRegion frOld : frequentedRegions.values()) {
-                                        if (frpair.nodes.childOf(frOld.nodes) && frpair.merged.priority<=frOld.priority) {
+                                        if (frOld.nodes.isSubsetOf(frpair.nodes) && frOld.priority>=frpair.merged.priority) {
                                             dupe = true;
                                             rejectedNodeSets.add(nodesKey);
                                             break;
