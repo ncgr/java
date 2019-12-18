@@ -230,7 +230,7 @@ public class FRFinder {
                                     // is this a dupe: nodes are subset of another FR's nodes while the latter has the same or lower priority?
                                     boolean dupe = false;
                                     for (FrequentedRegion frOld : frequentedRegions.values()) {
-                                        if (frOld.nodes.isSubsetOf(frpair.nodes) && frOld.priority>=frpair.merged.priority) {
+                                        if (frOld.nodes.isSubsetOf(frpair.merged.nodes) && frOld.priority>=frpair.merged.priority) {
                                             dupe = true;
                                             rejectedNodeSets.add(nodesKey);
                                             break;
