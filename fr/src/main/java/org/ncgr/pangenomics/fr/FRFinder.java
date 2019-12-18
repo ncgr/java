@@ -603,6 +603,7 @@ public class FRFinder {
         } else {
             // import a PangenomicGraph from a GFA file or pair of TXT files
             PangenomicGraph pg = new PangenomicGraph();
+            if (cmd.hasOption("verbose")) pg.setVerbose();
             // graph name
             String graphName = cmd.getOptionValue("graph");
             if (cmd.hasOption("gfa")) {
