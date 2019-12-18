@@ -610,6 +610,7 @@ public class FRFinder {
                 // GFA file
                 File gfaFile = new File(graphName+".paths.gfa");
                 pg.importGFA(gfaFile);
+                System.out.println("# Graph has "+pg.vertexSet().size()+" nodes and "+pg.edgeSet().size()+" edges with "+pg.getPaths().size()+" paths.");
                 // if a labels file is given, add them to the paths
                 if (labelsFile!=null) {
                     pg.readPathLabels(labelsFile);
@@ -621,6 +622,7 @@ public class FRFinder {
                 File nodesFile = new File(graphName+".nodes.txt");
                 File pathsFile = new File(graphName+".paths.txt");
                 pg.importTXT(nodesFile, pathsFile);
+                System.out.println("# Graph has "+pg.vertexSet().size()+" nodes and "+pg.edgeSet().size()+" edges with "+pg.getPaths().size()+" paths.");
                 pg.tallyLabelCounts();
                 System.out.println("# Graph has "+pg.getLabelCounts().get("case")+" case paths and "+pg.getLabelCounts().get("ctrl")+" ctrl paths.");
             }
@@ -633,7 +635,6 @@ public class FRFinder {
 		int nRemoved = pg.prune();
 		System.out.println("# Graph has been pruned ("+nRemoved+" fully common nodes removed).");
 	    }
-	    System.out.println("# Graph has "+pg.vertexSet().size()+" nodes and "+pg.getPaths().size()+" paths.");
             // instantiate the FRFinder with this PangenomicGraph
             FRFinder frf = new FRFinder(pg);
             frf.setGraphName(graphName);

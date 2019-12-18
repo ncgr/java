@@ -24,7 +24,7 @@ import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 
-import org.jgrapht.graph.DirectedMultigraph;
+import org.jgrapht.graph.DirectedAcyclicGraph;
 import org.jgrapht.alg.shortestpath.DijkstraShortestPath;
 
 /**
@@ -32,7 +32,7 @@ import org.jgrapht.alg.shortestpath.DijkstraShortestPath;
  *
  * @author Sam Hokin
  */ 
-public class PangenomicGraph extends DirectedMultigraph<Node,Edge> {
+public class PangenomicGraph extends DirectedAcyclicGraph<Node,Edge> {
 
     // output verbosity
     boolean verbose = false;
@@ -386,16 +386,8 @@ public class PangenomicGraph extends DirectedMultigraph<Node,Edge> {
     public void printEdges(PrintStream out) {
         if (out==System.out) printHeading("EDGES");
         StringBuilder builder = new StringBuilder();
-        String lastNameGenotype = "";
         for (Edge e : edgeSet()) {
-            if (!e.getNameGenotype().equals(lastNameGenotype)) {
-                out.println(builder.toString());
-                builder = new StringBuilder();
-                builder.append(e.toString());
-            } else {
-                builder.append(" "+e.toString());
-            }
-            lastNameGenotype = e.getNameGenotype();
+            builder.append(e.toString());
         }
         out.println(builder.toString());
     }

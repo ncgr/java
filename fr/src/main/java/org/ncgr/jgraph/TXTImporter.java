@@ -94,13 +94,13 @@ public class TXTImporter {
         if (skipEdges) {
             if (verbose) System.out.println("# Skipped adding edges to graph");
         } else {
-            if (verbose) System.out.println("Adding pathwalk edges to graph...");
+            if (verbose) System.out.println("Adding edges to graph...");
             // this cannot be done in parallel because of g.addEdge() inside
             for (PathWalk path : paths) {
                 boolean first = true;
                 Node lastNode = null;
                 for (Node node : path.getNodes()) {
-                    if (!first) g.addEdge(lastNode, node, new Edge(path));
+                    if (!first) g.addEdge(lastNode, node);
                     first = false;
                     lastNode = node;
                 }
