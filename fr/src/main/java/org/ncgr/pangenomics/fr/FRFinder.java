@@ -103,6 +103,7 @@ public class FRFinder {
         parameters.setProperty("minPriority", "0");
         parameters.setProperty("requiredNode", "0");
         parameters.setProperty("priorityOption", "0");
+        parameters.setProperty("frKeepOption", "");
         parameters.setProperty("resume", "false");
         parameters.setProperty("prunedGraph", "false");
     }
@@ -119,7 +120,7 @@ public class FRFinder {
 	System.out.println("# Starting findFRs: alpha="+alpha+" kappa="+kappa+
                            " priorityOption="+getPriorityOption()+" minPriority="+getMinPriority()+
                            " minSup="+getMinSup()+" minSize="+getMinSize()+" minLen="+getMinLen()+
-                           " requiredNode="+getRequiredNodeId());
+                           " requiredNode="+getRequiredNodeId()+" frKeepOption="+getFRKeepOption());
 
         // output the graph files if graph loaded from GFA
         if (getGfaFilename()!=null) graph.printAll(getGraphName());
@@ -231,18 +232,26 @@ public class FRFinder {
                                         }
                                     }
                                     if (frpair.merged!=null) {
-                                        // is our merged FR a dupe? Yes if nodes are superset of another FR's nodes while having equal or lower priority.
-                                        boolean dupe = false;
-                                        if (frpair.merged.nodes.size()>2) {
+                                        // should we keep this merged FR?
+                                        boolean keep = true;
+                                        if (getFRKeepOption().equals("superset")) {
                                             for (FrequentedRegion frOld : frequentedRegions.values()) {
                                                 if (frpair.merged.nodes.isSupersetOf(frOld.nodes) && frpair.merged.priority<=frOld.priority) {
-                                                    dupe = true;
+                                                    keep = false;
+                                                    rejectedNodeSets.add(nodesKey);
+                                                    break;
+                                                }
+                                            }
+                                        } else if (getFRKeepOption().equals("distance")) {
+                                            for (FrequentedRegion frOld : frequentedRegions.values()) {
+                                                if (frpair.merged.nodes.distanceFrom(frOld.nodes)<2 && frpair.merged.priority<=frOld.priority) {
+                                                    keep = false;
                                                     rejectedNodeSets.add(nodesKey);
                                                     break;
                                                 }
                                             }
                                         }
-                                        if (!dupe) {
+                                        if (keep) {
                                             // add this candidate merged pair
                                             acceptedFRPairs.put(nodesKey, frpair);
                                             frpairMap.put(nodesKey, frpair);
@@ -395,6 +404,9 @@ public class FRFinder {
     public long getRequiredNodeId() {
         return Long.parseLong(parameters.getProperty("requiredNode"));
     }
+    public String getFRKeepOption() {
+        return parameters.getProperty("frKeepOption");
+    }
     public String getGfaFilename() {
         return parameters.getProperty("gfaFile");
     }
@@ -438,6 +450,9 @@ public class FRFinder {
     }
     public void setRequiredNodeId(long requiredNode) {
         parameters.setProperty("requiredNode", String.valueOf(requiredNode));
+    }
+    public void setFRKeepOption(String frKeepOption) {
+        parameters.setProperty("frKeepOption", frKeepOption);
     }
     public void setGraphName(String graphName) {
         parameters.setProperty("graphName", graphName);
@@ -551,6 +566,10 @@ public class FRFinder {
         Option requiredNodeOption = new Option("rn", "requirednode", true, "require that found FRs contain the given node [0]");
         requiredNodeOption.setRequired(false);
         options.addOption(requiredNodeOption);
+        //
+        Option frKeepOptionOption = new Option("keep", "frkeepoption", true, "option for keeping FRs in finder loop: superset|distance [neither]");
+        frKeepOptionOption.setRequired(false);
+        options.addOption(frKeepOptionOption);
 
         try {
             cmd = parser.parse(options, args);
@@ -650,6 +669,7 @@ public class FRFinder {
             if (cmd.hasOption("maxround")) frf.setMaxRound(Integer.parseInt(cmd.getOptionValue("maxround")));
             if (cmd.hasOption("minpriority")) frf.setMinPriority(Integer.parseInt(cmd.getOptionValue("minpriority")));
             if (cmd.hasOption("requirednode")) frf.setRequiredNodeId(Long.parseLong(cmd.getOptionValue("requirednode")));
+            if (cmd.hasOption("frkeepoption")) frf.setFRKeepOption(cmd.getOptionValue("frkeepoption"));
             if (cmd.hasOption("verbose")) frf.setVerbose();
             if (cmd.hasOption("debug")) frf.setDebug();
             if (cmd.hasOption("resume")) frf.setResume();

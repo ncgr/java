@@ -66,7 +66,7 @@ public class PangenomicGraph extends DirectedAcyclicGraph<Node,Edge> {
     DijkstraShortestPath<Node,Edge> dsp;
 
     /**
-     * Constructor instantiates collections; then use read methods to populate the graph from files.
+     * Construct the graph using the Edge class.
      */
     public PangenomicGraph() {
         super(Edge.class);

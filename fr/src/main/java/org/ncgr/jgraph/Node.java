@@ -46,7 +46,9 @@ public class Node implements Comparable {
     @Override
     public boolean equals(Object o) {
 	Node that = (Node)o;
-        return this.id==that.id;
+        long thisId = this.id.longValue();
+        long thatId = that.id.longValue();
+        return thisId==thatId;
     }
 
     /**
@@ -63,7 +65,9 @@ public class Node implements Comparable {
     @Override
     public int compareTo(Object o) {
 	Node that = (Node) o;
-        return (int)(this.id-that.id);
+        long thisId = this.id.longValue();
+        long thatId = that.id.longValue();
+        return (int)(thisId - thatId);
     }
 
     /**
