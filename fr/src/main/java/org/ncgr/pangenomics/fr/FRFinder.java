@@ -68,6 +68,9 @@ public class FRFinder {
     // the output FRs
     ConcurrentHashMap<String,FrequentedRegion> frequentedRegions;
 
+    // the keepoption value, if there is one after the colon
+    int keepOptionValue;
+    
     // diagnostic
     long clockTime;
 
@@ -233,8 +236,9 @@ public class FRFinder {
                                     }
                                     if (frpair.merged!=null) {
                                         // should we keep this merged FR?
-                                        boolean keep = true;
-                                        if (getKeepOption().equals("superset")) {
+                                        boolean keep = true; // default if keepOption not set
+                                        if (getKeepOption().equals("subset")) {
+                                            // keep FRs that are subsets of others or have higher priority
                                             for (FrequentedRegion frOld : frequentedRegions.values()) {
                                                 if (frpair.merged.nodes.isSupersetOf(frOld.nodes) && frpair.merged.priority<=frOld.priority) {
                                                     keep = false;
@@ -242,9 +246,10 @@ public class FRFinder {
                                                     break;
                                                 }
                                             }
-                                        } else if (getKeepOption().equals("distance")) {
+                                        } else if (getKeepOption().startsWith("distance")) {
+                                            // keep FRs that are at least a distance of keepOptionValue away from others or have higher priority
                                             for (FrequentedRegion frOld : frequentedRegions.values()) {
-                                                if (frpair.merged.nodes.distanceFrom(frOld.nodes)<2 && frpair.merged.priority<=frOld.priority) {
+                                                if (frpair.merged.nodes.distanceFrom(frOld.nodes)<keepOptionValue && frpair.merged.priority<=frOld.priority) {
                                                     keep = false;
                                                     rejectedNodeSets.add(nodesKey);
                                                     break;
@@ -453,6 +458,23 @@ public class FRFinder {
     }
     public void setKeepOption(String keepOption) {
         parameters.setProperty("keepOption", keepOption);
+        if (keepOption.startsWith("distance")) {
+            String[] parts = keepOption.split(":");
+            if (parts.length==2) {
+                keepOptionValue = Integer.parseInt(parts[1]);
+                if (keepOptionValue<2) {
+                    System.err.println("ERROR: keepoption=distance:"+keepOptionValue+" has no effect.");
+                    System.exit(1);
+                }
+            } else {
+                keepOptionValue = 2; // default
+            }
+        } else if (keepOption.equals("subset")) {
+            // do nothing
+        } else {
+            System.err.println("ERROR: allowed keepoption values are: subset|distance:#");
+            System.exit(1);
+        }
     }
     public void setGraphName(String graphName) {
         parameters.setProperty("graphName", graphName);
@@ -567,7 +589,7 @@ public class FRFinder {
         requiredNodeOption.setRequired(false);
         options.addOption(requiredNodeOption);
         //
-        Option keepOptionOption = new Option("keep", "keepoption", true, "option for keeping FRs in finder loop: superset|distance [neither]");
+        Option keepOptionOption = new Option("keep", "keepoption", true, "option for keeping FRs in finder loop: subset|distance:# [keep all]");
         keepOptionOption.setRequired(false);
         options.addOption(keepOptionOption);
 
