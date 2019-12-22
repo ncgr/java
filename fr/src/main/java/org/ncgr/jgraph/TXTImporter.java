@@ -50,6 +50,7 @@ public class TXTImporter {
     public void importGraph(Graph<Node,Edge> g, File nodesFile, File pathsFile) throws IOException, NullSequenceException {
         if (verbose) System.out.println("Loading graph from "+nodesFile.getName()+" and "+pathsFile.getName());
         // read the nodes, storing in a map for path building
+        if (verbose) System.out.println("Reading nodes...");
         Map<Long,Node> nodeMap = new HashMap<>();
         BufferedReader nodesReader = new BufferedReader(new FileReader(nodesFile));
         String line = null;
@@ -63,12 +64,14 @@ public class TXTImporter {
         }
         nodesReader.close();
         // read the paths file lines into a list
+        if (verbose) System.out.println("Reading path lines...");
         BufferedReader pathsReader = new BufferedReader(new FileReader(pathsFile));
         List<String> lines = Collections.synchronizedList(new ArrayList<>());
         while ((line=pathsReader.readLine())!=null) {
             lines.add(line);
         }
         // now create the paths in parallel
+        if (verbose) System.out.println("Creating paths...");
         paths = Collections.synchronizedList(new ArrayList<>());
         lines.parallelStream().forEach(l -> {
                 String[] parts = l.split("\t");
@@ -91,13 +94,13 @@ public class TXTImporter {
         if (skipEdges) {
             if (verbose) System.out.println("# Skipped adding edges to graph");
         } else {
-            if (verbose) System.out.println("Adding pathwalk edges to graph...");
+            if (verbose) System.out.println("Adding edges to graph...");
             // this cannot be done in parallel because of g.addEdge() inside
             for (PathWalk path : paths) {
                 boolean first = true;
                 Node lastNode = null;
                 for (Node node : path.getNodes()) {
-                    if (!first) g.addEdge(lastNode, node, new Edge(path));
+                    if (!first) g.addEdge(lastNode, node);
                     first = false;
                     lastNode = node;
                 }

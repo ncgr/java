@@ -24,7 +24,7 @@ import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 
-import org.jgrapht.graph.DirectedMultigraph;
+import org.jgrapht.graph.DirectedAcyclicGraph;
 import org.jgrapht.alg.shortestpath.DijkstraShortestPath;
 
 /**
@@ -32,7 +32,7 @@ import org.jgrapht.alg.shortestpath.DijkstraShortestPath;
  *
  * @author Sam Hokin
  */ 
-public class PangenomicGraph extends DirectedMultigraph<Node,Edge> {
+public class PangenomicGraph extends DirectedAcyclicGraph<Node,Edge> {
 
     // output verbosity
     boolean verbose = false;
@@ -66,7 +66,7 @@ public class PangenomicGraph extends DirectedMultigraph<Node,Edge> {
     DijkstraShortestPath<Node,Edge> dsp;
 
     /**
-     * Constructor instantiates collections; then use read methods to populate the graph from files.
+     * Construct the graph using the Edge class.
      */
     public PangenomicGraph() {
         super(Edge.class);
@@ -294,6 +294,20 @@ public class PangenomicGraph extends DirectedMultigraph<Node,Edge> {
     }
 
     /**
+     * Return the node with the given id, else null.
+     */
+    public Node getNode(long id) {
+        Node node = null;
+        for (Node n : getNodes()) {
+            if (n.id==id) {
+                node = n;
+                break;
+            }
+        }
+        return node;
+    }
+
+    /**
      * Get this graph's paths.
      */
     public List<PathWalk> getPaths() {
@@ -372,16 +386,8 @@ public class PangenomicGraph extends DirectedMultigraph<Node,Edge> {
     public void printEdges(PrintStream out) {
         if (out==System.out) printHeading("EDGES");
         StringBuilder builder = new StringBuilder();
-        String lastNameGenotype = "";
         for (Edge e : edgeSet()) {
-            if (!e.getNameGenotype().equals(lastNameGenotype)) {
-                out.println(builder.toString());
-                builder = new StringBuilder();
-                builder.append(e.toString());
-            } else {
-                builder.append(" "+e.toString());
-            }
-            lastNameGenotype = e.getNameGenotype();
+            builder.append(e.toString());
         }
         out.println(builder.toString());
     }
@@ -509,23 +515,16 @@ public class PangenomicGraph extends DirectedMultigraph<Node,Edge> {
             if (verbose) System.out.println("Writing node paths file...");
             PrintStream nodePathsOut = new PrintStream(outputPrefix+".nodepaths.txt");
             printNodePaths(nodePathsOut);
+            if (verbose) System.out.println("Writing path PCA file...");
+            PrintStream pcaDataOut = new PrintStream(outputPrefix+".pathpca.txt");
+            printPcaData(pcaDataOut);
         }
         
         if (!skipSequences) {
             if (verbose) System.out.println("Writing path sequences file...");
             PrintStream pathSequencesOut = new PrintStream(outputPrefix+".pathsequences.fasta");
-            long printPathSequencesStart = System.currentTimeMillis();
             printPathSequences(pathSequencesOut);
-            long printPathSequencesEnd = System.currentTimeMillis();
-            if (verbose) System.out.println("printPathSequences took "+(printPathSequencesEnd-printPathSequencesStart)+" ms.");
         }
-        
-        if (verbose) System.out.println("Writing path PCA file...");
-        PrintStream pcaDataOut = new PrintStream(outputPrefix+".pathpca.txt");
-        long printPcaDataStart = System.currentTimeMillis();
-        printPcaData(pcaDataOut);
-        long printPcaDataEnd = System.currentTimeMillis();
-        if (verbose) System.out.println("printPcaData took "+(printPcaDataEnd-printPcaDataStart)+" ms.");
     }
 
     /**

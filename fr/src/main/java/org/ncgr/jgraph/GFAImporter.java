@@ -48,7 +48,7 @@ public class GFAImporter implements GraphImporter<Node,Edge> {
      * @param file the GFA file
      */
     public void importGraph(Graph<Node,Edge> g, File file) {
-        if (verbose) System.out.println("Reading GFA file: "+file.getName());
+        if (verbose) System.out.println("Loading graph from "+file.getName());
         try {
             FileReader reader = new FileReader(file);
             importGraph(g, reader);
@@ -72,6 +72,7 @@ public class GFAImporter implements GraphImporter<Node,Edge> {
      */
     public void importGraph(Graph<Node,Edge> g, Reader reader) {
         // load the GFA lines into a synchronized List for parallel ops
+        if (verbose) System.out.println("Reading GFA lines...");
         List<String> lines = Collections.synchronizedList(new ArrayList<>());
         try {
             BufferedReader br = new BufferedReader(reader);
@@ -156,7 +157,6 @@ public class GFAImporter implements GraphImporter<Node,Edge> {
             });
         // build the paths (in parallel) from the nodeListMap
         if (verbose) System.out.println("Building paths...");
-        if (verbose && skipSequences) System.out.println("# Skipped building path sequences");
         paths = Collections.synchronizedList(new ArrayList<>());
         nodeListMap.entrySet().parallelStream().forEach(entry -> {
                 String pathName = entry.getKey();
@@ -175,6 +175,7 @@ public class GFAImporter implements GraphImporter<Node,Edge> {
                     System.exit(1);
                 }                    
             });
+        if (verbose && skipSequences) System.out.println("# Skipped building path sequences");
 
         // build the path-labeled graph edges from the paths
         // this can take a long time on a large graph, so skip if skipEdges==true
@@ -182,11 +183,12 @@ public class GFAImporter implements GraphImporter<Node,Edge> {
             if (verbose) System.out.println("# Skipped adding edges to graph");
         } else {
             if (verbose) System.out.println("Adding edges to graph...");
+            // this cannot be done in parallel because of g.addEdge() inside
             for (PathWalk path : paths) {
                 boolean first = true;
                 Node lastNode = null;
                 for (Node node : path.getNodes()) {
-                    if (!first) g.addEdge(lastNode, node, new Edge(path));
+                    if (!first) g.addEdge(lastNode, node);
                     first = false;
                     lastNode = node;
                 }

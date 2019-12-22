@@ -40,7 +40,7 @@ public class FrequentedRegion implements Comparable {
         "0=total support, " +
         "1:label=label support-other support [case], " +
         "2=|case support-control support|, " +
-        "3:label=label support then odds ratio [case]," +
+        "3:label=odds ratio in label's favor [case], " +
         "4=Fisher's exact test double-sided p value";
 
     // static utility stuff
@@ -281,9 +281,9 @@ public class FrequentedRegion implements Comparable {
      * Get the integer metric used for case vs. control comparisons.
      * priorityOption:
      *   0 = total support
-     *   1 =  case support - control support
+     *   1:label = label support - other label support
      *   2 = |case support - control support|
-     *   3:label = label support if other label support is zero, else log10(odds ratio)
+     *   3:label = odds ratio in label's favor
      *   4 = -log10(p) where p = Fisher's exact test double-sided p value
      */
     void getPriority() {
@@ -303,17 +303,9 @@ public class FrequentedRegion implements Comparable {
             priority = Math.abs(caseSupport - ctrlSupport);
         } else if (priorityOption.startsWith("3")) {
             if (priorityLabel.equals("case")) {
-                if (ctrlSupport==0) {
-                    priority = caseSupport;
-                } else {
-                    priority = (int)Math.round(Math.log10(oddsRatio()));
-                }
+                priority = (int)(Math.round(Math.log10(oddsRatio())*1000));
             } else if (priorityLabel.equals("ctrl")) {
-                if (caseSupport==0) {
-                    priority = ctrlSupport;
-                } else {
-                    priority = -(int)Math.round(Math.log10(oddsRatio()));
-                }
+                priority = -(int)(Math.round(Math.log10(oddsRatio())*1000));
             } else {
                 System.err.println("ERROR: priority label "+priorityLabel+" is not supported by FrequentedRegion.getPriority().");
                 System.exit(1);
