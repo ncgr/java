@@ -31,6 +31,7 @@ if (isSaveSet) {
            c(paste("FRs:",length(frs$nodes)),
              paste("priority option:",priorityOption),
              paste("min. support:",minSup),
+             paste("keep option:",keepOption),
              paste("case paths:",labelCounts["case",1]),
              paste("control paths:",labelCounts["ctrl",1])
              )
@@ -42,6 +43,7 @@ if (isSaveSet) {
              paste("clock time:",clocktime),
              paste("priority option:",priorityOption),
              paste("min. support:",minSup),
+             paste("keep option:",keepOption),
              paste("FRs:",length(frs$nodes)),
              paste("case paths:",labelCounts["case",1]),
              paste("control paths:",labelCounts["ctrl",1])
