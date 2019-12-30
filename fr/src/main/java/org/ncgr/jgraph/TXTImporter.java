@@ -49,8 +49,9 @@ public class TXTImporter {
      */
     public void importGraph(Graph<Node,Edge> g, File nodesFile, File pathsFile) throws IOException, NullSequenceException {
         if (verbose) System.out.println("Loading graph from "+nodesFile.getName()+" and "+pathsFile.getName());
+
         // read the nodes, storing in a map for path building
-        if (verbose) System.out.println("Reading nodes...");
+        if (verbose) System.out.print("Reading nodes...");
         Map<Long,Node> nodeMap = new HashMap<>();
         BufferedReader nodesReader = new BufferedReader(new FileReader(nodesFile));
         String line = null;
@@ -63,15 +64,19 @@ public class TXTImporter {
             g.addVertex(n);
         }
         nodesReader.close();
+        if (verbose) System.out.println("done.");
+
         // read the paths file lines into a list
-        if (verbose) System.out.println("Reading path lines...");
+        if (verbose) System.out.print("Reading paths...");
         BufferedReader pathsReader = new BufferedReader(new FileReader(pathsFile));
         List<String> lines = Collections.synchronizedList(new ArrayList<>());
         while ((line=pathsReader.readLine())!=null) {
             lines.add(line);
         }
+        if (verbose) System.out.println("done.");
+        
         // now create the paths in parallel
-        if (verbose) System.out.println("Creating paths...");
+        if (verbose) System.out.print("Building paths...");
         paths = Collections.synchronizedList(new ArrayList<>());
         lines.parallelStream().forEach(l -> {
                 String[] parts = l.split("\t");
@@ -88,13 +93,15 @@ public class TXTImporter {
                 PathWalk path = new PathWalk(nodeList, name, genotype, label);
                 paths.add(path);
             });
+        if (verbose) System.out.println("done.");
+
         // build the path-labeled graph edges from the paths
         // this can take a long time on a large graph, so skip if skipEdges==true
         // cannot parallelize this because of building the path nodes in order
         if (skipEdges) {
-            if (verbose) System.out.println("# Skipped adding edges to graph");
+            if (verbose) System.out.println("# Skipped adding edges to graph.");
         } else {
-            if (verbose) System.out.println("Adding edges to graph...");
+            if (verbose) System.out.print("Adding edges to graph...");
             // this cannot be done in parallel because of g.addEdge() inside
             for (PathWalk path : paths) {
                 boolean first = true;
@@ -105,6 +112,7 @@ public class TXTImporter {
                     lastNode = node;
                 }
             }
+            if (verbose) System.out.println("done.");
         }
     }
 
@@ -112,7 +120,7 @@ public class TXTImporter {
      * Build the path sequences - just calls PathWalk.buildSequence() for each path.
      */
     void buildPathSequences() {
-        if (verbose) System.out.println("Building path sequences...");
+        if (verbose) System.out.print("Building path sequences...");
         paths.parallelStream().forEach(path -> {
                 try {
                     path.buildSequence();
@@ -124,6 +132,7 @@ public class TXTImporter {
                     System.exit(1);
                 }
             });
+        if (verbose) System.out.println("done.");
     }
 
     /**

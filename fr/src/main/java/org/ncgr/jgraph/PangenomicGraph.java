@@ -24,8 +24,11 @@ import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 
+import org.jgrapht.ListenableGraph;
 import org.jgrapht.graph.DirectedAcyclicGraph;
 import org.jgrapht.alg.shortestpath.DijkstraShortestPath;
+
+import org.mskcc.cbio.portal.stats.FisherExact;
 
 /**
  * Storage of a pan-genomic graph in a JGraphT object.
@@ -125,7 +128,7 @@ public class PangenomicGraph extends DirectedAcyclicGraph<Node,Edge> {
      * Build the node paths: the set of paths that run through each node.
      */
     void buildNodePaths() throws NullSequenceException {
-	if (verbose) System.out.println("Building node paths...");
+	if (verbose) System.out.print("Building node paths...");
         nodePaths = new ConcurrentHashMap<>();
         // initialize empty paths for each node
         for (Node n : vertexSet()) {
@@ -138,6 +141,7 @@ public class PangenomicGraph extends DirectedAcyclicGraph<Node,Edge> {
                         nodePaths.get(n.getId()).add(path);
                     });
             });
+	if (verbose) System.out.println("done.");
     }
 
     /**
@@ -146,7 +150,7 @@ public class PangenomicGraph extends DirectedAcyclicGraph<Node,Edge> {
      * 60372	ctrl
      */
     public void readPathLabels(File labelsFile) throws FileNotFoundException, IOException {
-	if (verbose) System.out.println("Reading path labels...");
+	if (verbose) System.out.print("Reading path labels...");
         this.labelsFile = labelsFile;
         BufferedReader reader = new BufferedReader(new FileReader(labelsFile));
         String line = null;
@@ -172,6 +176,7 @@ public class PangenomicGraph extends DirectedAcyclicGraph<Node,Edge> {
                     System.err.println("ERROR: the path "+path.getName()+" has no label in the labels file.");
                 }
             });
+        if (verbose) System.out.println("done.");
     }
 
     /**
@@ -261,7 +266,7 @@ public class PangenomicGraph extends DirectedAcyclicGraph<Node,Edge> {
      * @return the number of removed nodes
      */
     public int prune() throws NoPathsException, NoNodePathsException {
-        if (verbose) System.out.println("Pruning graph...");
+        if (verbose) System.out.print("Pruning graph...");
         if (paths==null || paths.size()==0) {
             throw new NoPathsException("PangenomicGraph.paths is not populated; cannot prune.");
         }
@@ -276,6 +281,7 @@ public class PangenomicGraph extends DirectedAcyclicGraph<Node,Edge> {
         for (Node n : nodesToRemove) {
             removeVertex(n);
         }
+        if (verbose) System.out.println("done.");
         return nodesToRemove.size();
     }
 
@@ -315,10 +321,59 @@ public class PangenomicGraph extends DirectedAcyclicGraph<Node,Edge> {
     }
 
     /**
+     * Get the paths that traverse the given node.
+     */
+    public List<PathWalk> getPaths(Node n) {
+        return nodePaths.get(n.getId());
+    }
+
+    /**
+     * Return the odds ratio for case paths versus control paths that traverse the given node.
+     */
+    public double oddsRatio(Node n) {
+        Map<String,Integer> nodeLabelCounts = getLabelCounts(n);
+        int allCasePaths = labelCounts.get("case");
+        int allCtrlPaths = labelCounts.get("ctrl");
+        int nodeCasePaths = 0; if (nodeLabelCounts.containsKey("case")) nodeCasePaths = nodeLabelCounts.get("case");
+        int nodeCtrlPaths = 0; if (nodeLabelCounts.containsKey("ctrl")) nodeCtrlPaths = nodeLabelCounts.get("ctrl");
+        return ((double)nodeCasePaths/(double)nodeCtrlPaths) / ((double)allCasePaths/(double)allCtrlPaths);
+    }
+
+    /**
+     * Return the Fisher's exact test p value for case paths vs control paths that traverse the given node.
+     */
+    public double fisherExactP(Node n) {
+        Map<String,Integer> nodeLabelCounts = getLabelCounts(n);
+        int allCasePaths = labelCounts.get("case");
+        int allCtrlPaths = labelCounts.get("ctrl");
+        int nodeCasePaths = 0; if (nodeLabelCounts.containsKey("case")) nodeCasePaths = nodeLabelCounts.get("case");
+        int nodeCtrlPaths = 0; if (nodeLabelCounts.containsKey("ctrl")) nodeCtrlPaths = nodeLabelCounts.get("ctrl");
+        int maxSize = allCasePaths + allCtrlPaths + nodeCasePaths + nodeCtrlPaths;
+        FisherExact fisherExact = new FisherExact(maxSize);
+        return fisherExact.getTwoTailedP(nodeCasePaths, nodeCtrlPaths, allCasePaths, allCtrlPaths);
+    }
+
+    /**
      * Get this graph's label counts.
      */
     public Map<String,Integer> getLabelCounts() {
         return labelCounts;
+    }
+
+    /**
+     * Get the label counts for paths that traverse the given node.
+     */
+    public Map<String,Integer> getLabelCounts(Node n) {
+        Map<String,Integer> nLabelCounts = new HashMap<>();
+        for (PathWalk p : nodePaths.get(n.getId())) {
+            if (nLabelCounts.containsKey(p.getLabel())) {
+                int count = nLabelCounts.get(p.getLabel()) + 1;
+                nLabelCounts.put(p.getLabel(), count);
+            } else {
+                nLabelCounts.put(p.getLabel(), 1);
+            }
+        }
+        return nLabelCounts;
     }
 
     /**
@@ -499,31 +554,37 @@ public class PangenomicGraph extends DirectedAcyclicGraph<Node,Edge> {
             printLabelCounts(labelCountsOut);
         }
 
-        if (verbose) System.out.println("Writing nodes file...");
+        if (verbose) System.out.print("Writing nodes file...");
         PrintStream nodesOut = new PrintStream(outputPrefix+".nodes.txt");
         printNodes(nodesOut);
+        if (verbose) System.out.println("done.");
 
-        if (verbose) System.out.println("Writing nodes histogram...");
+        if (verbose) System.out.print("Writing nodes histogram...");
         PrintStream nodeHistogramOut = new PrintStream(outputPrefix+".nodehistogram.txt");
         printNodeHistogram(nodeHistogramOut);
+        if (verbose) System.out.println("done.");
 
-        if (verbose) System.out.println("Writing paths file...");
+        if (verbose) System.out.print("Writing paths file...");
         PrintStream pathsOut = new PrintStream(outputPrefix+".paths.txt");
         printPaths(pathsOut);
+        if (verbose) System.out.println("done.");
 
         if (!skipNodePaths) {
-            if (verbose) System.out.println("Writing node paths file...");
+            if (verbose) System.out.print("Writing node paths file...");
             PrintStream nodePathsOut = new PrintStream(outputPrefix+".nodepaths.txt");
             printNodePaths(nodePathsOut);
-            if (verbose) System.out.println("Writing path PCA file...");
+            if (verbose) System.out.println("done.");
+            if (verbose) System.out.print("Writing path PCA file...");
             PrintStream pcaDataOut = new PrintStream(outputPrefix+".pathpca.txt");
             printPcaData(pcaDataOut);
+            if (verbose) System.out.println("done.");
         }
         
         if (!skipSequences) {
-            if (verbose) System.out.println("Writing path sequences file...");
+            if (verbose) System.out.print("Writing path sequences file...");
             PrintStream pathSequencesOut = new PrintStream(outputPrefix+".pathsequences.fasta");
             printPathSequences(pathSequencesOut);
+            if (verbose) System.out.println("done.");
         }
     }
 

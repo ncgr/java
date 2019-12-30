@@ -1,11 +1,13 @@
 package org.ncgr.jgraph;
 
+import java.io.Serializable;
+
 /**
  * Encapsulates a node in a Graph.
  *
  * @author Sam Hokin
  */
-public class Node implements Comparable {
+public class Node implements Comparable, Serializable {
 
     Long id;         // the id of this node, assigned by the graph reader
     String sequence; // the genomic sequence associated with this node
@@ -71,7 +73,7 @@ public class Node implements Comparable {
     }
 
     /**
-     * Simply return the id. OR SEQUENCE? OR hashCode()?
+     * Simply return the id.
      */
     @Override
     public String toString() {

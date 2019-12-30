@@ -330,7 +330,6 @@ public class FrequentedRegion implements Comparable {
 
     /**
      * Return the odds ratio for cases vs controls.
-     * When cases=0 set odds ratio = 10 rather than Infinity.
      */
     public double oddsRatio() {
         return ((double)caseSupport/casePaths) / ((double)ctrlSupport/ctrlPaths);

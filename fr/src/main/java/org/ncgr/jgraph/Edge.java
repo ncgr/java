@@ -18,4 +18,14 @@ public class Edge extends DefaultEdge {
         Node thatTarget = (Node) that.getTarget();
         return thisSource.equals(thatSource) && thisTarget.equals(thatTarget);
     }
+
+    /**
+     * Return a String representation.
+     */
+    @Override
+    public String toString() {
+        Node thisSource = (Node) this.getSource();
+        Node thisTarget = (Node) this.getTarget();
+        return thisSource.getId()+":"+thisTarget.getId();
+    }
 }
