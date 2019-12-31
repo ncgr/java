@@ -1,20 +1,3 @@
-/*
- * (C) Copyright 2013-2018, by Barak Naveh and Contributors.
- *
- * JGraphT : a free Java graph-theory library
- *
- * See the CONTRIBUTORS.md file distributed with this work for additional
- * information regarding copyright ownership.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Eclipse Public License 2.0 which is available at
- * http://www.eclipse.org/legal/epl-2.0, or the
- * GNU Lesser General Public License v2.1 or later
- * which is available at
- * http://www.gnu.org/licenses/old-licenses/lgpl-2.1-standalone.html.
- *
- * SPDX-License-Identifier: EPL-2.0 OR LGPL-2.1-or-later
- */
 package org.ncgr.jgraph;
 
 import com.mxgraph.layout.*;
@@ -35,16 +18,12 @@ import java.io.*;
 import java.util.*;
 
 /**
- * A demo applet that shows how to use JGraphX to visualize JGraphT graphs. Applet based on JGraphAdapterDemo.
+ * Static class which shows a PangenomicGraph with nodes colored according to case/control degree in a JFrame.
  */
-public class GraphViewer extends JApplet {
+public class GraphViewer {
     private static final long serialVersionUID = 2202072534703043194L;
-    private static final Dimension DEFAULT_SIZE = new Dimension(1000, 500);
+    private static final Dimension DEFAULT_SIZE = new Dimension(1000, 700);
     private static final double P_THRESHOLD = 5e-2;
-    
-    private JGraphXAdapter<Node,Edge> jgxAdapter;
-
-    PangenomicGraph graph;
 
     /**
      * An alternative starting point for this demo, to also allow running this applet as an application.
@@ -67,106 +46,55 @@ public class GraphViewer extends JApplet {
         graph.importTXT(nodesFile, pathsFile);
         graph.tallyLabelCounts();
 
-        GraphViewer viewer = new GraphViewer();
-        viewer.setGraph(graph);
-        
-        viewer.init();
-        JFrame frame = new JFrame();
-        frame.getContentPane().add(viewer);
-        frame.setTitle(graphName);
+        JGraphXAdapter jgxAdapter = getAdapter(graph);
+        mxGraphComponent component = new mxGraphComponent(jgxAdapter);
+        component.setConnectable(false);
+        component.getGraph().setAllowDanglingEdges(false);
+
+        // Create and populate the JFrame
+        JFrame frame = new JFrame(graphName);
+        frame.setPreferredSize(DEFAULT_SIZE);
+        frame.getContentPane().add(component);
+        frame.resize(DEFAULT_SIZE);
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.pack();
         frame.setVisible(true);
-    }
-    
-    /**
-     * Set the graph.
-     */
-    void setGraph(PangenomicGraph graph) {
-        this.graph = graph;
+
+        // mxHierarchicalLayout -- good! WEST orientation is best.
+        mxHierarchicalLayout layout = new mxHierarchicalLayout(jgxAdapter, SwingConstants.WEST);
+        layout.setFineTuning(true);
+
+        // lay out the layout
+        layout.execute(jgxAdapter.getDefaultParent());
     }
 
-    @Override
-    public void init() {
-        
+    /**
+     * Create and return the JGraphXAdapter which displays the graph.
+     */
+    static JGraphXAdapter getAdapter(PangenomicGraph graph) {
+        // cast graph to a ListenableGraph
         ListenableGraph<Node,Edge> g = new DefaultListenableGraph<Node,Edge>(graph);
 
-        // create a visualization using JGraph, via an adapter
-
-        // void 	setAllowDanglingEdges(boolean value)        // Sets allowDanglingEdges.
-        // void 	setAllowLoops(boolean value)        // Sets allowLoops.
-        // void 	setAllowNegativeCoordinates(boolean value) 
-        // void 	setAlternateEdgeStyle(java.lang.String value)        // Sets alternateEdgeStyle.
-        // void 	setAutoOrigin(boolean value) 
-        // void 	setAutoSizeCells(boolean value)        // Specifies if cell sizes should be automatically updated after a label change.
-        // void 	setBorder(int value)        // Sets the value of .
-        // void 	setCellsBendable(boolean value)        // Sets cellsBendable.
-        // void 	setCellsCloneable(boolean value)        // Specifies if the graph should allow cloning of cells by holding down the control key while cells are being moved.
-        // void 	setCellsDeletable(boolean value)        // Sets cellsDeletable.
-        // void 	setCellsDisconnectable(boolean value)        // Sets cellsDisconnectable.
-        // void 	setCellsEditable(boolean value)        // Sets if the graph is editable.
-        // void 	setCellsLocked(boolean value)        // Sets cellsLocked, the default return value for isCellLocked and fires a property change event for cellsLocked.
-        // void 	setCellsMovable(boolean value)        // Sets cellsMovable.
-        // void 	setCellsResizable(boolean value)        // Sets if the graph is resizable.
-        // void 	setCellsSelectable(boolean value)        // Sets cellsSelectable.
-        // void 	setChangesRepaintThreshold(int value) 
-        // void 	setCloneInvalidEdges(boolean value)        // Sets cloneInvalidEdge.
-        // void 	setCollapseToPreferredSize(boolean value) 
-        // void 	setConnectableEdges(boolean value)        // Sets connetableEdges.
-        // void 	setConstrainChildren(boolean value) 
-        // void 	setDefaultLoopStyle(mxEdgeStyle.mxEdgeStyleFunction value)        // Sets the default style used for loops.
-        // void 	setDefaultOverlap(double value)        // Sets defaultOverlap.
-        // void 	setDefaultParent(java.lang.Object value)        // Sets the default parent to be returned by getDefaultParent.
-        // void 	setDisconnectOnMove(boolean value)        // Sets disconnectOnMove.
-        // void 	setDropEnabled(boolean value)        // Sets dropEnabled.
-        // void 	setEdgeLabelsMovable(boolean value)        // Returns edgeLabelsMovable.
-        // void 	setEnabled(boolean value)        // Specifies if the graph should allow any interactions.
-        // void 	setExtendParents(boolean value)        // Sets extendParents.
-        // void 	setExtendParentsOnAdd(boolean value)        // Sets extendParentsOnAdd.
-        // void 	setGridEnabled(boolean value)        // Sets if the grid is enabled.
-        // void 	setGridSize(int value)        // Sets the grid size and fires a property change event for gridSize.
-        // void 	setHtmlLabels(boolean value)
-        // void 	setKeepEdgesInBackground(boolean value) 
-        // void 	setKeepEdgesInForeground(boolean value)
-        // void 	setLabelsClipped(boolean value)        // Sets labelsClipped.
-        // void 	setLabelsVisible(boolean value)
-        // void 	setMaximumGraphBounds(mxRectangle value) 
-        // void 	setMinimumGraphSize(mxRectangle value) 
-        // void 	setModel(mxIGraphModel value)        // Sets the graph model that contains the data, and fires an mxEvent.CHANGE followed by an mxEvent.REPAINT event.
-        // void 	setMultigraph(boolean value)        // Sets multigraph.
-        // void 	setOrigin(mxPoint value) 
-        // void 	setPortsEnabled(boolean value)        // Sets if ports are enabled.
-        // void 	setResetEdgesOnConnect(boolean value)        // Sets resetEdgesOnConnect.
-        // void 	setResetEdgesOnMove(boolean value)        // Sets resetEdgesOnMove.
-        // void 	setResetEdgesOnResize(boolean value)        // Sets resetEdgesOnResize.
-        // void 	setResetViewOnRootChange(boolean value)        // Sets resetEdgesOnResize.
-        // void 	setSplitEnabled(boolean value)        // Sets splitEnabled.
-        // void 	setStylesheet(mxStylesheet value)        // Sets the stylesheet that provides the style.
-        // void 	setSwimlaneNesting(boolean value)        // Sets swimlaneNesting.
-        // void 	setVertexLabelsMovable(boolean value)        // Sets vertexLabelsMovable.
-        // void 	setView(mxGraphView value)        // Sets the view that contains the cell states.
-        // defaultVertex:{perimeter=com.mxgraph.view.mxPerimeter$1@61dc03ce, shape=rectangle, fontColor=#774400, strokeColor=#6482B9, fillColor=#C3D9FF, align=center, verticalAlign=middle}
-        // defaultEdge:{endArrow=classic, shape=connector, fontColor=#446299, strokeColor=#6482B9, align=center, verticalAlign=middle}
-        // vertex: shape=actor, cloud, cylinder, doubleEllipse, doubleRectangle, ellipse, hexagon, image, label, rectangle, rhombus, swimlane, triangle
-        // edge: shape=arrow, connector, curve, line
-
         // the jgxAdapter is an mxGraph
-        jgxAdapter = new JGraphXAdapter<Node,Edge>(g);
-
-        // set default styles
+        JGraphXAdapter<Node,Edge> jgxAdapter = new JGraphXAdapter<Node,Edge>(g);
+        
         mxStylesheet defaultStylesheet = jgxAdapter.getStylesheet();
+
+        // set default edge style
         Map<String,Object> defaultEdgeStyle = defaultStylesheet.getDefaultEdgeStyle();
         defaultEdgeStyle.put("strokeColor", "gray");
         defaultEdgeStyle.put("fontColor", "gray");
         defaultEdgeStyle.put(mxConstants.STYLE_NOLABEL, "1");
         defaultStylesheet.setDefaultEdgeStyle(defaultEdgeStyle);
+
+        // set default vertex (Node) style
         Map<String,Object> defaultVertexStyle = defaultStylesheet.getDefaultVertexStyle();
         defaultVertexStyle.put("fillColor", "gray");
         defaultVertexStyle.put("fontColor", "black");
         defaultStylesheet.setDefaultVertexStyle(defaultVertexStyle);
         jgxAdapter.setStylesheet(defaultStylesheet);
 
-        // default case/control styles
+        // default case/control vertex styles
         String baseCaseStyle = "shape="+mxConstants.SHAPE_ELLIPSE+";fontStyle="+mxConstants.FONT_BOLD+";fontColor=black;gradientColor=none;verticalAlign=bottom";
         String baseCtrlStyle = "shape="+mxConstants.SHAPE_ELLIPSE+";fontStyle="+mxConstants.FONT_BOLD+";fontColor=black;gradientColor=none;verticalAlign=bottom";
 
@@ -182,7 +110,6 @@ public class GraphViewer extends JApplet {
                     // remove orphan
                     c.removeFromParent();
                 } else {
-                    // style
                     double or = graph.oddsRatio(n);
                     double p = graph.fisherExactP(n);
                     if (p<P_THRESHOLD) {
@@ -222,30 +149,7 @@ public class GraphViewer extends JApplet {
             }
         }
         jgxAdapter.clearSelection();
-        
-        // set up this JApplet
-        setPreferredSize(DEFAULT_SIZE);
-        mxGraphComponent component = new mxGraphComponent(jgxAdapter);
-        component.setConnectable(false);
-        component.getGraph().setAllowDanglingEdges(false);
-        getContentPane().add(component);
-        resize(DEFAULT_SIZE);
 
-        // mxHierarchicalLayout -- good! WEST orientation is best.
-        // void 	setDisableEdgeStyle​(boolean disableEdgeStyle) 	 
-        // void 	setFineTuning​(boolean fineTuning) 	 
-        // void 	setInterHierarchySpacing​(double interHierarchySpacing) 	 
-        // void 	setInterRankCellSpacing​(double interRankCellSpacing) 	 
-        // void 	setIntraCellSpacing​(double intraCellSpacing) 	 
-        // void 	setMoveParent​(boolean value) 	Sets the moveParent flag.
-        // void 	setOrientation​(int orientation) 	 
-        // void 	setParallelEdgeSpacing​(double parallelEdgeSpacing) 	 
-        // void 	setParentBorder​(int value) 	Sets parentBorder.
-        // void 	setResizeParent​(boolean value)
-        mxHierarchicalLayout layout = new mxHierarchicalLayout(jgxAdapter, SwingConstants.WEST);
-        layout.setFineTuning(true);
-
-        // lay out the layout
-        layout.execute(jgxAdapter.getDefaultParent());
+        return jgxAdapter;
     }
 }

@@ -40,6 +40,9 @@ public class PangenomicGraph extends DirectedAcyclicGraph<Node,Edge> {
     // output verbosity
     boolean verbose = false;
 
+    // a name for this graph
+    String graphName;
+    
     // genotype preference (default: -1=load all genotypes)
     public static int BOTH_GENOTYPES = -1;
     int genotype = BOTH_GENOTYPES;
@@ -258,6 +261,20 @@ public class PangenomicGraph extends DirectedAcyclicGraph<Node,Edge> {
         } else {
             genotype = g;
         }
+    }
+
+    /**
+     * Set this graph's name.
+     */
+    public void setName(String graphName) {
+        this.graphName = graphName;
+    }
+
+    /**
+     * Return this graph's name.
+     */
+    public String getName() {
+        return graphName;
     }
 
     /**
@@ -676,10 +693,11 @@ public class PangenomicGraph extends DirectedAcyclicGraph<Node,Edge> {
             return;
         }
 
-        // graph name
-        String graphName = cmd.getOptionValue("graph");
-        
+        // create the graph
         PangenomicGraph graph = new PangenomicGraph();
+        String graphName = cmd.getOptionValue("graph");
+        graph.setName(graphName);
+        
         // apply various options
         if (cmd.hasOption("verbose")) graph.setVerbose();
         if (cmd.hasOption("skipedges")) graph.setSkipEdges();

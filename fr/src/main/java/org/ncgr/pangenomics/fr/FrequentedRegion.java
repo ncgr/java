@@ -133,6 +133,8 @@ public class FrequentedRegion implements Comparable {
         this.priorityOption = priorityOption;
         getPriorityLabel();
         getCaseCtrlPaths();
+        caseSupport = getLabelSupport("case");
+        ctrlSupport = getLabelSupport("ctrl");
         getPriority();
     }
 
@@ -149,6 +151,9 @@ public class FrequentedRegion implements Comparable {
         this.avgLength = avgLength;
         this.priorityOption = priorityOption;
         getPriorityLabel();
+        getCaseCtrlPaths();
+        caseSupport = getLabelSupport("case");
+        ctrlSupport = getLabelSupport("ctrl");
         getPriority();
     }        
 
@@ -177,6 +182,7 @@ public class FrequentedRegion implements Comparable {
 
     /**
      * Compute the total case and control paths in the graph.
+     * Be sure to run graph.tallyLabelCounts() beforehand!
      */
     void getCaseCtrlPaths() {
         if (graph.getLabelCounts().get("case")!=null && graph.getLabelCounts().get("ctrl")!=null) {
@@ -228,6 +234,7 @@ public class FrequentedRegion implements Comparable {
 
     /**
      * Return the column heading for the toString() fields
+     * nodes size support avgLen caseCounts ctrlCounts pri OR p
      */
     public String columnHeading() {
         String s = "nodes\tsize\tsupport\tavgLen";
@@ -332,7 +339,11 @@ public class FrequentedRegion implements Comparable {
      * Return the odds ratio for cases vs controls.
      */
     public double oddsRatio() {
-        return ((double)caseSupport/casePaths) / ((double)ctrlSupport/ctrlPaths);
+        if (ctrlSupport>0) {
+            return ((double)caseSupport/(double)ctrlSupport) / ((double)casePaths/(double)ctrlPaths);
+        } else {
+            return Double.POSITIVE_INFINITY;
+        }
     }
 
     /**
@@ -436,6 +447,13 @@ public class FrequentedRegion implements Comparable {
      */
     public NodeSet getNodes() {
         return nodes;
+    }
+
+    /**
+     * Return true if this FR contains the given node.
+     */
+    public boolean containsNode(Node n) {
+        return nodes.contains(n);
     }
 
     /**

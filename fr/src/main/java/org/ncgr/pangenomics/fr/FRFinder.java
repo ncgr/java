@@ -740,7 +740,7 @@ public class FRFinder {
      * This can be used as input to a classification routine.
      */
     void printPathFRs(String outputPrefix) throws IOException {
-        PrintStream out = new PrintStream(getPathFRsFilename(outputPrefix));
+        PrintStream out = new PrintStream(FRUtils.getPathFRsFilename(outputPrefix));
         // columns are paths
         boolean first = true;
         for (PathWalk path : paths) {
@@ -774,7 +774,7 @@ public class FRFinder {
      * which is similar, but not identical to, the SVMlight format.
      */
     void printPathFRsSVM(String outputPrefix) throws IOException {
-        PrintStream out = new PrintStream(getPathFRsSVMFilename(outputPrefix));
+        PrintStream out = new PrintStream(FRUtils.getPathFRsSVMFilename(outputPrefix));
         // only rows, one per path
         for (PathWalk path : paths) {
             out.print(path.getNameGenotype());
@@ -812,7 +812,7 @@ public class FRFinder {
      * 5.0,3.6,1.4,0.2,Iris-viginica
      */
     void printPathFRsARFF(String outputPrefix) throws IOException {
-        PrintStream out = new PrintStream(getPathFRsARFFFilename(outputPrefix));
+        PrintStream out = new PrintStream(FRUtils.getPathFRsARFFFilename(outputPrefix));
         out.println("@RELATION "+outputPrefix);
         out.println("");
         // attributes: path ID
@@ -849,7 +849,7 @@ public class FRFinder {
             System.err.println("NO FREQUENTED REGIONS!");
             return;
         }
-        PrintStream out = new PrintStream(getFRsFilename(outputPrefix));
+        PrintStream out = new PrintStream(FRUtils.getFRsFilename(outputPrefix));
         boolean first = true;
         for (FrequentedRegion fr : frequentedRegions.values()) {
             if (first) {
@@ -869,7 +869,7 @@ public class FRFinder {
             System.err.println("NO FREQUENTED REGIONS!");
             return;
         }
-        PrintStream out = new PrintStream(getFRSubpathsFilename(outputPrefix));
+        PrintStream out = new PrintStream(FRUtils.getFRSubpathsFilename(outputPrefix));
         for (FrequentedRegion fr : frequentedRegions.values()) {
             out.println(fr.toString());
             out.println(fr.subpathsString());
@@ -902,51 +902,17 @@ public class FRFinder {
      * Print out the parameters.
      */
     public void printParameters(String outputPrefix, double alpha, int kappa) throws IOException {
-        PrintStream out = new PrintStream(getParamsFilename(outputPrefix));
+        PrintStream out = new PrintStream(FRUtils.getParamsFilename(outputPrefix));
         String comments = "alpha="+alpha+"\n"+"kappa="+kappa+"\n"+"clocktime="+formatTime(clockTime);
         parameters.store(out, comments);
         out.close();
-    }
-
-    /**
-     * Return alpha from a previous run.
-     */
-    static double readAlpha(String inputPrefix) throws FileNotFoundException, IOException {
-        String paramsFile = getParamsFilename(inputPrefix);
-        BufferedReader reader = new BufferedReader(new FileReader(paramsFile));
-        String line = null;
-        double alpha = 0;
-        while ((line=reader.readLine())!=null) {
-            if (line.startsWith("#alpha")) {
-                String[] parts = line.split("=");
-                alpha = Double.parseDouble(parts[1]);
-            }
-        }
-        return alpha;
-    }
-
-    /**
-     * Return kappa from a previous run.
-     */
-    static int readKappa(String inputPrefix) throws FileNotFoundException, IOException {
-        String paramsFile = getParamsFilename(inputPrefix);
-        BufferedReader reader = new BufferedReader(new FileReader(paramsFile));
-        String line = null;
-        int kappa = 0;
-        while ((line=reader.readLine())!=null) {
-            if (line.startsWith("#kappa")) {
-                String[] parts = line.split("=");
-                kappa = Integer.parseInt(parts[1]);
-            }
-        }
-        return kappa;
     }
     
     /**
      * Read the parameters from a previous run.
      */
     void readParameters(String inputPrefix) throws FileNotFoundException, IOException {
-        String paramsFilename = getParamsFilename(inputPrefix);
+        String paramsFilename = FRUtils.getParamsFilename(inputPrefix);
         BufferedReader reader = new BufferedReader(new FileReader(paramsFilename));
         parameters.load(reader);
         parameters.setProperty("paramsFile", paramsFilename);
@@ -962,11 +928,11 @@ public class FRFinder {
      */
     void readFrequentedRegions() throws FileNotFoundException, IOException, NullNodeException, NullSequenceException, NoNodesException {
         // get alpha, kappa from the input prefix
-        double alpha = readAlpha(getInputPrefix());
-        int kappa = readKappa(getInputPrefix());
+        double alpha = FRUtils.readAlpha(getInputPrefix());
+        int kappa = FRUtils.readKappa(getInputPrefix());
         // get the graph from the nodes and paths files
-        File nodesFile = new File(getNodesFilename(getInputPrefix()));
-        File pathsFile = new File(getPathsFilename(getInputPrefix()));
+        File nodesFile = new File(FRUtils.getNodesFilename(getInputPrefix()));
+        File pathsFile = new File(FRUtils.getPathsFilename(getInputPrefix()));
         graph = new PangenomicGraph();
         graph.importTXT(nodesFile, pathsFile);
         // create a node map for building subpaths
@@ -976,7 +942,7 @@ public class FRFinder {
         }
 	// build the FRs
         frequentedRegions = new ConcurrentHashMap<>();
-        String frFilename = getFRSubpathsFilename(getInputPrefix());
+        String frFilename = FRUtils.getFRSubpathsFilename(getInputPrefix());
         BufferedReader reader = new BufferedReader(new FileReader(frFilename));
         String line = null;
         while ((line=reader.readLine())!=null) {
@@ -1011,65 +977,6 @@ public class FRFinder {
         }
     }
 
-    /**
-     * Form the FRs output filename
-     */
-    static String getFRsFilename(String prefix) {
-        return prefix+".frs.txt";
-    }
-
-    /**
-     * Form the FRSubpaths output filename
-     */
-    static String getFRSubpathsFilename(String prefix) {
-        return prefix+".subpaths.txt";
-    }
-
-    /**
-     * Form the pathFRs output filename
-     */
-    static String getPathFRsFilename(String prefix) {
-        return prefix+".pathfrs.txt";
-    }
-
-    /**
-     * Form the SVM version of the pathFRs output filename
-     */
-    static String getPathFRsSVMFilename(String prefix) {
-        return prefix+".svm.txt";
-    }
-
-    /**
-     * Form the ARFF version of the pathFRs output filename
-     */
-    static String getPathFRsARFFFilename(String prefix) {
-        return prefix+".arff";
-    }
-
-    /**
-     * Form the parameters output filename
-     */
-    static String getParamsFilename(String prefix) {
-        return prefix+".params.txt";
-    }
-
-    /**
-     * Form the graph nodes filename
-     * if prefix = HTT.1k-1.0-0 then filename = HTT.nodes.txt
-     */
-    static String getNodesFilename(String prefix) {
-        String[] parts = prefix.split("-");
-        return parts[0]+".nodes.txt";
-    }
-
-    /**
-     * Form the graph paths filename
-     * if prefix = HTT.1k-1.0-0 then filename = HTT.paths.txt
-     */
-    static String getPathsFilename(String prefix) {
-        String[] parts = prefix.split("-");
-        return parts[0]+".paths.txt";
-    }
 
     /**
      * Form an outputPrefix with given alpha and kappa.
