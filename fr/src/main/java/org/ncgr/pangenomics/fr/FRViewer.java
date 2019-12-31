@@ -116,11 +116,12 @@ public class FRViewer {
         Map<String,Object> defaultVertexStyle = defaultStylesheet.getDefaultVertexStyle();
         defaultVertexStyle.put("fillColor", "white");
         defaultVertexStyle.put("fontColor", "black");
+        defaultVertexStyle.put("shape", mxConstants.SHAPE_ELLIPSE);
         defaultStylesheet.setDefaultVertexStyle(defaultVertexStyle);
         jgxAdapter.setStylesheet(defaultStylesheet);
 
         // default case/control styles
-        String baseFRStyle = "shape="+mxConstants.SHAPE_ELLIPSE+";fontStyle="+mxConstants.FONT_BOLD+";fontColor=black;fillColor=#808080;strokeColor=black;gradientColor=none;verticalAlign=bottom";
+        String baseFRStyle = "shape="+mxConstants.SHAPE_RECTANGLE+";fontColor=black;fillColor=#808080;strokeColor=black;gradientColor=none;verticalAlign=bottom";
 
         // FR stats
         double frOR = fr.oddsRatio();
@@ -139,10 +140,10 @@ public class FRViewer {
                     // remove orphan
                     c.removeFromParent();
                 } else {
-                    // show case|control subpath counts for this node
-                    String label = fr.getCaseCount(n)+"/"+fr.getControlCount(n);
-                    c.setValue(label);
                     if (fr.containsNode(n)) {
+                        // show case|control subpath counts for this node since it's in the FR
+                        String label = n.getId()+":"+fr.getCaseCount(n)+"/"+fr.getControlCount(n);
+                        c.setValue(label);
                         jgxAdapter.setCellStyle(baseFRStyle, cells);
                         // significance decoration
                         if (frP<P_THRESHOLD) {
