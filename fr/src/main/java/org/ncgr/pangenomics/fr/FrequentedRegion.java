@@ -91,13 +91,13 @@ public class FrequentedRegion implements Comparable {
         this.alpha = alpha;
         this.kappa = kappa;
         this.priorityOption = priorityOption;
-        getPriorityLabel();
-        getCaseCtrlPaths();
+        updatePriorityLabel();
+        updateCaseCtrlPaths();
         // compute the subpaths, average length, support, etc.
         this.nodes.update();
         updateSupport();
         updateAvgLength();
-        getPriority();
+        updatePriority();
     }
 
     /**
@@ -110,13 +110,13 @@ public class FrequentedRegion implements Comparable {
         this.alpha = alpha;
         this.kappa = kappa;
         this.priorityOption = priorityOption;
-        getPriorityLabel();
-        getCaseCtrlPaths();
+        updatePriorityLabel();
+        updateCaseCtrlPaths();
         support = subpaths.size();
         caseSupport = getLabelSupport("case");
         ctrlSupport = getLabelSupport("ctrl");
         updateAvgLength();
-        getPriority();
+        updatePriority();
     }
 
     /**
@@ -131,11 +131,11 @@ public class FrequentedRegion implements Comparable {
         this.support = support;
         this.avgLength = avgLength;
         this.priorityOption = priorityOption;
-        getPriorityLabel();
-        getCaseCtrlPaths();
+        updatePriorityLabel();
+        updateCaseCtrlPaths();
         caseSupport = getLabelSupport("case");
         ctrlSupport = getLabelSupport("ctrl");
-        getPriority();
+        updatePriority();
     }
 
     /**
@@ -150,11 +150,11 @@ public class FrequentedRegion implements Comparable {
         this.support = support;
         this.avgLength = avgLength;
         this.priorityOption = priorityOption;
-        getPriorityLabel();
-        getCaseCtrlPaths();
+        updatePriorityLabel();
+        updateCaseCtrlPaths();
         caseSupport = getLabelSupport("case");
         ctrlSupport = getLabelSupport("ctrl");
-        getPriority();
+        updatePriority();
     }        
 
     /**
@@ -184,7 +184,7 @@ public class FrequentedRegion implements Comparable {
      * Compute the total case and control paths in the graph.
      * Be sure to run graph.tallyLabelCounts() beforehand!
      */
-    void getCaseCtrlPaths() {
+    void updateCaseCtrlPaths() {
         if (graph.getLabelCounts().get("case")!=null && graph.getLabelCounts().get("ctrl")!=null) {
             casePaths = graph.getLabelCounts().get("case");
             ctrlPaths = graph.getLabelCounts().get("ctrl");
@@ -275,7 +275,7 @@ public class FrequentedRegion implements Comparable {
     /**
      * Set the label to base label-based priority on.
      */
-    void getPriorityLabel() {
+    void updatePriorityLabel() {
         String[] parts = priorityOption.split(":");
         if (parts.length>1) {
             priorityLabel = parts[1];
@@ -293,7 +293,7 @@ public class FrequentedRegion implements Comparable {
      *   3:label = odds ratio in label's favor
      *   4 = -log10(p) where p = Fisher's exact test double-sided p value
      */
-    void getPriority() {
+    void updatePriority() {
         priority = 0;
         if (priorityOption.startsWith("0")) {
             priority = support;
@@ -303,7 +303,7 @@ public class FrequentedRegion implements Comparable {
             } else if (priorityLabel.equals("ctrl")) {
                 priority = ctrlSupport - caseSupport;
             } else {
-                System.err.println("ERROR: priority label "+priorityLabel+" is not supported by FrequentedRegion.getPriority().");
+                System.err.println("ERROR: priority label "+priorityLabel+" is not supported by FrequentedRegion.updatePriority().");
                 System.exit(1);
             }
         } else if (priorityOption.startsWith("2")) {
@@ -314,14 +314,14 @@ public class FrequentedRegion implements Comparable {
             } else if (priorityLabel.equals("ctrl")) {
                 priority = -(int)(Math.round(Math.log10(oddsRatio())*1000));
             } else {
-                System.err.println("ERROR: priority label "+priorityLabel+" is not supported by FrequentedRegion.getPriority().");
+                System.err.println("ERROR: priority label "+priorityLabel+" is not supported by FrequentedRegion.updatePriority().");
                 System.exit(1);
             }
         } else if (priorityOption.startsWith("4")) {
             priority = -(int)Math.round(Math.log10(fisherExactP())*100);
         } else {
             // we've got an unallowed priority key for case/control comparison
-            System.err.println("ERROR: priority option "+priorityOption+" is not supported by FrequentedRegion.getPriority().");
+            System.err.println("ERROR: priority option "+priorityOption+" is not supported by FrequentedRegion.updatePriority().");
             System.exit(1);
         }
     }
@@ -454,6 +454,42 @@ public class FrequentedRegion implements Comparable {
      */
     public boolean containsNode(Node n) {
         return nodes.contains(n);
+    }
+
+    /**
+     * Return the count of case subpaths traversing the given node.
+     */
+    public int getCaseCount(Node n) {
+        int count = 0;
+        for (PathWalk p : subpaths) {
+            if (p.isCase()) {
+                for (Node node : p.getNodes()) {
+                    if (node.equals(n)) {
+                        count++;
+                        break;
+                    }
+                }
+            }
+        }
+        return count;
+    }
+
+    /**
+     * Return the count of control subpaths traversing the given node.
+     */
+    public int getControlCount(Node n) {
+        int count = 0;
+        for (PathWalk p : subpaths) {
+            if (p.isControl()) {
+                for (Node node : p.getNodes()) {
+                    if (node.equals(n)) {
+                        count++;
+                        break;
+                    }
+                }
+            }
+        }
+        return count;
     }
 
     /**

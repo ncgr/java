@@ -85,11 +85,9 @@ public class FRViewer {
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.pack();
         frame.setVisible(true);
-            
-        // apply mxHierarchicalLayout -- good! WEST orientation is best.
-        mxHierarchicalLayout graphLayout = new mxHierarchicalLayout(jgxAdapter, SwingConstants.WEST);
-        graphLayout.setFineTuning(true);
-        graphLayout.execute(jgxAdapter.getDefaultParent());
+
+        // refresh the layout
+        component.refresh();
     }
 
     /**
@@ -137,12 +135,14 @@ public class FRViewer {
             mxCell c = (mxCell) o;
             if (c.isVertex()) {
                 Node n = (Node) c.getValue();
-                if (graph.getPaths(n).size()==0) {
+                if (c.getEdgeCount()==0) {
                     // remove orphan
                     c.removeFromParent();
                 } else {
+                    // show case|control subpath counts for this node
+                    String label = fr.getCaseCount(n)+"/"+fr.getControlCount(n);
+                    c.setValue(label);
                     if (fr.containsNode(n)) {
-                        // FR style
                         jgxAdapter.setCellStyle(baseFRStyle, cells);
                         // significance decoration
                         if (frP<P_THRESHOLD) {
@@ -171,6 +171,8 @@ public class FRViewer {
                             }
                         }
                     }
+                    // update the cell shape
+                    jgxAdapter.cellSizeUpdated(c, true);
                 }
             } else if (c.isEdge()) {
                 // do something with the edges?
@@ -193,7 +195,7 @@ class pgGraphComponent extends mxGraphComponent implements ActionListener {
     PangenomicGraph graph;
     Map<String,FrequentedRegion> frequentedRegions;
     JGraphXAdapter jgxAdapter;
-
+    
     Object[] frKeys;
     JButton prevButton;
     JButton nextButton;
@@ -265,21 +267,19 @@ class pgGraphComponent extends mxGraphComponent implements ActionListener {
         } else if (command.equals("previous")) {
             current--;
         }
+        // load new FR and update graph
         FrequentedRegion fr = frequentedRegions.get((String)frKeys[current]);
         jgxAdapter = FRViewer.getAdapter(graph, fr);
         setGraph(jgxAdapter);
         setInfoRow(fr);
+        refresh();
         updateButtonStates();
-        // apply mxHierarchicalLayout -- good! WEST orientation is best.
-        mxHierarchicalLayout graphLayout = new mxHierarchicalLayout(jgxAdapter, SwingConstants.WEST);
-        graphLayout.setFineTuning(true);
-        graphLayout.execute(jgxAdapter.getDefaultParent());
     }
 
     /**
      * Update the button states.
      */
-    void updateButtonStates() {
+    public void updateButtonStates() {
         if (current==0) {
             prevButton.setEnabled(false);
         } else {
@@ -295,7 +295,7 @@ class pgGraphComponent extends mxGraphComponent implements ActionListener {
     /**
      * Create a text row with FR info
      */
-    void setInfoRow(FrequentedRegion fr) {
+    public void setInfoRow(FrequentedRegion fr) {
         JLabel rowLabel = new JLabel("<html>"+
                                      graph.getName()+
                                      "<hr/>"+
@@ -312,6 +312,15 @@ class pgGraphComponent extends mxGraphComponent implements ActionListener {
                                      "</html>");
         rowLabel.setVerticalAlignment(SwingConstants.TOP);
         setRowHeaderView(rowLabel);
+    }
+
+    /**
+     * Refresh the layout.
+     */
+    public void refresh() {
+        mxHierarchicalLayout layout = new mxHierarchicalLayout(jgxAdapter, SwingConstants.WEST);
+        layout.setFineTuning(true);
+        layout.execute(jgxAdapter.getDefaultParent());
     }
 }
 

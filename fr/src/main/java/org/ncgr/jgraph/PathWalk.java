@@ -141,6 +141,20 @@ public class PathWalk extends GraphWalk<Node,Edge> implements Comparable {
     }
 
     /**
+     * Return true if the label indicates a "case" path.
+     */
+    public boolean isCase() {
+        return label.equals("case");
+    }
+
+    /**
+     * Return true if the label indicates a "control" path.
+     */
+    public boolean isControl() {
+        return label.equals("ctrl");
+    }
+
+    /**
      * Set the genotype.
      */
     public void setGenotype(int genotype) {
