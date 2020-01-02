@@ -56,7 +56,7 @@ public class GraphViewer {
      * Do the GUI work.
      * @param graphName the name of the graph, from which the nodes and paths files will be formed
      */
-    private static void createAndShowGUI(String graphName) throws IOException, NullSequenceException {
+    private static void createAndShowGUI(String graphName) throws IOException, NullNodeException, NullSequenceException {
         String nodesFilename = graphName+".nodes.txt";
         String pathsFilename = graphName+".paths.txt";
         File nodesFile = new File(nodesFilename);

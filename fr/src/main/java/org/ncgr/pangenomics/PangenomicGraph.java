@@ -72,7 +72,7 @@ public class PangenomicGraph extends DirectedAcyclicGraph<Node,Edge> {
     DijkstraShortestPath<Node,Edge> dsp;
 
     /**
-     * Construct the graph using the Edge class.
+     * Construct the empty graph using the Edge class.
      */
     public PangenomicGraph() {
         super(Edge.class);
@@ -81,7 +81,7 @@ public class PangenomicGraph extends DirectedAcyclicGraph<Node,Edge> {
     /**
      * Import from a GFA file.
      */
-    public void importGFA(File gfaFile) throws NullSequenceException {
+    public void importGFA(File gfaFile) throws NullNodeException, NullSequenceException {
         GFAImporter importer = new GFAImporter();
         if (verbose) importer.setVerbose();
         if (skipEdges) importer.setSkipEdges();
@@ -100,7 +100,7 @@ public class PangenomicGraph extends DirectedAcyclicGraph<Node,Edge> {
     /**
      * Import from a pair of TXT files.
      */
-    public void importTXT(File nodesFile, File pathsFile) throws IOException, NullSequenceException {
+    public void importTXT(File nodesFile, File pathsFile) throws IOException, NullNodeException, NullSequenceException {
         TXTImporter importer = new TXTImporter();
         if (verbose) importer.setVerbose();
         if (skipEdges) importer.setSkipEdges();
@@ -394,6 +394,26 @@ public class PangenomicGraph extends DirectedAcyclicGraph<Node,Edge> {
     }
 
     /**
+     * Get the label counts for paths that follow the given Edge.
+     * TODO: restrict path loop to those that are on Nodes connected by Edge. May not be worth it.
+     */
+    public Map<String,Integer> getLabelCounts(Edge e) {
+        Map<String,Integer> eLabelCounts = new HashMap<>();
+        for (PathWalk p : paths) {
+            List<Edge> edges = p.getEdges();
+            if (edges.contains(e)) {
+                if (eLabelCounts.containsKey(p.getLabel())) {
+                    int count = eLabelCounts.get(p.getLabel()) + 1;
+                    eLabelCounts.put(p.getLabel(), count);
+                } else {
+                    eLabelCounts.put(p.getLabel(), 1);
+                }
+            }
+        }
+        return eLabelCounts;
+    }
+
+    /**
      * Print a delineating heading, for general use.
      */
     static void printHeading(String heading) {
@@ -444,7 +464,6 @@ public class PangenomicGraph extends DirectedAcyclicGraph<Node,Edge> {
             StringBuilder builder = new StringBuilder();
             builder.append(path.getNameGenotype());
             builder.append("\t"+path.getLabel());
-            if (!skipSequences) builder.append("\t"+path.getSequence().length());
             for (Node node : path.getNodes()) {
                 builder.append("\t"+node.getId());
             }
@@ -623,7 +642,7 @@ public class PangenomicGraph extends DirectedAcyclicGraph<Node,Edge> {
     /**
      * Command-line utility
      */
-    public static void main(String[] args) throws FileNotFoundException, IOException, NullSequenceException {
+    public static void main(String[] args) throws FileNotFoundException, IOException, NullNodeException, NullSequenceException {
 
         Options options = new Options();
         CommandLineParser parser = new DefaultParser();

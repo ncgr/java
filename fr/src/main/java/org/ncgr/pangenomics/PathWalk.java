@@ -31,6 +31,17 @@ public class PathWalk extends GraphWalk<Node,Edge> implements Comparable {
     }
 
     /**
+     * Create a walk defined by a list of nodes as well as identifying info; weight=1.0.
+     */
+    public PathWalk(Graph<Node,Edge> graph, List<Node> nodeList, String name, int genotype, boolean skipSequence)
+        throws NullNodeException, NullSequenceException {
+        super(graph, nodeList, 1.0);
+        this.name = name;
+        this.genotype = genotype;
+        if (!skipSequence) buildSequence();
+    }
+
+    /**
      * Create a walk defined by a sequence of edges; weight=1.0.
      */
     public PathWalk(Graph<Node,Edge> graph, Node startNode, Node endNode, List<Edge> edgeList, boolean skipSequence)
@@ -51,17 +62,6 @@ public class PathWalk extends GraphWalk<Node,Edge> implements Comparable {
     /**
      * Create a walk defined by a list of nodes as well as identifying info; weight=1.0.
      */
-    public PathWalk(Graph<Node,Edge> graph, List<Node> nodeList, String name, int genotype, boolean skipSequence)
-        throws NullNodeException, NullSequenceException {
-        super(graph, nodeList, 1.0);
-        this.name = name;
-        this.genotype = genotype;
-        if (!skipSequence) buildSequence();
-    }
-
-    /**
-     * Create a walk defined by a list of nodes as well as identifying info; weight=1.0.
-     */
     public PathWalk(Graph<Node,Edge> graph, List<Node> nodeList, String name, int genotype, String label, boolean skipSequence)
         throws NullNodeException, NullSequenceException {
         super(graph, nodeList, 1.0);
@@ -70,16 +70,6 @@ public class PathWalk extends GraphWalk<Node,Edge> implements Comparable {
         this.label = label;
         if (!skipSequence) buildSequence();
     }
-
-    /**
-     * Create a shell walk with only a node list and identifying info (empty graph).
-     */
-    public PathWalk(List<Node> nodeList, String name, int genotype, String label) {
-        super(new PangenomicGraph(), nodeList, 1.0);
-        this.name = name;
-        this.genotype = genotype;
-        this.label = label;
-    }       
 
     /**
      * Two paths are equal if they have the same name and genotype and traverse the same nodes,
@@ -200,6 +190,13 @@ public class PathWalk extends GraphWalk<Node,Edge> implements Comparable {
      */
     public List<Node> getNodes() {
         return (List<Node>) getVertexList();
+    }
+
+    /**
+     * Return the edges that this path follows along, in order of traversal.
+     */
+    public List<Edge> getEdges() {
+        return (List<Edge>) getEdgeList();
     }
 
     /**

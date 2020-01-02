@@ -71,10 +71,7 @@ public class FGraphXAdapter extends JGraphXAdapter<Node,Edge> {
             mxCell c = (mxCell) o;
             if (c.isVertex()) {
                 Node n = (Node) c.getValue();
-                if (c.getEdgeCount()==0) {
-                    // remove orphan
-                    c.removeFromParent();
-                } else {
+                if (c.getEdgeCount()>0) {
                     if (fr.containsNode(n)) {
                         setCellStyle(baseFRStyle, cells);
                         // significance decoration
@@ -133,7 +130,7 @@ public class FGraphXAdapter extends JGraphXAdapter<Node,Edge> {
             String tip = "<html>" +
                 seq+"<br/>" +
                 seq.length()+" bp<br/>" +
-                caseCounts+"/"+ctrlCounts+"<br/>" +
+                "paths="+caseCounts+"/"+ctrlCounts+"<br/>" +
                 "OR="+orf.format(or)+"<br/>" +
                 "p="+pf.format(p);
             if (fr.containsNode(n)) {
@@ -142,7 +139,17 @@ public class FGraphXAdapter extends JGraphXAdapter<Node,Edge> {
             }
             tip += "</html>";
             return tip;
+        } else if (c.isEdge()) {
+            Edge e = (Edge) c.getValue();
+            Map<String,Integer> labelCounts = graph.getLabelCounts(e);
+            int caseCounts = 0;
+            int ctrlCounts = 0;
+            if (labelCounts.containsKey("case")) caseCounts = labelCounts.get("case");
+            if (labelCounts.containsKey("ctrl")) ctrlCounts = labelCounts.get("ctrl");
+            String tip = "paths="+caseCounts+"/"+ctrlCounts;
+            return tip;
         } else {
+            // don't think this is ever reached
             return "";
         }
     }

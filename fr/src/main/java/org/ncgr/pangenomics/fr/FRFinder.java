@@ -970,7 +970,7 @@ public class FRFinder {
                     subNodes.add(nodeMap.get(nodeId));
                 }
                 // add to the subpaths
-                subpaths.add(new PathWalk(subNodes, name, genotype, label));
+                subpaths.add(new PathWalk(graph, subNodes, name, genotype, label, graph.getSkipSequences()));
             }
             FrequentedRegion fr = new FrequentedRegion(nodes, subpaths, alpha, kappa, getPriorityOption(), support, avgLength);
             frequentedRegions.put(fr.nodes.toString(), fr);

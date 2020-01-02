@@ -47,7 +47,7 @@ public class TXTImporter {
      * @param nodesFile the nodes file (typically [graph].nodes.txt)
      * @param pathsFile the paths file (typically [graph].paths.txt)
      */
-    public void importGraph(Graph<Node,Edge> g, File nodesFile, File pathsFile) throws IOException, NullSequenceException {
+    public void importGraph(Graph<Node,Edge> g, File nodesFile, File pathsFile) throws IOException, NullNodeException, NullSequenceException {
         if (verbose) System.out.println("Loading graph from "+nodesFile.getName()+" and "+pathsFile.getName());
 
         // read the nodes, storing in a map for path building
@@ -82,16 +82,20 @@ public class TXTImporter {
                 String[] parts = l.split("\t");
                 String nameGenotype = parts[0];
                 String label = parts[1];
-                int sequenceLength = Integer.parseInt(parts[2]);
                 String[] pieces = nameGenotype.split("\\.");
                 String name = pieces[0];
                 int genotype = Integer.parseInt(pieces[1]);
                 List<Node> nodeList = new ArrayList<>();
-                for (int i=3; i<parts.length; i++) {
+                for (int i=2; i<parts.length; i++) {
                     nodeList.add(nodeMap.get(Long.parseLong(parts[i])));
                 }
-                PathWalk path = new PathWalk(nodeList, name, genotype, label);
-                paths.add(path);
+                try {
+                    PathWalk path = new PathWalk(g, nodeList, name, genotype, label, skipSequences);
+                    paths.add(path);
+                } catch (Exception e) {
+                    System.err.println(e);
+                    System.exit(1);
+                }
             });
         if (verbose) System.out.println("done.");
 
@@ -104,11 +108,11 @@ public class TXTImporter {
             if (verbose) System.out.print("Adding edges to graph...");
             // this cannot be done in parallel because of g.addEdge() inside
             for (PathWalk path : paths) {
-                boolean first = true;
                 Node lastNode = null;
                 for (Node node : path.getNodes()) {
-                    if (!first) g.addEdge(lastNode, node);
-                    first = false;
+                    if (!(lastNode==null)) {
+                        g.addEdge(lastNode, node);
+                    }
                     lastNode = node;
                 }
             }

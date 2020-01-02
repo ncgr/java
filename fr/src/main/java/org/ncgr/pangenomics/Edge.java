@@ -12,10 +12,10 @@ public class Edge extends DefaultEdge {
     @Override
     public boolean equals(Object o) {
 	Edge that = (Edge) o;
-        Node thisSource = (Node) this.getSource();
-        Node thatSource = (Node) that.getSource();
-        Node thisTarget = (Node) this.getTarget();
-        Node thatTarget = (Node) that.getTarget();
+        String thisSource = this.getSource().toString();
+        String thatSource = that.getSource().toString();
+        String thisTarget = this.getTarget().toString();
+        String thatTarget = that.getTarget().toString();
         return thisSource.equals(thatSource) && thisTarget.equals(thatTarget);
     }
 
@@ -24,8 +24,6 @@ public class Edge extends DefaultEdge {
      */
     @Override
     public String toString() {
-        Node thisSource = (Node) this.getSource();
-        Node thisTarget = (Node) this.getTarget();
-        return thisSource.getId()+":"+thisTarget.getId();
+        return this.getSource().toString()+":"+this.getTarget().toString();
     }
 }

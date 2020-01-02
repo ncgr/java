@@ -2,6 +2,8 @@ package org.ncgr.pangenomics.fr;
 
 import org.ncgr.pangenomics.Node;
 import org.ncgr.pangenomics.NodeSet;
+import org.ncgr.pangenomics.NullNodeException;
+import org.ncgr.pangenomics.NullSequenceException;
 import org.ncgr.pangenomics.PangenomicGraph;
 import org.ncgr.pangenomics.PathWalk;
 
@@ -30,7 +32,8 @@ public class FRUtils {
      * 628863.1.case:[18,20,21,23,24,26,27,29,30,33,34]
      * etc.
      */
-    static HashMap<String,FrequentedRegion> readFrequentedRegions(String inputPrefix, PangenomicGraph graph) throws FileNotFoundException, IOException {
+    static HashMap<String,FrequentedRegion> readFrequentedRegions(String inputPrefix, PangenomicGraph graph)
+        throws FileNotFoundException, IOException, NullNodeException, NullSequenceException {
         // get alpha, kappa from the input prefix
         double alpha = readAlpha(inputPrefix);
         int kappa = readKappa(inputPrefix);
@@ -88,7 +91,7 @@ public class FRUtils {
                     subNodes.add(nodeMap.get(nodeId));
                 }
                 // add to the subpaths
-                subpaths.add(new PathWalk(subNodes, name, genotype, label));
+                subpaths.add(new PathWalk(graph, subNodes, name, genotype, label, graph.getSkipSequences()));
             }
             FrequentedRegion fr = new FrequentedRegion(graph, nodes, subpaths, alpha, kappa, priorityOption, support, avgLength);
             frequentedRegions.put(fr.nodes.toString(), fr);

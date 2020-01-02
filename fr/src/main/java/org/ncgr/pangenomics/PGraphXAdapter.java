@@ -42,17 +42,13 @@ class PGraphXAdapter extends JGraphXAdapter<Node,Edge> {
         defaultStylesheet.setDefaultEdgeStyle(defaultEdgeStyle);
         // set default vertex (Node) style
         Map<String,Object> defaultVertexStyle = defaultStylesheet.getDefaultVertexStyle();
-        defaultVertexStyle.put("fontSize", "10");
         defaultVertexStyle.put("fontColor", "black");
         defaultVertexStyle.put("fillColor", "gray");
         defaultVertexStyle.put("shape", mxConstants.SHAPE_ELLIPSE);
+        defaultVertexStyle.put("verticalAlign", mxConstants.ALIGN_BOTTOM);
         defaultStylesheet.setDefaultVertexStyle(defaultVertexStyle);
         // apply the default stylesheet
         setStylesheet(defaultStylesheet);
-
-        // default case/control vertex styles without color
-        String baseCaseStyle = "fontSize=10;fontColor=black";
-        String baseCtrlStyle = "fontSize=10;fontColor=black";
 
         // color the nodes
         selectAll();
@@ -62,20 +58,15 @@ class PGraphXAdapter extends JGraphXAdapter<Node,Edge> {
             mxCell c = (mxCell) o;
             if (c.isVertex()) {
                 Node n = (Node) c.getValue();
-                if (graph.getPaths(n).size()==0) {
-                    // remove orphan
-                    c.removeFromParent();
-                } else {
+                if (graph.getPaths(n).size()>0) {
                     double or = graph.oddsRatio(n);
                     // color based on segregation
                     if (Double.isInfinite(or)) {
                         // 100% case node
-                        setCellStyle(baseCaseStyle, cells);
                         setCellStyles("fillColor", "#ff8080", cells);
                         setCellStyles("fontColor", "black", cells);
                     } else if (or==0.00) {
                         // 100% ctrl node
-                        setCellStyle(baseCtrlStyle, cells);
                         setCellStyles("fillColor", "#80ff80", cells);
                         setCellStyles("fontColor", "black", cells);
                     } else if (or>1.0) {
@@ -84,7 +75,6 @@ class PGraphXAdapter extends JGraphXAdapter<Node,Edge> {
                         int rInt = Math.min((int)(127.0*log10or), 127) + 128;
                         String rHex = Integer.toHexString(rInt);
                         String fillColor = "#"+rHex+"8080";
-                        setCellStyle(baseCaseStyle, cells);
                         setCellStyles("fillColor", fillColor, cells); 
                         setCellStyles("fontColor", "white", cells);
                     } else if (or<1.0) {
@@ -93,7 +83,6 @@ class PGraphXAdapter extends JGraphXAdapter<Node,Edge> {
                         int gInt = Math.min((int)(127.0*log10or), 127) + 128;
                         String gHex = Integer.toHexString(gInt);
                         String fillColor = "#80"+gHex+"80";
-                        setCellStyle(baseCtrlStyle, cells);
                         setCellStyles("fillColor", fillColor, cells);
                         setCellStyles("fontColor", "white", cells);
                     }
@@ -131,7 +120,17 @@ class PGraphXAdapter extends JGraphXAdapter<Node,Edge> {
                 "p="+pf.format(p) +
                 "</html>";
             return tip;
+        } else if (c.isEdge()) {
+            Edge e = (Edge) c.getValue();
+            Map<String,Integer> labelCounts = graph.getLabelCounts(e);
+            int caseCounts = 0;
+            int ctrlCounts = 0;
+            if (labelCounts.containsKey("case")) caseCounts = labelCounts.get("case");
+            if (labelCounts.containsKey("ctrl")) ctrlCounts = labelCounts.get("ctrl");
+            String tip = caseCounts+"/"+ctrlCounts;
+            return tip;
         } else {
+            // shouldn't be reached
             return "";
         }
     }
