@@ -14,7 +14,9 @@ import org.jgrapht.graph.*;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.*;
 import java.io.*;
+import java.text.*;
 import java.util.*;
 
 /**
@@ -22,20 +24,39 @@ import java.util.*;
  */
 public class GraphViewer {
     private static final long serialVersionUID = 2202072534703043194L;
-    private static final Dimension DEFAULT_SIZE = new Dimension(1000, 700);
-    private static final double P_THRESHOLD = 5e-2;
+    private static final Dimension DEFAULT_SIZE = new Dimension(1000, 780);
 
     /**
-     * An alternative starting point for this demo, to also allow running this applet as an application.
+     * Main application.
      *
-     * @param args command line arguments: nodes.txt file and paths.txt file
+     * @param args command line arguments: graphName
      */
-    public static void main(String[] args) throws IOException, NullSequenceException {
+    public static void main(String[] args) {
         if (args.length!=1) {
             System.out.println("Usage: GraphViewer <graph>");
             System.exit(0);
         }
         String graphName = args[0];
+        // schedule a job for the event dispatch thread: creating and showing this application's GUI.
+        SwingUtilities.invokeLater(new Runnable() {
+                public void run() {
+                    // turn off metal's use of bold fonts
+                    UIManager.put("swing.boldMetal", Boolean.FALSE);
+                    try {
+                        createAndShowGUI(graphName);
+                    } catch (Exception e) {
+                        System.err.println(e);
+                        System.exit(1);
+                    }
+                }
+            });
+    }
+
+    /**
+     * Do the GUI work.
+     * @param graphName the name of the graph, from which the nodes and paths files will be formed
+     */
+    private static void createAndShowGUI(String graphName) throws IOException, NullSequenceException {
         String nodesFilename = graphName+".nodes.txt";
         String pathsFilename = graphName+".paths.txt";
         File nodesFile = new File(nodesFilename);
@@ -43,13 +64,15 @@ public class GraphViewer {
         
         PangenomicGraph graph = new PangenomicGraph();
         graph.setVerbose();
+        graph.setName(graphName);
         graph.importTXT(nodesFile, pathsFile);
         graph.tallyLabelCounts();
 
-        JGraphXAdapter jgxAdapter = getAdapter(graph);
-        mxGraphComponent component = new mxGraphComponent(jgxAdapter);
-        component.setConnectable(false);
-        component.getGraph().setAllowDanglingEdges(false);
+        // PGraphXAdapter extends JGraphXAdapter which extends mxGraph
+        PGraphXAdapter pgxAdapter = new PGraphXAdapter(graph);
+
+        // pgGraphComponent extends mxGraphComponent
+        pgGraphComponent component = new pgGraphComponent(graph, pgxAdapter);
 
         // Create and populate the JFrame
         JFrame frame = new JFrame(graphName);
@@ -61,95 +84,12 @@ public class GraphViewer {
         frame.setVisible(true);
 
         // mxHierarchicalLayout -- good! WEST orientation is best.
-        mxHierarchicalLayout layout = new mxHierarchicalLayout(jgxAdapter, SwingConstants.WEST);
+        mxHierarchicalLayout layout = new mxHierarchicalLayout(pgxAdapter, SwingConstants.WEST);
         layout.setFineTuning(true);
 
         // lay out the layout
-        layout.execute(jgxAdapter.getDefaultParent());
-    }
-
-    /**
-     * Create and return the JGraphXAdapter which displays the graph.
-     */
-    static JGraphXAdapter getAdapter(PangenomicGraph graph) {
-        // cast graph to a ListenableGraph
-        ListenableGraph<Node,Edge> g = new DefaultListenableGraph<Node,Edge>(graph);
-
-        // the jgxAdapter is an mxGraph
-        JGraphXAdapter<Node,Edge> jgxAdapter = new JGraphXAdapter<Node,Edge>(g);
-        
-        mxStylesheet defaultStylesheet = jgxAdapter.getStylesheet();
-
-        // set default edge style
-        Map<String,Object> defaultEdgeStyle = defaultStylesheet.getDefaultEdgeStyle();
-        defaultEdgeStyle.put("strokeColor", "gray");
-        defaultEdgeStyle.put("fontColor", "gray");
-        defaultEdgeStyle.put(mxConstants.STYLE_NOLABEL, "1");
-        defaultStylesheet.setDefaultEdgeStyle(defaultEdgeStyle);
-
-        // set default vertex (Node) style
-        Map<String,Object> defaultVertexStyle = defaultStylesheet.getDefaultVertexStyle();
-        defaultVertexStyle.put("fillColor", "gray");
-        defaultVertexStyle.put("fontColor", "black");
-        defaultStylesheet.setDefaultVertexStyle(defaultVertexStyle);
-        jgxAdapter.setStylesheet(defaultStylesheet);
-
-        // default case/control vertex styles
-        String baseCaseStyle = "shape="+mxConstants.SHAPE_ELLIPSE+";fontStyle="+mxConstants.FONT_BOLD+";fontColor=black;gradientColor=none;verticalAlign=bottom";
-        String baseCtrlStyle = "shape="+mxConstants.SHAPE_ELLIPSE+";fontStyle="+mxConstants.FONT_BOLD+";fontColor=black;gradientColor=none;verticalAlign=bottom";
-
-        // color the nodes
-        jgxAdapter.selectAll();
-        Object[] allCells = jgxAdapter.getSelectionCells();
-        for (Object o : allCells) {
-            Object[] cells = {o};
-            mxCell c = (mxCell) o;
-            if (c.isVertex()) {
-                Node n = (Node) c.getValue();
-                if (graph.getPaths(n).size()==0) {
-                    // remove orphan
-                    c.removeFromParent();
-                } else {
-                    double or = graph.oddsRatio(n);
-                    double p = graph.fisherExactP(n);
-                    if (p<P_THRESHOLD) {
-                        if (Double.isInfinite(or)) {
-                            // 100% case node
-                            jgxAdapter.setCellStyle(baseCaseStyle, cells);
-                            jgxAdapter.setCellStyles("fillColor", "#ff8080", cells);
-                            jgxAdapter.setCellStyles("fontColor", "black", cells);
-                        } else if (or==0.00) {
-                            // 100% ctrl node
-                            jgxAdapter.setCellStyle(baseCtrlStyle, cells);
-                            jgxAdapter.setCellStyles("fillColor", "#80ff80", cells);
-                            jgxAdapter.setCellStyles("fontColor", "black", cells);
-                        } else if (or>1.0) {
-                            // case node
-                            jgxAdapter.setCellStyle(baseCaseStyle, cells);
-                            double log10or = Math.log10(or);
-                            int rInt = Math.min((int)(127.0*log10or), 127) + 128;
-                            String rHex = Integer.toHexString(rInt);
-                            String fillColor = "#"+rHex+"8080";
-                            jgxAdapter.setCellStyles("fillColor", fillColor, cells); 
-                            jgxAdapter.setCellStyles("fontColor", "white", cells);
-                        } else if (or<1.0) {
-                            // ctrl node
-                            jgxAdapter.setCellStyle(baseCtrlStyle, cells);
-                            double log10or = -Math.log10(or);
-                            int rInt = Math.min((int)(127.0*log10or), 127) + 128;
-                            String rHex = Integer.toHexString(rInt);
-                            String fillColor = "#80"+rHex+"80";
-                            jgxAdapter.setCellStyles("fillColor", fillColor, cells);
-                            jgxAdapter.setCellStyles("fontColor", "white", cells);
-                        }
-                    }
-                }
-            } else if (c.isEdge()) {
-                // do something with the edges?
-            }
-        }
-        jgxAdapter.clearSelection();
-
-        return jgxAdapter;
+        layout.execute(pgxAdapter.getDefaultParent());
     }
 }
+
+

@@ -68,7 +68,7 @@ public class PangenomicGraph extends DirectedAcyclicGraph<Node,Edge> {
     // maps a path label to a count of paths that have that label
     Map<String,Integer> labelCounts; // keyed by label
 
-    // computed once here to save time
+    // computed once to save time
     DijkstraShortestPath<Node,Edge> dsp;
 
     /**
