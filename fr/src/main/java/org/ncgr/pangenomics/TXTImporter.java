@@ -67,7 +67,7 @@ public class TXTImporter {
         if (verbose) System.out.println("done.");
 
         // read the paths file lines into a list
-        if (verbose) System.out.print("Reading paths...");
+        if (verbose) System.out.print("Reading path lines...");
         BufferedReader pathsReader = new BufferedReader(new FileReader(pathsFile));
         List<String> lines = Collections.synchronizedList(new ArrayList<>());
         while ((line=pathsReader.readLine())!=null) {
