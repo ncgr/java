@@ -110,8 +110,10 @@ public class TXTImporter {
             for (PathWalk path : paths) {
                 Node lastNode = null;
                 for (Node node : path.getNodes()) {
-                    if (!(lastNode==null)) {
-                        g.addEdge(lastNode, node);
+                    if (lastNode!=null) {
+                        if (!g.containsEdge(lastNode, node)) {
+                            g.addEdge(lastNode, node);
+                        }
                     }
                     lastNode = node;
                 }
