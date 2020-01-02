@@ -10,7 +10,6 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.Reader;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Map;
@@ -71,9 +70,9 @@ public class GFAImporter implements GraphImporter<Node,Edge> {
      * @param reader the reader attached to the GFA file
      */
     public void importGraph(Graph<Node,Edge> g, Reader reader) {
-        // load the GFA lines into a synchronized List for parallel ops
+        // load the GFA lines into a list for multiple ops
         if (verbose) System.out.println("Reading GFA lines...");
-        List<String> lines = Collections.synchronizedList(new ArrayList<>());
+        List<String> lines = new ArrayList<>();
         try {
             BufferedReader br = new BufferedReader(reader);
             String line = null;
@@ -87,20 +86,23 @@ public class GFAImporter implements GraphImporter<Node,Edge> {
         }
         // spin through the lines, building the nodes map
         if (verbose) System.out.println("Building map of nodes...");
-        ConcurrentHashMap<Long,Node> nodesMap = new ConcurrentHashMap<>();
-        lines.parallelStream().forEach(line -> {
-                String[] parts = line.split("\t");
-                String recordType = parts[0];
-                if (recordType.equals("S")) {
-                    // Segment (node) line
-                    // S 9 CAGCAGCAGCAGCAGCAGCAGCAGCAGCAGCAGCAGCAGCAGCAGCAGCAGCAGCAGCAGCAGCAGCAGCAG
-                    long nodeId = Long.parseLong(parts[1]);
-                    String sequence = parts[2];
-                    Node node = new Node(nodeId, sequence);
-                    nodesMap.put(nodeId, node);
-                }
-            });
-        // add the nodes to the graph (serial op)
+        HashMap<Long,Node> nodesMap = new HashMap<>();
+        for (String line : lines) {
+            String[] parts = line.split("\t");
+            String recordType = parts[0];
+            if (recordType.equals("S")) {
+                // Segment (node) line
+                // S 9 CAGCAGCAGCAGCAGCAGCAGCAGCAGCAGCAGCAGCAGCAGCAGCAGCAGCAGCAGCAGCAGCAGCAGCAG
+                long nodeId = Long.parseLong(parts[1]);
+                String sequence = parts[2];
+                Node node = new Node(nodeId, sequence);
+                nodesMap.put(nodeId, node);
+            } else if (recordType.equals("P")) {
+                // S lines are all above P lines
+                break;
+            }
+        }
+        // add the nodes to the graph
         for (Node node : nodesMap.values()) {
             boolean added = g.addVertex(node);
             if (!added) {
@@ -111,70 +113,69 @@ public class GFAImporter implements GraphImporter<Node,Edge> {
         }
         // spin through the lines again, building the paths' node lists
         if (verbose) System.out.println("Building map of path node lists...");
-        ConcurrentHashMap<String,ArrayList<Node>> nodeListMap = new ConcurrentHashMap<>();
-        lines.parallelStream().forEach(line -> {
-                String[] parts = line.split("\t");
-                String recordType = parts[0];
-                if (recordType.equals("P") && parts.length==4) {
-                    // P _thread_219281_4_0_0 1+,3+,4+,8+,18+,20+,21+,23+,24+,26+,27+,29+,30+,33+,34+   42M,1M,153M,69M,44M,1M,4M,1M,2M,1M,2M,1M,6M,1M,136M     
-                    // P _thread_219281_4_1_0 1+,2+,4+,17+,18+,20+,21+,23+,24+,26+,27+,29+,30+,33+,34+  42M,1M,153M,6M,44M,1M,4M,1M,2M,1M,2M,1M,6M,1M,136M
-                    // Sometimes path entries do not contain any nodes, so required parts.length==4.
-                    // Paths have names of the form _thread_sample_chr_genotype_index where genotype=0,1
-                    // and sample often has "_" in it. The "_"-split pieces will therefore be:
-                    // 0:"", 1:"thread", 2:sample1, 3:sample2, L-4:sampleN, L-3:chr, L-2:genotype, L-1:idx where L is the number of pieces,
-                    // and sample contains N parts separated by "_".
-                    String name = parts[1];
-                    String[] pieces = name.split("_");
-                    if (pieces.length>=6 && pieces[1].equals("thread")) {
-                        // build pathName, assuming it may have underscores
-                        String pathName = pieces[2]; // e.g. 219281
-                        for (int i=3; i<pieces.length-3; i++) pathName += "_"+pieces[i]; // for (common) cases where samples have underscores
-                        // genotype
-                        int gtype = Integer.parseInt(pieces[pieces.length-2]); // 0, 1
-                        // path segment index
-                        int idx = Integer.parseInt(pieces[pieces.length-1]);
-                        // append the genotype to pathName
-                        pathName += ":"+gtype;
-                        // build/append this path's node list
-                        if (genotype==BOTH_GENOTYPES || gtype==genotype) {
-                            ArrayList<Node> newNodeList = new ArrayList<>();
-                            String[] nodeStrings = parts[2].split(","); // e.g. 27+,29+,30+
-                            for (String nodeString : nodeStrings) {
-                                // NOTE: we're assuming no reverse-complement entries, which would have minus sign!
-                                long nodeId = Long.parseLong(nodeString.replace("+",""));
-                                newNodeList.add(nodesMap.get(nodeId));
-                            }
-                            if (nodeListMap.containsKey(pathName)) {
-                                ArrayList<Node> nodeList = nodeListMap.get(pathName);
-                                nodeList.addAll(newNodeList);
-                                nodeListMap.put(pathName, nodeList);
-                            } else {
-                                nodeListMap.put(pathName, newNodeList);
-                            }
+        HashMap<String,ArrayList<Node>> nodeListMap = new HashMap<>();
+        for (String line : lines) {
+            String[] parts = line.split("\t");
+            String recordType = parts[0];
+            if (recordType.equals("P") && parts.length==4) {
+                // P _thread_219281_4_0_0 1+,3+,4+,8+,18+,20+,21+,23+,24+,26+,27+,29+,30+,33+,34+   42M,1M,153M,69M,44M,1M,4M,1M,2M,1M,2M,1M,6M,1M,136M     
+                // P _thread_219281_4_1_0 1+,2+,4+,17+,18+,20+,21+,23+,24+,26+,27+,29+,30+,33+,34+  42M,1M,153M,6M,44M,1M,4M,1M,2M,1M,2M,1M,6M,1M,136M
+                // Sometimes path entries do not contain any nodes, so required parts.length==4.
+                // Paths have names of the form _thread_sample_chr_genotype_index where genotype=0,1
+                // and sample often has "_" in it. The "_"-split pieces will therefore be:
+                // 0:"", 1:"thread", 2:sample1, 3:sample2, L-4:sampleN, L-3:chr, L-2:genotype, L-1:idx where L is the number of pieces,
+                // and sample contains N parts separated by "_".
+                String name = parts[1];
+                String[] pieces = name.split("_");
+                if (pieces.length>=6 && pieces[1].equals("thread")) {
+                    // build pathName, assuming it may have underscores
+                    String pathName = pieces[2]; // e.g. 219281
+                    for (int i=3; i<pieces.length-3; i++) pathName += "_"+pieces[i]; // for (common) cases where samples have underscores
+                    // genotype
+                    int gtype = Integer.parseInt(pieces[pieces.length-2]); // 0, 1
+                    // path segment index
+                    int idx = Integer.parseInt(pieces[pieces.length-1]);
+                    // append the genotype to pathName
+                    pathName += ":"+gtype;
+                    // build/append this path's node list
+                    if (genotype==BOTH_GENOTYPES || gtype==genotype) {
+                        ArrayList<Node> newNodeList = new ArrayList<>();
+                        String[] nodeStrings = parts[2].split(","); // e.g. 27+,29+,30+
+                        for (String nodeString : nodeStrings) {
+                            // NOTE: we're assuming no reverse-complement entries, which would have minus sign!
+                            long nodeId = Long.parseLong(nodeString.replace("+",""));
+                            newNodeList.add(nodesMap.get(nodeId));
+                        }
+                        if (nodeListMap.containsKey(pathName)) {
+                            ArrayList<Node> nodeList = nodeListMap.get(pathName);
+                            nodeList.addAll(newNodeList);
+                            nodeListMap.put(pathName, nodeList);
+                        } else {
+                            nodeListMap.put(pathName, newNodeList);
                         }
                     }
                 }
-            });
-        // build the paths (in parallel) from the nodeListMap
+            }
+        }
+        // build the paths from the nodeListMap (hopefully in order!)
         if (verbose) System.out.println("Building paths...");
-        paths = Collections.synchronizedList(new ArrayList<>());
-        nodeListMap.entrySet().parallelStream().forEach(entry -> {
-                String pathName = entry.getKey();
-                List<Node> nodeList = entry.getValue();
-                String[] parts = pathName.split(":"); // separate out the genotype
-                String name = parts[0];
-                int genotype = Integer.parseInt(parts[1]);
-                try {
-                    PathWalk path = new PathWalk(g, nodeList, name, genotype, skipSequences);
-                    paths.add(path);
-                } catch (NullNodeException e) {
-                    System.err.println(e);
-                    System.exit(1);
-                } catch (NullSequenceException e) {
-                    System.err.println(e);
-                    System.exit(1);
-                }                    
-            });
+        paths = new ArrayList<>();
+        for (String pathName : nodeListMap.keySet()) {
+            List<Node> nodeList = nodeListMap.get(pathName);
+            String[] parts = pathName.split(":"); // separate out the genotype
+            String name = parts[0];
+            int genotype = Integer.parseInt(parts[1]);
+            try {
+                PathWalk path = new PathWalk(g, nodeList, name, genotype, skipSequences);
+                paths.add(path);
+            } catch (NullNodeException e) {
+                System.err.println(e);
+                System.exit(1);
+            } catch (NullSequenceException e) {
+                System.err.println(e);
+                System.exit(1);
+            }                    
+        }
         if (verbose && skipSequences) System.out.println("# Skipped building path sequences");
 
         // build the path-labeled graph edges from the paths

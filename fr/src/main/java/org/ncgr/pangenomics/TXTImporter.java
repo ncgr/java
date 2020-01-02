@@ -75,7 +75,7 @@ public class TXTImporter {
         }
         if (verbose) System.out.println("done.");
         
-        // now create the paths in parallel
+        // now build the paths in parallel, since each line contains a full path (unlike GFA)
         if (verbose) System.out.print("Building paths...");
         paths = Collections.synchronizedList(new ArrayList<>());
         lines.parallelStream().forEach(l -> {
@@ -112,7 +112,14 @@ public class TXTImporter {
                 for (Node node : path.getNodes()) {
                     if (lastNode!=null) {
                         if (!g.containsEdge(lastNode, node)) {
-                            g.addEdge(lastNode, node);
+                            try {
+                                g.addEdge(lastNode, node);
+                            } catch (Exception e) {
+                                System.err.println(e);
+                                System.err.println("Adding edge from "+lastNode+" to "+node);
+                                System.err.println(path.toString());
+                                System.exit(1);
+                            }
                         }
                     }
                     lastNode = node;
