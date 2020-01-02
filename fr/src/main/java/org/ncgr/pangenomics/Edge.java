@@ -1,4 +1,4 @@
-package org.ncgr.jgraph;
+package org.ncgr.pangenomics;
 
 import org.jgrapht.graph.DefaultEdge;
 

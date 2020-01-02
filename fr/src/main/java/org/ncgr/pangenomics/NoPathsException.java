@@ -1,4 +1,4 @@
-package org.ncgr.jgraph;
+package org.ncgr.pangenomics;
 
 /**
  * An exception thrown when a Graph has no paths in it (and needs to).

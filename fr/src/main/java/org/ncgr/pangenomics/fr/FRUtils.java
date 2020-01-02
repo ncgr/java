@@ -1,9 +1,9 @@
 package org.ncgr.pangenomics.fr;
 
-import org.ncgr.jgraph.Node;
-import org.ncgr.jgraph.NodeSet;
-import org.ncgr.jgraph.PangenomicGraph;
-import org.ncgr.jgraph.PathWalk;
+import org.ncgr.pangenomics.Node;
+import org.ncgr.pangenomics.NodeSet;
+import org.ncgr.pangenomics.PangenomicGraph;
+import org.ncgr.pangenomics.PathWalk;
 
 import java.io.BufferedReader;
 import java.io.File;

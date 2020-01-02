@@ -1,19 +1,13 @@
 package org.ncgr.pangenomics;
 
-import java.io.BufferedReader;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
-import java.io.IOException;
-
-import java.util.Map;
-import java.util.TreeMap;
+import java.io.Serializable;
 
 /**
  * Encapsulates a node in a Graph.
  *
  * @author Sam Hokin
  */
-public class Node implements Comparable {
+public class Node implements Comparable, Serializable {
 
     Long id;         // the id of this node, assigned by the graph reader
     String sequence; // the genomic sequence associated with this node
@@ -49,51 +43,41 @@ public class Node implements Comparable {
     }
 
     /**
-     * Set the sequence.
-     */
-    public void setSequence(String sequence) {
-        this.sequence = sequence;
-    }
-
-    /**
      * Two nodes are equal if they have the same id.
      */
+    @Override
     public boolean equals(Object o) {
-	Node that = (Node) o;
-        return this.getId()==that.getId();
+	Node that = (Node)o;
+        long thisId = this.id.longValue();
+        long thatId = that.id.longValue();
+        return thisId==thatId;
     }
 
     /**
-     * Compare based simply on id.
+     * Hash code uses String.hashCode(), which is LIKELY to be distinct for distinct strings.
+     */
+    @Override
+    public int hashCode() {
+        return sequence.hashCode();
+    }
+
+    /**
+     * Compare based on id.
      */
     @Override
     public int compareTo(Object o) {
 	Node that = (Node) o;
-        return (int)(this.id - that.id);
+        long thisId = this.id.longValue();
+        long thatId = that.id.longValue();
+        return (int)(thisId - thatId);
     }
 
     /**
      * Simply return the id.
      */
+    @Override
     public String toString() {
         return String.valueOf(id);
-    }
-
-    /**
-     * Read a map of Nodes (keyed by id) from a tab-delimited file.
-     */
-    public static Map<Long,Node> readFromFile(String filename) throws FileNotFoundException, IOException {
-        Map<Long,Node> map = new TreeMap<>();
-        BufferedReader reader = new BufferedReader(new FileReader(filename));
-        String line = null;
-        while ((line=reader.readLine())!=null) {
-            String[] parts = line.split("\t");
-            Long id = Long.parseLong(parts[0]);
-            String sequence = parts[1];
-            Node n = new Node(id, sequence);
-            map.put(id, n);
-        }
-        return map;
     }
 }
     

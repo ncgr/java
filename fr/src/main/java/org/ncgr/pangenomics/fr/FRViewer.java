@@ -1,10 +1,10 @@
 package org.ncgr.pangenomics.fr;
 
-import org.ncgr.jgraph.Edge;
-import org.ncgr.jgraph.Node;
-import org.ncgr.jgraph.NullSequenceException;
-import org.ncgr.jgraph.PangenomicGraph;
-import org.ncgr.jgraph.TXTImporter;
+import org.ncgr.pangenomics.Edge;
+import org.ncgr.pangenomics.Node;
+import org.ncgr.pangenomics.NullSequenceException;
+import org.ncgr.pangenomics.PangenomicGraph;
+import org.ncgr.pangenomics.TXTImporter;
 
 import com.mxgraph.layout.*;
 import com.mxgraph.layout.orthogonal.*;

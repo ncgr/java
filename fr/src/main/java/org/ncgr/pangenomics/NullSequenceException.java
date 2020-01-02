@@ -1,4 +1,4 @@
-package org.ncgr.jgraph;
+package org.ncgr.pangenomics;
 
 /**
  * An exception thrown when the sequence of a Node in the graph is null.

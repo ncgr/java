@@ -1,7 +1,7 @@
 package org.ncgr.pangenomics.fr;
 
-import org.ncgr.jgraph.Node;
-import org.ncgr.jgraph.PangenomicGraph;
+import org.ncgr.pangenomics.Node;
+import org.ncgr.pangenomics.PangenomicGraph;
 
 import com.mxgraph.layout.*;
 import com.mxgraph.layout.orthogonal.*;

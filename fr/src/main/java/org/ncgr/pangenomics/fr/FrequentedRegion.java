@@ -1,11 +1,11 @@
 package org.ncgr.pangenomics.fr;
 
-import org.ncgr.jgraph.Node;
-import org.ncgr.jgraph.NodeSet;
-import org.ncgr.jgraph.NullNodeException;
-import org.ncgr.jgraph.NullSequenceException;
-import org.ncgr.jgraph.PangenomicGraph;
-import org.ncgr.jgraph.PathWalk;
+import org.ncgr.pangenomics.Node;
+import org.ncgr.pangenomics.NodeSet;
+import org.ncgr.pangenomics.NullNodeException;
+import org.ncgr.pangenomics.NullSequenceException;
+import org.ncgr.pangenomics.PangenomicGraph;
+import org.ncgr.pangenomics.PathWalk;
 
 import java.io.File;
 import java.io.FileNotFoundException;

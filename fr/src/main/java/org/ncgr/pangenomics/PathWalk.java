@@ -1,4 +1,4 @@
-package org.ncgr.jgraph;
+package org.ncgr.pangenomics;
 
 import java.util.Collections;
 import java.util.List;

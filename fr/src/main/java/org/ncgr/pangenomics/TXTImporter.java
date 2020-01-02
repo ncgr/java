@@ -1,4 +1,4 @@
-package org.ncgr.jgraph;
+package org.ncgr.pangenomics;
 
 import org.jgrapht.Graph;
 import org.jgrapht.io.GraphImporter;

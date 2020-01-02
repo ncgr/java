@@ -1,4 +1,4 @@
-package org.ncgr.jgraph;
+package org.ncgr.pangenomics;
 
 import com.mxgraph.layout.*;
 import com.mxgraph.layout.orthogonal.*;

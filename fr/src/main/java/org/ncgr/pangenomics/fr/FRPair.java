@@ -4,12 +4,12 @@ import java.util.List;
 import java.util.LinkedList;
 import java.util.Set;
 
-import org.ncgr.jgraph.Edge;
-import org.ncgr.jgraph.Node;
-import org.ncgr.jgraph.NodeSet;
-import org.ncgr.jgraph.NullNodeException;
-import org.ncgr.jgraph.NullSequenceException;
-import org.ncgr.jgraph.PangenomicGraph;
+import org.ncgr.pangenomics.Edge;
+import org.ncgr.pangenomics.Node;
+import org.ncgr.pangenomics.NodeSet;
+import org.ncgr.pangenomics.NullNodeException;
+import org.ncgr.pangenomics.NullSequenceException;
+import org.ncgr.pangenomics.PangenomicGraph;
 
 import org.jgrapht.GraphPath;
 

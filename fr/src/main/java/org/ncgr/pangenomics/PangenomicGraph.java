@@ -1,4 +1,4 @@
-package org.ncgr.jgraph;
+package org.ncgr.pangenomics;
 
 import java.io.BufferedReader;
 import java.io.File;
