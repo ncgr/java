@@ -106,7 +106,7 @@ public class FRFinder {
         parameters.setProperty("minPriority", "0");
         parameters.setProperty("requiredNode", "0");
         parameters.setProperty("priorityOption", "0");
-        parameters.setProperty("keepOption", "");
+        parameters.setProperty("keepOption", "null");
         parameters.setProperty("resume", "false");
         parameters.setProperty("prunedGraph", "false");
     }
@@ -280,6 +280,10 @@ public class FRFinder {
                     allFrequentedRegions.put(fr.nodes.toString(), fr);
                     frequentedRegions.put(fr.nodes.toString(), fr);
                     System.out.println(round+":"+fr);
+                } else {
+                    // show the top remaining FR
+                    System.out.println("-------------------------------------------------------------------------------------------------------");
+                    System.out.println("TR:"+fr);
                 }
             }
             // output current state for continuation if aborted

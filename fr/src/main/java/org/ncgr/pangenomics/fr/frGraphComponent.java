@@ -36,6 +36,7 @@ public class frGraphComponent extends mxGraphComponent implements ActionListener
     
     JButton prevButton, nextButton;
     JButton zoomInButton, zoomOutButton;
+    JLabel currentLabel;
     
     Object[] frKeys;            // the FR map keys for navigating through the FRs
 
@@ -114,23 +115,28 @@ public class frGraphComponent extends mxGraphComponent implements ActionListener
         // add a column header with navigation/zoom buttons
         JPanel topPanel = new JPanel();
         // navigation buttons
-        prevButton = new JButton("Prev FR");
+        prevButton = new JButton("FR");
         prevButton.setActionCommand("previous");
         prevButton.addActionListener(this);
         topPanel.add(prevButton);
-        nextButton = new JButton("Next FR");
+        currentLabel = new JLabel("1");
+        currentLabel.setFont(currentLabel.getFont().deriveFont(Font.BOLD));
+        topPanel.add(currentLabel);
+        nextButton = new JButton("FR 2");
         nextButton.setActionCommand("next");
         nextButton.addActionListener(this);
         topPanel.add(nextButton);
         // zoom buttons
-        zoomInButton = new JButton("Zoom IN");
-        zoomInButton.setActionCommand("zoomIn");
-        zoomInButton.addActionListener(this);
-        topPanel.add(zoomInButton);
-        zoomOutButton = new JButton("Zoom OUT");
+        zoomOutButton = new JButton("\u2212"); // math minus
         zoomOutButton.setActionCommand("zoomOut");
+        zoomOutButton.setFont(zoomOutButton.getFont().deriveFont(Font.BOLD));
         zoomOutButton.addActionListener(this);
         topPanel.add(zoomOutButton);
+        zoomInButton = new JButton("+");
+        zoomInButton.setActionCommand("zoomIn");
+        zoomInButton.setFont(zoomInButton.getFont().deriveFont(Font.BOLD));
+        zoomInButton.addActionListener(this);
+        topPanel.add(zoomInButton);
         // put the top panel on the graph
         setColumnHeaderView(topPanel);
 
@@ -171,17 +177,22 @@ public class frGraphComponent extends mxGraphComponent implements ActionListener
     }
 
     /**
-     * Update the button states.
+     * Update the button states. current is zero-based, we'll list FRs as one-based.
      */
     public void updateButtonStates() {
+        currentLabel.setText("FR "+(current+1));
         if (current==0) {
+            prevButton.setLabel("FR");
             prevButton.setEnabled(false);
         } else {
+            prevButton.setLabel("FR "+current);
             prevButton.setEnabled(true);
         }
         if (current==(frKeys.length-1)) {
+            nextButton.setLabel("FR");
             nextButton.setEnabled(false);
         } else {
+            nextButton.setLabel("FR "+(current+2));
             nextButton.setEnabled(true);
         }
     }
