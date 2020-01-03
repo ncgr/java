@@ -45,7 +45,7 @@ public class FrequentedRegion implements Comparable {
 
     // static utility stuff
     static DecimalFormat df = new DecimalFormat("0.00");
-    static DecimalFormat pf = new DecimalFormat("0.00E0");
+    static DecimalFormat pf = new DecimalFormat("0.000E0");
     static DecimalFormat orf = new DecimalFormat("0.000");
     
     // the PangenomicGraph that this FrequentedRegion belongs to
