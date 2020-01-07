@@ -61,9 +61,10 @@ public class FRFinder {
     Properties parameters = new Properties();
 
     // save filename suffixes
-    String FREQUENTED_REGIONS_SAVE = "save.frs.txt";
-    String ALL_FREQUENTED_REGIONS_SAVE = "save.allFrequentedRegions.txt";
-    String REJECTED_NODESETS_SAVE = "save.rejectedNodeSets.txt";
+    static String FREQUENTED_REGIONS_SAVE = "save.frs.txt";
+    static String ALL_FREQUENTED_REGIONS_SAVE = "save.allFrequentedRegions.txt";
+    static String REJECTED_NODESETS_SAVE = "save.rejectedNodeSets.txt";
+    static String ACCEPTED_FRPAIRS_SAVE = "save.acceptedFRPairs.txt";
 
     // the output FRs
     ConcurrentHashMap<String,FrequentedRegion> frequentedRegions;
@@ -298,6 +299,11 @@ public class FRFinder {
                     sfrOut.println(fr.toString());
                 }
                 sfrOut.close();
+                // acceptedFRPairs
+                PrintStream afrpOut = new PrintStream(getGraphName()+"."+ACCEPTED_FRPAIRS_SAVE);
+                for (FRPair frPair : acceptedFRPairs.values()) {
+                    afrpOut.println(frPair);
+                }
                 // rejectedNodeSets
                 PrintStream rnsOut = new PrintStream(getGraphName()+"."+REJECTED_NODESETS_SAVE);
                 for (String nodesKey : rejectedNodeSets) {

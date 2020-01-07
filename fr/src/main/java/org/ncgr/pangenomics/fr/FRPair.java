@@ -18,18 +18,18 @@ import org.jgrapht.GraphPath;
  * This is where one implements weighting of certain desired FR characteristics.
  */
 public class FRPair implements Comparable {
-
     FrequentedRegion fr1;
     FrequentedRegion fr2;
+    FrequentedRegion merged;
     PangenomicGraph graph;
-    double alpha, oneMinusAlpha;
+
+    double alpha;
     int kappa;
     String priorityOption;
+    boolean alphaReject;
 
     NodeSet nodes;
-    FrequentedRegion merged;
-
-    boolean alphaReject;
+    double oneMinusAlpha;
     
     /**
      * Construct from a pair of FrequentedRegions and run parameters.
@@ -41,10 +41,27 @@ public class FRPair implements Comparable {
         this.alpha = fr1.alpha;
         this.kappa = fr1.kappa;
         this.priorityOption = fr1.priorityOption;
-        this.oneMinusAlpha = 1.0 - alpha;
-        this.nodes = NodeSet.merge(fr1.nodes, fr2.nodes);
+        oneMinusAlpha = 1.0 - alpha;
+        nodes = NodeSet.merge(fr1.nodes, fr2.nodes);
         // nothing to do if an identity merge
-        if (fr1.equals(fr2)) this.merged = fr1;
+        if (fr1.equals(fr2)) merged = fr1;
+    }
+
+    /**
+     * Construct from an FRPair.toString() line
+     * [15] 1 1 66.00 1 0 0 ∞ 1.000E0;[2,5] 2 12 34.33 12 0 122 ∞ 6.041E-2;
+     */
+    FRPair(String line, PangenomicGraph graph, double alpha, int kappa, String priorityOption, boolean alphaReject) throws NullNodeException, NullSequenceException {
+        String[] parts = line.split(";");
+        fr1 = new FrequentedRegion(graph, parts[0], alpha, kappa, priorityOption);
+        fr2 = new FrequentedRegion(graph, parts[1], alpha, kappa, priorityOption);
+        merged = new FrequentedRegion(graph, parts[3], alpha, kappa, priorityOption);
+        this.alpha = alpha;
+        this.kappa = kappa;
+        this.priorityOption = priorityOption;
+        this.alphaReject = alphaReject;
+        nodes = merged.getNodes();
+        oneMinusAlpha = 1.0 - alpha;
     }
 
     /**
@@ -103,10 +120,11 @@ public class FRPair implements Comparable {
     }
 
     /**
-     * Reader-friendly string summary.
+     * Reader-friendly string summary, just three FRs separated by semicolons.
      */
     public String toString() {
-        // return nodes.toString();
-        return "fr1="+fr1.toString()+";fr2="+fr2.toString()+";merged.support="+merged.support+";merged.avgLength="+merged.avgLength+";merged.nodes.size="+merged.nodes.size();
+        return fr1.toString()+";" +
+            fr2.toString()+";" +
+            merged.toString();
     }
 }

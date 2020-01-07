@@ -205,8 +205,7 @@ public class frGraphComponent extends mxGraphComponent implements ActionListener
             "<b>"+graph.getName()+"</b><br/>" +
             graph.getNodes().size()+" nodes<br/>" +
             graph.getPaths().size()+" paths<br/>" +
-            graph.getLabelCounts().get("case")+" cases<br/>" +
-            graph.getLabelCounts().get("ctrl")+" controls" +
+            graph.getLabelCounts().get("case")+"/"+graph.getLabelCounts().get("ctrl") +
             "<hr/>" +
             "alpha="+fr.alpha+"<br/>" +
             "kappa="+fr.kappa+"<br/>" +

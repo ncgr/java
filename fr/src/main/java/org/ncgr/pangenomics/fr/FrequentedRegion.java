@@ -101,6 +101,32 @@ public class FrequentedRegion implements Comparable {
     }
 
     /**
+     * Construct given a PangenomicGraph, string representation of nodes, and alpha and kappa and priorityOption parameters.
+     * 0                               1       2               3       4       5       6       7
+     * [7,9,14,19,103,132,174] 7       3030    21105.00        1582    1448    1554    1.373   2.89E-16
+     */
+    FrequentedRegion(PangenomicGraph graph, String frString, double alpha, int kappa, String priorityOption) throws NullNodeException, NullSequenceException {
+        String[] parts = frString.split("\t");
+        String nodeString = parts[0];
+        support = Integer.parseInt(parts[1]);
+        avgLength = Double.parseDouble(parts[2]);
+        if (parts.length>3) {
+            caseSupport = Integer.parseInt(parts[3]);
+            ctrlSupport = Integer.parseInt(parts[4]);
+        }
+        this.graph = graph;
+        this.nodes = new NodeSet(nodeString);
+        this.alpha = alpha;
+        this.kappa = kappa;
+        this.priorityOption = priorityOption;
+        // compute the subpaths, average length, support, etc.
+        this.nodes.update();
+        updateCaseCtrlPaths();
+        updatePriorityLabel();
+        updatePriority();
+    }
+
+    /**
      * Construct given a PangenomicGraph, NodeSet and Subpaths
      */
     FrequentedRegion(PangenomicGraph graph, NodeSet nodes, List<PathWalk> subpaths, double alpha, int kappa, String priorityOption) {
