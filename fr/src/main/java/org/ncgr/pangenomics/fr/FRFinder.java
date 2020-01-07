@@ -124,7 +124,7 @@ public class FRFinder {
 	System.out.println("# Starting findFRs: alpha="+alpha+" kappa="+kappa+
                            " priorityOption="+getPriorityOption()+" minPriority="+getMinPriority()+
                            " minSup="+getMinSup()+" minSize="+getMinSize()+" minLen="+getMinLen()+
-                           " requiredNode="+getRequiredNodeId()+" keepOption="+getKeepOption());
+                           " requiredNode="+getRequiredNodeId()+" keepOption="+getKeepOption()+" maxRound="+getMaxRound());
 
         // output the graph files if graph loaded from GFA
         if (getGfaFilename()!=null) graph.printAll(getGraphName());
