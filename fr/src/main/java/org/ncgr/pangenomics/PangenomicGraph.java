@@ -24,7 +24,6 @@ import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 
-import org.jgrapht.ListenableGraph;
 import org.jgrapht.graph.DirectedAcyclicGraph;
 import org.jgrapht.alg.shortestpath.DijkstraShortestPath;
 
