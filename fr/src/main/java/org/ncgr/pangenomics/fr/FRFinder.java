@@ -205,7 +205,7 @@ public class FRFinder {
                     if (getDebug()) System.out.println("fr1:"+fr1);
                     allFrequentedRegions.entrySet().parallelStream().forEach(entry2 -> {
                             FrequentedRegion fr2 = entry2.getValue();
-                            if (fr2.nodes.compareTo(fr1.nodes)>0) {
+                            if (fr2.nodes.compareTo(fr1.nodes)>=0) {
                                 FRPair frpair = new FRPair(fr1, fr2);
                                 String nodesKey = frpair.nodes.toString();
                                 if (rejectedNodeSets.contains(nodesKey)) {
