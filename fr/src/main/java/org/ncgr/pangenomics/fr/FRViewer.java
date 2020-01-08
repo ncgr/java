@@ -100,7 +100,7 @@ public class FRViewer {
             
         // add the component to the frame, clean up frame and show
         frame.add(component);
-        frame.resize(DEFAULT_SIZE);
+        frame.setSize(DEFAULT_SIZE);
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.pack();
         frame.setVisible(true);

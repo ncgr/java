@@ -38,7 +38,7 @@ public class TXTImporter {
     private boolean skipSequences = false;
 
     // we keep track of the genomic paths here since it's the only place we follow them
-    List<PathWalk> paths;
+    List<Path> paths;
 
     /**
      * Import a Graph from a pair of nodes and paths text files.
@@ -90,7 +90,7 @@ public class TXTImporter {
                     nodeList.add(nodeMap.get(Long.parseLong(parts[i])));
                 }
                 try {
-                    PathWalk path = new PathWalk(g, nodeList, name, genotype, label, skipSequences);
+                    Path path = new Path(g, nodeList, name, genotype, label, skipSequences);
                     paths.add(path);
                 } catch (Exception e) {
                     System.err.println(e);
@@ -107,7 +107,7 @@ public class TXTImporter {
         } else {
             if (verbose) System.out.print("Adding edges to graph...");
             // this cannot be done in parallel because of g.addEdge() inside
-            for (PathWalk path : paths) {
+            for (Path path : paths) {
                 Node lastNode = null;
                 for (Node node : path.getNodes()) {
                     if (lastNode!=null) {
@@ -130,7 +130,7 @@ public class TXTImporter {
     }
 
     /**
-     * Build the path sequences - just calls PathWalk.buildSequence() for each path.
+     * Build the path sequences - just calls Path.buildSequence() for each path.
      */
     void buildPathSequences() {
         if (verbose) System.out.print("Building path sequences...");
@@ -183,7 +183,7 @@ public class TXTImporter {
     /**
      * Get the paths.
      */
-    public List<PathWalk> getPaths() {
+    public List<Path> getPaths() {
         return paths;
     }
 }

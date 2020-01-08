@@ -78,7 +78,7 @@ public class GraphViewer {
         JFrame frame = new JFrame(graphName);
         frame.setPreferredSize(DEFAULT_SIZE);
         frame.getContentPane().add(component);
-        frame.resize(DEFAULT_SIZE);
+        frame.setSize(DEFAULT_SIZE);
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.pack();
         frame.setVisible(true);

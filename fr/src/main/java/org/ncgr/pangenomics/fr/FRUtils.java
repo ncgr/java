@@ -5,7 +5,7 @@ import org.ncgr.pangenomics.NodeSet;
 import org.ncgr.pangenomics.NullNodeException;
 import org.ncgr.pangenomics.NullSequenceException;
 import org.ncgr.pangenomics.PangenomicGraph;
-import org.ncgr.pangenomics.PathWalk;
+import org.ncgr.pangenomics.Path;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -71,7 +71,7 @@ public class FRUtils {
                 or = Double.parseDouble(fields[7]);
             }
             double p = Double.parseDouble(fields[8]);
-            List<PathWalk> subpaths = new ArrayList<>();
+            List<Path> subpaths = new ArrayList<>();
             for (int i=0; i<support; i++) {
                 line = reader.readLine();
                 String[] parts = line.split(":");
@@ -91,7 +91,7 @@ public class FRUtils {
                     subNodes.add(nodeMap.get(nodeId));
                 }
                 // add to the subpaths
-                subpaths.add(new PathWalk(graph, subNodes, name, genotype, label, graph.getSkipSequences()));
+                subpaths.add(new Path(graph, subNodes, name, genotype, label, graph.getSkipSequences()));
             }
             FrequentedRegion fr = new FrequentedRegion(graph, nodes, subpaths, alpha, kappa, priorityOption, support, avgLength);
             frequentedRegions.put(fr.nodes.toString(), fr);

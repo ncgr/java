@@ -1,6 +1,7 @@
 import java.io.BufferedReader;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
+import java.util.ArrayList;
 
 import weka.classifiers.Classifier;
 import weka.classifiers.evaluation.Evaluation;
@@ -11,7 +12,6 @@ import weka.classifiers.rules.PART;
 import weka.classifiers.trees.DecisionStump;
 import weka.classifiers.trees.J48;
 import weka.classifiers.trees.RandomTree;
-import weka.core.FastVector;
 import weka.core.Instances;
  
 public class WekaTest {
@@ -37,11 +37,11 @@ public class WekaTest {
         return evaluation;
     }
  
-    public static double calculateAccuracy(FastVector predictions) {
+    public static double calculateAccuracy(ArrayList predictions) {
         double correct = 0;
  
         for (int i = 0; i < predictions.size(); i++) {
-            NominalPrediction np = (NominalPrediction) predictions.elementAt(i);
+            NominalPrediction np = (NominalPrediction) predictions.get(i);
             if (np.predicted() == np.actual()) {
                 correct++;
             }
@@ -97,14 +97,14 @@ public class WekaTest {
 	boolean first = true;
         for (int j = 0; j < models.length; j++) {
 
-            // Collect every group of predictions for current model in a FastVector
-            FastVector<Prediction> predictions = new FastVector<>();
+            // Collect every group of predictions for current model in a ArrayList
+            ArrayList<Prediction> predictions = new ArrayList<>();
  
             // For each training-testing split pair, train and test the classifier
             for (int i = 0; i < trainingSplits.length; i++) {
                 Evaluation validation = classify(models[j], trainingSplits[i], testingSplits[i]);
  
-                predictions.appendElements(validation.predictions());
+                predictions.addAll(validation.predictions());
  
                 // Uncomment to see the summary for each training-testing pair.
                 // System.out.println(models[j].toString());

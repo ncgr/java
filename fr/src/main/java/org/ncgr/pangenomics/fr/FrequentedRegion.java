@@ -5,7 +5,7 @@ import org.ncgr.pangenomics.NodeSet;
 import org.ncgr.pangenomics.NullNodeException;
 import org.ncgr.pangenomics.NullSequenceException;
 import org.ncgr.pangenomics.PangenomicGraph;
-import org.ncgr.pangenomics.PathWalk;
+import org.ncgr.pangenomics.Path;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -55,7 +55,7 @@ public class FrequentedRegion implements Comparable {
     NodeSet nodes;
     
     // the subpaths, identified by their originating path name and label, that start and end on this FR's nodes
-    List<PathWalk> subpaths;
+    List<Path> subpaths;
     
     // the subpath support of this FR
     int support = 0;
@@ -129,7 +129,7 @@ public class FrequentedRegion implements Comparable {
     /**
      * Construct given a PangenomicGraph, NodeSet and Subpaths
      */
-    FrequentedRegion(PangenomicGraph graph, NodeSet nodes, List<PathWalk> subpaths, double alpha, int kappa, String priorityOption) {
+    FrequentedRegion(PangenomicGraph graph, NodeSet nodes, List<Path> subpaths, double alpha, int kappa, String priorityOption) {
         this.graph = graph;
         this.nodes = nodes;
         this.subpaths = subpaths;
@@ -148,7 +148,7 @@ public class FrequentedRegion implements Comparable {
     /**
      * Construct given a PangenomicGraph, NodeSet and Subpaths and already known support and avgLength
      */
-    FrequentedRegion(PangenomicGraph graph, NodeSet nodes, List<PathWalk> subpaths, double alpha, int kappa, String priorityOption, int support, double avgLength) {
+    FrequentedRegion(PangenomicGraph graph, NodeSet nodes, List<Path> subpaths, double alpha, int kappa, String priorityOption, int support, double avgLength) {
         this.graph = graph;
         this.nodes = nodes;
         this.subpaths = subpaths;
@@ -167,7 +167,7 @@ public class FrequentedRegion implements Comparable {
     /**
      * Construct given only basic information, used for post-processing. NO GRAPH.
      */
-    FrequentedRegion(NodeSet nodes, List<PathWalk> subpaths, double alpha, int kappa, String priorityOption, int support, double avgLength) {
+    FrequentedRegion(NodeSet nodes, List<Path> subpaths, double alpha, int kappa, String priorityOption, int support, double avgLength) {
         this.nodes = nodes;
         this.subpaths = subpaths;
         this.alpha = alpha;
@@ -222,7 +222,7 @@ public class FrequentedRegion implements Comparable {
      */
     void updateAvgLength() {
         int totalLength = 0;
-        for (PathWalk subpath : subpaths) {
+        for (Path subpath : subpaths) {
             for (Node node : subpath.getNodes()) {
                 totalLength += node.getSequence().length();
             }
@@ -235,8 +235,8 @@ public class FrequentedRegion implements Comparable {
      */
     void updateSupport() throws NullNodeException, NullSequenceException {
         subpaths = new ArrayList<>();
-        for (PathWalk p : graph.getPaths()) {
-            List<PathWalk> supportPaths = p.computeSupport(nodes, alpha, kappa);
+        for (Path p : graph.getPaths()) {
+            List<Path> supportPaths = p.computeSupport(nodes, alpha, kappa);
             subpaths.addAll(supportPaths);
         }
         support = subpaths.size();
@@ -279,7 +279,7 @@ public class FrequentedRegion implements Comparable {
      */
     public int getLabelSupport(String label) {
         int count = 0;
-        for (PathWalk subpath : subpaths) {
+        for (Path subpath : subpaths) {
             if (subpath.getLabel()!=null && subpath.getLabel().equals(label)) count++;
         }
         return count;
@@ -290,7 +290,7 @@ public class FrequentedRegion implements Comparable {
      */
     public int getLabelGenotypeCount(String label, int genotype) {
         int count = 0;
-        for (PathWalk subpath : subpaths) {
+        for (Path subpath : subpaths) {
             if (subpath.getLabel()!=null) {
                 if (subpath.getLabel().equals(label) && subpath.getGenotype()==genotype) count++;
             }
@@ -383,7 +383,7 @@ public class FrequentedRegion implements Comparable {
             if (graph!=null && graph.getLabelCounts().size()>0) {
                 // count the support per label
                 Map<String,Integer> labelCounts = new TreeMap<>();
-                for (PathWalk subpath : subpaths) {
+                for (Path subpath : subpaths) {
                     if (subpath.getLabel()!=null) {
                         if (!labelCounts.containsKey(subpath.getLabel())) {
                             labelCounts.put(subpath.getLabel(), getLabelSupport(subpath.getLabel()));
@@ -414,7 +414,7 @@ public class FrequentedRegion implements Comparable {
     public String subpathsString() {
         String s = "";
         boolean first = true;
-        for (PathWalk sp : subpaths) {
+        for (Path sp : subpaths) {
             if (first) {
                 first = false;
             } else {
@@ -426,21 +426,21 @@ public class FrequentedRegion implements Comparable {
     }
 
     /**
-     * Return true if this FR contains a subpath which belongs to the given PathWalk.
+     * Return true if this FR contains a subpath which belongs to the given Path.
      */
-    public boolean containsSubpathOf(PathWalk path) {
-        for (PathWalk sp : subpaths) {
+    public boolean containsSubpathOf(Path path) {
+        for (Path sp : subpaths) {
             if (sp.equals(path)) return true;
         }
         return false;
     }
 
     /**
-     * Return a count of subpaths of FR that belong to the given PathWalk.
+     * Return a count of subpaths of FR that belong to the given Path.
      */
-    public int countSubpathsOf(PathWalk path) {
+    public int countSubpathsOf(Path path) {
         int count = 0;
-        for (PathWalk sp : subpaths) {
+        for (Path sp : subpaths) {
             if (sp.getName().equals(path.getName()) && sp.getGenotype()==path.getGenotype()) count++;
         }
         return count;
@@ -462,7 +462,7 @@ public class FrequentedRegion implements Comparable {
      */
     public int labelCount(String label) {
         int count = 0;
-        for (PathWalk sp : subpaths) {
+        for (Path sp : subpaths) {
             if (sp.getLabel().equals(label)) count++;
         }
         return count;
@@ -487,7 +487,7 @@ public class FrequentedRegion implements Comparable {
      */
     public int getCaseCount(Node n) {
         int count = 0;
-        for (PathWalk p : subpaths) {
+        for (Path p : subpaths) {
             if (p.isCase()) {
                 for (Node node : p.getNodes()) {
                     if (node.equals(n)) {
@@ -505,7 +505,7 @@ public class FrequentedRegion implements Comparable {
      */
     public int getControlCount(Node n) {
         int count = 0;
-        for (PathWalk p : subpaths) {
+        for (Path p : subpaths) {
             if (p.isControl()) {
                 for (Node node : p.getNodes()) {
                     if (node.equals(n)) {

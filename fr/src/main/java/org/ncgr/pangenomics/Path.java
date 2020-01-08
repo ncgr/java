@@ -14,7 +14,7 @@ import org.jgrapht.graph.GraphWalk;
  *
  * @author Sam Hokin
  */
-public class PathWalk extends GraphWalk<Node,Edge> implements Comparable {
+public class Path extends GraphWalk<Node,Edge> implements Comparable {
 
     private String name;     // the name identifying this path, a sample or individual
     private int genotype;    // the genotype identifier for this path: 0 or 1
@@ -22,18 +22,18 @@ public class PathWalk extends GraphWalk<Node,Edge> implements Comparable {
     private String sequence; // this path's full genomic sequence
 
     /**
-     * Create a walk defined by a sequence of nodes; weight=1.0.
+     * Create a path defined by a sequence of nodes; weight=1.0.
      */
-    public PathWalk(Graph<Node,Edge> graph, List<Node> nodeList, boolean skipSequence)
+    public Path(Graph<Node,Edge> graph, List<Node> nodeList, boolean skipSequence)
         throws NullNodeException, NullSequenceException {
         super(graph, nodeList, 1.0);
         if (!skipSequence) buildSequence();
     }
 
     /**
-     * Create a walk defined by a list of nodes as well as identifying info; weight=1.0.
+     * Create a path defined by a list of nodes as well as identifying info; weight=1.0.
      */
-    public PathWalk(Graph<Node,Edge> graph, List<Node> nodeList, String name, int genotype, boolean skipSequence)
+    public Path(Graph<Node,Edge> graph, List<Node> nodeList, String name, int genotype, boolean skipSequence)
         throws NullNodeException, NullSequenceException {
         super(graph, nodeList, 1.0);
         this.name = name;
@@ -42,27 +42,27 @@ public class PathWalk extends GraphWalk<Node,Edge> implements Comparable {
     }
 
     /**
-     * Create a walk defined by a sequence of edges; weight=1.0.
+     * Create a path defined by a sequence of edges; weight=1.0.
      */
-    public PathWalk(Graph<Node,Edge> graph, Node startNode, Node endNode, List<Edge> edgeList, boolean skipSequence)
+    public Path(Graph<Node,Edge> graph, Node startNode, Node endNode, List<Edge> edgeList, boolean skipSequence)
         throws NullNodeException, NullSequenceException {
         super(graph, startNode, endNode, edgeList, 1.0);
         if (!skipSequence) buildSequence();
     }
 
     /**
-     * Create a walk defined by both a sequence of edges and a sequence of nodes; weight=1.0.
+     * Create a path defined by both a sequence of edges and a sequence of nodes; weight=1.0.
      */
-    public PathWalk(Graph<Node,Edge> graph, Node startNode, Node endNode, List<Node> nodeList, List<Edge> edgeList, boolean skipSequence)
+    public Path(Graph<Node,Edge> graph, Node startNode, Node endNode, List<Node> nodeList, List<Edge> edgeList, boolean skipSequence)
         throws NullNodeException, NullSequenceException {
         super(graph, startNode, endNode, nodeList, edgeList, 1.0);
         if (!skipSequence) buildSequence();
     }
 
     /**
-     * Create a walk defined by a list of nodes as well as identifying info; weight=1.0.
+     * Create a path defined by a list of nodes as well as identifying info; weight=1.0.
      */
-    public PathWalk(Graph<Node,Edge> graph, List<Node> nodeList, String name, int genotype, String label, boolean skipSequence)
+    public Path(Graph<Node,Edge> graph, List<Node> nodeList, String name, int genotype, String label, boolean skipSequence)
         throws NullNodeException, NullSequenceException {
         super(graph, nodeList, 1.0);
         this.name = name;
@@ -77,7 +77,7 @@ public class PathWalk extends GraphWalk<Node,Edge> implements Comparable {
      */
     @Override
     public boolean equals(Object o) {
-        PathWalk that = (PathWalk) o;
+        Path that = (Path) o;
         return this.toString().equals(that.toString());
     }
     
@@ -86,7 +86,7 @@ public class PathWalk extends GraphWalk<Node,Edge> implements Comparable {
      */
     @Override
     public int compareTo(Object o) {
-    	PathWalk that = (PathWalk) o;
+    	Path that = (Path) o;
         if (!this.name.equals(that.name)) {
             return this.name.compareTo(that.name);
         } else if (this.genotype!=that.genotype) {
@@ -206,7 +206,7 @@ public class PathWalk extends GraphWalk<Node,Edge> implements Comparable {
         StringBuilder builder = new StringBuilder();
         for (Node node : getNodes()) {
 	    if (node==null) {
-		throw new NullNodeException("Null node returned by PathWalk.getNodes()!!");
+		throw new NullNodeException("Null node returned by Path.getNodes()!!");
 	    } else if (node.getSequence()==null) {
 		throw new NullSequenceException("Node "+node.getId()+" has no sequence!");
 	    }
@@ -231,9 +231,9 @@ public class PathWalk extends GraphWalk<Node,Edge> implements Comparable {
      * Return the subpath inclusively between the two given nodes (empty if one of the nodes is not present in this path).
      * @param nl the "left" node
      * @param nr the "right" node
-     * @return the PathWalk inclusively between nl and nr
+     * @return the Path inclusively between nl and nr
      */
-    public PathWalk subpath(Node nl, Node nr) throws NullNodeException, NullSequenceException {
+    public Path subpath(Node nl, Node nr) throws NullNodeException, NullSequenceException {
         List<Node> subnodes = new ArrayList<>();
         List<Node> nodeList = getNodes();
         if (nodeList.contains(nl) && nodeList.contains(nr)) {
@@ -255,15 +255,15 @@ public class PathWalk extends GraphWalk<Node,Edge> implements Comparable {
                 }
             }
         }
-        return new PathWalk(this.graph, subnodes, name, genotype, label, false);
+        return new Path(this.graph, subnodes, name, genotype, label, false);
     }
 
     /**
-     * Return true if the given PathWalk represents a subpath of this PathWalk.
+     * Return true if the given Path represents a subpath of this Path.
      * @param path the path to be compared with this one
      * @return true if path is a subpath of this
      */
-    public boolean contains(PathWalk path) {
+    public boolean contains(Path path) {
         List<Node> thisNodes = this.getNodes();
         List<Node> pathNodes = path.getNodes();
         boolean match = false;
@@ -299,11 +299,11 @@ public class PathWalk extends GraphWalk<Node,Edge> implements Comparable {
      * @param nodes the NodeSet, or cluster C as it's called in Algorithm 1
      * @param alpha the penetrance parameter = minimum fraction of nodes in C that are in subpath
      * @param kappa the insertion parameter = maximum inserted number of nodes
-     * @returns the set of supporting path segments
+     * @return the set of supporting path segments
      */
-    public List<PathWalk> computeSupport(NodeSet nodes, double alpha, int kappa) throws NullNodeException, NullSequenceException {
+    public List<Path> computeSupport(NodeSet nodes, double alpha, int kappa) throws NullNodeException, NullSequenceException {
         // s = the supporting subpaths
-        List<PathWalk> s = new ArrayList<>();
+        List<Path> s = new ArrayList<>();
         // m = the list of this path's nodes that are in C=nodes
         List<Node> m = new ArrayList<>();
         for (Node n : getNodes()) {
@@ -316,7 +316,7 @@ public class PathWalk extends GraphWalk<Node,Edge> implements Comparable {
             int num = 0;
             for (int j=i; j<m.size(); j++) {
                 // kappa test
-                PathWalk subpath = subpath(nl, m.get(j));
+                Path subpath = subpath(nl, m.get(j));
                 int maxInsertion = 0; // max insertion
                 int insertion = 0; // continguous insertion
                 for (Node n : subpath.getNodes()) {
@@ -334,9 +334,9 @@ public class PathWalk extends GraphWalk<Node,Edge> implements Comparable {
                 num = j - i + 1; // number of this path's nodes in nodes collection
             }
             // is this a subpath of an already counted subpath? (maximality test)
-            PathWalk subpath = subpath(nl,nr);
+            Path subpath = subpath(nl,nr);
             boolean ignore = false;
-            for (PathWalk checkpath : s) {
+            for (Path checkpath : s) {
                 if (checkpath.contains(subpath)) {
                     ignore = true;
                     break;

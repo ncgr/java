@@ -8,7 +8,7 @@ import org.ncgr.pangenomics.NoPathsException;
 import org.ncgr.pangenomics.NullNodeException;
 import org.ncgr.pangenomics.NullSequenceException;
 import org.ncgr.pangenomics.PangenomicGraph;
-import org.ncgr.pangenomics.PathWalk;
+import org.ncgr.pangenomics.Path;
 import org.ncgr.pangenomics.TXTImporter;
 
 import java.io.BufferedReader;
@@ -55,7 +55,7 @@ public class FRFinder {
     PangenomicGraph graph;
 
     // store paths locally since post-processing doesn't build a graph
-    List<PathWalk> paths;
+    List<Path> paths;
 
     // parameters are stored in a Properties object
     Properties parameters = new Properties();
@@ -754,7 +754,7 @@ public class FRFinder {
         PrintStream out = new PrintStream(FRUtils.getPathFRsFilename(outputPrefix));
         // columns are paths
         boolean first = true;
-        for (PathWalk path : paths) {
+        for (Path path : paths) {
             if (first) {
                 first = false;
             } else {
@@ -767,7 +767,7 @@ public class FRFinder {
         int c = 1;
         for (FrequentedRegion fr : frequentedRegions.values()) {
             out.print("FR"+(c++));
-            for (PathWalk path : paths) {
+            for (Path path : paths) {
                 out.print("\t"+fr.countSubpathsOf(path));
             }
             out.println("");
@@ -787,7 +787,7 @@ public class FRFinder {
     void printPathFRsSVM(String outputPrefix) throws IOException {
         PrintStream out = new PrintStream(FRUtils.getPathFRsSVMFilename(outputPrefix));
         // only rows, one per path
-        for (PathWalk path : paths) {
+        for (Path path : paths) {
             out.print(path.getNameGenotype());
             // TODO: update these to strings along with fixing the SVM code to handle strings
             String group = "";
@@ -840,7 +840,7 @@ public class FRFinder {
         out.println("");
         // data
         out.println("@DATA");
-        for (PathWalk path : paths) {
+        for (Path path : paths) {
             out.print(path.getNameGenotype()+",");
             c = 0;
             for (FrequentedRegion fr : frequentedRegions.values()) {
@@ -961,7 +961,7 @@ public class FRFinder {
             NodeSet nodes = new NodeSet(graph, fields[0]);
             int support = Integer.parseInt(fields[1]);
             double avgLength = Double.parseDouble(fields[2]);
-            List<PathWalk> subpaths = new ArrayList<>();
+            List<Path> subpaths = new ArrayList<>();
             for (int i=0; i<support; i++) {
                 line = reader.readLine();
                 String[] parts = line.split(":");
@@ -981,7 +981,7 @@ public class FRFinder {
                     subNodes.add(nodeMap.get(nodeId));
                 }
                 // add to the subpaths
-                subpaths.add(new PathWalk(graph, subNodes, name, genotype, label, graph.getSkipSequences()));
+                subpaths.add(new Path(graph, subNodes, name, genotype, label, graph.getSkipSequences()));
             }
             FrequentedRegion fr = new FrequentedRegion(nodes, subpaths, alpha, kappa, getPriorityOption(), support, avgLength);
             frequentedRegions.put(fr.nodes.toString(), fr);

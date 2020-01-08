@@ -38,7 +38,7 @@ public class GFAImporter implements GraphImporter<Node,Edge> {
     private boolean skipSequences = false;
 
     // we keep track of the genomic paths here since it's the only place we follow them
-    List<PathWalk> paths;
+    List<Path> paths;
 
     /**
      * Import a Graph from a GFA file.
@@ -166,7 +166,7 @@ public class GFAImporter implements GraphImporter<Node,Edge> {
             String name = parts[0];
             int genotype = Integer.parseInt(parts[1]);
             try {
-                PathWalk path = new PathWalk(g, nodeList, name, genotype, skipSequences);
+                Path path = new Path(g, nodeList, name, genotype, skipSequences);
                 paths.add(path);
             } catch (NullNodeException e) {
                 System.err.println(e);
@@ -185,7 +185,7 @@ public class GFAImporter implements GraphImporter<Node,Edge> {
         } else {
             if (verbose) System.out.println("Adding edges to graph...");
             // this cannot be done in parallel because of g.addEdge() inside
-            for (PathWalk path : paths) {
+            for (Path path : paths) {
                 boolean first = true;
                 Node lastNode = null;
                 for (Node node : path.getNodes()) {
@@ -198,7 +198,7 @@ public class GFAImporter implements GraphImporter<Node,Edge> {
     }
 
     /**
-     * Build the path sequences - just calls PathWalk.buildSequence() for each path.
+     * Build the path sequences - just calls Path.buildSequence() for each path.
      */
     void buildPathSequences() {
         if (verbose) System.out.println("Building path sequences...");
@@ -250,7 +250,7 @@ public class GFAImporter implements GraphImporter<Node,Edge> {
     /**
      * Get the paths.
      */
-    public List<PathWalk> getPaths() {
+    public List<Path> getPaths() {
         return paths;
     }
 }

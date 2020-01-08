@@ -182,17 +182,17 @@ public class frGraphComponent extends mxGraphComponent implements ActionListener
     public void updateButtonStates() {
         currentLabel.setText("FR "+(current+1));
         if (current==0) {
-            prevButton.setLabel("FR");
+            prevButton.setText("FR");
             prevButton.setEnabled(false);
         } else {
-            prevButton.setLabel("FR "+current);
+            prevButton.setText("FR "+current);
             prevButton.setEnabled(true);
         }
         if (current==(frKeys.length-1)) {
-            nextButton.setLabel("FR");
+            nextButton.setText("FR");
             nextButton.setEnabled(false);
         } else {
-            nextButton.setLabel("FR "+(current+2));
+            nextButton.setText("FR "+(current+2));
             nextButton.setEnabled(true);
         }
     }

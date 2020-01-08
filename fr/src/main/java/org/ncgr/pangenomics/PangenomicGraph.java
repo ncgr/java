@@ -59,10 +59,10 @@ public class PangenomicGraph extends DirectedAcyclicGraph<Node,Edge> {
     File labelsFile;
     
     // each Path provides the ordered list of nodes that it traverses, along with its full sequence
-    List<PathWalk> paths;
+    List<Path> paths;
     
     // maps a Node to the Paths that traverse it
-    ConcurrentHashMap<Long,List<PathWalk>> nodePaths; // keyed and ordered by Node Id, synchronized when constructed
+    ConcurrentHashMap<Long,List<Path>> nodePaths; // keyed and ordered by Node Id, synchronized when constructed
 
     // maps a path label to a count of paths that have that label
     Map<String,Integer> labelCounts; // keyed by label
@@ -134,7 +134,7 @@ public class PangenomicGraph extends DirectedAcyclicGraph<Node,Edge> {
         nodePaths = new ConcurrentHashMap<>();
         // initialize empty paths for each node
         for (Node n : vertexSet()) {
-            nodePaths.put(n.getId(), Collections.synchronizedList(new ArrayList<PathWalk>()));
+            nodePaths.put(n.getId(), Collections.synchronizedList(new ArrayList<Path>()));
         }
         // now load the paths (which are already synchronized from the importer) in parallel
         paths.parallelStream().forEach(path -> {
@@ -187,7 +187,7 @@ public class PangenomicGraph extends DirectedAcyclicGraph<Node,Edge> {
      */
     public void tallyLabelCounts() {
         labelCounts = new TreeMap<>();
-        for (PathWalk path : paths) {
+        for (Path path : paths) {
             String label = path.getLabel();
             if (labelCounts.containsKey(label)) {
                 int count = labelCounts.get(label);
@@ -291,7 +291,7 @@ public class PangenomicGraph extends DirectedAcyclicGraph<Node,Edge> {
         }
         List<Node> nodesToRemove = new ArrayList<>();
         for (Node n : getNodes()) {
-            List<PathWalk> thisPaths = nodePaths.get(n.id);
+            List<Path> thisPaths = nodePaths.get(n.id);
             if (thisPaths.size()==paths.size()) nodesToRemove.add(n);
         }
         for (Node n : nodesToRemove) {
@@ -332,14 +332,14 @@ public class PangenomicGraph extends DirectedAcyclicGraph<Node,Edge> {
     /**
      * Get this graph's paths.
      */
-    public List<PathWalk> getPaths() {
+    public List<Path> getPaths() {
         return paths;
     }
 
     /**
      * Get the paths that traverse the given node.
      */
-    public List<PathWalk> getPaths(Node n) {
+    public List<Path> getPaths(Node n) {
         return nodePaths.get(n.getId());
     }
 
@@ -381,7 +381,7 @@ public class PangenomicGraph extends DirectedAcyclicGraph<Node,Edge> {
      */
     public Map<String,Integer> getLabelCounts(Node n) {
         Map<String,Integer> nLabelCounts = new HashMap<>();
-        for (PathWalk p : nodePaths.get(n.getId())) {
+        for (Path p : nodePaths.get(n.getId())) {
             if (nLabelCounts.containsKey(p.getLabel())) {
                 int count = nLabelCounts.get(p.getLabel()) + 1;
                 nLabelCounts.put(p.getLabel(), count);
@@ -398,7 +398,7 @@ public class PangenomicGraph extends DirectedAcyclicGraph<Node,Edge> {
      */
     public Map<String,Integer> getLabelCounts(Edge e) {
         Map<String,Integer> eLabelCounts = new HashMap<>();
-        for (PathWalk p : paths) {
+        for (Path p : paths) {
             List<Edge> edges = p.getEdges();
             if (edges.contains(e)) {
                 if (eLabelCounts.containsKey(p.getLabel())) {
@@ -459,7 +459,7 @@ public class PangenomicGraph extends DirectedAcyclicGraph<Node,Edge> {
      */
     public void printPaths(PrintStream out) {
         if (out==System.out) printHeading("PATHS");
-        for (PathWalk path : paths) {
+        for (Path path : paths) {
             StringBuilder builder = new StringBuilder();
             builder.append(path.getNameGenotype());
             builder.append("\t"+path.getLabel());
@@ -488,10 +488,10 @@ public class PangenomicGraph extends DirectedAcyclicGraph<Node,Edge> {
     public void printNodePaths(PrintStream out) {
         if (out==System.out) printHeading("NODE PATHS");
         for (Long nodeId : nodePaths.keySet()) {
-            List<PathWalk> pathList = nodePaths.get(nodeId);
+            List<Path> pathList = nodePaths.get(nodeId);
             StringBuilder builder = new StringBuilder();
             builder.append(nodeId);
-            for (PathWalk path : pathList) {
+            for (Path path : pathList) {
                 builder.append("\t"+path.getNameGenotype());
             }
             out.println(builder.toString());
@@ -503,7 +503,7 @@ public class PangenomicGraph extends DirectedAcyclicGraph<Node,Edge> {
      */
     public void printPathSequences(PrintStream out) {
         if (out==System.out) printHeading("PATH SEQUENCES");
-        for (PathWalk path : paths) {
+        for (Path path : paths) {
             String heading = ">"+path.getNameGenotype()+" ("+path.getSequence().length()+")";
             out.print(heading);
             // add dots every 10 bases to the heading
@@ -551,7 +551,7 @@ public class PangenomicGraph extends DirectedAcyclicGraph<Node,Edge> {
         StringBuilder builder = new StringBuilder();
         // header is paths
         boolean first = true;
-        for (PathWalk path : paths) {
+        for (Path path : paths) {
             if (first) {
                 builder.append(path.getNameGenotype());
                 first = false;
@@ -565,8 +565,8 @@ public class PangenomicGraph extends DirectedAcyclicGraph<Node,Edge> {
         for (Node node : vertexSet()) {
             builder = new StringBuilder();
             builder.append("N"+node.getId());
-            List<PathWalk> nPaths = nodePaths.get(node.getId());
-            for (PathWalk path : paths) {
+            List<Path> nPaths = nodePaths.get(node.getId());
+            for (Path path : paths) {
 		// spin through the path, counting occurrences of this node
 		List<Node> nodeList = path.getNodes();
 		int count = 0;
