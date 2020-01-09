@@ -243,7 +243,8 @@ public class frGraphComponent extends mxGraphComponent implements ActionListener
             "avgLen="+df.format(fr.avgLength)+"<br/>" +
             "support="+fr.caseSupport+"/"+fr.ctrlSupport+"<br/>" +
             "p="+pf.format(fr.fisherExactP())+"<br/>" +
-            "O.R.="+orf.format(fr.oddsRatio()) +
+            "O.R.="+orf.format(fr.oddsRatio())+"<br/>" +
+            "priority="+fr.priority +
             "<hr/>"+
             "</html>";
         JLabel rowLabel = new JLabel(rowLabelString);
