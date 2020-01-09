@@ -22,8 +22,6 @@
 #  -mr,--maxround <arg>          maximum FR-finding round to run
 #                                [0=unlimited]
 #  -p,--pathlabels <arg>         tab-delimited file with pathname<tab>label
-#  -pr,--prunedgraph             prune graph -- remove all common nodes
-#                                [false]
 #  -pri,--priorityoption <arg>   option for priority weighting of FRs:
 #                                0=total support, 1:label=label
 #                                support-other support [case], 2=|case

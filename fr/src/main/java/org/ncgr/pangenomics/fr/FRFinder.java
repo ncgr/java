@@ -90,7 +90,7 @@ public class FRFinder {
     public FRFinder(String inputPrefix) throws FileNotFoundException, IOException,
                                                NullNodeException, NullSequenceException, NoNodesException {
         initializeParameters();
-        readParameters(inputPrefix); // sets properties from file
+        parameters = FRUtils.readParameters(inputPrefix); // sets properties from file
         readFrequentedRegions();
     }
 
@@ -106,10 +106,9 @@ public class FRFinder {
         parameters.setProperty("maxRound", "0");
         parameters.setProperty("minPriority", "0");
         parameters.setProperty("requiredNode", "0");
-        parameters.setProperty("priorityOption", "0");
+        parameters.setProperty("priorityOption", "4");
         parameters.setProperty("keepOption", "null");
         parameters.setProperty("resume", "false");
-        parameters.setProperty("prunedGraph", "false");
     }
 
     /**
@@ -188,11 +187,14 @@ public class FRFinder {
                 FrequentedRegion fr = new FrequentedRegion(graph, c, alpha, kappa, getPriorityOption());
                 allFrequentedRegions.put(c.toString(), fr);
             }
-            // print out the best single-node FR
+            // if the best single-node FR passes muster, add it, since we won't hit single-node FRs in the loop
             TreeSet<FrequentedRegion> frSet = new TreeSet<>(allFrequentedRegions.values());
             FrequentedRegion lastFR = frSet.last();
-            System.out.println("0:"+lastFR);
-            System.out.println("-------------------------------------------------------------------------------------------------------");
+            if (lastFR.support>=getMinSup() && lastFR.avgLength>=getMinLen() && lastFR.nodes.size()>=getMinSize() && lastFR.priority>=getMinPriority()) {
+                round = 1;
+                frequentedRegions.put(lastFR.nodes.toString(), lastFR);
+                System.out.println(round+":"+lastFR);
+            }
         }
 
         // build the FRs round by round
@@ -288,7 +290,7 @@ public class FRFinder {
                     frequentedRegions.put(fr.nodes.toString(), fr);
                     System.out.println(round+":"+fr);
                 } else {
-                    // show the top remaining FR
+                    // show the top remaining FR that wasn't added
                     System.out.println("-------------------------------------------------------------------------------------------------------");
                     System.out.println("TR:"+fr);
                 }
@@ -297,7 +299,7 @@ public class FRFinder {
             if (frequentedRegions.size()>0 && !getSkipSaveFiles()) {
                 // params with current clock time
                 clockTime = System.currentTimeMillis() - startTime;
-                printParameters(getGraphName()+".save", alpha, kappa);
+                FRUtils.printParameters(parameters, getGraphName()+".save", alpha, kappa, clockTime);
                 // allFrequentedRegions
                 PrintStream sfrOut = new PrintStream(getGraphName()+"."+ALL_FREQUENTED_REGIONS_SAVE);
                 for (FrequentedRegion fr : allFrequentedRegions.values()) {
@@ -332,11 +334,11 @@ public class FRFinder {
         // timing
 	clockTime = System.currentTimeMillis() - startTime;
         System.out.println("Found "+frequentedRegions.size()+" FRs.");
-	System.out.println("Clock time: "+formatTime(clockTime));
+	System.out.println("Clock time: "+FRUtils.formatTime(clockTime));
         
 	// final output
 	if (frequentedRegions.size()>0) {
-            printParameters(formOutputPrefix(alpha, kappa), alpha, kappa);
+            FRUtils.printParameters(parameters, formOutputPrefix(alpha, kappa), alpha, kappa, clockTime);
             printFrequentedRegions(formOutputPrefix(alpha, kappa));
             printFRSubpaths(formOutputPrefix(alpha, kappa));
             printPathFRs(formOutputPrefix(alpha, kappa));
@@ -388,9 +390,6 @@ public class FRFinder {
     }
     public boolean getDebug() {
         return Boolean.parseBoolean(parameters.getProperty("debug"));
-    }
-    public boolean getPrunedGraph() {
-        return Boolean.parseBoolean(parameters.getProperty("prunedGraph"));
     }
     public boolean getSkipSaveFiles() {
         return Boolean.parseBoolean(parameters.getProperty("skipSaveFiles"));
@@ -448,9 +447,6 @@ public class FRFinder {
     public void setResume() {
         parameters.setProperty("resume", "true");
     }
-    public void setPrunedGraph() {
-        parameters.setProperty("prunedGraph", "true");
-    }
     public void setSkipSaveFiles() {
         parameters.setProperty("skipSaveFiles", "true");
     }
@@ -488,7 +484,7 @@ public class FRFinder {
         } else if (keepOption.equals("subset")) {
             // do nothing
         } else {
-            System.err.println("ERROR: allowed keepoption values are: subset|distance:#");
+            System.err.println("ERROR: allowed keepoption values are: subset|distance:N");
             System.exit(1);
         }
     }
@@ -589,10 +585,6 @@ public class FRFinder {
         minPriorityOption.setRequired(false);
         options.addOption(minPriorityOption);
         //
-        Option prunedGraphOption = new Option("pr", "prunedgraph", false, "prune graph -- remove all common nodes [false]");
-        prunedGraphOption.setRequired(false);
-        options.addOption(prunedGraphOption);
-        //
         Option skipNodePathsOption = new Option("snp", "skipnodepaths", false, "skip building list of paths per node [false]");
         skipNodePathsOption.setRequired(false);
         options.addOption(skipNodePathsOption);
@@ -605,7 +597,7 @@ public class FRFinder {
         requiredNodeOption.setRequired(false);
         options.addOption(requiredNodeOption);
         //
-        Option keepOptionOption = new Option("keep", "keepoption", true, "option for keeping FRs in finder loop: subset|distance:# [keep all]");
+        Option keepOptionOption = new Option("keep", "keepoption", true, "option for keeping FRs in finder loop: subset|distance:N [keep all]");
         keepOptionOption.setRequired(false);
         options.addOption(keepOptionOption);
 
@@ -687,11 +679,6 @@ public class FRFinder {
             if (cmd.hasOption("verbose")) pg.setVerbose();
             if (cmd.hasOption("genotype")) pg.setGenotype(Integer.parseInt(cmd.getOptionValue("genotype")));
             if (cmd.hasOption("skipnodepaths")) pg.setSkipNodePaths();
-	    // prune the graph if so commanded
-	    if (cmd.hasOption("prunedgraph")) {
-		int nRemoved = pg.prune();
-		System.out.println("# Graph has been pruned ("+nRemoved+" fully common nodes removed).");
-	    }
             // instantiate the FRFinder with this PangenomicGraph
             FRFinder frf = new FRFinder(pg);
             frf.setGraphName(graphName);
@@ -711,7 +698,6 @@ public class FRFinder {
             if (cmd.hasOption("verbose")) frf.setVerbose();
             if (cmd.hasOption("debug")) frf.setDebug();
             if (cmd.hasOption("resume")) frf.setResume();
-            if (cmd.hasOption("prunedgraph")) frf.setPrunedGraph();
             if (cmd.hasOption("skipSaveFiles")) frf.setSkipSaveFiles();
             // run the requested job
             if (alphaStart==alphaEnd && kappaStart==kappaEnd) {
@@ -915,27 +901,6 @@ public class FRFinder {
     }
 
     /**
-     * Print out the parameters.
-     */
-    public void printParameters(String outputPrefix, double alpha, int kappa) throws IOException {
-        PrintStream out = new PrintStream(FRUtils.getParamsFilename(outputPrefix));
-        String comments = "alpha="+alpha+"\n"+"kappa="+kappa+"\n"+"clocktime="+formatTime(clockTime);
-        parameters.store(out, comments);
-        out.close();
-    }
-    
-    /**
-     * Read the parameters from a previous run.
-     */
-    void readParameters(String inputPrefix) throws FileNotFoundException, IOException {
-        String paramsFilename = FRUtils.getParamsFilename(inputPrefix);
-        BufferedReader reader = new BufferedReader(new FileReader(paramsFilename));
-        parameters.load(reader);
-        parameters.setProperty("paramsFile", paramsFilename);
-        parameters.setProperty("inputPrefix", inputPrefix);
-    }
-
-    /**
      * Read FRs from the output from a previous run.
      * [18,34]	70	299	54	16
      * 509678.0.ctrl:[18,20,21,23,24,26,27,29,30,33,34]
@@ -1007,16 +972,5 @@ public class FRFinder {
      */
     String formOutputPrefix() {
         return getInputPrefix()+"-"+getMinSup()+"."+getMinSize()+"."+(int)getMinLen();
-    }
-
-    /**
-     * Format a time duration given in milliseconds.
-     */
-    static String formatTime(long millis) {
-        DecimalFormat tf = new DecimalFormat("00"); // hours, minutes, seconds
-        long hours = (millis / 1000) / 60 / 60;
-	long minutes = (millis / 1000 / 60) % 60;
-        long seconds = (millis / 1000) % 60;
-	return tf.format(hours)+":"+tf.format(minutes)+":"+tf.format(seconds);
     }
 }

@@ -74,6 +74,8 @@ public class FRViewer {
         String pathsFilename = graphName+".paths.txt";
         File nodesFile = new File(nodesFilename);
         File pathsFile = new File(pathsFilename);
+
+        Properties parameters = FRUtils.readParameters(prefix); // reads run properties from params file
         
         PangenomicGraph graph = new PangenomicGraph();
         graph.setVerbose();
@@ -96,7 +98,7 @@ public class FRViewer {
         FGraphXAdapter fgxAdapter = new FGraphXAdapter(graph, frequentedRegions.get((String)frKeys[0]));
 
         // frGraphComponent extends mxGraphComponent which extends JScrollPane (implements Printable)
-        frGraphComponent component = new frGraphComponent(graph, frequentedRegions, fgxAdapter);
+        frGraphComponent component = new frGraphComponent(graph, frequentedRegions, fgxAdapter, parameters);
             
         // add the component to the frame, clean up frame and show
         frame.add(component);

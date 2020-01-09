@@ -30,9 +30,11 @@ public class frGraphComponent extends mxGraphComponent implements ActionListener
     static DecimalFormat pf = new DecimalFormat("0.0E0");
     static DecimalFormat orf = new DecimalFormat("0.000");        // initialize
     
+    // constructor parameters
     PangenomicGraph graph;
     Map<String,FrequentedRegion> frequentedRegions;
     FGraphXAdapter fgxAdapter;
+    Properties parameters;
     
     JButton prevButton, nextButton;
     JButton zoomInButton, zoomOutButton;
@@ -47,11 +49,12 @@ public class frGraphComponent extends mxGraphComponent implements ActionListener
     /**
      * Constructor takes a FGraphXAdapter
      */
-    frGraphComponent(PangenomicGraph graph, Map<String,FrequentedRegion> frequentedRegions, FGraphXAdapter fgxAdapter) {
+    frGraphComponent(PangenomicGraph graph, Map<String,FrequentedRegion> frequentedRegions, FGraphXAdapter fgxAdapter, Properties parameters) {
         super(fgxAdapter);
         this.fgxAdapter = fgxAdapter;
         this.graph = graph;
         this.frequentedRegions = frequentedRegions;
+        this.parameters = parameters;
 
         // housekeeping
         setConnectable(false);
@@ -145,7 +148,7 @@ public class frGraphComponent extends mxGraphComponent implements ActionListener
 
         // set the current FR to the first one and populate the info row
         currentFR = frequentedRegions.get((String)frKeys[0]); 
-        setInfoRow(currentFR);
+        setInfoRow(currentFR, parameters);
     }
     
     public void actionPerformed(ActionEvent e) {
@@ -159,7 +162,7 @@ public class frGraphComponent extends mxGraphComponent implements ActionListener
             currentFR = frequentedRegions.get((String)frKeys[current]);
             fgxAdapter = new FGraphXAdapter(graph, currentFR);
             setGraph(fgxAdapter);
-            setInfoRow(currentFR);
+            setInfoRow(currentFR, parameters);
             executeLayout();
             updateButtonStates();
         } else if (command.equals("zoomIn") || command.equals("zoomOut")) {
@@ -198,9 +201,26 @@ public class frGraphComponent extends mxGraphComponent implements ActionListener
     }
 
     /**
-     * Create a text row with FR info
+     * Create a text row with FR run parameters and graph info
+     * #alpha=1.0
+     * #kappa=100
+     * #clocktime=05:05:05
+     * #Wed Jan 08 21:26:53 MST 2020
+     * minSup=100
+     * debug=false
+     * minSize=1
+     * minLen=1.0
+     * txtFile=HLAA.nodes.txt
+     * resume=false
+     * verbose=true
+     * graphName=HLAA
+     * requiredNode=0
+     * maxRound=20
+     * priorityOption=4
+     * minPriority=0
+     * keepOption=subset
      */
-    public void setInfoRow(FrequentedRegion fr) {
+    public void setInfoRow(FrequentedRegion fr, Properties parameters) {
         String rowLabelString = "<html>"+
             "<b>"+graph.getName()+"</b><br/>" +
             graph.getNodes().size()+" nodes<br/>" +
@@ -209,7 +229,16 @@ public class frGraphComponent extends mxGraphComponent implements ActionListener
             "<hr/>" +
             "alpha="+fr.alpha+"<br/>" +
             "kappa="+fr.kappa+"<br/>" +
+            "minSup="+parameters.getProperty("minSup")+"<br/>" +
+            "minLen="+parameters.getProperty("minLen")+"<br/>" +
+            "minSize="+parameters.getProperty("minSize")+"<br/>" +
+            "minPriority="+parameters.getProperty("minPriority")+"<br/>" +
+            "maxRound="+parameters.getProperty("maxRound")+"<br/>" +
+            "priorityOption="+parameters.getProperty("priorityOption")+"<br/>" +
+            "keepOption="+parameters.getProperty("keepOption")+"<br/>" +
+            "requiredNode="+parameters.getProperty("requiredNode")+"<br/>" +
             "<hr/>" +
+            "FR "+(current+1)+":<br/>" +
             "size="+fr.nodes.size()+"<br/>" +
             "avgLen="+df.format(fr.avgLength)+"<br/>" +
             "support="+fr.caseSupport+"/"+fr.ctrlSupport+"<br/>" +

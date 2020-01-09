@@ -12,6 +12,9 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.PrintStream;
+
+import java.text.DecimalFormat;
 
 import java.util.List;
 import java.util.ArrayList;
@@ -204,4 +207,37 @@ public class FRUtils {
         return parts[0]+".paths.txt";
     }
 
+    /**
+     * Print out the parameters.
+     */
+    public static void printParameters(Properties parameters, String outputPrefix, double alpha, int kappa, long clockTime) throws IOException {
+        PrintStream out = new PrintStream(getParamsFilename(outputPrefix));
+        String comments = "alpha="+alpha+"\n"+"kappa="+kappa+"\n"+"clocktime="+formatTime(clockTime);
+        parameters.store(out, comments);
+        out.close();
+    }
+    
+    /**
+     * Read the parameters from a previous run's properties file.
+     */
+    public static Properties readParameters(String inputPrefix) throws FileNotFoundException, IOException {
+        String paramsFilename = getParamsFilename(inputPrefix);
+        BufferedReader reader = new BufferedReader(new FileReader(paramsFilename));
+        Properties parameters = new Properties();
+        parameters.load(reader);
+        parameters.setProperty("paramsFile", paramsFilename);
+        parameters.setProperty("inputPrefix", inputPrefix);
+        return parameters;
+    }
+
+    /**
+     * Format a time duration given in milliseconds.
+     */
+    static String formatTime(long millis) {
+        DecimalFormat tf = new DecimalFormat("00"); // hours, minutes, seconds
+        long hours = (millis / 1000) / 60 / 60;
+	long minutes = (millis / 1000 / 60) % 60;
+        long seconds = (millis / 1000) % 60;
+	return tf.format(hours)+":"+tf.format(minutes)+":"+tf.format(seconds);
+    }
 }
