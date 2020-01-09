@@ -104,7 +104,7 @@ public class FRFinder {
         parameters.setProperty("minSize", "1");
         parameters.setProperty("minLen", "1.0");
         parameters.setProperty("maxRound", "0");
-        parameters.setProperty("minPriority", "0");
+        parameters.setProperty("minPriority", "1");
         parameters.setProperty("requiredNode", "0");
         parameters.setProperty("priorityOption", "4");
         parameters.setProperty("keepOption", "null");
@@ -188,12 +188,12 @@ public class FRFinder {
                 allFrequentedRegions.put(c.toString(), fr);
             }
             // if the best single-node FR passes muster, add it, since we won't hit single-node FRs in the loop
-            TreeSet<FrequentedRegion> frSet = new TreeSet<>(allFrequentedRegions.values());
-            FrequentedRegion lastFR = frSet.last();
-            if (lastFR.support>=getMinSup() && lastFR.avgLength>=getMinLen() && lastFR.nodes.size()>=getMinSize() && lastFR.priority>=getMinPriority()) {
-                round = 1;
-                frequentedRegions.put(lastFR.nodes.toString(), lastFR);
-                System.out.println(round+":"+lastFR);
+            for (FrequentedRegion fr : allFrequentedRegions.values()) {
+                if (isInteresting(fr)) {
+                    round++;
+                    frequentedRegions.put(fr.nodes.toString(), fr);
+                    System.out.println(round+":"+fr);
+                }
             }
         }
 
@@ -247,18 +247,18 @@ public class FRFinder {
                                         // should we keep this merged FR?
                                         boolean keep = true; // default if keepOption not set
                                         if (getKeepOption().equals("subset")) {
-                                            // keep FRs that are subsets of others or have higher priority
+                                            // keep FRs that are subsets of others (larger than size=1) or have higher priority
                                             for (FrequentedRegion frOld : frequentedRegions.values()) {
-                                                if (frpair.merged.nodes.isSupersetOf(frOld.nodes) && frpair.merged.priority<=frOld.priority) {
+                                                if (frOld.nodes.size()>1 && frpair.merged.nodes.isSupersetOf(frOld.nodes) && frpair.merged.priority<=frOld.priority) {
                                                     keep = false;
                                                     rejectedNodeSets.add(nodesKey);
                                                     break;
                                                 }
                                             }
                                         } else if (getKeepOption().startsWith("distance")) {
-                                            // keep FRs that are at least a distance of keepOptionValue away from others or have higher priority
+                                            // keep FRs that are at least a distance of keepOptionValue away from others (larger than size=1) or have higher priority
                                             for (FrequentedRegion frOld : frequentedRegions.values()) {
-                                                if (frpair.merged.nodes.distanceFrom(frOld.nodes)<keepOptionValue && frpair.merged.priority<=frOld.priority) {
+                                                if (frOld.nodes.size()>1 && frpair.merged.nodes.distanceFrom(frOld.nodes)<keepOptionValue && frpair.merged.priority<=frOld.priority) {
                                                     keep = false;
                                                     rejectedNodeSets.add(nodesKey);
                                                     break;
@@ -283,7 +283,7 @@ public class FRFinder {
                 FRPair frpair = frpairSet.last();
                 FrequentedRegion fr = frpair.merged;
                 // we need to have the minimum support and priority, etc.
-                added = fr.support>=getMinSup() && fr.avgLength>=getMinLen() && fr.nodes.size()>=getMinSize() && fr.priority>=getMinPriority();
+                added = isInteresting(fr);
                 if (added) {
                     // add this FR to the mergeable FRs map
                     allFrequentedRegions.put(fr.nodes.toString(), fr);
@@ -581,7 +581,7 @@ public class FRFinder {
         maxRoundOption.setRequired(false);
         options.addOption(maxRoundOption);
         //
-        Option minPriorityOption = new Option("mp", "minpriority", true, "minimum priority for saving an FR [0]");
+        Option minPriorityOption = new Option("mp", "minpriority", true, "minimum priority for saving an FR [1]");
         minPriorityOption.setRequired(false);
         options.addOption(minPriorityOption);
         //
@@ -972,5 +972,12 @@ public class FRFinder {
      */
     String formOutputPrefix() {
         return getInputPrefix()+"-"+getMinSup()+"."+getMinSize()+"."+(int)getMinLen();
+    }
+
+    /**
+     * Return true if the given FR is "interesting".
+     */
+    boolean isInteresting(FrequentedRegion fr) {
+        return fr.support>=getMinSup() && fr.avgLength>=getMinLen() && fr.nodes.size()>=getMinSize() && fr.priority>=getMinPriority();
     }
 }
