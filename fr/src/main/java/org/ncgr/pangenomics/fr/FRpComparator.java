@@ -6,10 +6,10 @@ import java.util.Map;
 /**
  * Comparator to sort FRs by p-value.
  */
-public class FRPComparator implements Comparator<String> {
+public class FRpComparator implements Comparator<String> {
     Map<String,FrequentedRegion> frequentedRegions;
 
-    FRPComparator(Map<String,FrequentedRegion> frequentedRegions) {
+    public FRpComparator(Map<String,FrequentedRegion> frequentedRegions) {
         this.frequentedRegions = frequentedRegions;
     }
 

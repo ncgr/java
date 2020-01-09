@@ -85,8 +85,8 @@ public class FRViewer {
 
         // load the FRs into a sorted map so we see the juicy ones first
         Map<String,FrequentedRegion> unsortedFRs = FRUtils.readFrequentedRegions(prefix, graph);
-        FRPComparator frComparator = new FRPComparator(unsortedFRs);
-        TreeMap<String,FrequentedRegion> frequentedRegions = new TreeMap<>(frComparator);
+        FRpComparator frpComparator = new FRpComparator(unsortedFRs);
+        TreeMap<String,FrequentedRegion> frequentedRegions = new TreeMap<>(frpComparator);
         frequentedRegions.putAll(unsortedFRs);
         
         // create the JFrame
