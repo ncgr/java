@@ -18,6 +18,10 @@ public class FRpriorityComparator implements Comparator<String> {
         if (key1.equals(key2)) return 0;
         FrequentedRegion fr1 = frequentedRegions.get(key1);
         FrequentedRegion fr2 = frequentedRegions.get(key2);
-        return Integer.compare(fr2.priority, fr1.priority);
+        if (fr2.priority==fr1.priority) {
+            return key1.compareTo(key2);
+        } else {
+            return fr2.priority - fr1.priority;
+        }
     }
 }

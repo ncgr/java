@@ -20,6 +20,11 @@ public class FRpComparator implements Comparator<String> {
         FrequentedRegion fr2 = frequentedRegions.get(key2);
         double p1 = fr1.fisherExactP();
         double p2 = fr2.fisherExactP();
-        return Double.compare(p1, p2);
+        int dc = Double.compare(p1,p2);
+        if (dc==0) {
+            return key1.compareTo(key2);
+        } else {
+            return dc;
+        }
     }
 }
