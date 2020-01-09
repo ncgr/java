@@ -12,9 +12,10 @@ plot.p.region = function(chr="1", start=1, end=0, label=FALSE, minCalls=0, showG
     hpts = pts & seg$p<pRed
 
     plot(seg$start[pts], seg$mlog10p[pts],
-         xlab="POS", ylab="-log10(p)",
+         xlab=paste("Chr",chr,"position"),
+         ylab="-log10(p)",
          xlim=c(start,end),
-         main=paste("GRCh37 ",chr,":",start,"-",end," ",(end-start+1),"bp", sep=""),
+         ## main=paste("GRCh37 ",chr,":",start,"-",end," ",(end-start+1),"bp", sep=""),
          pch=1, cex=0.5, col="black")
 
     ## significance line at 1e-2
@@ -25,7 +26,7 @@ plot.p.region = function(chr="1", start=1, end=0, label=FALSE, minCalls=0, showG
 
     ## label them with position if requested
     if (label) {
-        text(seg$start[hpts], seg$mlog10p[hpts], col="darkred", pos=4, cex=0.8, offset=0.5,
+        text(seg$start[hpts], seg$mlog10p[hpts], col="darkred", pos=4, cex=0.8, offset=0.2,
              paste(seg$start[hpts]," (",seg$caseVars[hpts],"/",seg$caseRefs[hpts],"|",seg$ctrlVars[hpts],"/",seg$ctrlRefs[hpts],";OR=",signif(seg$OR[hpts],3),")",sep="")
              )
     }
@@ -33,18 +34,20 @@ plot.p.region = function(chr="1", start=1, end=0, label=FALSE, minCalls=0, showG
     ## show genes if requested
     ## REQUIRES load-genes!!
     if (showGenes) {
+        height = 3.0
+        bar = c(height-0.5, height+0.5)
         within = genes$seqid==chr & genes$end>=start & genes$start<=end
         genesWithin = genes[within,]
         for (i in 1:nrow(genesWithin)) {
-            lines(c(genesWithin$start[i],genesWithin$end[i]), c(5,5))
+            lines(c(genesWithin$start[i],genesWithin$end[i]), c(height,height))
             x = (genesWithin$start[i]+genesWithin$end[i])/2
-            text(x, 5, genesWithin$name[i], pos=3)
-            lines(rep(genesWithin$start[i],2), c(4.5,5.5))
-            lines(rep(genesWithin$end[i],2), c(4.5,5.5))
+            text(x, height, genesWithin$name[i], pos=3)
+            lines(rep(genesWithin$start[i],2), bar)
+            lines(rep(genesWithin$end[i],2), bar)
             if (genesWithin$strand[i]=="-") {
-                text((genesWithin$start[i]+genesWithin$end[i])/2, 5, "<")
+                text((genesWithin$start[i]+genesWithin$end[i])/2, height, "<")
             } else {
-                text((genesWithin$start[i]+genesWithin$end[i])/2, 5, ">")
+                text((genesWithin$start[i]+genesWithin$end[i])/2, height, ">")
             }
         }
     }

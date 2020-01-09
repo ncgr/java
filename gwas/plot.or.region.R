@@ -21,8 +21,9 @@ plot.or.region = function(chr="1", start=1, end=0, label=FALSE, minCalls=0, show
     
     plot(seg$start[pts], seg$log10OR[pts],
          xlim=xlim, ylim=ylim,
-         xlab="POS", ylab="log10(OR)",
-         main=paste("GRCh37 ",chr,":",start,"-",end," ",(end-start+1),"bp", sep=""),
+         xlab=paste("Chr",chr,"position"),
+         ylab="log10(OR)",
+         ## main=paste("GRCh37 ",chr,":",start,"-",end," ",(end-start+1),"bp", sep=""),
          pch=1, cex=0.5, col="black")
 
     ## highlight highly significant p values

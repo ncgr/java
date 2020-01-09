@@ -188,6 +188,11 @@ public class FRFinder {
                 FrequentedRegion fr = new FrequentedRegion(graph, c, alpha, kappa, getPriorityOption());
                 allFrequentedRegions.put(c.toString(), fr);
             }
+            // print out the best single-node FR
+            TreeSet<FrequentedRegion> frSet = new TreeSet<>(allFrequentedRegions.values());
+            FrequentedRegion lastFR = frSet.last();
+            System.out.println("0:"+lastFR);
+            System.out.println("-------------------------------------------------------------------------------------------------------");
         }
 
         // build the FRs round by round
@@ -205,7 +210,7 @@ public class FRFinder {
                     if (getDebug()) System.out.println("fr1:"+fr1);
                     allFrequentedRegions.entrySet().parallelStream().forEach(entry2 -> {
                             FrequentedRegion fr2 = entry2.getValue();
-                            if (fr2.nodes.compareTo(fr1.nodes)>=0) {
+                            if (fr2.nodes.compareTo(fr1.nodes)>0) {
                                 FRPair frpair = new FRPair(fr1, fr2);
                                 String nodesKey = frpair.nodes.toString();
                                 if (rejectedNodeSets.contains(nodesKey)) {

@@ -119,7 +119,7 @@ public class frGraphComponent extends mxGraphComponent implements ActionListener
         prevButton.setActionCommand("previous");
         prevButton.addActionListener(this);
         topPanel.add(prevButton);
-        currentLabel = new JLabel("1");
+        currentLabel = new JLabel("FR 1 / "+frequentedRegions.size());
         currentLabel.setFont(currentLabel.getFont().deriveFont(Font.BOLD));
         topPanel.add(currentLabel);
         nextButton = new JButton("FR 2");
@@ -180,7 +180,7 @@ public class frGraphComponent extends mxGraphComponent implements ActionListener
      * Update the button states. current is zero-based, we'll list FRs as one-based.
      */
     public void updateButtonStates() {
-        currentLabel.setText("FR "+(current+1));
+        currentLabel.setText("FR "+(current+1)+" / "+frequentedRegions.size());
         if (current==0) {
             prevButton.setText("FR");
             prevButton.setEnabled(false);
