@@ -107,14 +107,11 @@ public class FRPair implements Comparable {
     }
 
     /**
-     * A comparator for PriorityQueue use -- note that it is the opposite of normal comparison because
-     * PriorityQueue allows you to take the top (least) object with peek() but not the bottom (most) object.
-     * Uses the priorty set with the priorityOption value.
+     * Compare the merged FR.
      */
     @Override
     public int compareTo(Object o) {
 	FRPair that = (FRPair) o;
-        // DEBUG: NORMAL COMPARISON
         return this.merged.compareTo(that.merged);
     }
 

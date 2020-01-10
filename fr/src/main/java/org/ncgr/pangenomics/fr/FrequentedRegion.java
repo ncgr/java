@@ -192,7 +192,7 @@ public class FrequentedRegion implements Comparable {
     }
 
     /**
-     * Comparison is based on priority; with node size then nodes as tie-breaker.
+     * Comparison is based on priority, then node size (favoring smaller) and then nodes.
      */
     @Override
     public int compareTo(Object o) {

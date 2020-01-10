@@ -244,7 +244,7 @@ public class FRFinder {
                                     if (frpair.merged!=null) {
                                         // should we keep this merged FR?
                                         boolean keep = true; // default if keepOption not set
-                                        if (getKeepOption().equals("subset")) {
+                                        if (getKeepOption().startsWith("subset") && frpair.merged.nodes.size()>=keepOptionValue) {
                                             // keep FRs that are subsets of others or have higher priority
                                             for (FrequentedRegion frOld : frequentedRegions.values()) {
                                                 if (frpair.merged.nodes.isSupersetOf(frOld.nodes) && frpair.merged.priority<=frOld.priority) {
@@ -466,21 +466,17 @@ public class FRFinder {
     }
     public void setKeepOption(String keepOption) {
         parameters.setProperty("keepOption", keepOption);
-        if (keepOption.startsWith("distance")) {
+        if (keepOption.startsWith("subset") || keepOption.startsWith("distance")) {
             String[] parts = keepOption.split(":");
             if (parts.length==2) {
                 keepOptionValue = Integer.parseInt(parts[1]);
-                if (keepOptionValue<2) {
-                    System.err.println("ERROR: keepoption=distance:"+keepOptionValue+" has no effect.");
-                    System.exit(1);
-                }
-            } else {
+            } else if (keepOption.equals("subset")) {
+                keepOptionValue = 3; // default
+            } else if (keepOption.equals("distance")) {
                 keepOptionValue = 2; // default
             }
-        } else if (keepOption.equals("subset")) {
-            // do nothing
         } else {
-            System.err.println("ERROR: allowed keepoption values are: subset|distance:N");
+            System.err.println("ERROR: allowed keepoption values are: subset[:N]|distance[:N]");
             System.exit(1);
         }
     }
@@ -593,7 +589,7 @@ public class FRFinder {
         requiredNodeOption.setRequired(false);
         options.addOption(requiredNodeOption);
         //
-        Option keepOptionOption = new Option("keep", "keepoption", true, "option for keeping FRs in finder loop: subset|distance:N [keep all]");
+        Option keepOptionOption = new Option("keep", "keepoption", true, "option for keeping FRs in finder loop: subset[:N]|distance[:N] [keep all]");
         keepOptionOption.setRequired(false);
         options.addOption(keepOptionOption);
 
