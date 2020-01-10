@@ -413,6 +413,20 @@ public class PangenomicGraph extends DirectedAcyclicGraph<Node,Edge> {
     }
 
     /**
+     * Get the total count of paths that follow the given Edge.
+     */
+    public int getPathCount(Edge e) {
+        int count = 0;
+        for (Path p : paths) {
+            List<Edge> edges = p.getEdges();
+            if (edges.contains(e)) {
+                count++;
+            }
+        }
+        return count;
+    }
+
+    /**
      * Print a delineating heading, for general use.
      */
     static void printHeading(String heading) {

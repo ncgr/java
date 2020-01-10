@@ -21,9 +21,11 @@ import java.io.*;
 import java.util.*;
 import java.text.*;
 import javax.swing.*;
+import javax.swing.border.*;
 
 /**
  * Extend mxGraphComponent to implement ActionListener for button events and such.
+ * mxGraphComponent in turn extends JScrollPane.
  */
 public class frGraphComponent extends mxGraphComponent implements ActionListener {
     static DecimalFormat df = new DecimalFormat("0.0");
@@ -39,6 +41,8 @@ public class frGraphComponent extends mxGraphComponent implements ActionListener
     JButton prevButton, nextButton;
     JButton zoomInButton, zoomOutButton;
     JLabel currentLabel;
+    JLabel infoLabel;
+    JLabel nodesLabel;
     
     Object[] frKeys;            // the FR map keys for navigating through the FRs
 
@@ -51,6 +55,7 @@ public class frGraphComponent extends mxGraphComponent implements ActionListener
      */
     frGraphComponent(PangenomicGraph graph, Map<String,FrequentedRegion> frequentedRegions, FGraphXAdapter fgxAdapter, Properties parameters) {
         super(fgxAdapter);
+        
         this.fgxAdapter = fgxAdapter;
         this.graph = graph;
         this.frequentedRegions = frequentedRegions;
@@ -60,6 +65,7 @@ public class frGraphComponent extends mxGraphComponent implements ActionListener
         setConnectable(false);
         getGraph().setAllowDanglingEdges(false);
         setToolTips(true);
+        setViewportBorder(new LineBorder(Color.BLACK));
 
         // load the FR keys into an array to select the chosen FR with an int on action events
         frKeys = frequentedRegions.keySet().toArray();
@@ -111,16 +117,20 @@ public class frGraphComponent extends mxGraphComponent implements ActionListener
                 }
             });
         
-        // some settings
-        setConnectable(false);
-        getGraph().setAllowDanglingEdges(false);
-
         // add a column header with navigation/zoom buttons
         JPanel topPanel = new JPanel();
+        GridBagLayout gridbag = new GridBagLayout();
+        topPanel.setBackground(Color.LIGHT_GRAY);
+        topPanel.setLayout(gridbag);
+        
+        GridBagConstraints c = new GridBagConstraints();
+        c.insets = new Insets(1, 4, 1, 4); // top, left, bottom, right
+
         // navigation buttons
         prevButton = new JButton("FR");
         prevButton.setActionCommand("previous");
         prevButton.addActionListener(this);
+        gridbag.setConstraints(prevButton, c);
         topPanel.add(prevButton);
         currentLabel = new JLabel("FR 1 / "+frequentedRegions.size());
         currentLabel.setFont(currentLabel.getFont().deriveFont(Font.BOLD));
@@ -128,18 +138,31 @@ public class frGraphComponent extends mxGraphComponent implements ActionListener
         nextButton = new JButton("FR 2");
         nextButton.setActionCommand("next");
         nextButton.addActionListener(this);
+        c.insets = new Insets(1, 4, 1, 16); // top, left, bottom, right
+        gridbag.setConstraints(nextButton, c);
         topPanel.add(nextButton);
+
         // zoom buttons
         zoomOutButton = new JButton("\u2212"); // math minus
         zoomOutButton.setActionCommand("zoomOut");
         zoomOutButton.setFont(zoomOutButton.getFont().deriveFont(Font.BOLD));
         zoomOutButton.addActionListener(this);
+        c.insets = new Insets(1, 4, 1, 4); // top, left, bottom, right
+        gridbag.setConstraints(zoomOutButton, c);
         topPanel.add(zoomOutButton);
         zoomInButton = new JButton("+");
         zoomInButton.setActionCommand("zoomIn");
         zoomInButton.setFont(zoomInButton.getFont().deriveFont(Font.BOLD));
         zoomInButton.addActionListener(this);
+        c.gridwidth = GridBagConstraints.REMAINDER; //end row
+        gridbag.setConstraints(zoomInButton, c);
         topPanel.add(zoomInButton);
+
+        // label with current FR's nodes
+        nodesLabel = new JLabel("");
+        gridbag.setConstraints(nodesLabel, c);
+        topPanel.add(nodesLabel);
+
         // put the top panel on the graph
         setColumnHeaderView(topPanel);
 
@@ -147,8 +170,16 @@ public class frGraphComponent extends mxGraphComponent implements ActionListener
         updateButtonStates();
 
         // set the current FR to the first one and populate the info row
-        currentFR = frequentedRegions.get((String)frKeys[0]); 
-        setInfoRow(currentFR, parameters);
+        currentFR = frequentedRegions.get((String)frKeys[0]);
+        JPanel sidePanel = new JPanel();
+        sidePanel.setBackground(Color.LIGHT_GRAY);
+        infoLabel = new JLabel();
+        infoLabel.setVerticalAlignment(SwingConstants.TOP);
+        updateInfoLabel(currentFR, parameters);
+        updateNodesLabel(currentFR);
+        sidePanel.add(infoLabel);
+        // put the side panel on the graph
+        setRowHeaderView(sidePanel);
     }
     
     public void actionPerformed(ActionEvent e) {
@@ -162,7 +193,8 @@ public class frGraphComponent extends mxGraphComponent implements ActionListener
             currentFR = frequentedRegions.get((String)frKeys[current]);
             fgxAdapter = new FGraphXAdapter(graph, currentFR);
             setGraph(fgxAdapter);
-            setInfoRow(currentFR, parameters);
+            updateInfoLabel(currentFR, parameters);
+            updateNodesLabel(currentFR);
             executeLayout();
             updateButtonStates();
         } else if (command.equals("zoomIn") || command.equals("zoomOut")) {
@@ -201,7 +233,7 @@ public class frGraphComponent extends mxGraphComponent implements ActionListener
     }
 
     /**
-     * Create a text row with FR run parameters and graph info
+     * Update the info label on the sidePanel with FR run parameters and graph info
      * #alpha=1.0
      * #kappa=100
      * #clocktime=05:05:05
@@ -220,8 +252,8 @@ public class frGraphComponent extends mxGraphComponent implements ActionListener
      * minPriority=0
      * keepOption=subset
      */
-    public void setInfoRow(FrequentedRegion fr, Properties parameters) {
-        String rowLabelString = "<html>"+
+    public void updateInfoLabel(FrequentedRegion fr, Properties parameters) {
+        String infoLabelString = "<html>"+
             "<b>"+graph.getName()+"</b><br/>" +
             graph.getNodes().size()+" nodes<br/>" +
             graph.getPaths().size()+" paths<br/>" +
@@ -247,9 +279,14 @@ public class frGraphComponent extends mxGraphComponent implements ActionListener
             "priority="+fr.priority +
             "<hr/>"+
             "</html>";
-        JLabel rowLabel = new JLabel(rowLabelString);
-        rowLabel.setVerticalAlignment(SwingConstants.TOP);
-        setRowHeaderView(rowLabel);
+        infoLabel.setText(infoLabelString);
+    }
+
+    /**
+     * Update the nodes label which shows the current FR's nodes.
+     */
+    public void updateNodesLabel(FrequentedRegion fr) {
+        nodesLabel.setText(fr.nodes.toString());
     }
 
     /**

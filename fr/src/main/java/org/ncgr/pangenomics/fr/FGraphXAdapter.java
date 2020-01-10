@@ -105,7 +105,10 @@ public class FGraphXAdapter extends JGraphXAdapter<Node,Edge> {
                     cellSizeUpdated(c, true);
                 }
             } else if (c.isEdge()) {
-                // do something with the edges?
+                // // this works, but really slows things down
+                // Edge e = (Edge) c.getValue();
+                // float width = (float)(Math.log10((double)graph.getPathCount(e)) + 1.0);
+                // setCellStyles(mxConstants.STYLE_STROKEWIDTH, String.valueOf(width), cells);
             }
         }
         clearSelection();

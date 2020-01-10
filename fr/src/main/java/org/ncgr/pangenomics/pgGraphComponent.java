@@ -77,16 +77,17 @@ class pgGraphComponent extends mxGraphComponent implements ActionListener {
         
         // add a column header with static info and navigation buttons
         JPanel topPanel = new JPanel();
+        topPanel.setBackground(Color.LIGHT_GRAY);
         // graph label in bold
         JLabel graphLabel = new JLabel(graph.getName());
         graphLabel.setFont(graphLabel.getFont().deriveFont(Font.BOLD));
         topPanel.add(graphLabel);
         // zoom buttons
-        zoomInButton = new JButton("Zoom IN");
+        zoomInButton = new JButton("+");
         zoomInButton.setActionCommand("zoomIn");
         zoomInButton.addActionListener(this);
         topPanel.add(zoomInButton);
-        zoomOutButton = new JButton("Zoom OUT");
+        zoomOutButton = new JButton("-");
         zoomOutButton.setActionCommand("zoomOut");
         zoomOutButton.addActionListener(this);
         topPanel.add(zoomOutButton);
