@@ -25,7 +25,6 @@ import java.util.HashMap;
 import java.util.TreeMap;
 import java.util.Properties;
 import java.util.Set;
-import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListSet;
 
@@ -172,7 +171,7 @@ public class FRFinder {
                 String[] parts = line.split("\t");
                 NodeSet nodes = new NodeSet(graph, parts[0]);
                 frequentedRegions.put(nodes.toString(), new FrequentedRegion(graph, nodes, alpha, kappa, getPriorityOption()));
-                round++;
+                round++; // increment round so we start where we left off
             }
 	    // informativationalism
             System.out.println("# Loaded "+allFrequentedRegions.size()+" allFrequentedRegions.");
@@ -187,12 +186,11 @@ public class FRFinder {
                 FrequentedRegion fr = new FrequentedRegion(graph, c, alpha, kappa, getPriorityOption());
                 allFrequentedRegions.put(c.toString(), fr);
             }
-            // if the best single-node FR passes muster, add it, since we won't hit single-node FRs in the loop
+            // add interesting single-node FRs in round 0, since we won't hit them in the loop
             for (FrequentedRegion fr : allFrequentedRegions.values()) {
                 if (isInteresting(fr)) {
-                    round++;
                     frequentedRegions.put(fr.nodes.toString(), fr);
-                    System.out.println(round+":"+fr);
+                    System.out.println("0:"+fr);
                 }
             }
         }
@@ -204,7 +202,7 @@ public class FRFinder {
             round++;
             added = false;
             // store FRPairs in a map keyed by merged nodes in THIS round for parallel operation and sorting
-            ConcurrentHashMap<String,FRPair> frpairMap = new ConcurrentHashMap<>();
+            ConcurrentSkipListSet<FRPair> frpairSet = new ConcurrentSkipListSet<>();
             ////////////////////////////////////////////////////////////////////////////////////////////////
             // start parallel streams
             allFrequentedRegions.entrySet().parallelStream().forEach(entry1 -> {
@@ -247,18 +245,18 @@ public class FRFinder {
                                         // should we keep this merged FR?
                                         boolean keep = true; // default if keepOption not set
                                         if (getKeepOption().equals("subset")) {
-                                            // keep FRs that are subsets of others (larger than size=1) or have higher priority
+                                            // keep FRs that are subsets of others or have higher priority
                                             for (FrequentedRegion frOld : frequentedRegions.values()) {
-                                                if (frOld.nodes.size()>1 && frpair.merged.nodes.isSupersetOf(frOld.nodes) && frpair.merged.priority<=frOld.priority) {
+                                                if (frpair.merged.nodes.isSupersetOf(frOld.nodes) && frpair.merged.priority<=frOld.priority) {
                                                     keep = false;
                                                     rejectedNodeSets.add(nodesKey);
                                                     break;
                                                 }
                                             }
                                         } else if (getKeepOption().startsWith("distance")) {
-                                            // keep FRs that are at least a distance of keepOptionValue away from others (larger than size=1) or have higher priority
+                                            // keep FRs that are at least a distance of keepOptionValue away from others or have higher priority
                                             for (FrequentedRegion frOld : frequentedRegions.values()) {
-                                                if (frOld.nodes.size()>1 && frpair.merged.nodes.distanceFrom(frOld.nodes)<keepOptionValue && frpair.merged.priority<=frOld.priority) {
+                                                if (frpair.merged.nodes.distanceFrom(frOld.nodes)<keepOptionValue && frpair.merged.priority<=frOld.priority) {
                                                     keep = false;
                                                     rejectedNodeSets.add(nodesKey);
                                                     break;
@@ -268,7 +266,7 @@ public class FRFinder {
                                         if (keep) {
                                             // add this candidate merged pair
                                             acceptedFRPairs.put(nodesKey, frpair);
-                                            frpairMap.put(nodesKey, frpair);
+                                            frpairSet.add(frpair);
                                         }
                                     }
                                 }
@@ -278,10 +276,8 @@ public class FRFinder {
             // end parallelStreams
             ////////////////////////////////////////////////////////////////////////////////////////////////
             // add our new best merged FR
-            if (frpairMap.size()>0) {
-                TreeSet<FRPair> frpairSet = new TreeSet<>(frpairMap.values());
-                FRPair frpair = frpairSet.last();
-                FrequentedRegion fr = frpair.merged;
+            if (frpairSet.size()>0) {
+                FrequentedRegion fr = frpairSet.last().merged;
                 // we need to have the minimum support and priority, etc.
                 added = isInteresting(fr);
                 if (added) {
@@ -308,8 +304,8 @@ public class FRFinder {
                 sfrOut.close();
                 // acceptedFRPairs
                 PrintStream afrpOut = new PrintStream(getGraphName()+"."+ACCEPTED_FRPAIRS_SAVE);
-                for (FRPair frPair : acceptedFRPairs.values()) {
-                    afrpOut.println(frPair);
+                for (FRPair frpair : acceptedFRPairs.values()) {
+                    afrpOut.println(frpair);
                 }
                 // rejectedNodeSets
                 PrintStream rnsOut = new PrintStream(getGraphName()+"."+REJECTED_NODESETS_SAVE);
