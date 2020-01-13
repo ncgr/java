@@ -32,6 +32,7 @@ public class FGraphXAdapter extends JGraphXAdapter<Node,Edge> {
     static final double P_THRESHOLD = 5e-2;
     static DecimalFormat pf = new DecimalFormat("0.0E0");
     static DecimalFormat orf = new DecimalFormat("0.000");
+    static DecimalFormat percf = new DecimalFormat("0.0%");
 
     PangenomicGraph graph;
     FrequentedRegion fr;
@@ -73,8 +74,8 @@ public class FGraphXAdapter extends JGraphXAdapter<Node,Edge> {
                 Node n = (Node) c.getValue();
                 if (c.getEdgeCount()>0) {
                     if (fr.containsNode(n)) {
-                        setCellStyle(baseFRStyle, cells);
                         // significance decoration
+                        setCellStyle(baseFRStyle, cells);
                         if (frP<P_THRESHOLD) {
                             if (Double.isInfinite(frOR)) {
                                 // 100% case node
@@ -100,6 +101,16 @@ public class FGraphXAdapter extends JGraphXAdapter<Node,Edge> {
                                 setCellStyles("fontColor", "white", cells);
                             }
                         }
+                    } else {
+                        // path support decoration
+                        double frac = (double)graph.getPathCount(n) / (double)graph.getPathCount();
+                        int rgb = (int) Math.round(255.0*frac);
+                        String hex = Integer.toHexString(rgb);
+                        if (rgb<16) hex = "0"+hex;
+                        String col = "white";
+                        if (rgb>127) col = "black";
+                        setCellStyles("fillColor", "#"+hex+hex+hex, cells);
+                        setCellStyles("fontColor", col, cells);
                     }
                     // update the cell shape
                     cellSizeUpdated(c, true);
@@ -122,23 +133,29 @@ public class FGraphXAdapter extends JGraphXAdapter<Node,Edge> {
         mxCell c = (mxCell) o;
         if (c.isVertex()) {
             Node n = (Node) c.getValue();
-            double p = graph.fisherExactP(n);
-            double or = graph.oddsRatio(n);
-            Map<String,Integer> labelCounts = graph.getLabelCounts(n);
-            int caseCounts = 0;
-            int ctrlCounts = 0;
-            if (labelCounts.containsKey("case")) caseCounts = labelCounts.get("case");
-            if (labelCounts.containsKey("ctrl")) ctrlCounts = labelCounts.get("ctrl");
             String seq = n.getSequence();
+            int pathCount = graph.getPathCount(n);
+            double frac = (double)pathCount/(double)graph.getPathCount();
             String tip = "<html>" +
                 seq+"<br/>" +
                 seq.length()+" bp<br/>" +
-                "paths="+caseCounts+"/"+ctrlCounts+"<br/>" +
-                "OR="+orf.format(or)+"<br/>" +
-                "p="+pf.format(p);
-            if (fr.containsNode(n)) {
-                // show case|control subpath counts for this node since it's in the FR
-                tip += "<br/>support="+fr.getCaseCount(n)+"/"+fr.getControlCount(n);
+                pathCount+" paths<br/>" +
+                percf.format(frac);
+            Map<String,Integer> labelCounts = graph.getLabelCounts(n);
+            if (labelCounts.containsKey("case") && labelCounts.containsKey("ctrl")) {
+                int caseCounts = 0;
+                int ctrlCounts = 0;
+                double p = graph.fisherExactP(n);
+                double or = graph.oddsRatio(n);
+                if (labelCounts.containsKey("case")) caseCounts = labelCounts.get("case");
+                if (labelCounts.containsKey("ctrl")) ctrlCounts = labelCounts.get("ctrl");
+                tip += "<br/>"+caseCounts+"/"+ctrlCounts+"<br/>" +
+                    "OR="+orf.format(or)+"<br/>" +
+                    "p="+pf.format(p);
+                if (fr.containsNode(n)) {
+                    // show case|control subpath counts for this node since it's in the FR
+                    tip += "<br/>support="+fr.getCaseCount(n)+"/"+fr.getControlCount(n);
+                }
             }
             tip += "</html>";
             return tip;

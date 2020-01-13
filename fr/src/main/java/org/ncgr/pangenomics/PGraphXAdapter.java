@@ -25,8 +25,10 @@ import java.util.*;
 class PGraphXAdapter extends JGraphXAdapter<Node,Edge> {
     static DecimalFormat pf = new DecimalFormat("0.0E0");
     static DecimalFormat orf = new DecimalFormat("0.000");
+    static DecimalFormat percf = new DecimalFormat("0.0%");
 
     PangenomicGraph graph;
+    boolean hasCaseControlLabels;
 
     public PGraphXAdapter(PangenomicGraph graph) {
         super(new DefaultListenableGraph<Node,Edge>(graph));
@@ -50,50 +52,64 @@ class PGraphXAdapter extends JGraphXAdapter<Node,Edge> {
         // apply the default stylesheet
         setStylesheet(defaultStylesheet);
 
-        // color the nodes
-        selectAll();
-        Object[] allCells = getSelectionCells();
-        for (Object o : allCells) {
-            Object[] cells = {o};
-            mxCell c = (mxCell) o;
-            if (c.isVertex()) {
-                Node n = (Node) c.getValue();
-                if (graph.getPaths(n).size()>0) {
-                    double or = graph.oddsRatio(n);
-                    // color based on segregation
-                    if (Double.isInfinite(or)) {
-                        // 100% case node
-                        setCellStyles("fillColor", "#ff8080", cells);
-                        setCellStyles("fontColor", "black", cells);
-                    } else if (or==0.00) {
-                        // 100% ctrl node
-                        setCellStyles("fillColor", "#80ff80", cells);
-                        setCellStyles("fontColor", "black", cells);
-                    } else if (or>1.0) {
-                        // case node
-                        double log10or = Math.log10(or);
-                        int rInt = Math.min((int)(127.0*log10or), 127) + 128;
-                        String rHex = Integer.toHexString(rInt);
-                        String fillColor = "#"+rHex+"8080";
-                        setCellStyles("fillColor", fillColor, cells); 
-                        setCellStyles("fontColor", "white", cells);
-                    } else if (or<1.0) {
-                        // ctrl node
-                        double log10or = -Math.log10(or);
-                        int gInt = Math.min((int)(127.0*log10or), 127) + 128;
-                        String gHex = Integer.toHexString(gInt);
-                        String fillColor = "#80"+gHex+"80";
-                        setCellStyles("fillColor", fillColor, cells);
-                        setCellStyles("fontColor", "white", cells);
+        // logical to do case/control ops
+        hasCaseControlLabels = graph.getLabelCounts().containsKey("case") && graph.getLabelCounts().containsKey("ctrl");
+
+        // color the nodes if we have case/control labeling
+        if (hasCaseControlLabels) {
+            selectAll();
+            Object[] allCells = getSelectionCells();
+            for (Object o : allCells) {
+                Object[] cells = {o};
+                mxCell c = (mxCell) o;
+                if (c.isVertex()) {
+                    Node n = (Node) c.getValue();
+                    if (graph.getPaths(n).size()>0) {
+                        double or = graph.oddsRatio(n);
+                        double p = graph.fisherExactP(n);
+                        // color based on segregation
+                        if (Double.isInfinite(or)) {
+                            // 100% case node
+                            setCellStyles("fillColor", "#ff8080", cells);
+                            setCellStyles("fontColor", "black", cells);
+                        } else if (or==0.00) {
+                            // 100% ctrl node
+                            setCellStyles("fillColor", "#80ff80", cells);
+                            setCellStyles("fontColor", "black", cells);
+                        } else if (or>1.0) {
+                            // case node
+                            double log10or = Math.log10(or);
+                            int rInt = Math.min((int)(127.0*log10or), 127) + 128;
+                            String rHex = Integer.toHexString(rInt);
+                            String fillColor = "#"+rHex+"8080";
+                            setCellStyles("fillColor", fillColor, cells);
+                            if (p<1e-2) {
+                                setCellStyles("fontColor", "white", cells);
+                            } else {
+                                setCellStyles("fontColor", "black", cells);
+                            }
+                        } else if (or<1.0) {
+                            // ctrl node
+                            double log10or = -Math.log10(or);
+                            int gInt = Math.min((int)(127.0*log10or), 127) + 128;
+                            String gHex = Integer.toHexString(gInt);
+                            String fillColor = "#80"+gHex+"80";
+                            setCellStyles("fillColor", fillColor, cells);
+                            if (p<1e-2) {
+                                setCellStyles("fontColor", "white", cells);
+                            } else {
+                                setCellStyles("fontColor", "black", cells);
+                            }
+                        }
+                        // update the cell shape since we've added a big label
+                        cellSizeUpdated(c, true);
                     }
-                    // update the cell shape since we've added a big label
-                    cellSizeUpdated(c, true);
+                } else if (c.isEdge()) {
+                    // do something with the edges?
                 }
-            } else if (c.isEdge()) {
-                // do something with the edges?
             }
+            clearSelection();
         }
-        clearSelection();
     }
 
     /**
@@ -104,31 +120,41 @@ class PGraphXAdapter extends JGraphXAdapter<Node,Edge> {
         mxCell c = (mxCell) o;
         if (c.isVertex()) {
             Node n = (Node) c.getValue();
-            double p = graph.fisherExactP(n);
-            double or = graph.oddsRatio(n);
-            Map<String,Integer> labelCounts = graph.getLabelCounts(n);
-            int caseCounts = 0;
-            int ctrlCounts = 0;
-            if (labelCounts.containsKey("case")) caseCounts = labelCounts.get("case");
-            if (labelCounts.containsKey("ctrl")) ctrlCounts = labelCounts.get("ctrl");
             String seq = n.getSequence();
+            int pathCount = graph.getPathCount(n);
+            double frac = (double)pathCount/(double)graph.getPathCount();
             String tip = "<html>" +
                 seq+"<br/>" +
                 seq.length()+" bp<br/>" +
-                caseCounts+"/"+ctrlCounts+"<br/>" +
-                "OR="+orf.format(or)+"<br/>" +
-                "p="+pf.format(p) +
-                "</html>";
+                pathCount+" paths<br/>" +
+                percf.format(frac);
+            if (hasCaseControlLabels) {
+                double or = graph.oddsRatio(n);
+                double p = graph.fisherExactP(n);
+                Map<String,Integer> labelCounts = graph.getLabelCounts(n);
+                int caseCounts = 0;
+                int ctrlCounts = 0;
+                if (labelCounts.containsKey("case")) caseCounts = labelCounts.get("case");
+                if (labelCounts.containsKey("ctrl")) ctrlCounts = labelCounts.get("ctrl");
+                tip += "<br/>"+caseCounts+"/"+ctrlCounts+"<br/>" +
+                    "OR="+orf.format(or)+"<br/>" +
+                    "p="+pf.format(p);
+            }
+            tip += "</html>";
             return tip;
         } else if (c.isEdge()) {
-            Edge e = (Edge) c.getValue();
-            Map<String,Integer> labelCounts = graph.getLabelCounts(e);
-            int caseCounts = 0;
-            int ctrlCounts = 0;
-            if (labelCounts.containsKey("case")) caseCounts = labelCounts.get("case");
-            if (labelCounts.containsKey("ctrl")) ctrlCounts = labelCounts.get("ctrl");
-            String tip = caseCounts+"/"+ctrlCounts;
-            return tip;
+            if (hasCaseControlLabels) {
+                Edge e = (Edge) c.getValue();
+                Map<String,Integer> labelCounts = graph.getLabelCounts(e);
+                int caseCounts = 0;
+                int ctrlCounts = 0;
+                if (labelCounts.containsKey("case")) caseCounts = labelCounts.get("case");
+                if (labelCounts.containsKey("ctrl")) ctrlCounts = labelCounts.get("ctrl");
+                return caseCounts+"/"+ctrlCounts;
+            } else {
+                Edge e = (Edge) c.getValue();
+                return String.valueOf(graph.getPathCount(e));
+            }
         } else {
             // shouldn't be reached
             return "";

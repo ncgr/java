@@ -337,10 +337,24 @@ public class PangenomicGraph extends DirectedAcyclicGraph<Node,Edge> {
     }
 
     /**
+     * Get the number of graph's paths.
+     */
+    public int getPathCount() {
+        return paths.size();
+    }
+
+    /**
      * Get the paths that traverse the given node.
      */
     public List<Path> getPaths(Node n) {
         return nodePaths.get(n.getId());
+    }
+
+    /**
+     * Get the number of paths that traverse the given node.
+     */
+    public int getPathCount(Node n) {
+        return getPaths(n).size();
     }
 
     /**
@@ -552,9 +566,11 @@ public class PangenomicGraph extends DirectedAcyclicGraph<Node,Edge> {
      * Print the counts of paths per label.
      */
     public void printLabelCounts(PrintStream out) {
-        if (out==System.out) printHeading("LABEL COUNTS");
-        for (String label : labelCounts.keySet()) {
-            out.println(label+"\t"+labelCounts.get(label));
+        if (labelCounts!=null && labelCounts.size()>0) {
+            if (out==System.out) printHeading("LABEL COUNTS");
+            for (String label : labelCounts.keySet()) {
+                out.println(label+"\t"+labelCounts.get(label));
+            }
         }
     }
 
@@ -598,7 +614,7 @@ public class PangenomicGraph extends DirectedAcyclicGraph<Node,Edge> {
      */
     public void printAll(String outputPrefix) throws FileNotFoundException, IOException {
         if (outputPrefix==null) return;
-        if (labelCounts.size()>0) {
+        if (labelCounts!=null && labelCounts.size()>0) {
             PrintStream labelCountsOut = new PrintStream(outputPrefix+".labelcounts.txt");
             printLabelCounts(labelCountsOut);
         }
@@ -641,7 +657,7 @@ public class PangenomicGraph extends DirectedAcyclicGraph<Node,Edge> {
      * Run all the PangenomicGraph printing methods to stdout.
      */
     public void printAll() throws FileNotFoundException, IOException {
-        if (labelCounts.size()>0) {
+        if (labelCounts!=null && labelCounts.size()>0) {
             printLabelCounts(System.out);
         }
         printNodes(System.out);

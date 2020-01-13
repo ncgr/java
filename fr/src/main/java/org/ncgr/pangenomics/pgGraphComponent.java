@@ -92,10 +92,13 @@ class pgGraphComponent extends mxGraphComponent implements ActionListener {
         zoomOutButton.addActionListener(this);
         topPanel.add(zoomOutButton);
         // graph info
-        String infoLabelString = graph.getNodes().size()+" nodes " +
-            graph.getPaths().size()+" paths (" +
-            graph.getLabelCounts().get("case")+" cases / " +
-            graph.getLabelCounts().get("ctrl")+" controls)";
+        String infoLabelString = graph.getNodes().size()+" nodes "+graph.getPaths().size()+" paths";
+        if (graph.getLabelCounts().get("case")!=null && graph.getLabelCounts().get("ctrl")!=null) {
+            infoLabelString += " ("+graph.getLabelCounts().get("case")+" cases / "+graph.getLabelCounts().get("ctrl")+" controls)";
+        }
+        // DEBUG
+        System.out.println(infoLabelString);
+        //
         JLabel infoLabel = new JLabel(infoLabelString);
         topPanel.add(infoLabel);
         // put it on the top

@@ -124,12 +124,19 @@ public class frGraphComponent extends mxGraphComponent implements ActionListener
         topPanel.setLayout(gridbag);
         
         GridBagConstraints c = new GridBagConstraints();
-        c.insets = new Insets(1, 4, 1, 4); // top, left, bottom, right
 
+        // empty last label
+        JLabel emptyLabel1 = new JLabel("");
+        c.weightx = 1.0;
+        gridbag.setConstraints(emptyLabel1, c);
+        topPanel.add(emptyLabel1);
+        
         // navigation buttons
         prevButton = new JButton("FR");
         prevButton.setActionCommand("previous");
         prevButton.addActionListener(this);
+        c.weightx = 0.0;
+        c.insets = new Insets(1, 4, 1, 4); // top, left, bottom, right
         gridbag.setConstraints(prevButton, c);
         topPanel.add(prevButton);
         currentLabel = new JLabel("FR 1 / "+frequentedRegions.size());
@@ -154,12 +161,19 @@ public class frGraphComponent extends mxGraphComponent implements ActionListener
         zoomInButton.setActionCommand("zoomIn");
         zoomInButton.setFont(zoomInButton.getFont().deriveFont(Font.BOLD));
         zoomInButton.addActionListener(this);
-        c.gridwidth = GridBagConstraints.REMAINDER; //end row
         gridbag.setConstraints(zoomInButton, c);
         topPanel.add(zoomInButton);
 
-        // label with current FR's nodes
+        // empty last label
+        JLabel emptyLabel2 = new JLabel("");
+        c.weightx = 1.0;
+        c.gridwidth = GridBagConstraints.REMAINDER; // last
+        gridbag.setConstraints(emptyLabel2, c);
+        topPanel.add(emptyLabel2);
+
+        // label with current FR's nodes on next line
         nodesLabel = new JLabel("");
+        c.weightx = 0.0;
         gridbag.setConstraints(nodesLabel, c);
         topPanel.add(nodesLabel);
 
