@@ -70,7 +70,7 @@ public class FRPair implements Comparable {
     public void computeAlphaRejection() {
         alphaReject = false;
         if (nodes.size()>1) {
-            int minMissing = Integer.MAX_VALUE;
+            int minMissing = nodes.size();
             for (Node n1 : nodes) {
                 for (Node n2 : nodes) {
                     if (n1.getId()<n2.getId()) {

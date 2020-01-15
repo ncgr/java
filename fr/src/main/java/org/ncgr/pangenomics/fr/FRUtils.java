@@ -62,7 +62,7 @@ public class FRUtils {
             // 131922.1.case:[2]
             // ...
             String[] fields = line.split("\t");
-            NodeSet nodes = new NodeSet(graph, fields[0]);
+            NodeSet nodes = graph.getNodeSet(fields[0]);
             int size = Integer.parseInt(fields[1]);
             int support = Integer.parseInt(fields[2]);
             double avgLength = Double.parseDouble(fields[3]);

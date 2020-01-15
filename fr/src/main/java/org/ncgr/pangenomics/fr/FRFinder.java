@@ -104,7 +104,8 @@ public class FRFinder {
         parameters.setProperty("minLen", "1.0");
         parameters.setProperty("maxRound", "0");
         parameters.setProperty("minPriority", "1");
-        parameters.setProperty("requiredNode", "0");
+        parameters.setProperty("requiredNodes", "[]");
+        parameters.setProperty("forbiddenNodes", "[]");
         parameters.setProperty("priorityOption", "4");
         parameters.setProperty("keepOption", "null");
         parameters.setProperty("resume", "false");
@@ -122,7 +123,7 @@ public class FRFinder {
 	System.out.println("# Starting findFRs: alpha="+alpha+" kappa="+kappa+
                            " priorityOption="+getPriorityOption()+" minPriority="+getMinPriority()+
                            " minSup="+getMinSup()+" minSize="+getMinSize()+" minLen="+getMinLen()+
-                           " requiredNode="+getRequiredNodeId()+" keepOption="+getKeepOption()+" maxRound="+getMaxRound());
+                           " requiredNodes="+getRequiredNodes()+" forbiddenNodes="+getForbiddenNodes()+" keepOption="+getKeepOption()+" maxRound="+getMaxRound());
 
         // output the graph files if graph loaded from GFA
         if (getGfaFilename()!=null) graph.printAll(getGraphName());
@@ -139,8 +140,9 @@ public class FRFinder {
         // accepted FRPairs so we don't merge them more than once
         ConcurrentHashMap<String,FRPair> acceptedFRPairs = new ConcurrentHashMap<>();
 
-        // optional required node, null if not set; must be final since used in the parallel stream loop
-        final Node requiredNode = graph.getNode(getRequiredNodeId());
+        // optional required and forbidden nodes; must be final since used in the parallel stream loop
+        final NodeSet requiredNodes = graph.getNodeSet(getRequiredNodes());
+        final NodeSet forbiddenNodes = graph.getNodeSet(getForbiddenNodes());
 
         // FR-finding round counter
         int round = 0;
@@ -153,7 +155,7 @@ public class FRFinder {
             BufferedReader sfrReader = new BufferedReader(new FileReader(getGraphName()+"."+ALL_FREQUENTED_REGIONS_SAVE));
             while ((line=sfrReader.readLine())!=null) {
                 String[] parts = line.split("\t");
-                NodeSet nodes = new NodeSet(graph, parts[0]);
+                NodeSet nodes = graph.getNodeSet(parts[0]);
                 allFrequentedRegions.put(nodes.toString(), new FrequentedRegion(graph, nodes, alpha, kappa, getPriorityOption()));
             }
 	    // rejectedNodeSets
@@ -169,7 +171,7 @@ public class FRFinder {
 	    line = frReader.readLine(); // header
             while ((line=frReader.readLine())!=null) {
                 String[] parts = line.split("\t");
-                NodeSet nodes = new NodeSet(graph, parts[0]);
+                NodeSet nodes = graph.getNodeSet(parts[0]);
                 frequentedRegions.put(nodes.toString(), new FrequentedRegion(graph, nodes, alpha, kappa, getPriorityOption()));
                 round++; // increment round so we start where we left off
             }
@@ -213,14 +215,32 @@ public class FRFinder {
                             if (fr2.nodes.compareTo(fr1.nodes)>0) {
                                 FRPair frpair = new FRPair(fr1, fr2);
                                 String nodesKey = frpair.nodes.toString();
+                                boolean rejected = false;
                                 if (rejectedNodeSets.contains(nodesKey)) {
-                                    // do nothing, rejected
-                                } else if (frequentedRegions.containsKey(nodesKey)) {
-                                    // do nothing, already found
-                                } else if (requiredNode!=null && !frpair.nodes.contains(requiredNode)) {
-                                    // add to rejected set
-                                    rejectedNodeSets.add(nodesKey);
-                                } else {
+                                    rejected = true; // already rejected
+                                }
+                                if (frequentedRegions.containsKey(nodesKey)) {
+                                    rejected = true; // already found
+                                }
+                                if (requiredNodes.size()>0) {
+                                    for (Node n : requiredNodes) {
+                                        if (!frpair.nodes.contains(n)) {
+                                            rejectedNodeSets.add(nodesKey);
+                                            rejected = true; // lacking required node
+                                            break;
+                                        }
+                                    }
+                                }
+                                if (forbiddenNodes.size()>0) {
+                                    for (Node n : forbiddenNodes) {
+                                        if (frpair.nodes.contains(n)) {
+                                            rejectedNodeSets.add(nodesKey);
+                                            rejected = true; // containing forbidden node
+                                            break;
+                                        }
+                                    }
+                                }
+                                if (!rejected) {
                                     if (acceptedFRPairs.containsKey(nodesKey)) {
                                         // get stored FRPair since already merged in a previous round
                                         frpair = acceptedFRPairs.get(nodesKey);
@@ -228,8 +248,8 @@ public class FRFinder {
                                         // compute alpha-rejection before merging
                                         frpair.computeAlphaRejection();
                                         if (frpair.alphaReject) {
-                                            // add to rejected set
-                                            rejectedNodeSets.add(nodesKey);                                
+                                            rejectedNodeSets.add(nodesKey);
+                                            rejected = true;
                                         } else {
                                             // merge this pair
                                             try {
@@ -417,8 +437,11 @@ public class FRFinder {
     public int getMinPriority() {
         return Integer.parseInt(parameters.getProperty("minPriority"));
     }
-    public long getRequiredNodeId() {
-        return Long.parseLong(parameters.getProperty("requiredNode"));
+    public String getRequiredNodes() {
+        return parameters.getProperty("requiredNodes");
+    }
+    public String getForbiddenNodes() {
+        return parameters.getProperty("forbiddenNodes");
     }
     public String getKeepOption() {
         return parameters.getProperty("keepOption");
@@ -461,8 +484,11 @@ public class FRFinder {
     public void setMinPriority(int minPriority) {
         parameters.setProperty("minPriority", String.valueOf(minPriority));
     }
-    public void setRequiredNodeId(long requiredNode) {
-        parameters.setProperty("requiredNode", String.valueOf(requiredNode));
+    public void setRequiredNodes(String requiredNodes) {
+        parameters.setProperty("requiredNodes", requiredNodes);
+    }
+    public void setForbiddenNodes(String forbiddenNodes) {
+        parameters.setProperty("forbiddenNodes", forbiddenNodes);
     }
     public void setKeepOption(String keepOption) {
         parameters.setProperty("keepOption", keepOption);
@@ -585,9 +611,13 @@ public class FRFinder {
         skipSaveFilesOption.setRequired(false);
         options.addOption(skipSaveFilesOption);
         //
-        Option requiredNodeOption = new Option("rn", "requirednode", true, "require that found FRs contain the given node [0]");
-        requiredNodeOption.setRequired(false);
-        options.addOption(requiredNodeOption);
+        Option requiredNodesOption = new Option("rn", "requirednodes", true, "require that found FRs contain the given nodes []");
+        requiredNodesOption.setRequired(false);
+        options.addOption(requiredNodesOption);
+        //
+        Option forbiddenNodesOption = new Option("fn", "forbiddennodes", true, "require that found FRs NOT contain the given nodes []");
+        forbiddenNodesOption.setRequired(false);
+        options.addOption(forbiddenNodesOption);
         //
         Option keepOptionOption = new Option("keep", "keepoption", true, "option for keeping FRs in finder loop: subset[:N]|distance[:N] [keep all]");
         keepOptionOption.setRequired(false);
@@ -685,7 +715,8 @@ public class FRFinder {
             if (cmd.hasOption("minlen")) frf.setMinLen(Double.parseDouble(cmd.getOptionValue("minlen")));
             if (cmd.hasOption("maxround")) frf.setMaxRound(Integer.parseInt(cmd.getOptionValue("maxround")));
             if (cmd.hasOption("minpriority")) frf.setMinPriority(Integer.parseInt(cmd.getOptionValue("minpriority")));
-            if (cmd.hasOption("requirednode")) frf.setRequiredNodeId(Long.parseLong(cmd.getOptionValue("requirednode")));
+            if (cmd.hasOption("requirednodes")) frf.setRequiredNodes(cmd.getOptionValue("requirednodes"));
+            if (cmd.hasOption("forbiddennodes")) frf.setForbiddenNodes(cmd.getOptionValue("forbiddennodes"));
             if (cmd.hasOption("keepoption")) frf.setKeepOption(cmd.getOptionValue("keepoption"));
             if (cmd.hasOption("verbose")) frf.setVerbose();
             if (cmd.hasOption("debug")) frf.setDebug();
@@ -920,7 +951,7 @@ public class FRFinder {
         String line = null;
         while ((line=reader.readLine())!=null) {
             String[] fields = line.split("\t");
-            NodeSet nodes = new NodeSet(graph, fields[0]);
+            NodeSet nodes = graph.getNodeSet(fields[0]);
             int support = Integer.parseInt(fields[1]);
             double avgLength = Double.parseDouble(fields[2]);
             List<Path> subpaths = new ArrayList<>();

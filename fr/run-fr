@@ -4,17 +4,21 @@
 ##                                equal alphaend)
 ##  -g,--genotype <arg>           which genotype to include (0,1) from the
 ##                                input file; -1 to include all [-1]
-##  -gfa,--gfa <arg>              GFA file
+##  -gfa,--gfa                    load from [graph].paths.gfa
+##  -graph,--graph <arg>          graph name
 ##  -k,--kappa <arg>              starting value of kappa for a scan (can
 ##                                equal kappaend)
 ##  -n,--nodes <arg>              set of nodes to calculate FR e.g.
 ##                                [1,2,3,4,5]
 ##  -p,--pathlabels <arg>         tab-delimited file with pathname<tab>label
-##  -pri,--priorityOption <arg>   option for priority weighting of FRs:
-##                                0=total support, 1=case support-control
-##                                support, 2=|case support-control support|,
-##                                3=Fisher's exact test double-sided p value,
-##                                4=control support (descending)
+##  -pri,--priorityoption <arg>   option for priority weighting of FRs:
+##                                0=total support, 1:label=label
+##                                support-other support [case], 2=|case
+##                                support-control support|, 3:label=odds
+##                                ratio in label's favor [case], 4=Fisher's
+##                                exact test double-sided p value
+##  -txt,--txt                    load from [graph].nodes.txt and
+##                                [graph].paths.txt
 
 graph=$1
 alpha=$2

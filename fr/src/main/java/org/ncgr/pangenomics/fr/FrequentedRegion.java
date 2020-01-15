@@ -622,7 +622,7 @@ public class FrequentedRegion implements Comparable {
 
         // create the FrequentedRegion with this PangenomicGraph
         String nodeString = cmd.getOptionValue("nodes");
-        NodeSet nodes = new NodeSet(pg, nodeString);
+        NodeSet nodes = pg.getNodeSet(nodeString);
         FrequentedRegion fr = new FrequentedRegion(pg, nodes, alpha, kappa, priorityOption);
 
         // print it out

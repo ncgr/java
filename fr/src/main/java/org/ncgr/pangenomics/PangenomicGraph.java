@@ -7,6 +7,7 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.PrintStream;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.ArrayList;
@@ -314,6 +315,36 @@ public class PangenomicGraph extends DirectedAcyclicGraph<Node,Edge> {
     public Set<Node> getNodes() {
         return vertexSet();
     }
+
+    /**
+     * Construct a NodeSet from a string representation, e.g. [1350,1352,1353,1465,1467,1468,1469].
+     */
+    public NodeSet getNodeSet(String str) {
+        NodeSet nodes = new NodeSet();
+        Set<Node> allNodes = getNodes();
+        Map<Long,Node> allNodeMap = new HashMap<>();
+        for (Node n : allNodes) allNodeMap.put(n.getId(), n);
+        List<String> nodeStrings = Arrays.asList(str.replace("[","").replace("]","").split(","));
+        for (String s : nodeStrings) {
+            if (s.length()>0) {
+                long id = Long.parseLong(s);
+                if (allNodeMap.containsKey(id)) {
+                    nodes.add(allNodeMap.get(id));
+                } else {
+                    // bail, we're asked for a node that is not in the graph
+                    System.err.println("ERROR: graph does not contain node "+id);
+                    System.exit(1);
+                }
+            }
+        }
+        return nodes;
+    }
+
+
+    /**
+     * Return the nodes listed in the NodeSet string, e.g. [1,3,5,9,123].
+     */
+    
 
     /**
      * Return the node with the given id, else null.
