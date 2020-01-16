@@ -26,4 +26,18 @@ public class Edge extends DefaultEdge {
     public String toString() {
         return this.getSource().toString()+":"+this.getTarget().toString();
     }
+
+    /**
+     * Return the source Node.
+     */
+    public Node getSourceNode() {
+        return (Node) getSource();
+    }
+
+    /**
+     * Return the target Node.
+     */
+    public Node getTargetNode() {
+        return (Node) getTarget();
+    }
 }

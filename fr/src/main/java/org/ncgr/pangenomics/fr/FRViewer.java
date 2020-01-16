@@ -1,11 +1,6 @@
 package org.ncgr.pangenomics.fr;
 
-import org.ncgr.pangenomics.Edge;
-import org.ncgr.pangenomics.Node;
-import org.ncgr.pangenomics.NullNodeException;
-import org.ncgr.pangenomics.NullSequenceException;
-import org.ncgr.pangenomics.PangenomicGraph;
-import org.ncgr.pangenomics.TXTImporter;
+import org.ncgr.pangenomics.*;
 
 import com.mxgraph.layout.*;
 import com.mxgraph.layout.orthogonal.*;
@@ -39,18 +34,21 @@ public class FRViewer {
      * @param args command line arguments: graphName
      */
     public static void main(String[] args) {
-        if (args.length!=1) {
-            System.out.println("Usage: FRViewer <prefix>");
+        if (args.length==0 || args.length>2) {
+            System.out.println("Usage: FRViewer <prefix> [highlight path name]");
             System.exit(0);
         }
-        String prefix = args[0];
         // schedule a job for the event dispatch thread: creating and showing this application's GUI.
         SwingUtilities.invokeLater(new Runnable() {
                 public void run() {
                     // turn off metal's use of bold fonts
                     UIManager.put("swing.boldMetal", Boolean.FALSE);
                     try {
-                        createAndShowGUI(prefix);
+                        if (args.length==2) {
+                            createAndShowGUI(args[0], args[1]);
+                        } else {
+                            createAndShowGUI(args[0], null);
+                        }
                     } catch (Exception e) {
                         System.err.println(e);
                         System.exit(1);
@@ -64,7 +62,7 @@ public class FRViewer {
      *
      * @param prefix the FRFinder run prefix, e.g. HTT-0.1-100
      */
-    public static void createAndShowGUI(String prefix) throws IOException, NullNodeException, NullSequenceException {
+    public static void createAndShowGUI(String prefix, String highlightPathName) throws IOException, NullNodeException, NullSequenceException {
         String[] pieces = prefix.split("-");
         String graphName = pieces[0];
         double alpha = Double.parseDouble(pieces[1]);
@@ -85,6 +83,16 @@ public class FRViewer {
         graph.importTXT(nodesFile, pathsFile);
         graph.tallyLabelCounts();
 
+        // get the highlight path if provided
+        Path highlightPath = null;
+        if (highlightPathName!=null) {
+            highlightPath = graph.getPath(highlightPathName);
+            if (highlightPath==null) {
+                System.err.println("ERROR: requested highlight path "+highlightPathName+" is not in graph.");
+                System.exit(1);
+            }
+        }
+
         // load the FRs into a sorted map so we see the juicy ones first
         Map<String,FrequentedRegion> unsortedFRs = FRUtils.readFrequentedRegions(prefix, graph);
         FRpriorityComparator frComparator = new FRpriorityComparator(unsortedFRs);
@@ -97,10 +105,10 @@ public class FRViewer {
 
         // the FGraphXAdapter is an mxGraph; instantiate with the first FR in the list
         Object[] frKeys = frequentedRegions.keySet().toArray();
-        FGraphXAdapter fgxAdapter = new FGraphXAdapter(graph, frequentedRegions.get((String)frKeys[0]));
+        FGraphXAdapter fgxAdapter = new FGraphXAdapter(graph, frequentedRegions.get((String)frKeys[0]), highlightPath);
 
         // frGraphComponent extends mxGraphComponent which extends JScrollPane (implements Printable)
-        frGraphComponent component = new frGraphComponent(graph, frequentedRegions, fgxAdapter, parameters);
+        frGraphComponent component = new frGraphComponent(graph, frequentedRegions, fgxAdapter, parameters, highlightPath);
         component.setBackground(Color.LIGHT_GRAY);
 
         // add the component to the frame, clean up frame and show

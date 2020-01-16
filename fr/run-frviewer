@@ -1,3 +1,4 @@
 #!/bin/sh
 graph=$1
-java -cp "build/install/fr/lib/*" org.ncgr.pangenomics.fr.FRViewer $1
+highlightpath=$2
+java -cp "build/install/fr/lib/*" org.ncgr.pangenomics.fr.FRViewer $graph $highlightpath

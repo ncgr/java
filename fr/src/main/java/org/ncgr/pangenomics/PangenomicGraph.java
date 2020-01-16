@@ -368,6 +368,18 @@ public class PangenomicGraph extends DirectedAcyclicGraph<Node,Edge> {
     }
 
     /**
+     * Get the path with the given name.genotype.
+     */
+    public Path getPath(String nameGenotype) {
+        for (Path p : paths) {
+            if (p.getNameGenotype().equals(nameGenotype)) {
+                return p;
+            }
+        }
+        return null;
+    }
+
+    /**
      * Get the number of graph's paths.
      */
     public int getPathCount() {

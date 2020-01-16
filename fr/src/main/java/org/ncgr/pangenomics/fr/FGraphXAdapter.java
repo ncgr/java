@@ -1,8 +1,6 @@
 package org.ncgr.pangenomics.fr;
 
-import org.ncgr.pangenomics.Edge;
-import org.ncgr.pangenomics.Node;
-import org.ncgr.pangenomics.PangenomicGraph;
+import org.ncgr.pangenomics.*;
 
 import com.mxgraph.layout.*;
 import com.mxgraph.layout.orthogonal.*;
@@ -36,11 +34,13 @@ public class FGraphXAdapter extends JGraphXAdapter<Node,Edge> {
 
     PangenomicGraph graph;
     FrequentedRegion fr;
+    java.util.List<Edge> highlightPathEdges;
 
-    public FGraphXAdapter(PangenomicGraph graph, FrequentedRegion fr) {
+    public FGraphXAdapter(PangenomicGraph graph, FrequentedRegion fr, Path highlightPath) {
         super(new DefaultListenableGraph<Node,Edge>(graph));
         this.graph = graph;
         this.fr = fr;
+        if (highlightPath!=null) highlightPathEdges = highlightPath.getEdges();
 
         // set default styles
         mxStylesheet defaultStylesheet = getStylesheet();
@@ -102,24 +102,59 @@ public class FGraphXAdapter extends JGraphXAdapter<Node,Edge> {
                             }
                         }
                     } else {
-                        // path support decoration
-                        double frac = (double)graph.getPathCount(n) / (double)graph.getPathCount();
-                        int rgb = (int) Math.round(255.0*frac);
-                        String hex = Integer.toHexString(rgb);
-                        if (rgb<16) hex = "0"+hex;
-                        String col = "white";
-                        if (rgb>127) col = "black";
-                        setCellStyles("fillColor", "#"+hex+hex+hex, cells);
-                        setCellStyles("fontColor", col, cells);
+                        double or = graph.oddsRatio(n);
+                        double p = graph.fisherExactP(n);
+                        // color based on segregation
+                        if (Double.isInfinite(or)) {
+                            // 100% case node
+                            setCellStyles("fillColor", "#ff8080", cells);
+                            setCellStyles("fontColor", "black", cells);
+                        } else if (or==0.00) {
+                            // 100% ctrl node
+                            setCellStyles("fillColor", "#80ff80", cells);
+                            setCellStyles("fontColor", "black", cells);
+                        } else if (or>1.0) {
+                            // case node
+                            double log10or = Math.log10(or);
+                            int rInt = Math.min((int)(127.0*log10or), 127) + 128;
+                            String rHex = Integer.toHexString(rInt);
+                            String fillColor = "#"+rHex+"8080";
+                            setCellStyles("fillColor", fillColor, cells);
+                            if (p<1e-2) {
+                                setCellStyles("fontColor", "white", cells);
+                            } else {
+                                setCellStyles("fontColor", "black", cells);
+                            }
+                        } else if (or<1.0) {
+                            // ctrl node
+                            double log10or = -Math.log10(or);
+                            int gInt = Math.min((int)(127.0*log10or), 127) + 128;
+                            String gHex = Integer.toHexString(gInt);
+                            String fillColor = "#80"+gHex+"80";
+                            setCellStyles("fillColor", fillColor, cells);
+                            if (p<1e-2) {
+                                setCellStyles("fontColor", "white", cells);
+                            } else {
+                                setCellStyles("fontColor", "black", cells);
+                            }
+                        }
                     }
-                    // update the cell shape
-                    cellSizeUpdated(c, true);
                 }
             } else if (c.isEdge()) {
-                // // this works, but really slows things down
-                // Edge e = (Edge) c.getValue();
-                // float width = (float)(Math.log10((double)graph.getPathCount(e)) + 1.0);
-                // setCellStyles(mxConstants.STYLE_STROKEWIDTH, String.valueOf(width), cells);
+                if (highlightPath!=null) {
+                    // highlight path's edges
+                    Edge e = (Edge) c.getValue();
+                    if (highlightPathEdges.contains(e)) {
+                        setCellStyles("strokeWidth", "2.0", cells);
+                        if (highlightPath.isCase()) {
+                            setCellStyles("strokeColor", "red", cells);
+                        } else if (highlightPath.isControl()) {
+                            setCellStyles("strokeColor", "green", cells);
+                        } else {
+                            setCellStyles("strokeColor", "black", cells);
+                        }
+                    }
+                }
             }
         }
         clearSelection();

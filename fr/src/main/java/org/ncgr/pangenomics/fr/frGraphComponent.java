@@ -1,7 +1,6 @@
 package org.ncgr.pangenomics.fr;
 
-import org.ncgr.pangenomics.Node;
-import org.ncgr.pangenomics.PangenomicGraph;
+import org.ncgr.pangenomics.*;
 
 import com.mxgraph.layout.*;
 import com.mxgraph.layout.orthogonal.*;
@@ -37,6 +36,7 @@ public class frGraphComponent extends mxGraphComponent implements ActionListener
     Map<String,FrequentedRegion> frequentedRegions;
     FGraphXAdapter fgxAdapter;
     Properties parameters;
+    Path highlightPath;
     
     JButton prevButton, nextButton;
     JButton zoomInButton, zoomOutButton;
@@ -53,13 +53,14 @@ public class frGraphComponent extends mxGraphComponent implements ActionListener
     /**
      * Constructor takes a FGraphXAdapter
      */
-    frGraphComponent(PangenomicGraph graph, Map<String,FrequentedRegion> frequentedRegions, FGraphXAdapter fgxAdapter, Properties parameters) {
+    frGraphComponent(PangenomicGraph graph, Map<String,FrequentedRegion> frequentedRegions, FGraphXAdapter fgxAdapter, Properties parameters, Path highlightPath) {
         super(fgxAdapter);
         
         this.fgxAdapter = fgxAdapter;
         this.graph = graph;
         this.frequentedRegions = frequentedRegions;
         this.parameters = parameters;
+        this.highlightPath = highlightPath;
 
         // housekeeping
         setConnectable(false);
@@ -205,7 +206,7 @@ public class frGraphComponent extends mxGraphComponent implements ActionListener
                 current--;
             }
             currentFR = frequentedRegions.get((String)frKeys[current]);
-            fgxAdapter = new FGraphXAdapter(graph, currentFR);
+            fgxAdapter = new FGraphXAdapter(graph, currentFR, highlightPath);
             setGraph(fgxAdapter);
             updateInfoLabel(currentFR, parameters);
             updateNodesLabel(currentFR);
@@ -217,11 +218,8 @@ public class frGraphComponent extends mxGraphComponent implements ActionListener
             } else if (command.equals("zoomOut")) {
                 scale = scale/Math.sqrt(2.0);
             }
-            fgxAdapter = new FGraphXAdapter(graph, currentFR);
             fgxAdapter.getView().setScale(scale);
-            setGraph(fgxAdapter);
             refresh();
-            executeLayout();
          }
     }
 

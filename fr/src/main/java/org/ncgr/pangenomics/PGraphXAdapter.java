@@ -29,10 +29,12 @@ class PGraphXAdapter extends JGraphXAdapter<Node,Edge> {
 
     PangenomicGraph graph;
     boolean hasCaseControlLabels;
+    java.util.List<Edge> highlightPathEdges;
 
-    public PGraphXAdapter(PangenomicGraph graph) {
+    public PGraphXAdapter(PangenomicGraph graph, Path highlightPath) {
         super(new DefaultListenableGraph<Node,Edge>(graph));
         this.graph = graph;
+        if (highlightPath!=null) highlightPathEdges = highlightPath.getEdges();
         
         mxStylesheet defaultStylesheet = getStylesheet();
 
@@ -64,7 +66,7 @@ class PGraphXAdapter extends JGraphXAdapter<Node,Edge> {
                 mxCell c = (mxCell) o;
                 if (c.isVertex()) {
                     Node n = (Node) c.getValue();
-                    if (graph.getPaths(n).size()>0) {
+                    if (c.getEdgeCount()>0) {
                         double or = graph.oddsRatio(n);
                         double p = graph.fisherExactP(n);
                         // color based on segregation
@@ -101,11 +103,22 @@ class PGraphXAdapter extends JGraphXAdapter<Node,Edge> {
                                 setCellStyles("fontColor", "black", cells);
                             }
                         }
-                        // update the cell shape since we've added a big label
-                        cellSizeUpdated(c, true);
                     }
                 } else if (c.isEdge()) {
-                    // do something with the edges?
+                    if (highlightPath!=null) {
+                        // highlight path's edges
+                        Edge e = (Edge) c.getValue();
+                        if (highlightPathEdges.contains(e)) {
+                            setCellStyles("strokeWidth", "2.0", cells);
+                            if (highlightPath.isCase()) {
+                                setCellStyles("strokeColor", "red", cells);
+                            } else if (highlightPath.isControl()) {
+                                setCellStyles("strokeColor", "green", cells);
+                            } else {
+                                setCellStyles("strokeColor", "black", cells);
+                            }
+                        }
+                    }
                 }
             }
             clearSelection();

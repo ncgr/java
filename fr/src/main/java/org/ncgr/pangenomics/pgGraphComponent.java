@@ -96,9 +96,6 @@ class pgGraphComponent extends mxGraphComponent implements ActionListener {
         if (graph.getLabelCounts().get("case")!=null && graph.getLabelCounts().get("ctrl")!=null) {
             infoLabelString += " ("+graph.getLabelCounts().get("case")+" cases / "+graph.getLabelCounts().get("ctrl")+" controls)";
         }
-        // DEBUG
-        System.out.println(infoLabelString);
-        //
         JLabel infoLabel = new JLabel(infoLabelString);
         topPanel.add(infoLabel);
         // put it on the top
@@ -116,13 +113,8 @@ class pgGraphComponent extends mxGraphComponent implements ActionListener {
             } else if (command.equals("zoomOut")) {
                 scale = scale/Math.sqrt(2.0);
             }
-            pgxAdapter = new PGraphXAdapter(graph);
             pgxAdapter.getView().setScale(scale);
-            setGraph(pgxAdapter);
             refresh();
-            mxHierarchicalLayout layout = new mxHierarchicalLayout(pgxAdapter, SwingConstants.WEST);
-            layout.setFineTuning(true);
-            layout.execute(pgxAdapter.getDefaultParent());
         }
     }
 }
