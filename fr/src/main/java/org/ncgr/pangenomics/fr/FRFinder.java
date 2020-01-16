@@ -182,20 +182,26 @@ public class FRFinder {
             System.out.println("# Loaded "+frequentedRegions.size()+" frequentedRegions.");
             System.out.println("# Now continuing with FR finding...");
         } else {
-            // load the single-node FRs
-            for (Node node : graph.getNodes()) {
-                NodeSet c = new NodeSet();
-                c.add(node);
-                FrequentedRegion fr = new FrequentedRegion(graph, c, alpha, kappa, getPriorityOption());
-                allFrequentedRegions.put(c.toString(), fr);
-            }
+            // load the single-node FRs into allFrequentedRegions
+            ConcurrentSkipListSet<Node> nodeSet = new ConcurrentSkipListSet<>(graph.getNodes());
+            nodeSet.parallelStream().forEach(node -> {
+                    NodeSet c = new NodeSet();
+                    c.add(node);
+                    try {
+                        FrequentedRegion fr = new FrequentedRegion(graph, c, alpha, kappa, getPriorityOption());
+                        allFrequentedRegions.put(c.toString(), fr);
+                    } catch (Exception e) {
+                        System.err.println(e);
+                        System.exit(1);
+                    }
+                });
             // add interesting single-node FRs in round 0, since we won't hit them in the loop
             for (FrequentedRegion fr : allFrequentedRegions.values()) {
                 if (isInteresting(fr)) {
                     frequentedRegions.put(fr.nodes.toString(), fr);
                 }
             }
-            // dump out the single-node FRs of interest, sorted by p-value
+            // dump out the single-node FRs of interest, sorted by priority
             TreeSet<FrequentedRegion> sortedFRs = new TreeSet<>(frequentedRegions.values());
             for (FrequentedRegion fr : sortedFRs) {
                 System.out.println("0:"+fr.toString());
