@@ -17,12 +17,12 @@ dir=$1
 graph=$2
 
 ## GFA with labels
-#java -server -cp "build/install/fr/lib/*" org.ncgr.pangenomics.PangenomicGraph --verbose \
-#     --gfa --graph $dir/$graph --pathlabels $dir/labels.txt --outputprefix $graph --skipedges --skipsequences --skipnodepaths
+java -server -cp "build/install/fr/lib/*" org.ncgr.pangenomics.PangenomicGraph --verbose \
+     --gfa --graph $dir/$graph --pathlabels $dir/labels.txt --outputprefix $graph --skipedges --skipsequences --skipnodepaths
 
 ## GFA without labels
-java -server -cp "build/install/fr/lib/*" org.ncgr.pangenomics.PangenomicGraph --verbose \
-     --gfa --graph $dir/$graph --outputprefix $graph --skipedges --skipsequences --skipnodepaths
+#java -server -cp "build/install/fr/lib/*" org.ncgr.pangenomics.PangenomicGraph --verbose \
+#     --gfa --graph $dir/$graph --outputprefix $graph --skipedges --skipsequences --skipnodepaths
 
 ## TXT
 #java -server -cp "build/install/fr/lib/*" org.ncgr.pangenomics.PangenomicGraph --verbose \
