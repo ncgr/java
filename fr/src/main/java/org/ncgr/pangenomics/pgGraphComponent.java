@@ -83,14 +83,14 @@ class pgGraphComponent extends mxGraphComponent implements ActionListener {
         graphLabel.setFont(graphLabel.getFont().deriveFont(Font.BOLD));
         topPanel.add(graphLabel);
         // zoom buttons
-        zoomInButton = new JButton("+");
-        zoomInButton.setActionCommand("zoomIn");
-        zoomInButton.addActionListener(this);
-        topPanel.add(zoomInButton);
         zoomOutButton = new JButton("-");
         zoomOutButton.setActionCommand("zoomOut");
         zoomOutButton.addActionListener(this);
         topPanel.add(zoomOutButton);
+        zoomInButton = new JButton("+");
+        zoomInButton.setActionCommand("zoomIn");
+        zoomInButton.addActionListener(this);
+        topPanel.add(zoomInButton);
         // graph info
         String infoLabelString = graph.getNodes().size()+" nodes "+graph.getPaths().size()+" paths";
         if (graph.getLabelCounts().get("case")!=null && graph.getLabelCounts().get("ctrl")!=null) {

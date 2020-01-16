@@ -46,13 +46,13 @@ class PGraphXAdapter extends JGraphXAdapter<Node,Edge> {
         defaultStylesheet.setDefaultEdgeStyle(defaultEdgeStyle);
         // set default vertex (Node) style
         Map<String,Object> defaultVertexStyle = defaultStylesheet.getDefaultVertexStyle();
+        defaultVertexStyle.put("fillColor", "white");
         defaultVertexStyle.put("fontColor", "black");
-        defaultVertexStyle.put("fillColor", "gray");
         defaultVertexStyle.put("shape", mxConstants.SHAPE_ELLIPSE);
-        defaultVertexStyle.put("verticalAlign", mxConstants.ALIGN_BOTTOM);
         defaultStylesheet.setDefaultVertexStyle(defaultVertexStyle);
         // apply the default stylesheet
         setStylesheet(defaultStylesheet);
+        setAutoSizeCells(true);
 
         // logical to do case/control ops
         hasCaseControlLabels = graph.getLabelCounts().containsKey("case") && graph.getLabelCounts().containsKey("ctrl");
@@ -87,6 +87,7 @@ class PGraphXAdapter extends JGraphXAdapter<Node,Edge> {
                             setCellStyles("fillColor", fillColor, cells);
                             if (p<1e-2) {
                                 setCellStyles("fontColor", "white", cells);
+                                setCellStyles("fontStyle", String.valueOf(mxConstants.FONT_BOLD), cells);
                             } else {
                                 setCellStyles("fontColor", "black", cells);
                             }
@@ -99,6 +100,7 @@ class PGraphXAdapter extends JGraphXAdapter<Node,Edge> {
                             setCellStyles("fillColor", fillColor, cells);
                             if (p<1e-2) {
                                 setCellStyles("fontColor", "white", cells);
+                                setCellStyles("fontStyle", String.valueOf(mxConstants.FONT_BOLD), cells);
                             } else {
                                 setCellStyles("fontColor", "black", cells);
                             }

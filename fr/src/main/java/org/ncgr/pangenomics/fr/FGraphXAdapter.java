@@ -55,9 +55,10 @@ public class FGraphXAdapter extends JGraphXAdapter<Node,Edge> {
         defaultVertexStyle.put("shape", mxConstants.SHAPE_ELLIPSE);
         defaultStylesheet.setDefaultVertexStyle(defaultVertexStyle);
         setStylesheet(defaultStylesheet);
-
+        setAutoSizeCells(true);
+        
         // default case/control styles
-        String baseFRStyle = "shape="+mxConstants.SHAPE_RECTANGLE+";fontColor=black;fillColor=#808080;strokeColor=black;gradientColor=none;verticalAlign=bottom";
+        String baseFRStyle = "shape="+mxConstants.SHAPE_RECTANGLE+";fontColor=black;fillColor=#808080;strokeColor=black;gradientColor=none";
 
         // FR stats
         double frOR = fr.oddsRatio();
@@ -92,6 +93,7 @@ public class FGraphXAdapter extends JGraphXAdapter<Node,Edge> {
                                 String fillColor = "#"+rHex+"8080";
                                 setCellStyles("fillColor", fillColor, cells); 
                                 setCellStyles("fontColor", "white", cells);
+                                setCellStyles("fontStyle", String.valueOf(mxConstants.FONT_BOLD), cells);
                             } else if (frOR<1.0) {
                                 // ctrl node
                                 int gInt = Math.min(frPlevel, 127) + 128;
@@ -99,6 +101,7 @@ public class FGraphXAdapter extends JGraphXAdapter<Node,Edge> {
                                 String fillColor = "#80"+gHex+"80";
                                 setCellStyles("fillColor", fillColor, cells);
                                 setCellStyles("fontColor", "white", cells);
+                                setCellStyles("fontStyle", String.valueOf(mxConstants.FONT_BOLD), cells);
                             }
                         }
                     } else {
