@@ -148,7 +148,7 @@ public class FRFinder {
         // FR-finding round counter
         int round = 0;
 
-        if (getResume()) {
+        if (resume()) {
             // resume from a previous run
             System.out.println("# Resuming from previous run");
             String line = null;
@@ -220,7 +220,7 @@ public class FRFinder {
             // start parallel streams
             allFrequentedRegions.entrySet().parallelStream().forEach(entry1 -> {
                     FrequentedRegion fr1 = entry1.getValue();
-                    if (getDebug()) System.out.println("fr1:"+fr1);
+                    if (debug()) System.out.println("fr1:"+fr1);
                     allFrequentedRegions.entrySet().parallelStream().forEach(entry2 -> {
                             FrequentedRegion fr2 = entry2.getValue();
                             if (fr2.nodes.compareTo(fr1.nodes)>0) {
@@ -323,7 +323,7 @@ public class FRFinder {
                 }
             }
             // output current state for continuation if aborted
-            if (frequentedRegions.size()>0 && !getSkipSaveFiles()) {
+            if (frequentedRegions.size()>0 && !skipSaveFiles()) {
                 // params with current clock time
                 clockTime = System.currentTimeMillis() - startTime;
                 FRUtils.printParameters(parameters, getGraphName()+".save", alpha, kappa, clockTime);
@@ -399,9 +399,9 @@ public class FRFinder {
                 reason += " AVGLENGTH";
             }
             if (passes) filteredFRs.put(fr.nodes.toString(), fr);
-            if (getVerbose()) System.out.println(fr.toString()+reason);
+            if (verbose()) System.out.println(fr.toString()+reason);
         }
-        if (getVerbose()) System.out.println(filteredFRs.size()+" FRs passed minSup="+getMinSup()+", minSize="+getMinSize()+", minLen="+getMinLen());
+        if (verbose()) System.out.println(filteredFRs.size()+" FRs passed minSup="+getMinSup()+", minSize="+getMinSize()+", minLen="+getMinLen());
 	// output the filtered FRs and SVM data
         frequentedRegions = filteredFRs;
 	if (frequentedRegions.size()>0) {
@@ -412,14 +412,17 @@ public class FRFinder {
     }
 
     // parameter getters
-    public boolean getVerbose() {
+    public boolean verbose() {
         return Boolean.parseBoolean(parameters.getProperty("verbose"));
     }
-    public boolean getDebug() {
+    public boolean debug() {
         return Boolean.parseBoolean(parameters.getProperty("debug"));
     }
-    public boolean getSkipSaveFiles() {
+    public boolean skipSaveFiles() {
         return Boolean.parseBoolean(parameters.getProperty("skipSaveFiles"));
+    }
+    public boolean resume() {
+        return Boolean.parseBoolean(parameters.getProperty("resume"));
     }
     public int getMinSup() {
         return Integer.parseInt(parameters.getProperty("minSup"));
@@ -429,9 +432,6 @@ public class FRFinder {
     }
     public double getMinLen() {
         return Double.parseDouble(parameters.getProperty("minLen"));
-    }
-    public boolean getResume() {
-        return Boolean.parseBoolean(parameters.getProperty("resume"));
     }
     public String getPriorityOption() {
         return parameters.getProperty("priorityOption");
@@ -878,7 +878,7 @@ public class FRFinder {
     }
 
     /**
-     * Print out the FRs.
+     * Print out the FRs, in order of priority.
      */
     void printFrequentedRegions(String outputPrefix) throws IOException {
         if (frequentedRegions.size()==0) {
@@ -887,7 +887,8 @@ public class FRFinder {
         }
         PrintStream out = new PrintStream(FRUtils.getFRsFilename(outputPrefix));
         boolean first = true;
-        for (FrequentedRegion fr : frequentedRegions.values()) {
+        TreeSet<FrequentedRegion> sortedFRs = new TreeSet<>(frequentedRegions.values());
+        for (FrequentedRegion fr : sortedFRs) {
             if (first) {
                 out.println(fr.columnHeading());
                 first = false;
@@ -906,7 +907,8 @@ public class FRFinder {
             return;
         }
         PrintStream out = new PrintStream(FRUtils.getFRSubpathsFilename(outputPrefix));
-        for (FrequentedRegion fr : frequentedRegions.values()) {
+        TreeSet<FrequentedRegion> sortedFRs = new TreeSet<>(frequentedRegions.values());
+        for (FrequentedRegion fr : sortedFRs) {
             out.println(fr.toString());
             out.println(fr.subpathsString());
         }

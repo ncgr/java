@@ -1,19 +1,22 @@
-## #alpha=0.1
-## #kappa=0
-## #clocktime=03:44:35
-## #Mon Dec 16 03:46:50 MST 2019
-## minSup=2
+## #alpha=1.0
+## #kappa=100
+## #clocktime=00:47:11
+## #Thu Jan 16 09:04:56 MST 2020
+## minSup=1
 ## debug=false
 ## minSize=1
 ## minLen=1.0
-## txtFile=BBS4+ADPGK.21151.nodes.txt
+## txtFile=HLAB.601.nodes.txt
 ## resume=false
-## verbose=false
-## graphName=BBS4+ADPGK.21151
-## prunedGraph=false
-## maxRound=0
+## verbose=true
+## graphName=HLAB.601
+## requiredNodes=[]
+## maxRound=100
 ## priorityOption=4
-## minPriority=0
+## minPriority=1
+## forbiddenNodes=[]
+## keepOption=subset
+
 params = read.delim(file=paste(prefix,".params.txt",sep=""), header=FALSE, stringsAsFactors=FALSE, sep="=")
 for (i in 1:length(rownames(params))) {
     ## comments section
@@ -26,20 +29,24 @@ for (i in 1:length(rownames(params))) {
     } else if (substr(params$V1[i], 1, 1)=="#") {
         date = substr(params$V1[i], 2, 1000)
     } else {
+        ## defaults
+        gfaFile = NULL
+        txtFile = NULL
         ## main parameters section
         if (params$V1[i]=="minSup") minSup = as.numeric(params$V2[i])
         if (params$V1[i]=="debug") debug = as.logical(params$V2[i])
         if (params$V1[i]=="minSize") minSize = as.numeric(params$V2[i])
         if (params$V1[i]=="gfaFile") gfaFile = params$V2[i]
-        if (params$V1[i]=="txtFile") txtFile = 
+        if (params$V1[i]=="txtFile") txtFile = params$V2[i]
         if (params$V1[i]=="minLen") minLen = as.numeric(params$V2[i])
         if (params$V1[i]=="resume") resume = as.logical(params$V2[i])
         if (params$V1[i]=="verbose") verbose = as.logical(params$V2[i])
         if (params$V1[i]=="graphName") graphName = params$V2[i]
-        if (params$V1[i]=="prunedGraph") prunedGraph = as.logical(params$V2[i])
+        if (params$V1[i]=="requiredNodes") requiredNodes = params$V2[i]
         if (params$V1[i]=="maxRound") maxRound = as.numeric(params$V2[i])
         if (params$V1[i]=="priorityOption") priorityOption = as.numeric(params$V2[i])
         if (params$V1[i]=="minPriority") minPriority = as.numeric(params$V2[i])
+        if (params$V1[i]=="forbiddenNodes") forbiddenNodes = params$V2[i]
         if (params$V1[i]=="keepOption") keepOption = sub("\\\\","",params$V2[i])
     }
 }

@@ -75,11 +75,5 @@ if (labelsExist) {
     frs$OR = (frs$case/frs$ctrl) / (casePaths/ctrlPaths)
 }
 
-## ## Fisher's exact test p-value (if label counts exist) for the contingency table: case/ctrl / casePaths/ctrlPaths
-## if (labelsExist) {
-##     casePaths = labelCounts["case",1]
-##     ctrlPaths = labelCounts["ctrl",1]
-##     for (i in 1:nrow(frs)) {
-##         frs$p[i] = as.numeric(fisher.test(matrix(c(frs$case[i],frs$ctrl[i],casePaths,ctrlPaths), nrow=2))["p.value"])
-##     }
-## }
+## nodes
+nodes = read.table(file=paste(graphName,"nodes","txt",sep="."), row.names=1, col.names=c("node","sequence"))

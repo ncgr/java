@@ -39,7 +39,6 @@ if (isSaveSet) {
 } else {
     legend(x="topleft", bty="n",
            c(date,
-             gfaFile,
              paste("clock time:",clocktime),
              paste("priority option:",priorityOption),
              paste("min. support:",minSup),
