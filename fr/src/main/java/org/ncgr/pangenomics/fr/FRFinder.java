@@ -25,6 +25,7 @@ import java.util.HashMap;
 import java.util.TreeMap;
 import java.util.Properties;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListSet;
 
@@ -192,8 +193,12 @@ public class FRFinder {
             for (FrequentedRegion fr : allFrequentedRegions.values()) {
                 if (isInteresting(fr)) {
                     frequentedRegions.put(fr.nodes.toString(), fr);
-                    System.out.println("0:"+fr);
                 }
+            }
+            // dump out the single-node FRs of interest, sorted by p-value
+            TreeSet<FrequentedRegion> sortedFRs = new TreeSet<>(frequentedRegions.values());
+            for (FrequentedRegion fr : sortedFRs) {
+                System.out.println("0:"+fr.toString());
             }
         }
 
