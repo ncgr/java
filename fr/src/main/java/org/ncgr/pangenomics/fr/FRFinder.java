@@ -545,11 +545,11 @@ public class FRFinder {
         alphaEndOption.setRequired(false);
         options.addOption(alphaEndOption);
         //
-        Option kappaStartOption = new Option("ks", "kappastart", true, "starting value of kappa for a scan (can equal kappaend)");
+        Option kappaStartOption = new Option("ks", "kappastart", true, "starting value of kappa for a scan (can equal kappaend; -1=infinity)");
         kappaStartOption.setRequired(false);
         options.addOption(kappaStartOption);
         //
-        Option kappaEndOption = new Option("ke", "kappaend", true, "ending value of kappa for a scan (can equal kappastart)");
+        Option kappaEndOption = new Option("ke", "kappaend", true, "ending value of kappa for a scan (can equal kappastart; -1=infinity)");
         kappaEndOption.setRequired(false);
         options.addOption(kappaEndOption);
         //
@@ -668,6 +668,10 @@ public class FRFinder {
         if (cmd.hasOption("alphaend")) alphaEnd = Double.parseDouble(cmd.getOptionValue("alphaend"));
         if (cmd.hasOption("kappastart")) kappaStart = Integer.parseInt(cmd.getOptionValue("kappastart"));
         if (cmd.hasOption("kappaend")) kappaEnd = Integer.parseInt(cmd.getOptionValue("kappaend"));
+        if (kappaStart==-1 || kappaEnd==-1) {
+            kappaStart = Integer.MAX_VALUE; // effectively infinity
+            kappaEnd = Integer.MAX_VALUE;
+        }
         
         if (cmd.hasOption("inputprefix")) {
             // post-process an existing run

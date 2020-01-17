@@ -12,6 +12,11 @@ plot(xlim, rep(2.0,2), type="l", lty=2, col="gray",
 for (i in 1:nrow(frs)) {
     nodeString = frs$nodes[i]
     frNodes = as.numeric(strsplit(sub("\\[","",sub("\\]","",nodeString)), ",")[[1]])
+    if (length(frNodes)==1) {
+        pchar = 1
+    } else {
+        pchar = 0
+    }
     if (frs$p[i]>1e-2) {
         color = "darkgray"
     } else if (frs$OR[i]>1.0) {
@@ -21,5 +26,5 @@ for (i in 1:nrow(frs)) {
     } else {
         color = "darkgray"
     }
-    points(frNodes, rep(-log10(frs$p[i]),length(frNodes)), col=color, pch=15)
+    points(frNodes, rep(-log10(frs$p[i]),length(frNodes)), col=color, pch=pchar)
 }
