@@ -66,7 +66,8 @@ public class FRViewer {
         String[] pieces = prefix.split("-");
         String graphName = pieces[0];
         double alpha = Double.parseDouble(pieces[1]);
-        int kappa = Integer.parseInt(pieces[2]);
+        int kappa = Integer.MAX_VALUE;
+        if (!pieces[2].equals("Inf")) kappa = Integer.parseInt(pieces[2]);
 
         String nodesFilename = graphName+".nodes.txt";
         String pathsFilename = graphName+".paths.txt";

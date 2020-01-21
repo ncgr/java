@@ -14,6 +14,11 @@ import org.jgrapht.*;
 import org.jgrapht.ext.*;
 import org.jgrapht.graph.*;
 
+import org.jfree.chart.JFreeChart;
+import org.jfree.data.general.DefaultValueDataset;
+import org.jfree.chart.ChartPanel;
+import org.jfree.chart.plot.ThermometerPlot;
+
 import java.awt.*;
 import java.awt.event.*;
 import java.io.*;
@@ -29,7 +34,8 @@ import javax.swing.border.*;
 public class frGraphComponent extends mxGraphComponent implements ActionListener {
     static DecimalFormat df = new DecimalFormat("0.0");
     static DecimalFormat pf = new DecimalFormat("0.0E0");
-    static DecimalFormat orf = new DecimalFormat("0.000");        // initialize
+    static DecimalFormat orf = new DecimalFormat("0.000");
+    static DecimalFormat prif = new DecimalFormat("000");
     
     // constructor parameters
     PangenomicGraph graph;
@@ -43,6 +49,7 @@ public class frGraphComponent extends mxGraphComponent implements ActionListener
     JLabel currentLabel;
     JLabel infoLabel;
     JLabel nodesLabel;
+    ThermometerPlot thermPlot;
     
     Object[] frKeys;            // the FR map keys for navigating through the FRs
 
@@ -184,15 +191,39 @@ public class frGraphComponent extends mxGraphComponent implements ActionListener
         // buttons are disabled when we're on the first or last FR
         updateButtonStates();
 
-        // set the current FR to the first one and populate the info row
+        // set the current FR to the first one
         currentFR = frequentedRegions.get((String)frKeys[0]);
+        
+        // the side panel for information
         JPanel sidePanel = new JPanel();
+        sidePanel.setLayout(new GridLayout(2,1));
         sidePanel.setBackground(Color.LIGHT_GRAY);
+
         infoLabel = new JLabel();
         infoLabel.setVerticalAlignment(SwingConstants.TOP);
-        updateInfoLabel(currentFR, parameters);
-        updateNodesLabel(currentFR);
         sidePanel.add(infoLabel);
+
+        thermPlot = new ThermometerPlot();
+        thermPlot.setUnits(ThermometerPlot.UNITS_NONE);
+        thermPlot.setColumnRadius(10);
+        thermPlot.setBulbRadius(30);
+        thermPlot.setGap(0);
+        thermPlot.setBackgroundPaint(Color.LIGHT_GRAY);
+        thermPlot.setOutlineVisible(false);
+        thermPlot.setLowerBound(0.0);
+        thermPlot.setUpperBound(2000.0);
+        thermPlot.setSubrange(ThermometerPlot.NORMAL, 0.0, 200.0);
+        thermPlot.setSubrange(ThermometerPlot.WARNING, 200.0, 400.0);
+        thermPlot.setSubrange(ThermometerPlot.CRITICAL, 400.0, 2000.0);
+        // thermPlot.setValueFormat(df);
+        ChartPanel thermPanel = new ChartPanel(new JFreeChart(thermPlot));
+        thermPanel.setPreferredSize(new Dimension(100,200));
+        thermPanel.setMaximumSize(new Dimension(1000,200));
+        sidePanel.add(thermPanel);
+
+        updateSidePanel(currentFR, parameters);
+        updateNodesLabel(currentFR);
+        
         // put the side panel on the graph
         setRowHeaderView(sidePanel);
     }
@@ -208,7 +239,7 @@ public class frGraphComponent extends mxGraphComponent implements ActionListener
             currentFR = frequentedRegions.get((String)frKeys[current]);
             fgxAdapter = new FGraphXAdapter(graph, currentFR, highlightPath);
             setGraph(fgxAdapter);
-            updateInfoLabel(currentFR, parameters);
+            updateSidePanel(currentFR, parameters);
             updateNodesLabel(currentFR);
             executeLayout();
             updateButtonStates();
@@ -264,7 +295,12 @@ public class frGraphComponent extends mxGraphComponent implements ActionListener
      * minPriority=0
      * keepOption=subset
      */
-    public void updateInfoLabel(FrequentedRegion fr, Properties parameters) {
+    public void updateSidePanel(FrequentedRegion fr, Properties parameters) {
+        double p = fr.fisherExactP();
+        double or = fr.oddsRatio();
+        String kappaString = String.valueOf(fr.kappa);
+        if (fr.kappa==Integer.MAX_VALUE) kappaString = String.valueOf('\u221e');
+        // info text
         String infoLabelString = "<html>"+
             "<b>"+graph.getName()+"</b><br/>" +
             graph.getNodes().size()+" nodes<br/>" +
@@ -272,26 +308,40 @@ public class frGraphComponent extends mxGraphComponent implements ActionListener
             graph.getLabelCounts().get("case")+"/"+graph.getLabelCounts().get("ctrl") +
             "<hr/>" +
             "alpha="+fr.alpha+"<br/>" +
-            "kappa="+fr.kappa+"<br/>" +
+            "kappa="+kappaString+"<br/>" +
             "minSup="+parameters.getProperty("minSup")+"<br/>" +
             "minLen="+parameters.getProperty("minLen")+"<br/>" +
             "minSize="+parameters.getProperty("minSize")+"<br/>" +
             "minPriority="+parameters.getProperty("minPriority")+"<br/>" +
             "maxRound="+parameters.getProperty("maxRound")+"<br/>" +
             "priorityOption="+parameters.getProperty("priorityOption")+"<br/>" +
-            "keepOption="+parameters.getProperty("keepOption")+"<br/>" +
-            "requiredNode="+parameters.getProperty("requiredNode")+"<br/>" +
+            "keepOption="+parameters.getProperty("keepOption")+"<br/>";
+        if (parameters.getProperty("requiredNode")!=null) {
+            infoLabelString += "requiredNode="+parameters.getProperty("requiredNode")+"<br/>";
+        }
+        infoLabelString +=
             "<hr/>" +
             "FR "+(current+1)+":<br/>" +
             "size="+fr.nodes.size()+"<br/>" +
             "avgLen="+df.format(fr.avgLength)+"<br/>" +
             "support="+fr.caseSupport+"/"+fr.ctrlSupport+"<br/>" +
-            "p="+pf.format(fr.fisherExactP())+"<br/>" +
-            "O.R.="+orf.format(fr.oddsRatio())+"<br/>" +
+            "p="+pf.format(p)+"<br/>" +
+            "O.R.="+orf.format(or)+"<br/>" +
             "priority="+fr.priority +
             "<hr/>"+
             "</html>";
         infoLabel.setText(infoLabelString);
+        // thermometer
+        if (or>1.0) {
+            thermPlot.setSubrangePaint(ThermometerPlot.NORMAL, Color.BLUE);
+            thermPlot.setSubrangePaint(ThermometerPlot.WARNING, Color.RED);
+            thermPlot.setSubrangePaint(ThermometerPlot.CRITICAL, Color.RED);
+        } else {
+            thermPlot.setSubrangePaint(ThermometerPlot.NORMAL, Color.BLUE);
+            thermPlot.setSubrangePaint(ThermometerPlot.WARNING, Color.GREEN);
+            thermPlot.setSubrangePaint(ThermometerPlot.CRITICAL, Color.GREEN);
+        }
+        thermPlot.setDataset(new DefaultValueDataset(fr.priority));
     }
 
     /**
@@ -305,6 +355,7 @@ public class frGraphComponent extends mxGraphComponent implements ActionListener
      * Execute the layout.
      */
     public void executeLayout() {
+        fgxAdapter.getView().setScale(scale);
         mxHierarchicalLayout layout = new mxHierarchicalLayout(fgxAdapter, SwingConstants.WEST);
         layout.setFineTuning(true);
         layout.execute(fgxAdapter.getDefaultParent());

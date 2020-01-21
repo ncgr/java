@@ -180,7 +180,7 @@ public class FGraphXAdapter extends JGraphXAdapter<Node,Edge> {
                 pathCount+" paths<br/>" +
                 percf.format(frac);
             Map<String,Integer> labelCounts = graph.getLabelCounts(n);
-            if (labelCounts.containsKey("case") && labelCounts.containsKey("ctrl")) {
+            if (labelCounts.containsKey("case") || labelCounts.containsKey("ctrl")) {
                 int caseCounts = 0;
                 int ctrlCounts = 0;
                 double p = graph.fisherExactP(n);
@@ -199,12 +199,15 @@ public class FGraphXAdapter extends JGraphXAdapter<Node,Edge> {
             return tip;
         } else if (c.isEdge()) {
             Edge e = (Edge) c.getValue();
+            String tip = "";
             Map<String,Integer> labelCounts = graph.getLabelCounts(e);
-            int caseCounts = 0;
-            int ctrlCounts = 0;
-            if (labelCounts.containsKey("case")) caseCounts = labelCounts.get("case");
-            if (labelCounts.containsKey("ctrl")) ctrlCounts = labelCounts.get("ctrl");
-            String tip = "paths="+caseCounts+"/"+ctrlCounts;
+            if (labelCounts.containsKey("case") || labelCounts.containsKey("ctrl")) {
+                int caseCounts = 0;
+                int ctrlCounts = 0;
+                if (labelCounts.containsKey("case")) caseCounts = labelCounts.get("case");
+                if (labelCounts.containsKey("ctrl")) ctrlCounts = labelCounts.get("ctrl");
+                tip = "paths="+caseCounts+"/"+ctrlCounts;
+            }
             return tip;
         } else {
             // don't think this is ever reached
