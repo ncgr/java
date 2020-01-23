@@ -211,10 +211,10 @@ public class frGraphComponent extends mxGraphComponent implements ActionListener
         thermPlot.setBackgroundPaint(Color.LIGHT_GRAY);
         thermPlot.setOutlineVisible(false);
         thermPlot.setLowerBound(0.0);
-        thermPlot.setUpperBound(2000.0);
+        thermPlot.setUpperBound(currentFR.priority);
         thermPlot.setSubrange(ThermometerPlot.NORMAL, 0.0, 200.0);
         thermPlot.setSubrange(ThermometerPlot.WARNING, 200.0, 400.0);
-        thermPlot.setSubrange(ThermometerPlot.CRITICAL, 400.0, 2000.0);
+        thermPlot.setSubrange(ThermometerPlot.CRITICAL, 400.0, currentFR.priority);
         // thermPlot.setValueFormat(df);
         ChartPanel thermPanel = new ChartPanel(new JFreeChart(thermPlot));
         thermPanel.setPreferredSize(new Dimension(100,200));

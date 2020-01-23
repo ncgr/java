@@ -37,8 +37,8 @@
 #                                contain to be considered interesting [1]
 #  -snp,--skipnodepaths          skip building list of paths per node
 #                                [false]
-#  -ssf,--skipsavefiles          skip saving files after each FR is found,
-#                                to save time [false]
+#  -wsf,--writesavefiles         write save files after each FR is found
+#                                [false]
 #  -txt,--txt                    load from [graph].nodes.txt and
 #                                [graph].paths.txt
 #  -v,--verbose                  verbose output [false]
@@ -56,7 +56,7 @@ echo "# $graph alpha=$alpha kappa=$kappa priorityOption=$priorityoption"
 
 ## TXT input
 java -server -Xmx160g -XX:+UseParallelGC -Xms2g -XX:SoftRefLRUPolicyMSPerMB=1 -XX:MaxHeapFreeRatio=99 -cp "build/install/fr/lib/*" org.ncgr.pangenomics.fr.FRFinder \
-     --verbose --skipnodepaths --skipsavefiles $5 $6 $7 $8 $9 \
+     --verbose --skipnodepaths $5 $6 $7 $8 $9 \
      --txt --graph=$graph \
      --alphastart=$alpha --alphaend=$alpha --kappastart=$kappa --kappaend=$kappa --priorityoption=$priorityoption
 

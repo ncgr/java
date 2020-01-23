@@ -24,6 +24,9 @@ for (i in 1:length(rownames(params))) {
         alpha = as.numeric(params$V2[i])
     } else if (params$V1[i]=="#kappa") {
         kappa = as.numeric(params$V2[i])
+        if (kappa==2147483647) {
+            kappa = Inf
+        }
     } else if (params$V1[i]=="#clocktime") {
         clocktime = params$V2[i]
     } else if (substr(params$V1[i], 1, 1)=="#") {

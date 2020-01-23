@@ -100,6 +100,8 @@ public class FRFinder {
     void initializeParameters() {
         parameters.setProperty("verbose", "false");
         parameters.setProperty("debug", "false");
+        parameters.setProperty("resume", "false");
+        parameters.setProperty("writeSaveFiles", "false");
         parameters.setProperty("minSup", "1");
         parameters.setProperty("minSize", "1");
         parameters.setProperty("minLen", "1.0");
@@ -109,7 +111,6 @@ public class FRFinder {
         parameters.setProperty("forbiddenNodes", "[]");
         parameters.setProperty("priorityOption", "4");
         parameters.setProperty("keepOption", "null");
-        parameters.setProperty("resume", "false");
     }
 
     /**
@@ -323,7 +324,7 @@ public class FRFinder {
                 }
             }
             // output current state for continuation if aborted
-            if (frequentedRegions.size()>0 && !skipSaveFiles()) {
+            if (frequentedRegions.size()>0 && writeSaveFiles()) {
                 // params with current clock time
                 clockTime = System.currentTimeMillis() - startTime;
                 FRUtils.printParameters(parameters, getGraphName()+".save", alpha, kappa, clockTime);
@@ -418,8 +419,8 @@ public class FRFinder {
     public boolean debug() {
         return Boolean.parseBoolean(parameters.getProperty("debug"));
     }
-    public boolean skipSaveFiles() {
-        return Boolean.parseBoolean(parameters.getProperty("skipSaveFiles"));
+    public boolean writeSaveFiles() {
+        return Boolean.parseBoolean(parameters.getProperty("writeSaveFiles"));
     }
     public boolean resume() {
         return Boolean.parseBoolean(parameters.getProperty("resume"));
@@ -477,8 +478,8 @@ public class FRFinder {
     public void setResume() {
         parameters.setProperty("resume", "true");
     }
-    public void setSkipSaveFiles() {
-        parameters.setProperty("skipSaveFiles", "true");
+    public void setWriteSaveFiles() {
+        parameters.setProperty("writeSaveFiles", "true");
     }
     public void setMinSup(int minSup) {
         parameters.setProperty("minSup", String.valueOf(minSup));
@@ -618,9 +619,9 @@ public class FRFinder {
         skipNodePathsOption.setRequired(false);
         options.addOption(skipNodePathsOption);
         //
-        Option skipSaveFilesOption = new Option("ssf", "skipsavefiles", false, "skip saving files after each FR is found, to save time [false]");
-        skipSaveFilesOption.setRequired(false);
-        options.addOption(skipSaveFilesOption);
+        Option writeSaveFilesOption = new Option("wsf", "writesavefiles", false, "write save files after each FR is found [false]");
+        writeSaveFilesOption.setRequired(false);
+        options.addOption(writeSaveFilesOption);
         //
         Option requiredNodesOption = new Option("rn", "requirednodes", true, "require that found FRs contain the given nodes []");
         requiredNodesOption.setRequired(false);
@@ -684,7 +685,7 @@ public class FRFinder {
             if (cmd.hasOption("minlen")) frf.setMinLen(Double.parseDouble(cmd.getOptionValue("minlen")));
             if (cmd.hasOption("verbose")) frf.setVerbose();
             if (cmd.hasOption("debug")) frf.setDebug();
-            if (cmd.hasOption("skipSaveFiles")) frf.setSkipSaveFiles();
+            if (cmd.hasOption("writesavefiles")) frf.setWriteSaveFiles();
             frf.postprocess();
         } else {
             // import a PangenomicGraph from a GFA file or pair of TXT files
@@ -736,7 +737,7 @@ public class FRFinder {
             if (cmd.hasOption("verbose")) frf.setVerbose();
             if (cmd.hasOption("debug")) frf.setDebug();
             if (cmd.hasOption("resume")) frf.setResume();
-            if (cmd.hasOption("skipSaveFiles")) frf.setSkipSaveFiles();
+            if (cmd.hasOption("writesavefiles")) frf.setWriteSaveFiles();
             // run the requested job
             if (alphaStart==alphaEnd && kappaStart==kappaEnd) {
                 // single run
@@ -1004,7 +1005,11 @@ public class FRFinder {
      */
     String formOutputPrefix(double alpha, int kappa) {
         DecimalFormat af = new DecimalFormat("0.0");
-        return getGraphName()+"-"+af.format(alpha)+"-"+kappa;
+        if (kappa==Integer.MAX_VALUE) {
+            return getGraphName()+"-"+af.format(alpha)+"-Inf";
+        } else {
+            return getGraphName()+"-"+af.format(alpha)+"-"+kappa;
+        }
     }
 
     /**
