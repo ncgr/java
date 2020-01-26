@@ -209,6 +209,9 @@ public class FRFinder {
             }
         }
 
+        // add the required nodes to allFrequentedRegions
+        allFrequentedRegions.put(requiredNodes.toString(), new FrequentedRegion(graph, requiredNodes, alpha, kappa, getPriorityOption()));
+
         // build the FRs round by round
 	long startTime = System.currentTimeMillis();
         boolean added = true;
