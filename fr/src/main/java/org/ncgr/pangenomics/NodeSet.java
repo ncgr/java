@@ -33,7 +33,7 @@ public class NodeSet extends TreeSet<Node> implements Comparable {
      */
     public NodeSet(Collection<Node> nodes) {
         this.addAll(nodes);
-        update();
+        updateTotalBases();
     }
 
     /**
@@ -56,17 +56,18 @@ public class NodeSet extends TreeSet<Node> implements Comparable {
             long id = Long.parseLong(s);
             if (nodeMap.containsKey(id)) this.add(nodeMap.get(id));
         }
+        updateTotalBases();
     }
 
     /**
-     * Update derived quantities like totalBases.
+     * Update totalBases.
      */
-    public void update() {
+    public void updateTotalBases() {
         StringBuilder bases = new StringBuilder();
         for (Node n : this) {
             bases.append(n.sequence);
         }
-        this.totalBases = bases.length();
+        totalBases = bases.length();
     }
 
     /**

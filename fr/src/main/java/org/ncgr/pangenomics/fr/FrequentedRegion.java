@@ -73,10 +73,6 @@ public class FrequentedRegion implements Comparable {
     // a subpath must satisfy the requirement that its contiguous nodes that do NOT belong in this.nodes have number no larger than kappa
     int kappa;
 
-    // the PangenomicGraph's case and control path counts
-    int casePaths;
-    int ctrlPaths;
-
     // the priority and priority option for comparison
     int priority;
     String priorityOption;
@@ -91,13 +87,7 @@ public class FrequentedRegion implements Comparable {
         this.alpha = alpha;
         this.kappa = kappa;
         this.priorityOption = priorityOption;
-        updatePriorityLabel();
-        updateCaseCtrlPaths();
-        // compute the subpaths, average length, support, etc.
-        this.nodes.update();
-        updateSupport();
-        updateAvgLength();
-        updatePriority();
+        update();
     }
 
     /**
@@ -119,36 +109,26 @@ public class FrequentedRegion implements Comparable {
         this.alpha = alpha;
         this.kappa = kappa;
         this.priorityOption = priorityOption;
-        // compute the subpaths, average length, support, etc.
-        this.nodes.update();
-        updateCaseCtrlPaths();
-        updatePriorityLabel();
-        updatePriority();
+        update();
     }
 
     /**
      * Construct given a PangenomicGraph, NodeSet and Subpaths
      */
-    FrequentedRegion(PangenomicGraph graph, NodeSet nodes, List<Path> subpaths, double alpha, int kappa, String priorityOption) {
+    FrequentedRegion(PangenomicGraph graph, NodeSet nodes, List<Path> subpaths, double alpha, int kappa, String priorityOption) throws NullNodeException, NullSequenceException {
         this.graph = graph;
         this.nodes = nodes;
         this.subpaths = subpaths;
         this.alpha = alpha;
         this.kappa = kappa;
         this.priorityOption = priorityOption;
-        updatePriorityLabel();
-        updateCaseCtrlPaths();
-        support = subpaths.size();
-        caseSupport = getLabelSupport("case");
-        ctrlSupport = getLabelSupport("ctrl");
-        updateAvgLength();
-        updatePriority();
+        update();
     }
 
     /**
      * Construct given a PangenomicGraph, NodeSet and Subpaths and already known support and avgLength
      */
-    FrequentedRegion(PangenomicGraph graph, NodeSet nodes, List<Path> subpaths, double alpha, int kappa, String priorityOption, int support, double avgLength) {
+    FrequentedRegion(PangenomicGraph graph, NodeSet nodes, List<Path> subpaths, double alpha, int kappa, String priorityOption, int support, double avgLength) throws NullNodeException, NullSequenceException {
         this.graph = graph;
         this.nodes = nodes;
         this.subpaths = subpaths;
@@ -157,17 +137,13 @@ public class FrequentedRegion implements Comparable {
         this.support = support;
         this.avgLength = avgLength;
         this.priorityOption = priorityOption;
-        updatePriorityLabel();
-        updateCaseCtrlPaths();
-        caseSupport = getLabelSupport("case");
-        ctrlSupport = getLabelSupport("ctrl");
-        updatePriority();
+        update();
     }
 
     /**
      * Construct given only basic information, used for post-processing. NO GRAPH.
      */
-    FrequentedRegion(NodeSet nodes, List<Path> subpaths, double alpha, int kappa, String priorityOption, int support, double avgLength) {
+    FrequentedRegion(NodeSet nodes, List<Path> subpaths, double alpha, int kappa, String priorityOption, int support, double avgLength) throws NullNodeException, NullSequenceException {
         this.nodes = nodes;
         this.subpaths = subpaths;
         this.alpha = alpha;
@@ -176,12 +152,18 @@ public class FrequentedRegion implements Comparable {
         this.support = support;
         this.avgLength = avgLength;
         this.priorityOption = priorityOption;
+        update();
+    }
+
+    /**
+     * Update the subpaths, average length, priority, etc.
+     */
+    void update() throws NullNodeException, NullSequenceException {
+        updateSupport();
+        updateAvgLength();
         updatePriorityLabel();
-        updateCaseCtrlPaths();
-        caseSupport = getLabelSupport("case");
-        ctrlSupport = getLabelSupport("ctrl");
         updatePriority();
-    }        
+    }
 
     /**
      * Equality is based on nodes.
@@ -206,17 +188,6 @@ public class FrequentedRegion implements Comparable {
         }
     }
 
-    /**
-     * Compute the total case and control paths in the graph.
-     * Be sure to run graph.tallyLabelCounts() beforehand!
-     */
-    void updateCaseCtrlPaths() {
-        if (graph.getLabelCounts().get("case")!=null && graph.getLabelCounts().get("ctrl")!=null) {
-            casePaths = graph.getLabelCounts().get("case");
-            ctrlPaths = graph.getLabelCounts().get("ctrl");
-        }
-    }
-    
     /**
      * Update the average length of this frequented region's subpath sequences.
      */
@@ -356,9 +327,9 @@ public class FrequentedRegion implements Comparable {
      * Return the Fisher's exact test p value for cases vs controls.
      */
     public double fisherExactP() {
-        int maxSize = casePaths + ctrlPaths + caseSupport + ctrlSupport;
+        int maxSize = graph.getCasePathCount() + graph.getCtrlPathCount() + caseSupport + ctrlSupport;
         FisherExact fisherExact = new FisherExact(maxSize);
-        return fisherExact.getTwoTailedP(caseSupport, ctrlSupport, casePaths, ctrlPaths);
+        return fisherExact.getTwoTailedP(caseSupport, ctrlSupport, graph.getCasePathCount(), graph.getCtrlPathCount());
     }
 
     /**
@@ -366,7 +337,7 @@ public class FrequentedRegion implements Comparable {
      */
     public double oddsRatio() {
         if (ctrlSupport>0) {
-            return ((double)caseSupport/(double)ctrlSupport) / ((double)casePaths/(double)ctrlPaths);
+            return ((double)caseSupport/(double)ctrlSupport) / ((double)graph.getCasePathCount()/(double)graph.getCtrlPathCount());
         } else {
             return Double.POSITIVE_INFINITY;
         }

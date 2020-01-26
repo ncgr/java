@@ -1,7 +1,7 @@
 package org.ncgr.pangenomics.fr;
 
 import java.util.List;
-import java.util.LinkedList;
+import java.util.ArrayList;
 import java.util.Set;
 
 import org.ncgr.pangenomics.Edge;
@@ -10,8 +10,6 @@ import org.ncgr.pangenomics.NodeSet;
 import org.ncgr.pangenomics.NullNodeException;
 import org.ncgr.pangenomics.NullSequenceException;
 import org.ncgr.pangenomics.PangenomicGraph;
-
-import org.jgrapht.GraphPath;
 
 /**
  * Container for a pair of FrequentedRegions and their merged result with a comparator for ranking it.
@@ -26,7 +24,7 @@ public class FRPair implements Comparable {
     double alpha;
     int kappa;
     String priorityOption;
-    boolean alphaReject;
+    boolean alphaSatisfied;
 
     NodeSet nodes;
     double oneMinusAlpha;
@@ -51,7 +49,7 @@ public class FRPair implements Comparable {
      * Construct from an FRPair.toString() line
      * [15] 1 1 66.00 1 0 0 ∞ 1.000E0;[2,5] 2 12 34.33 12 0 122 ∞ 6.041E-2;
      */
-    FRPair(String line, PangenomicGraph graph, double alpha, int kappa, String priorityOption, boolean alphaReject) throws NullNodeException, NullSequenceException {
+    FRPair(String line, PangenomicGraph graph, double alpha, int kappa, String priorityOption, boolean alphaSatisfied) throws NullNodeException, NullSequenceException {
         String[] parts = line.split(";");
         fr1 = new FrequentedRegion(graph, parts[0], alpha, kappa, priorityOption);
         fr2 = new FrequentedRegion(graph, parts[1], alpha, kappa, priorityOption);
@@ -59,36 +57,9 @@ public class FRPair implements Comparable {
         this.alpha = alpha;
         this.kappa = kappa;
         this.priorityOption = priorityOption;
-        this.alphaReject = alphaReject;
+        this.alphaSatisfied = alphaSatisfied;
         nodes = merged.getNodes();
         oneMinusAlpha = 1.0 - alpha;
-    }
-
-    /**
-     * Compute alpha rejection booleans without merging.
-     */
-    public void computeAlphaRejection() {
-        alphaReject = false;
-        if (nodes.size()>1) {
-            int minMissing = nodes.size();
-            for (Node n1 : nodes) {
-                for (Node n2 : nodes) {
-                    if (n1.getId()<n2.getId()) {
-                        GraphPath<Node,Edge> subpath = graph.getDSP().getPath(n1, n2);
-                        if (subpath!=null) {
-                            List<Node> missingNodes = new LinkedList<>();
-                            for (Node n : subpath.getVertexList()) {
-                                if (!nodes.contains(n)) {
-                                    missingNodes.add(n);
-                                }
-                            }
-                            if (missingNodes.size()<minMissing) minMissing = missingNodes.size();
-                        }
-                    }
-                }
-            }
-            alphaReject = minMissing>(int)(nodes.size()*oneMinusAlpha);
-        }
     }
     
     /**

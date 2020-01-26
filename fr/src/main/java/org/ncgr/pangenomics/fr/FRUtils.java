@@ -1,11 +1,15 @@
 package org.ncgr.pangenomics.fr;
 
+import org.ncgr.pangenomics.Edge;
 import org.ncgr.pangenomics.Node;
 import org.ncgr.pangenomics.NodeSet;
 import org.ncgr.pangenomics.NullNodeException;
 import org.ncgr.pangenomics.NullSequenceException;
 import org.ncgr.pangenomics.PangenomicGraph;
 import org.ncgr.pangenomics.Path;
+
+import org.jgrapht.GraphPath;
+
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -35,7 +39,7 @@ public class FRUtils {
      * 628863.1.case:[18,20,21,23,24,26,27,29,30,33,34]
      * etc.
      */
-    static HashMap<String,FrequentedRegion> readFrequentedRegions(String inputPrefix, PangenomicGraph graph)
+    public static HashMap<String,FrequentedRegion> readFrequentedRegions(String inputPrefix, PangenomicGraph graph)
         throws FileNotFoundException, IOException, NullNodeException, NullSequenceException {
         // get alpha, kappa from the input prefix
         double alpha = readAlpha(inputPrefix);
@@ -105,7 +109,7 @@ public class FRUtils {
     /**
      * Return alpha from an FRFinder run.
      */
-    static double readAlpha(String inputPrefix) throws FileNotFoundException, IOException {
+    public static double readAlpha(String inputPrefix) throws FileNotFoundException, IOException {
         String paramsFilename = getParamsFilename(inputPrefix);
         BufferedReader reader = new BufferedReader(new FileReader(paramsFilename));
         String line = null;
@@ -122,7 +126,7 @@ public class FRUtils {
     /**
      * Return kappa from a an FRFinder run.
      */
-    static int readKappa(String inputPrefix) throws FileNotFoundException, IOException {
+    public static int readKappa(String inputPrefix) throws FileNotFoundException, IOException {
         String paramsFilename = getParamsFilename(inputPrefix);
         BufferedReader reader = new BufferedReader(new FileReader(paramsFilename));
         String line = null;
@@ -139,7 +143,7 @@ public class FRUtils {
     /**
      * Return priorityOption from an FRFinder run.
      */
-    static String readPriorityOption(String inputPrefix) throws FileNotFoundException, IOException {
+    public static String readPriorityOption(String inputPrefix) throws FileNotFoundException, IOException {
         String paramsFilename = getParamsFilename(inputPrefix);
         BufferedReader reader = new BufferedReader(new FileReader(paramsFilename));
         Properties parameters = new Properties();
@@ -150,42 +154,42 @@ public class FRUtils {
     /**
      * Form the FRs output filename
      */
-    static String getFRsFilename(String prefix) {
+    public static String getFRsFilename(String prefix) {
         return prefix+".frs.txt";
     }
 
     /**
      * Form the FRSubpaths output filename
      */
-    static String getFRSubpathsFilename(String prefix) {
+    public static String getFRSubpathsFilename(String prefix) {
         return prefix+".subpaths.txt";
     }
 
     /**
      * Form the pathFRs output filename
      */
-    static String getPathFRsFilename(String prefix) {
+    public static String getPathFRsFilename(String prefix) {
         return prefix+".pathfrs.txt";
     }
 
     /**
      * Form the SVM version of the pathFRs output filename
      */
-    static String getPathFRsSVMFilename(String prefix) {
+    public static String getPathFRsSVMFilename(String prefix) {
         return prefix+".svm.txt";
     }
 
     /**
      * Form the ARFF version of the pathFRs output filename
      */
-    static String getPathFRsARFFFilename(String prefix) {
+    public static String getPathFRsARFFFilename(String prefix) {
         return prefix+".arff";
     }
 
     /**
      * Form the parameters output filename
      */
-    static String getParamsFilename(String prefix) {
+    public static String getParamsFilename(String prefix) {
         return prefix+".params.txt";
     }
 
@@ -193,7 +197,7 @@ public class FRUtils {
      * Form the graph nodes filename
      * if prefix = HTT.1k-1.0-0 then filename = HTT.nodes.txt
      */
-    static String getNodesFilename(String prefix) {
+    public static String getNodesFilename(String prefix) {
         String[] parts = prefix.split("-");
         return parts[0]+".nodes.txt";
     }
@@ -202,7 +206,7 @@ public class FRUtils {
      * Form the graph paths filename
      * if prefix = HTT.1k-1.0-0 then filename = HTT.paths.txt
      */
-    static String getPathsFilename(String prefix) {
+    public static String getPathsFilename(String prefix) {
         String[] parts = prefix.split("-");
         return parts[0]+".paths.txt";
     }
@@ -233,7 +237,7 @@ public class FRUtils {
     /**
      * Format a time duration given in milliseconds.
      */
-    static String formatTime(long millis) {
+    public static String formatTime(long millis) {
         DecimalFormat tf = new DecimalFormat("00"); // hours, minutes, seconds
         long hours = (millis / 1000) / 60 / 60;
 	long minutes = (millis / 1000 / 60) % 60;

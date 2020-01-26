@@ -200,6 +200,28 @@ public class PangenomicGraph extends DirectedAcyclicGraph<Node,Edge> {
     }
 
     /**
+     * Get the count of "case"-labeled paths, if any.
+     */
+    public int getCasePathCount() {
+        if (labelCounts.containsKey("case")) {
+            return labelCounts.get("case");
+        } else {
+            return 0;
+        }
+    }
+
+    /**
+     * Get the count of "ctrl"-labeled paths, if any.
+     */
+    public int getCtrlPathCount() {
+        if (labelCounts.containsKey("ctrl")) {
+            return labelCounts.get("ctrl");
+        } else {
+            return 0;
+        }
+    }
+
+    /**
      * Set the verbose flag.
      */
     public void setVerbose() {
