@@ -368,12 +368,12 @@ public class FrequentedRegion implements Comparable {
                         s += "\t"+0;
                     }
                 }
-                // add the priority
-                s += "\t"+priority;
                 // add the odds ratio
                 s += "\t"+orf.format(oddsRatio());
                 // add the Fisher's exact test p value
                 s += "\t"+pf.format(fisherExactP());
+                // add the priority
+                s += "\t"+priority;
             }
         }
         return s;

@@ -219,6 +219,7 @@ public class FRFinder {
 
         // build the FRs round by round
 	long startTime = System.currentTimeMillis();
+        int oldPriority = 0;
         boolean added = true;
         while (added && (round<getMaxRound() || getMaxRound()==0)) {
             round++;
@@ -320,7 +321,8 @@ public class FRFinder {
                     // add this FR to the mergeable FRs map
                     allFrequentedRegions.put(fr.nodes.toString(), fr);
                     frequentedRegions.put(fr.nodes.toString(), fr);
-                    System.out.println(round+":"+fr);
+                    System.out.println(round+":"+fr+"\t"+(fr.priority-oldPriority));
+                    oldPriority = fr.priority;
                 } else {
                     // show the top remaining FR that wasn't added
                     System.out.println("-------------------------------------------------------------------------------------------------------");

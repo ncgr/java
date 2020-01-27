@@ -60,7 +60,7 @@ public class FRUtils {
         String line = null;
         while ((line=reader.readLine())!=null) {
             // 0     1    2       3      4           5           6   7  8
-            // nodes size support avgLen caseSupport ctrlSupport pri OR p
+            // nodes size support avgLen caseSupport ctrlSupport OR  p  priority
             // [2,7,9,10,14,15]	6	24	52.79	24	0	257	∞	2.66E-3
             // 371985.1.case:[2]
             // 131922.1.case:[2]
@@ -72,12 +72,12 @@ public class FRUtils {
             double avgLength = Double.parseDouble(fields[3]);
             int caseSupport = Integer.parseInt(fields[4]);
             int ctrlSupport = Integer.parseInt(fields[5]);
-            int priority = Integer.parseInt(fields[6]);
             double or = Double.POSITIVE_INFINITY;
             if (ctrlSupport>0) {
-                or = Double.parseDouble(fields[7]);
+                or = Double.parseDouble(fields[6]);
             }
-            double p = Double.parseDouble(fields[8]);
+            double p = Double.parseDouble(fields[7]);
+            int priority = Integer.parseInt(fields[8]);
             List<Path> subpaths = new ArrayList<>();
             for (int i=0; i<support; i++) {
                 line = reader.readLine();
