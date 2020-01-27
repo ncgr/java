@@ -25,28 +25,33 @@
 ##     text(xtext, ytext-dytext*6, paste("graph has been pruned"), pos=4, cex=cexText)
 ## }
 
-
-if (isSaveSet) {
-    legend(x="topleft", bty="n",
-           c(paste("FRs:",length(frs$nodes)),
-             paste("priority option:",priorityOption),
-             paste("min. support:",minSup),
-             paste("keep option:",keepOption),
-             paste("case paths:",labelCounts["case",1]),
-             paste("control paths:",labelCounts["ctrl",1])
-             )
-           )
-} else {
-    legend(x="topleft", bty="n",
-           c(date,
-             paste("clock time:",clocktime),
-             paste("priority option:",priorityOption),
-             paste("min. support:",minSup),
-             paste("keep option:",keepOption),
-             paste("FRs:",length(frs$nodes)),
-             paste("case paths:",labelCounts["case",1]),
-             paste("control paths:",labelCounts["ctrl",1])
-             )
-           )
+params = function(x="topleft") {
+    if (isSaveSet) {
+        legend(x=x, bty="n",
+               c(paste("FRs:",length(frs$nodes)),
+                 paste("priority option:",priorityOption),
+                 paste("min. priority:",minPriority),
+                 paste("min. support:",minSup),
+                 paste("keep option:",keepOption),
+                 paste("max. round:",maxRound),
+                 paste("case paths:",labelCounts["case",1]),
+                 paste("control paths:",labelCounts["ctrl",1])
+                 )
+               )
+    } else {
+        legend(x=x, bty="n",
+               c(date,
+                 paste("clock time:",clocktime),
+                 paste("priority option:",priorityOption),
+                 paste("min. priority:",minPriority),
+                 paste("min. support:",minSup),
+                 paste("keep option:",keepOption),
+                 paste("max. round:",maxRound),
+                 paste("FRs:",length(frs$nodes)),
+                 paste("case paths:",labelCounts["case",1]),
+                 paste("control paths:",labelCounts["ctrl",1])
+                 )
+               )
+    }
 }
 
