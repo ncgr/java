@@ -48,9 +48,7 @@ public class Node implements Comparable, Serializable {
     @Override
     public boolean equals(Object o) {
 	Node that = (Node)o;
-        long thisId = this.id.longValue();
-        long thatId = that.id.longValue();
-        return thisId==thatId;
+	return this.id.equals(that.id);
     }
 
     /**
@@ -67,9 +65,7 @@ public class Node implements Comparable, Serializable {
     @Override
     public int compareTo(Object o) {
 	Node that = (Node) o;
-        long thisId = this.id.longValue();
-        long thatId = that.id.longValue();
-        return (int)(thisId - thatId);
+	return this.id.compareTo(that.id);
     }
 
     /**

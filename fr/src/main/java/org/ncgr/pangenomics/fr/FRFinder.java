@@ -236,34 +236,34 @@ public class FRFinder {
                                 FRPair frpair = new FRPair(fr1, fr2);
                                 String nodesKey = frpair.nodes.toString();
                                 boolean rejected = false;
-                                // is this FRPair already accepted and merged?
-                                if (acceptedFRPairs.containsKey(nodesKey)) {
+				if (frequentedRegions.containsKey(nodesKey)) {
+				    // if already found, bail
+				    rejected = true;
+				} else if (acceptedFRPairs.containsKey(nodesKey)) {
                                     // get stored FRPair since already accepted and merged in a previous round
                                     frpair = acceptedFRPairs.get(nodesKey);
-                                } else {
-                                    // if already rejected or already found, reject from this round
-                                    if (rejectedNodeSets.contains(nodesKey) || frequentedRegions.containsKey(nodesKey)) {
-                                        rejected = true; // already found
-                                    }
-                                    // reject if not all the required nodes are present
-                                    if (!rejected && requiredNodes.size()>0) {
-                                        for (Node n : requiredNodes) {
-                                            if (!frpair.nodes.contains(n)) {
-                                                rejected = true; // lacking a required node
-                                                break;
-                                            }
-                                        }
-                                    }
-                                    // reject if one of the excluded nodes is present
-                                    if (!rejected && excludedNodes.size()>0) {
-                                        for (Node n : excludedNodes) {
-                                            if (frpair.nodes.contains(n)) {
-                                                rejected = true; // containing an excluded node
-                                                break;
-                                            }
-                                        }
-                                    }
-                                }
+                                } else if (rejectedNodeSets.contains(nodesKey)) {
+                                    // already rejected, bail
+				    rejected = true;
+				}
+				// reject if not all the required nodes are present
+				if (!rejected && requiredNodes.size()>0) {
+				    for (Node n : requiredNodes) {
+					if (!frpair.nodes.contains(n)) {
+					    rejected = true; // lacking a required node
+					    break;
+					}
+				    }
+				}
+				// reject if one of the excluded nodes is present
+				if (!rejected && excludedNodes.size()>0) {
+				    for (Node n : excludedNodes) {
+					if (frpair.nodes.contains(n)) {
+					    rejected = true; // containing an excluded node
+					    break;
+					}
+				    }
+				}
                                 if (rejected) {
                                     // add this rejected NodeSet to the rejected list
                                     rejectedNodeSets.add(nodesKey);
