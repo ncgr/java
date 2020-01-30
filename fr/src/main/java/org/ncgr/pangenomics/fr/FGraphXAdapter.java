@@ -2,24 +2,15 @@ package org.ncgr.pangenomics.fr;
 
 import org.ncgr.pangenomics.*;
 
-import com.mxgraph.layout.*;
-import com.mxgraph.layout.orthogonal.*;
-import com.mxgraph.layout.hierarchical.*;
-import com.mxgraph.model.*;
-import com.mxgraph.swing.*;
-import com.mxgraph.util.*;
-import com.mxgraph.view.*;
+import java.text.DecimalFormat;
+import java.util.Map;
 
-import org.jgrapht.*;
-import org.jgrapht.ext.*;
-import org.jgrapht.graph.*;
+import org.jgrapht.ext.JGraphXAdapter;
+import org.jgrapht.graph.DefaultListenableGraph;
 
-import javax.swing.*;
-import java.awt.*;
-import java.awt.event.*;
-import java.io.*;
-import java.text.*;
-import java.util.*;
+import com.mxgraph.model.mxCell;
+import com.mxgraph.util.mxConstants;
+import com.mxgraph.view.mxStylesheet;
 
 /**
  * Extend JGraphXAdapter to support overriden methods for tooltips and such.
@@ -36,7 +27,7 @@ public class FGraphXAdapter extends JGraphXAdapter<Node,Edge> {
     FrequentedRegion fr;
     java.util.List<Edge> highlightPathEdges;
 
-    public FGraphXAdapter(PangenomicGraph graph, FrequentedRegion fr, Path highlightPath) {
+    public FGraphXAdapter(PangenomicGraph graph, FrequentedRegion fr, Path highlightPath, boolean decorateEdges) {
         super(new DefaultListenableGraph<Node,Edge>(graph));
         this.graph = graph;
         this.fr = fr;
@@ -144,18 +135,20 @@ public class FGraphXAdapter extends JGraphXAdapter<Node,Edge> {
                     }
                 }
             } else if (c.isEdge()) {
-                if (highlightPath!=null) {
+                Edge e = (Edge) c.getValue();
+                // this takes a long time
+                if (decorateEdges) {
+                    double strokeWidth = Math.max(1.0, 5.0*(double)graph.getPathCount(e)/(double)graph.getPathCount());
+                    setCellStyles("strokeWidth", String.valueOf(strokeWidth), cells);
+                }
+                if (highlightPath!=null && highlightPathEdges.contains(e)) {
                     // highlight path's edges
-                    Edge e = (Edge) c.getValue();
-                    if (highlightPathEdges.contains(e)) {
-                        setCellStyles("strokeWidth", "2.0", cells);
-                        if (highlightPath.isCase()) {
-                            setCellStyles("strokeColor", "red", cells);
-                        } else if (highlightPath.isControl()) {
-                            setCellStyles("strokeColor", "green", cells);
-                        } else {
-                            setCellStyles("strokeColor", "black", cells);
-                        }
+                    if (highlightPath.isCase()) {
+                        setCellStyles("strokeColor", "red", cells);
+                    } else if (highlightPath.isControl()) {
+                        setCellStyles("strokeColor", "green", cells);
+                    } else {
+                        setCellStyles("strokeColor", "black", cells);
                     }
                 }
             }
@@ -199,14 +192,14 @@ public class FGraphXAdapter extends JGraphXAdapter<Node,Edge> {
             return tip;
         } else if (c.isEdge()) {
             Edge e = (Edge) c.getValue();
-            String tip = "";
+            String tip = percf.format((double)graph.getPathCount(e)/(double)graph.getPathCount());
             Map<String,Integer> labelCounts = graph.getLabelCounts(e);
             if (labelCounts.containsKey("case") || labelCounts.containsKey("ctrl")) {
                 int caseCounts = 0;
                 int ctrlCounts = 0;
                 if (labelCounts.containsKey("case")) caseCounts = labelCounts.get("case");
                 if (labelCounts.containsKey("ctrl")) ctrlCounts = labelCounts.get("ctrl");
-                tip = "paths="+caseCounts+"/"+ctrlCounts;
+                tip += " ("+caseCounts+"/"+ctrlCounts+")";
             }
             return tip;
         } else {

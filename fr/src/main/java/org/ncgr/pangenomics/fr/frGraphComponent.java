@@ -2,29 +2,37 @@ package org.ncgr.pangenomics.fr;
 
 import org.ncgr.pangenomics.*;
 
-import com.mxgraph.layout.*;
-import com.mxgraph.layout.orthogonal.*;
-import com.mxgraph.layout.hierarchical.*;
-import com.mxgraph.model.*;
-import com.mxgraph.swing.*;
-import com.mxgraph.util.*;
-import com.mxgraph.view.*;
+import java.awt.Color;
+import java.awt.Dimension;
+import java.awt.Font;
+import java.awt.GridBagLayout;
+import java.awt.GridBagConstraints;
+import java.awt.GridLayout;
+import java.awt.Insets;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.KeyEvent;
+import java.text.DecimalFormat;
+import java.util.Map;
+import java.util.Properties;
 
-import org.jgrapht.*;
-import org.jgrapht.ext.*;
-import org.jgrapht.graph.*;
+import javax.swing.AbstractAction;
+import javax.swing.JButton;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.KeyStroke;
+import javax.swing.SwingConstants;
+
+
 
 import org.jfree.chart.JFreeChart;
 import org.jfree.data.general.DefaultValueDataset;
 import org.jfree.chart.ChartPanel;
 import org.jfree.chart.plot.ThermometerPlot;
 
-import java.awt.*;
-import java.awt.event.*;
-import java.io.*;
-import java.util.*;
-import java.text.*;
-import javax.swing.*;
+import com.mxgraph.swing.mxGraphComponent;
+import com.mxgraph.layout.hierarchical.mxHierarchicalLayout;
+
 import javax.swing.border.*;
 
 /**
@@ -43,6 +51,7 @@ public class frGraphComponent extends mxGraphComponent implements ActionListener
     FGraphXAdapter fgxAdapter;
     Properties parameters;
     Path highlightPath;
+    boolean decorateEdges;
     
     JButton prevButton, nextButton;
     JButton zoomInButton, zoomOutButton;
@@ -60,7 +69,8 @@ public class frGraphComponent extends mxGraphComponent implements ActionListener
     /**
      * Constructor takes a FGraphXAdapter
      */
-    frGraphComponent(PangenomicGraph graph, Map<String,FrequentedRegion> frequentedRegions, FGraphXAdapter fgxAdapter, Properties parameters, Path highlightPath) {
+    frGraphComponent(PangenomicGraph graph, Map<String,FrequentedRegion> frequentedRegions, FGraphXAdapter fgxAdapter,
+                     Properties parameters, Path highlightPath, boolean decorateEdges) {
         super(fgxAdapter);
         
         this.fgxAdapter = fgxAdapter;
@@ -68,7 +78,8 @@ public class frGraphComponent extends mxGraphComponent implements ActionListener
         this.frequentedRegions = frequentedRegions;
         this.parameters = parameters;
         this.highlightPath = highlightPath;
-
+        this.decorateEdges = decorateEdges;
+        
         // housekeeping
         setConnectable(false);
         getGraph().setAllowDanglingEdges(false);
@@ -237,7 +248,7 @@ public class frGraphComponent extends mxGraphComponent implements ActionListener
                 current--;
             }
             currentFR = frequentedRegions.get((String)frKeys[current]);
-            fgxAdapter = new FGraphXAdapter(graph, currentFR, highlightPath);
+            fgxAdapter = new FGraphXAdapter(graph, currentFR, highlightPath, decorateEdges);
             setGraph(fgxAdapter);
             updateSidePanel(currentFR, parameters);
             updateNodesLabel(currentFR);

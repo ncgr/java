@@ -1,4 +1,10 @@
 #!/bin/sh
-graph=$1
-highlightpath=$2
-java -cp "build/install/fr/lib/*" org.ncgr.pangenomics.fr.FRViewer $graph $highlightpath
+# usage: FRViewer
+#  -d,--decorateedges         decorate edges according to the number of
+#                             paths [false]
+#  -h,--highlightpath <arg>   path to highlight
+#  -p,--prefix <arg>          prefix of FR files, e.g. HLAB.601-1.0-0
+ 
+prefix=$1
+
+java -cp "build/install/fr/lib/*" org.ncgr.pangenomics.fr.FRViewer -p $prefix $2 $3 $4 $5 $6

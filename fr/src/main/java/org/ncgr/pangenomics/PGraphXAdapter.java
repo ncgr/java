@@ -1,23 +1,14 @@
 package org.ncgr.pangenomics;
 
-import com.mxgraph.layout.*;
-import com.mxgraph.layout.orthogonal.*;
-import com.mxgraph.layout.hierarchical.*;
-import com.mxgraph.model.*;
-import com.mxgraph.swing.*;
-import com.mxgraph.util.*;
-import com.mxgraph.view.*;
+import java.text.DecimalFormat;
+import java.util.Map;
 
-import org.jgrapht.*;
-import org.jgrapht.ext.*;
-import org.jgrapht.graph.*;
+import org.jgrapht.ext.JGraphXAdapter;
+import org.jgrapht.graph.DefaultListenableGraph;
 
-import javax.swing.*;
-import java.awt.*;
-import java.awt.event.*;
-import java.io.*;
-import java.text.*;
-import java.util.*;
+import com.mxgraph.model.mxCell;
+import com.mxgraph.util.mxConstants;
+import com.mxgraph.view.mxStylesheet;
 
 /**
  * Extend JGraphXAdapter to customize tooltips, etc.
@@ -31,7 +22,7 @@ class PGraphXAdapter extends JGraphXAdapter<Node,Edge> {
     boolean hasCaseControlLabels;
     java.util.List<Edge> highlightPathEdges;
 
-    public PGraphXAdapter(PangenomicGraph graph, Path highlightPath) {
+    public PGraphXAdapter(PangenomicGraph graph, Path highlightPath, boolean decorateEdges) {
         super(new DefaultListenableGraph<Node,Edge>(graph));
         this.graph = graph;
         if (highlightPath!=null) highlightPathEdges = highlightPath.getEdges();
@@ -57,15 +48,15 @@ class PGraphXAdapter extends JGraphXAdapter<Node,Edge> {
         // logical to do case/control ops
         hasCaseControlLabels = graph.getLabelCounts().containsKey("case") && graph.getLabelCounts().containsKey("ctrl");
 
-        // color the nodes if we have case/control labeling
-        if (hasCaseControlLabels) {
-            selectAll();
-            Object[] allCells = getSelectionCells();
-            for (Object o : allCells) {
-                Object[] cells = {o};
-                mxCell c = (mxCell) o;
-                if (c.isVertex()) {
-                    Node n = (Node) c.getValue();
+        // color the nodes, plus other decoration
+        selectAll();
+        Object[] allCells = getSelectionCells();
+        for (Object o : allCells) {
+            Object[] cells = {o};
+            mxCell c = (mxCell) o;
+            if (c.isVertex()) {
+                Node n = (Node) c.getValue();
+                if (hasCaseControlLabels) {
                     if (c.getEdgeCount()>0) {
                         double or = graph.oddsRatio(n);
                         double p = graph.fisherExactP(n);
@@ -106,25 +97,27 @@ class PGraphXAdapter extends JGraphXAdapter<Node,Edge> {
                             }
                         }
                     }
-                } else if (c.isEdge()) {
-                    if (highlightPath!=null) {
-                        // highlight path's edges
-                        Edge e = (Edge) c.getValue();
-                        if (highlightPathEdges.contains(e)) {
-                            setCellStyles("strokeWidth", "2.0", cells);
-                            if (highlightPath.isCase()) {
-                                setCellStyles("strokeColor", "red", cells);
-                            } else if (highlightPath.isControl()) {
-                                setCellStyles("strokeColor", "green", cells);
-                            } else {
-                                setCellStyles("strokeColor", "black", cells);
-                            }
-                        }
+                }
+            } else if (c.isEdge()) {
+                Edge e = (Edge) c.getValue();
+                // this takes a long time
+                if (decorateEdges) {
+                    double strokeWidth = Math.max(1.0, 5.0*(double)graph.getPathCount(e)/(double)graph.getPathCount());
+                    setCellStyles("strokeWidth", String.valueOf(strokeWidth), cells);
+                }
+                if (highlightPath!=null && highlightPathEdges.contains(e)) {
+                    // highlight path's edges
+                    if (highlightPath.isCase()) {
+                        setCellStyles("strokeColor", "red", cells);
+                    } else if (highlightPath.isControl()) {
+                        setCellStyles("strokeColor", "green", cells);
+                    } else {
+                        setCellStyles("strokeColor", "blue", cells);
                     }
                 }
             }
-            clearSelection();
         }
+        clearSelection();
     }
 
     /**
@@ -158,18 +151,19 @@ class PGraphXAdapter extends JGraphXAdapter<Node,Edge> {
             tip += "</html>";
             return tip;
         } else if (c.isEdge()) {
+            Edge e = (Edge) c.getValue();
+            String tip = percf.format((double)graph.getPathCount(e)/(double)graph.getPathCount());
             if (hasCaseControlLabels) {
-                Edge e = (Edge) c.getValue();
                 Map<String,Integer> labelCounts = graph.getLabelCounts(e);
                 int caseCounts = 0;
                 int ctrlCounts = 0;
                 if (labelCounts.containsKey("case")) caseCounts = labelCounts.get("case");
                 if (labelCounts.containsKey("ctrl")) ctrlCounts = labelCounts.get("ctrl");
-                return caseCounts+"/"+ctrlCounts;
+                tip += " ("+caseCounts+"/"+ctrlCounts+")";
             } else {
-                Edge e = (Edge) c.getValue();
-                return String.valueOf(graph.getPathCount(e));
+                tip += " ("+graph.getPathCount(e)+")";
             }
+            return tip;
         } else {
             // shouldn't be reached
             return "";

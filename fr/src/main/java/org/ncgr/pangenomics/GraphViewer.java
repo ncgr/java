@@ -1,23 +1,22 @@
 package org.ncgr.pangenomics;
 
-import com.mxgraph.layout.*;
-import com.mxgraph.layout.orthogonal.*;
-import com.mxgraph.layout.hierarchical.*;
-import com.mxgraph.model.*;
-import com.mxgraph.swing.*;
-import com.mxgraph.util.*;
-import com.mxgraph.view.*;
+import java.awt.Dimension;
+import java.io.File;
+import java.io.IOException;
+import javax.swing.JFrame;
+import javax.swing.SwingConstants;
+import javax.swing.SwingUtilities;
+import javax.swing.UIManager;
 
-import org.jgrapht.*;
-import org.jgrapht.ext.*;
-import org.jgrapht.graph.*;
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.CommandLineParser;
+import org.apache.commons.cli.DefaultParser;
+import org.apache.commons.cli.HelpFormatter;
+import org.apache.commons.cli.Option;
+import org.apache.commons.cli.Options;
+import org.apache.commons.cli.ParseException;
 
-import javax.swing.*;
-import java.awt.*;
-import java.awt.event.*;
-import java.io.*;
-import java.text.*;
-import java.util.*;
+import com.mxgraph.layout.hierarchical.mxHierarchicalLayout;
 
 /**
  * Static class which shows a PangenomicGraph with nodes colored according to case/control degree in a JFrame.
@@ -32,22 +31,44 @@ public class GraphViewer {
      * @param args command line arguments: graphName [highlightPathName]
      */
     public static void main(String[] args) {
-        if (args.length==0 || args.length>2) {
-            System.out.println("Usage: GraphViewer <graph> [highlight path name]");
-            System.exit(0);
+
+        Options options = new Options();
+        CommandLineParser parser = new DefaultParser();
+        HelpFormatter formatter = new HelpFormatter();
+        CommandLine cmd;
+
+        Option graphOption = new Option("g", "graph", true, "name of graph");
+        graphOption.setRequired(true);
+        options.addOption(graphOption);
+        //
+        Option highlightPathOption = new Option("h", "highlightpath", true, "path to highlight");
+        highlightPathOption.setRequired(false);
+        options.addOption(highlightPathOption);
+        //
+        Option decorateEdgesOption = new Option("d", "decorateedges", false, "decorate edges according to the number of paths [false]");
+        decorateEdgesOption.setRequired(false);
+        options.addOption(decorateEdgesOption);
+
+        try {
+            cmd = parser.parse(options, args);
+        } catch (ParseException e) {
+            System.err.println(e.getMessage());
+            formatter.printHelp("GraphViewer", options);
+            System.exit(1);
+            return;
         }
-        
+
+        String graphName = cmd.getOptionValue("g");
+        String highlightPathName = cmd.getOptionValue("h");
+        boolean decorateEdges = cmd.hasOption("d");
+
         // schedule a job for the event dispatch thread: creating and showing this application's GUI.
         SwingUtilities.invokeLater(new Runnable() {
                 public void run() {
                     // turn off metal's use of bold fonts
                     UIManager.put("swing.boldMetal", Boolean.FALSE);
                     try {
-                        if (args.length==2) {
-                            createAndShowGUI(args[0], args[1]);
-                        } else {
-                            createAndShowGUI(args[0], null);
-                        }
+                        createAndShowGUI(graphName, highlightPathName, decorateEdges);
                     } catch (Exception e) {
                         System.err.println(e);
                         System.exit(1);
@@ -61,7 +82,7 @@ public class GraphViewer {
      * @param graphName the name of the graph, from which the nodes and paths files will be formed
      * @param highlightPathName the name of a path to be highlighted, if not null
      */
-    private static void createAndShowGUI(String graphName, String highlightPathName) throws IOException, NullNodeException, NullSequenceException {
+    private static void createAndShowGUI(String graphName, String highlightPathName, boolean decorateEdges) throws IOException, NullNodeException, NullSequenceException {
         String nodesFilename = graphName+".nodes.txt";
         String pathsFilename = graphName+".paths.txt";
         File nodesFile = new File(nodesFilename);
@@ -85,7 +106,7 @@ public class GraphViewer {
         }
 
         // PGraphXAdapter extends JGraphXAdapter which extends mxGraph
-        PGraphXAdapter pgxAdapter = new PGraphXAdapter(graph, highlightPath);
+        PGraphXAdapter pgxAdapter = new PGraphXAdapter(graph, highlightPath, decorateEdges);
 
         // pgGraphComponent extends mxGraphComponent
         pgGraphComponent component = new pgGraphComponent(graph, pgxAdapter);
