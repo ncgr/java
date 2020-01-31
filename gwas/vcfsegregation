@@ -20,14 +20,20 @@
 #  -vf,--vcffile <arg>           VCF file
 #  -z,--zygosity <arg>           zygosity for VAR call: HET or HOM
 
-java -server -cp "build/install/gwas/lib/*" org.ncgr.gwas.VCFSegregation \
-     -vf /erdos/shokin/ncbi/dbGaP-20036/PhenoGenotypeFiles/RootStudyConsentSet_phs000473.SchizophreniaSwedish_Sklar.v2.p2.c1.GRU/GenotypeFiles/sub/sub20160809/swe.vcf.gz \
-     -pf /erdos/shokin/ncbi/dbGaP-20036/PhenoGenotypeFiles/RootStudyConsentSet_phs000473.SchizophreniaSwedish_Sklar.v2.p2.c1.GRU/PhenotypeFiles/phs000473.v2.pht002600.v2.p2.c1.Schizophrenia_Swedish_Subject_Phenotypes.GRU.txt \
-     -sf /erdos/shokin/ncbi/dbGaP-20036/PhenoGenotypeFiles/RootStudyConsentSet_phs000473.SchizophreniaSwedish_Sklar.v2.p2.c1.GRU/PhenotypeFiles/phs000473.v2.pht002599.v2.p2.Schizophrenia_Swedish_Sample.MULTI.txt \
-     -sv "SAMPID" \
-     -ccv "ANALYSIS_CAT" -caseval "Case" -controlval "Control" \
-     -z HET \
-     -dv "PRIMARY_DISEASE" -dn "Schizophrenia" # > SchizophreniaSwedish_Sklar.seg.txt
+VCFFILE="/erdos/shokin/ncbi/VCF/AREDS/Affy_gru_merge.vcf.gz"
+PHENOFILE="/erdos/shokin/ncbi/dbGaP-22329/PhenoGenotypeFiles/RootStudyConsentSet_phs000001.AREDS.v3.p1.c2.GRU/PhenotypeFiles/phs000001.v3.pht000371.v2.p1.c2.amdlensphenotype.GRU.txt"
+SAMPLEFILE="/erdos/shokin/ncbi/dbGaP-22329/PhenoGenotypeFiles/RootStudyConsentSet_phs000001.AREDS.v3.p1.c2.GRU/PhenotypeFiles/phs000001.v3.pht002478.v1.p1.AREDS_Sample.MULTI.txt"
+CASEVAL=11
+CONTROLVAL=1
+CASECONTROLVAR="AMDSTAT"
+SAMPLEVAR="specnum"
+ZYGOSITY="HET"
 
-#	/home/shokin/dbGaP/CIDR_HD_Modifiers/Finkbeiner_HD_SeqWholeGenome_110313_1.REFINED.FIXED.Nodup.SAMPLES.vcf.gz \
-#	/home/shokin/dbGaP/CIDR_HD_Modifiers/phs001071.v1.pht005347.v1.p1.c1.CIDR_HD_Onset_Age_Subject_Phenotypes.GRU.txt > CIDR_HD_Modifiers.seg.txt 
+java -server -cp "build/install/gwas/lib/*" org.ncgr.gwas.VCFSegregation \
+     -vf $VCFFILE \
+     -pf $PHENOFILE \
+     -sf $SAMPLEFILE \
+     -sv $SAMPLEVAR \
+     -ccv $CASECONTROLVAR -caseval $CASEVAL -controlval $CONTROLVAL \
+     -z $ZYGOSITY # > AREDS.seg.txt
+
