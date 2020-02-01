@@ -2,10 +2,11 @@
 # usage: VCFSegregation
 #  -caseval <arg>                case value in dbGaP phenotype file (e.g.
 #                                Case)
-#  -controlval <arg>             control value in dbGaP phenotype file (e.g.
-#                                Control)
 #  -ccv,--casecontrolvar <arg>   case/control variable in dbGaP phenotype
 #                                file (e.g. ANALYSIS_CAT)
+#  -controlval <arg>             control value in dbGaP phenotype file (e.g.
+#                                Control)
+#  -d,--debug                    enable debug mode
 #  -dn,--diseasename <arg>       desired case disease name in dbGaP
 #                                phenotype file (e.g. Schizophrenia;
 #                                required if -dv)
@@ -29,11 +30,11 @@ CASECONTROLVAR="AMDSTAT"
 SAMPLEVAR="specnum"
 ZYGOSITY="HET"
 
-java -server -cp "build/install/gwas/lib/*" org.ncgr.gwas.VCFSegregation \
+java -server -cp "build/install/gwas/lib/*" org.ncgr.gwas.VCFSegregation  \
      -vf $VCFFILE \
      -pf $PHENOFILE \
      -sf $SAMPLEFILE \
      -sv $SAMPLEVAR \
      -ccv $CASECONTROLVAR -caseval $CASEVAL -controlval $CONTROLVAL \
-     -z $ZYGOSITY # > AREDS.seg.txt
+     -z $ZYGOSITY > AREDS.seg.txt
 

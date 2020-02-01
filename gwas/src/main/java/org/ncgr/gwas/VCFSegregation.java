@@ -7,6 +7,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 
 import java.util.List;
+import java.util.ArrayList;
 import java.util.Map;
 import java.util.HashMap;
 
@@ -84,6 +85,10 @@ public class VCFSegregation {
 	Option diseaseNameOption = new Option("dn", "diseasename", true, "desired case disease name in dbGaP phenotype file (e.g. Schizophrenia; required if -dv)");
         diseaseNameOption.setRequired(false);
         options.addOption(diseaseNameOption);
+	//
+	Option debugOption = new Option("d", "debug", false, "enable debug mode");
+	debugOption.setRequired(false);
+	options.addOption(debugOption);
 	
         try {
             cmd = parser.parse(options, args);
@@ -96,30 +101,24 @@ public class VCFSegregation {
 
         // spit out help if nothing supplied
         if (cmd.getOptions().length==0) {
-            formatter.printHelp("PangenomicGraph", options);
+            formatter.printHelp("VCFSegregation", options);
             System.exit(1);
             return;
         }
 
-	VCFFileReader vcfReader = new VCFFileReader(new File(cmd.getOptionValue("vcffile")));
-	BufferedReader phenoReader = new BufferedReader(new FileReader(cmd.getOptionValue("phenofile")));
 	String ccVar = cmd.getOptionValue("casecontrolvar");
 	String caseValue = cmd.getOptionValue("caseval");
 	String controlValue = cmd.getOptionValue("controlval");
+	String sampleVar = cmd.getOptionValue("samplevar");
+
 	boolean callHomOnly = cmd.getOptionValue("zygosity").toUpperCase().equals("HOM");
+	boolean debug = cmd.hasOption("debug");
 
 	String diseaseVar = null;
 	String diseaseName = null;
 	if (cmd.hasOption("diseasevar")) {
 	    diseaseVar = cmd.getOptionValue("diseasevar");
 	    diseaseName = cmd.getOptionValue("diseasename");
-	}
-
-	BufferedReader sampleReader = null;
-	String sampleVar = null;
-	if (cmd.hasOption("samplefile")) {
-	    sampleReader = new BufferedReader(new FileReader(cmd.getOptionValue("samplefile")));
-	    sampleVar = cmd.getOptionValue("samplevar");
 	}
 
 	// the optional sample file relates dbGaP_Subject_ID in the phenotypes file to the sample ID used in the VCF file
@@ -135,8 +134,12 @@ public class VCFSegregation {
 	// ##			phv00167455.v2.p2	phv00167456.v2.p2	phv00167457.v2.p2	phv00167458.v2.p2	phv00167459.v2.p2
 	// dbGaP_Subject_ID	dbGaP_Sample_ID	BioSample Accession	SUBJID	SAMPID	SAMP_SOURCE	SOURCE_SAMPID	SAMPLE_USE
 	// 1284423	1836728	SAMN03897975	PT-1S8D	28278	KAROLINSKA	28278	Seq_DNA_WholeExome; Seq_DNA_SNP_CNV
-	Map<String,String> sampleIds = new HashMap<>(); // keyed by dbGaPSubjectId=dbGaP_Subject_ID
-	if (sampleReader!=null) {
+	//
+	// NOTE: there may be MORE THAN ONE LINE for the same dbGaP_Subject_ID! We'll assume that SAMPLE IDs are unique.
+	//
+	Map<String,String> sampleIdMap = new HashMap<>(); // keyed by dbGaPSubjectId=dbGaP_Subject_ID
+	if (cmd.hasOption("samplefile")) {
+	    BufferedReader sampleReader = new BufferedReader(new FileReader(cmd.getOptionValue("samplefile")));
 	    int sampleVarOffset = -1;
 	    boolean headerLine = true;
 	    String line = null;
@@ -154,9 +157,12 @@ public class VCFSegregation {
 		    headerLine = false;
 		} else {
 		    String[] data = line.split("\t");
-		    String dbGaPSubjectId = data[0]; // assume first column is dbGaP_Subject_ID, which I hope is always true
-		    String sampleId = data[sampleVarOffset];
-		    sampleIds.put(dbGaPSubjectId, sampleId);
+		    String dbGaPSubjectId = data[0]; // assume first column is dbGaP_Subject_ID, which I hope is always true -- not necessarily unique!!
+		    String sampleId = data[sampleVarOffset]; // presume this is unique
+		    sampleIdMap.put(sampleId, dbGaPSubjectId);
+		    // DEBUG
+		    if (debug) System.out.println(sampleId+"\t"+dbGaPSubjectId);
+		    //
 		}
             }
 	}
@@ -181,6 +187,7 @@ public class VCFSegregation {
 	int diseaseVarOffset = -1;
         int nCases = 0;
         int nControls = 0;
+	BufferedReader phenoReader = new BufferedReader(new FileReader(cmd.getOptionValue("phenofile")));
         while ((line=phenoReader.readLine())!=null) {
             if (line.startsWith("#")) {
                 continue; // comment
@@ -197,9 +204,16 @@ public class VCFSegregation {
             } else {
                 String[] data = line.split("\t");
 		String dbGaPSubjectId = data[0]; // assume first column is dbGaP_Subject_ID, which I hope is always true
-		String sampleId = data[1]; // if no samples file we assume ID in the second column is used in the VCF
-		if (sampleIds.size()>0) {
-		    sampleId = sampleIds.get(dbGaPSubjectId);
+		List<String> sampleIds = new ArrayList<>(); // we may have more than one sample ID per dbGaP_Subject_ID!
+		if (sampleIdMap.size()==0) {
+		    // no samples file, so assume ID in the second column is used in the VCF
+		    sampleIds.add(data[1]);
+		} else {
+		    // spin through the records to get all the sample IDs for this dbGaPSubjectId
+		    for (String sampleId : sampleIdMap.keySet()) {
+			String dgsId = sampleIdMap.get(sampleId);
+			if (dgsId.equals(dbGaPSubjectId)) sampleIds.add(sampleId);
+		    }
 		}
                 String ccValue = data[ccVarOffset];
 		String diseaseValue = null;
@@ -208,7 +222,9 @@ public class VCFSegregation {
                 boolean isControl = ccValue.equals(controlValue);
 		boolean isDisease = diseaseVar==null || diseaseValue.equals(diseaseName);
                 if ((isDisease && isCase) || isControl) {
-		    subjectStatus.put(sampleId, isCase); // true = case
+		    for (String sampleId : sampleIds) {
+			subjectStatus.put(sampleId, isCase); // true = case
+		    }
 		    if (isCase) {
 			nCases++;
 		    } else {
@@ -217,6 +233,10 @@ public class VCFSegregation {
 		}
             }
         }
+
+	// DEBUG
+	if (debug) System.out.println(nCases+" cases, "+nControls+" controls");
+	//
 
         // initialize FisherExact with max a+b+c+d
         FisherExact fisherExact = new FisherExact(nCases+nControls);
@@ -228,6 +248,13 @@ public class VCFSegregation {
         // MIXED       Some chromosomes are NO_CALL and others are called
         // NO_CALL     The sample is no-called (all alleles are NO_CALL
         // UNAVAILABLE There is no allele data availble for this sample (alleles.isEmpty)
+	VCFFileReader vcfReader = new VCFFileReader(new File(cmd.getOptionValue("vcffile")));
+	VCFHeader vcfHeader = vcfReader.getFileHeader();
+	// DEBUG
+	if (debug) {
+	    System.out.println(vcfHeader.getSampleNamesInOrder());
+	}
+	//
         for (VariantContext vc : vcfReader) {
             String id = vc.getID();
             String source = vc.getSource();
@@ -243,10 +270,32 @@ public class VCFSegregation {
             int controlVars = 0;
 	    // spin through the samples of interest
 	    for (String sampleId : subjectStatus.keySet()) {
-		Genotype g = gc.get(sampleId);
+		boolean isCase = subjectStatus.get(sampleId);
+		String vcfSampleId = sampleId;
+		Genotype g = gc.get(vcfSampleId);
+		if (g==null) {
+		    // try underscore version
+		    vcfSampleId = sampleId+"_"+sampleId;
+		    g = gc.get(vcfSampleId);
+		}
+		// coupla AREDS special cases
+		if (g==null && sampleId.equals("M5025422") || sampleId.equals("E9864525")) {
+		    vcfSampleId = "M5025422_E9864525";
+		    g = gc.get(vcfSampleId);
+		}
+		if (g==null && sampleId.equals("15640082") || sampleId.equals("H8594671")) {
+		    vcfSampleId = "15640082_H8594671";
+		    g = gc.get(vcfSampleId);
+		}
+		if (g==null && sampleId.equals("28525337") || sampleId.equals("J2659872")) {
+		    vcfSampleId = "28525337_J2659872";
+		    g = gc.get(vcfSampleId);
+		}
 		if (g!=null) {
-                    boolean isCase = subjectStatus.get(sampleId);
                     GenotypeType type = g.getType();
+		    // DEBUG
+		    if (debug) System.out.println(vcfSampleId+":case="+isCase+":"+type.toString());
+		    //
                     if (type.equals(GenotypeType.NO_CALL)) {
                         noCall = true;
                     } else if (type.equals(GenotypeType.MIXED)) {

@@ -1,0 +1,11 @@
+#!/bin/sh
+
+VCFFILE="/erdos/shokin/ncbi/VCF/AREDS/Affy_gru_merge.vcf"
+SNPBATCHFILES="/erdos/shokin/ncbi/snpBatch/snpBatch_AFFY_33750,/erdos/shokin/ncbi/snpBatch/snpBatch_AFFY_33751"
+OUTFILE="/erdos/shokin/ncbi/VCF/AREDS/Affy_gru_merge-GRCh38.vcf"
+
+#VCFFILE="/erdos/shokin/ncbi/VCF/AREDS/Illumina_gru_merge.vcf"
+#SNPBATCHFILES="/erdos/shokin/ncbi/snpBatch/snpBatch_ILLUMINA_33668"
+#OUTFILE="/erdos/shokin/ncbi/VCF/AREDS/Illumina_gru_merge-GRCh38.vcf"
+
+java -server -cp "build/install/gwas/lib/*" org.ncgr.gwas.SNPLifter $VCFFILE $SNPBATCHFILES > $OUTFILE 
