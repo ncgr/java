@@ -7,4 +7,4 @@
 
 graph=$1
 
-java -cp "build/install/fr/lib/*" org.ncgr.pangenomics.GraphViewer -g $graph $2 $3 $4 $5 $6
+java -Xmx160g -XX:+UseParallelGC -Xms2g -XX:SoftRefLRUPolicyMSPerMB=1 -XX:MaxHeapFreeRatio=99 -cp "build/install/fr/lib/*" org.ncgr.pangenomics.GraphViewer -g $graph $2 $3 $4 $5 $6

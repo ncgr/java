@@ -4,6 +4,7 @@
 #  -graph,--graph <arg>      name of graph
 #  -gt,--genotype <arg>      which genotype to include (0,1) from the GFA
 #                            file; -1 to include both (-1)
+#  -mcn,--mergecommonnodes   merge common adjacent nodes (false)
 #  -o,--outputprefix <arg>   output file prefix (stdout)
 #  -p,--pathlabels <arg>     tab-delimited file containing one
 #                            pathname<tab>label per line
@@ -17,13 +18,13 @@ dir=$1
 graph=$2
 
 ## GFA with labels
-java -server -cp "build/install/fr/lib/*" org.ncgr.pangenomics.PangenomicGraph --verbose \
+java -server -cp "build/install/fr/lib/*" org.ncgr.pangenomics.PangenomicGraph --verbose $3 $4 \
      --gfa --graph $dir/$graph --pathlabels $dir/labels.txt --outputprefix $graph --skipedges --skipsequences --skipnodepaths
 
 ## GFA without labels
-#java -server -cp "build/install/fr/lib/*" org.ncgr.pangenomics.PangenomicGraph --verbose \
+#java -server -cp "build/install/fr/lib/*" org.ncgr.pangenomics.PangenomicGraph --verbose $3 $4 \
 #     --gfa --graph $dir/$graph --outputprefix $graph --skipedges --skipsequences --skipnodepaths
 
 ## TXT
-#java -server -cp "build/install/fr/lib/*" org.ncgr.pangenomics.PangenomicGraph --verbose \
+#java -server -cp "build/install/fr/lib/*" org.ncgr.pangenomics.PangenomicGraph --verbose $3 $4 \
 #     --txt --graph $graph --outputprefix $graph --skipedges --skipsequences --skipnodepaths

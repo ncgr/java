@@ -90,9 +90,10 @@ public class PangenomicGraph extends DirectedAcyclicGraph<Node,Edge> {
         importer.importGraph(this, gfaFile);
         paths = importer.getPaths();
         if (skipNodePaths) {
-            System.out.println("# Skipped building node paths");
+            System.out.println("# Skipped building node paths and removing orphans");
         } else {
             buildNodePaths();
+            removeOrphanNodes();
         }
         dsp = new DijkstraShortestPath<Node,Edge>(this);
     }
@@ -197,6 +198,52 @@ public class PangenomicGraph extends DirectedAcyclicGraph<Node,Edge> {
                 labelCounts.put(label, 1);
             }
         }
+    }
+
+    /**
+     * Merge common adjacent nodes in the graph.
+     */
+    public void mergeCommonNodes() {
+        int totalPathCount = getPathCount();
+        Node lastNode = null;
+        int lastPathCount = 0;
+        NodeSet nodeSet = null;
+        List<NodeSet> mergeableNodeSets = new ArrayList<>();
+        for (Node node : getNodes()) {
+            int pathCount = getPathCount(node);
+            if (lastNode!=null && lastPathCount==totalPathCount && pathCount==totalPathCount) {
+                if (nodeSet==null) {
+                    nodeSet = new NodeSet();
+                    nodeSet.add(lastNode);
+                    mergeableNodeSets.add(nodeSet);
+                }
+                nodeSet.add(node);
+            } else {
+                nodeSet = null;
+            }
+            // set for next round
+            lastNode = node;
+            lastPathCount = pathCount;
+        }
+        for (NodeSet ns : mergeableNodeSets) {
+            System.out.println("MERGE:"+ns);
+        }
+    }
+
+    /**
+     * Remove orphan nodes, nodes which have no edges.
+     */
+    public void removeOrphanNodes() {
+        List<Node> removeableNodes = new ArrayList<>();
+        for (Node node : getNodes()) {
+            if (getPathCount(node)==0) {
+                removeableNodes.add(node);
+            }
+        }
+        for (Node node : removeableNodes) {
+            removeVertex(node);
+        }
+        System.out.println(removeableNodes.size()+" orphan nodes removed.");
     }
 
     /**
@@ -782,6 +829,10 @@ public class PangenomicGraph extends DirectedAcyclicGraph<Node,Edge> {
         Option skipNodePathsOption = new Option("snp", "skipnodepaths", false, "skip building list of paths per node (false)");
         skipNodePathsOption.setRequired(false);
         options.addOption(skipNodePathsOption);
+        //
+        Option mergeCommonNodesOption = new Option("mcn", "mergecommonnodes", false, "merge common adjacent nodes (false)");
+        mergeCommonNodesOption.setRequired(false);
+        options.addOption(mergeCommonNodesOption);
 
         try {
             cmd = parser.parse(options, args);
@@ -815,11 +866,12 @@ public class PangenomicGraph extends DirectedAcyclicGraph<Node,Edge> {
         if (cmd.hasOption("verbose")) graph.setVerbose();
         if (cmd.hasOption("skipedges")) graph.setSkipEdges();
 	if (cmd.hasOption("skipsequences")) graph.setSkipSequences();
-        if (cmd.hasOption("skipnodepaths")) graph.setSkipNodePaths();
+        if (cmd.hasOption("skipnodepaths") && !cmd.hasOption("mergecommonnodes")) graph.setSkipNodePaths();
         if (cmd.hasOption("genotype")) graph.setGenotype(Integer.parseInt(cmd.getOptionValue("genotype")));
-        // import the graph from a GFA file or pair of TXT files
+
         long importStart = System.currentTimeMillis();
         if (cmd.hasOption("gfa")) {
+            // import the graph from a GFA file
             File gfaFile = new File(graphName+".paths.gfa");
             graph.importGFA(gfaFile);
             // if a labels file is given, add them to the paths
@@ -829,6 +881,7 @@ public class PangenomicGraph extends DirectedAcyclicGraph<Node,Edge> {
                 graph.tallyLabelCounts();
             }
         } else if (cmd.hasOption("txt")) {
+            // import the graph from a pair of TXT files
             File nodesFile = new File(graphName+".nodes.txt");
             File pathsFile = new File(graphName+".paths.txt");
             graph.importTXT(nodesFile, pathsFile);
@@ -836,6 +889,11 @@ public class PangenomicGraph extends DirectedAcyclicGraph<Node,Edge> {
         }
         long importEnd = System.currentTimeMillis();
         if (graph.verbose) System.out.println("Graph import took "+(importEnd-importStart)+" ms.");
+
+        // merge common nodes
+        if (cmd.hasOption("mergecommonnodes")) {
+            graph.mergeCommonNodes();
+        }
 
         // output
         if (cmd.hasOption("gfa")) {
