@@ -43,6 +43,13 @@ public class Node implements Comparable, Serializable {
     }
 
     /**
+     * Append a subsequence to this Node's sequence.
+     */
+    public void appendSequence(String subsequence) {
+        this.sequence += subsequence;
+    }
+
+    /**
      * Two nodes are equal if they have the same id.
      */
     @Override

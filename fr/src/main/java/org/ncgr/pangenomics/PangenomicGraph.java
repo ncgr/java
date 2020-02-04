@@ -203,7 +203,8 @@ public class PangenomicGraph extends DirectedAcyclicGraph<Node,Edge> {
     /**
      * Merge common adjacent nodes in the graph.
      */
-    public void mergeCommonNodes() {
+    public void mergeCommonNodes() throws NullNodeException, NullSequenceException {
+        if (verbose) System.out.print("Merging adjacent common nodes...");
         int totalPathCount = getPathCount();
         Node lastNode = null;
         int lastPathCount = 0;
@@ -225,15 +226,56 @@ public class PangenomicGraph extends DirectedAcyclicGraph<Node,Edge> {
             lastNode = node;
             lastPathCount = pathCount;
         }
+        // remove edges
         for (NodeSet ns : mergeableNodeSets) {
-            System.out.println("MERGE:"+ns);
+            Node first = ns.first();
+            Node last = ns.last();
+            for (Node n : ns) {
+                if (ns.higher(n)!=null) {
+                    // remove edge from this to next higher node
+                    removeAllEdges(n, ns.higher(n));
+                }
+            }
         }
+        // remove all but first and last node
+        List<Node> removedNodes = new ArrayList<>();
+        for (NodeSet ns : mergeableNodeSets) {
+            Node first = ns.first();
+            Node last = ns.last();
+            String subsequence = "";
+            for (Node n : ns) {
+                if (!n.equals(first) && !n.equals(last)) {
+                    subsequence += n.getSequence();
+                    removedNodes.add(n); // keep track for path rebuilding below
+                    removeVertex(n);
+                }
+            }
+            // connect the first to last with a single edge
+            addEdge(first, last);
+            // now update the sequence on the first node; if we do it before addEdge(), we change serialized value and throw "no such vertex"
+            first.appendSequence(subsequence);
+        }
+        // create paths with new nodes
+        List<Path> newPaths = new ArrayList<>();
+        for (Path p : paths) {
+            List<Node> newNodes = new ArrayList<>();
+            for (Node n : p.getNodes()) {
+                if (!removedNodes.contains(n)) {
+                    newNodes.add(n);
+                }
+            }
+            newPaths.add(new Path(this, newNodes, p.getName(), p.getGenotype(), p.getLabel(), skipSequences));
+        }
+        this.paths = newPaths;
+        if (verbose) System.out.println(removedNodes.size()+" removed.");
+        buildNodePaths();
     }
 
     /**
      * Remove orphan nodes, nodes which have no edges.
      */
     public void removeOrphanNodes() {
+        if (verbose) System.out.print("Removing orphan nodes...");
         List<Node> removeableNodes = new ArrayList<>();
         for (Node node : getNodes()) {
             if (getPathCount(node)==0) {
@@ -243,7 +285,7 @@ public class PangenomicGraph extends DirectedAcyclicGraph<Node,Edge> {
         for (Node node : removeableNodes) {
             removeVertex(node);
         }
-        System.out.println(removeableNodes.size()+" orphan nodes removed.");
+        if (verbose) System.out.println(removeableNodes.size()+" removed.");
     }
 
     /**
