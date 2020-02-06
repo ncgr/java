@@ -29,13 +29,15 @@ params = function(x="topleft") {
     if (isSaveSet) {
         legend(x=x, bty="n",
                c(paste("FRs:",length(frs$nodes)),
-                 paste("priority option:",priorityOption),
-                 paste("min. priority:",minPriority),
-                 paste("min. support:",minSup),
-                 paste("keep option:",keepOption),
-                 paste("max. round:",maxRound),
-                 paste("case paths:",labelCounts["case",1]),
-                 paste("control paths:",labelCounts["ctrl",1])
+                 paste("priority option:", priorityOption),
+                 paste("min. priority:", minPriority),
+                 paste("min. support:", minSup),
+                 paste("keep option:", keepOption),
+                 paste("max. round:", maxRound),
+                 paste("req. nodes:", requiredNodes),
+                 paste("excl. nodes:", excludedNodes),
+                 paste("case paths:", labelCounts["case",1]),
+                 paste("control paths:", labelCounts["ctrl",1])
                  )
                )
     } else {
@@ -47,6 +49,8 @@ params = function(x="topleft") {
                  paste("min. support:",minSup),
                  paste("keep option:",keepOption),
                  paste("max. round:",maxRound),
+                 paste("req. nodes:", requiredNodes),
+                 paste("excl. nodes:", excludedNodes),
                  paste("FRs:",length(frs$nodes)),
                  paste("case paths:",labelCounts["case",1]),
                  paste("control paths:",labelCounts["ctrl",1])

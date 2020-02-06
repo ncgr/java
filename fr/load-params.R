@@ -11,6 +11,7 @@
 ## verbose=true
 ## graphName=HLAB.601
 ## requiredNodes=[]
+## excludedNodes=[]
 ## maxRound=100
 ## priorityOption=4
 ## minPriority=1
@@ -46,6 +47,7 @@ for (i in 1:length(rownames(params))) {
         if (params$V1[i]=="verbose") verbose = as.logical(params$V2[i])
         if (params$V1[i]=="graphName") graphName = params$V2[i]
         if (params$V1[i]=="requiredNodes") requiredNodes = params$V2[i]
+        if (params$V1[i]=="excludedNodes") excludedNodes = params$V2[i]
         if (params$V1[i]=="maxRound") maxRound = as.numeric(params$V2[i])
         if (params$V1[i]=="priorityOption") priorityOption = as.numeric(params$V2[i])
         if (params$V1[i]=="minPriority") minPriority = as.numeric(params$V2[i])

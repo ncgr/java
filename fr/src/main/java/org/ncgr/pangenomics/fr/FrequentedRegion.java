@@ -240,7 +240,7 @@ public class FrequentedRegion implements Comparable {
                 s += "\t"+label;
             }
             // odds ratio and p value
-            s += "\tpri"+"\tOR"+"\tp";
+            s += "\tOR"+"\tp"+"\tpri";
         }
         return s;
     }
