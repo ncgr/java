@@ -3,7 +3,7 @@
 
 source("params.R")
 
-plot.heatmap = function(xmin=0, xmax=0, ymin=0, ymax=0, requiredNode=0) {
+plot.frs = function(xmin=0, xmax=0, ymin=0, ymax=0, requiredNode=0) {
 
     sigPri = 200
 
@@ -30,11 +30,10 @@ plot.heatmap = function(xmin=0, xmax=0, ymin=0, ymax=0, requiredNode=0) {
     if (priorityOption==4) {
         ylab = paste(ylab, "=", "-log10(p)×100")
     }
-    
+
     plot(xlim, rep(sigPri,2), type="l", lty=2, col="lightgray",
          xlim=xlim, ylim=ylim,
-         xlab=xlab, ylab=ylab,
-         main=paste(prefix,"  ","alpha=",alpha," ","kappa=",kappa, " ","minPriority=",minPriority,sep=""))
+         xlab=xlab, ylab=ylab)
 
     for (i in 1:nrow(frs)) {
         nodeString = frs$nodes[i]

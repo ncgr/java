@@ -26,34 +26,44 @@
 ## }
 
 params = function(x="topleft") {
+
+    alphaKappa = paste("ɑ=",alpha,sep="")
+    if (kappa=="Inf") {
+        alphaKappa = paste(alphaKappa, ", κ=∞", sep="")
+    } else { 
+        alphaKappa = paste(alphaKappa, ", κ=",kappa, sep="")
+    }
+
     if (isSaveSet) {
         legend(x=x, bty="n",
-               c(paste("FRs:",length(frs$nodes)),
+               c(paste(graphName, ":", length(frs$nodes),"FRs"),
+                 alphaKappa,
+                 paste("case/control paths: ", labelCounts["case",1],"/",labelCounts["ctrl",1],sep=""),
                  paste("priority option:", priorityOption),
                  paste("min. priority:", minPriority),
                  paste("min. support:", minSup),
+                 paste("min. size:", minSize),
+                 paste("min. length:", minLen),
                  paste("keep option:", keepOption),
                  paste("max. round:", maxRound),
                  paste("req. nodes:", requiredNodes),
-                 paste("excl. nodes:", excludedNodes),
-                 paste("case paths:", labelCounts["case",1]),
-                 paste("control paths:", labelCounts["ctrl",1])
+                 paste("excl. nodes:", excludedNodes)
                  )
                )
     } else {
         legend(x=x, bty="n",
-               c(date,
-                 paste("clock time:",clocktime),
-                 paste("priority option:",priorityOption),
-                 paste("min. priority:",minPriority),
-                 paste("min. support:",minSup),
-                 paste("keep option:",keepOption),
-                 paste("max. round:",maxRound),
+               c(paste(graphName, ":", length(frs$nodes),"FRs"),
+                 alphaKappa,
+                 date,
+                 paste("clock time:", clocktime),
+                 paste("case/control paths: ", labelCounts["case",1],"/",labelCounts["ctrl",1],sep=""),
+                 paste("minSup=",minSup, ", minSize=",minSize, ", minLen=",minLen, sep=""),
+                 paste("priority option:", priorityOption),
+                 paste("min. priority:", minPriority),
+                 paste("keep option:", keepOption),
+                 paste("max. round:", maxRound),
                  paste("req. nodes:", requiredNodes),
-                 paste("excl. nodes:", excludedNodes),
-                 paste("FRs:",length(frs$nodes)),
-                 paste("case paths:",labelCounts["case",1]),
-                 paste("control paths:",labelCounts["ctrl",1])
+                 paste("excl. nodes:", excludedNodes)
                  )
                )
     }

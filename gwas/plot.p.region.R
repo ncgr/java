@@ -4,7 +4,7 @@
 ##
 plot.p.region = function(chr="1", start=1, end=0, gene=NULL, label=FALSE, minCalls=0, showGenes=FALSE, ymin=0, ymax=0) {
    
-    pSig = 1e-4
+    pSig = 1e-2
 
     if (!is.null(gene)) {
         ## genes$start[genes$name=="HLA-A"]
