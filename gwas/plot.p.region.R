@@ -19,18 +19,18 @@ plot.p.region = function(chr="1", start=1, end=0, gene=NULL, label=FALSE, minCal
         showGenes = TRUE
     }
         
-    if (end==0) end = max(seg$start[seg$chr==chr])
+    if (end==0) end = max(seg$pos[seg$chr==chr])
     
-    pts = seg$chr==chr & is.finite(seg$OR) & seg$start>=start & seg$start<=end & (seg$caseVars+seg$ctrlVars)>=minCalls & (seg$caseRefs+seg$ctrlRefs)>=minCalls
+    pts = seg$chr==chr & is.finite(seg$OR) & seg$pos>=start & seg$pos<=end & (seg$caseVars+seg$controlVars)>=minCalls & (seg$caseRefs+seg$controlRefs)>=minCalls
     ptsCase = pts & seg$p<pSig & seg$log10OR>0
-    ptsCtrl = pts & seg$p<pSig & seg$log10OR<0
+    ptsControl = pts & seg$p<pSig & seg$log10OR<0
     hasCase = nrow(seg[ptsCase,])>0
-    hasCtrl = nrow(seg[ptsCtrl,])>0
+    hasControl = nrow(seg[ptsControl,])>0
 
     if (ymax==0) ymax = max(seg$mlog10p[pts])
     ylim = c(ymin, ymax)
 
-    plot(seg$start[pts], seg$mlog10p[pts],
+    plot(seg$pos[pts], seg$mlog10p[pts],
          xlab=paste("Chr",chr,"position"),
          ylab="-log10(p)",
          xlim=c(start,end),
@@ -42,20 +42,20 @@ plot.p.region = function(chr="1", start=1, end=0, gene=NULL, label=FALSE, minCal
     lines(c(1,1e9), rep(2,2), col="gray", lty=2)
     
     ## highlight highly significant p values
-    if (hasCase) { points(seg$start[ptsCase], seg$mlog10p[ptsCase], pch=19, cex=0.8, col="darkred") }
-    if (hasCtrl) { points(seg$start[ptsCtrl], seg$mlog10p[ptsCtrl], pch=19, cex=0.8, col="darkgreen") }
+    if (hasCase) { points(seg$pos[ptsCase], seg$mlog10p[ptsCase], pch=19, cex=0.8, col="darkred") }
+    if (hasControl) { points(seg$pos[ptsControl], seg$mlog10p[ptsControl], pch=19, cex=0.8, col="darkgreen") }
 
     ## label them with position if requested
     if (label && hasCase) {
-        text(seg$start[ptsCase], seg$mlog10p[ptsCase], col="darkred", pos=4, cex=0.8, offset=0.2,
-             paste(seg$start[ptsCase],
-                   " (",seg$caseVars[ptsCase],"/",seg$caseRefs[ptsCase],"|",seg$ctrlVars[ptsCase],"/",seg$ctrlRefs[ptsCase],";OR=",signif(seg$OR[ptsCase],3),")",sep="")
+        text(seg$pos[ptsCase], seg$mlog10p[ptsCase], col="darkred", pos=4, cex=0.8, offset=0.2,
+             paste(seg$id[ptsCase]," ",seg$ref[ptsCase],seg$alts[ptsCase],
+                   " (",seg$caseVars[ptsCase],"/",seg$caseRefs[ptsCase],"|",seg$controlVars[ptsCase],"/",seg$controlRefs[ptsCase],";OR=",signif(seg$OR[ptsCase],3),")",sep="")
              )
     }
-    if (label && hasCtrl) {
-        text(seg$start[ptsCtrl], seg$mlog10p[ptsCtrl], col="darkgreen", pos=4, cex=0.8, offset=0.2,
-             paste(seg$start[ptsCtrl],
-                   " (",seg$caseVars[ptsCtrl],"/",seg$caseRefs[ptsCtrl],"|",seg$ctrlVars[ptsCtrl],"/",seg$ctrlRefs[ptsCtrl],";OR=",signif(seg$OR[ptsCtrl],3),")",sep="")
+    if (label && hasControl) {
+        text(seg$pos[ptsControl], seg$mlog10p[ptsControl], col="darkgreen", pos=4, cex=0.8, offset=0.2,
+             paste(seg$id[ptsControl]," ",seg$ref[ptsControl],seg$alts[ptsControl],
+                   " (",seg$caseVars[ptsControl],"/",seg$caseRefs[ptsControl],"|",seg$controlVars[ptsControl],"/",seg$controlRefs[ptsControl],";OR=",signif(seg$OR[ptsControl],3),")",sep="")
              )
     }
 

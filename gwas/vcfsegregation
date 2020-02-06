@@ -21,9 +21,13 @@
 #  -vf,--vcffile <arg>           VCF file
 #  -z,--zygosity <arg>           zygosity for VAR call: HET or HOM
 
-VCFFILE="/erdos/shokin/ncbi/VCF/AREDS/Affy_gru_merge.vcf.gz"
-PHENOFILE="/erdos/shokin/ncbi/dbGaP-22329/PhenoGenotypeFiles/RootStudyConsentSet_phs000001.AREDS.v3.p1.c2.GRU/PhenotypeFiles/phs000001.v3.pht000371.v2.p1.c2.amdlensphenotype.GRU.txt"
-SAMPLEFILE="/erdos/shokin/ncbi/dbGaP-22329/PhenoGenotypeFiles/RootStudyConsentSet_phs000001.AREDS.v3.p1.c2.GRU/PhenotypeFiles/phs000001.v3.pht002478.v1.p1.AREDS_Sample.MULTI.txt"
+## maps to GRCh38
+## /erdos/ncbi/VCF/AREDS/Affy_gru_merge-GRCh38.norm.vcf.gz
+## /erdos/ncbi/VCF/AREDS/Illumina_gru_merge-GRCh38.norm.vcf.gz
+
+VCFFILE="/erdos/ncbi/VCF/AREDS/Affy_gru_merge-GRCh38.norm.vcf.gz"
+PHENOFILE="/erdos/ncbi/dbGaP-22329/PhenoGenotypeFiles/RootStudyConsentSet_phs000001.AREDS.v3.p1.c2.GRU/PhenotypeFiles/phs000001.v3.pht000371.v2.p1.c2.amdlensphenotype.GRU.txt"
+SAMPLEFILE="/erdos/ncbi/dbGaP-22329/PhenoGenotypeFiles/RootStudyConsentSet_phs000001.AREDS.v3.p1.c2.GRU/PhenotypeFiles/phs000001.v3.pht002478.v1.p1.AREDS_Sample.MULTI.txt"
 CASEVAL=11
 CONTROLVAL=1
 CASECONTROLVAR="AMDSTAT"

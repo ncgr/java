@@ -7,4 +7,4 @@
  
 prefix=$1
 
-java -cp "build/install/fr/lib/*" org.ncgr.pangenomics.fr.FRViewer -p $prefix $2 $3 $4 $5 $6
+java -cp "build/install/fr/lib/*" -XX:+UseStringDeduplication -XX:+UseG1GC org.ncgr.pangenomics.fr.FRViewer -p $prefix $2 $3 $4 $5 $6

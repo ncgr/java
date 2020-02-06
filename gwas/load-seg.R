@@ -3,12 +3,18 @@
 ##
 
 segFile = readline(prompt="Segregation file: ")
-seg = read.table(file=segFile, header=F)
+seg = read.table(file=segFile, header=F, sep="\t")
 
-colnames(seg) = c("chr","start","caseVars","ctrlVars","caseRefs","ctrlRefs","p")
+## System.out.println(contig+"\t"+start+"\t"+id+"\t"+
+##                    vc.getReference()+"\t"+vc.getAlternateAlleles()+"\t"+
+##                    caseVars+"\t"+controlVars+"\t"+caseRefs+"\t"+controlRefs+"\t"+p+"\t"+or);
+## }
 
-## TEMP calculate the odds ratio
-seg$OR = (seg$caseVars/seg$ctrlVars) / (seg$caseRefs/seg$ctrlRefs)
+colnames(seg) = c("chr","pos","id","ref","alts","caseVars","controlVars","caseRefs","controlRefs","p","OR")
+
+## recalculate the odds ratio so we get infinite values, handy in R
+## or = (double)(caseVars*controlRefs)/(double)(controlVars*caseRefs);
+seg$OR = (seg$caseVars*seg$controlRefs) / (seg$caseRefs*seg$controlVars)
 
 ## chromosomes aren't all numbers
 chrs = unique(seg$chr)

@@ -248,6 +248,7 @@ public class VCFSegregation {
         // MIXED       Some chromosomes are NO_CALL and others are called
         // NO_CALL     The sample is no-called (all alleles are NO_CALL
         // UNAVAILABLE There is no allele data availble for this sample (alleles.isEmpty)
+        // 1 877558 rs4372192 C T 71.55 PASS AC=1;AF=4.04e-05;AN=24736;BaseQRankSum=-1.369;CCC=24750;... GT:AD:DP:GQ:PL 0/0:7,0:7:21:0,21,281 0/0:7,0:7:21:0,21,218 ...
 	VCFFileReader vcfReader = new VCFFileReader(new File(cmd.getOptionValue("vcffile")));
 	VCFHeader vcfHeader = vcfReader.getFileHeader();
 	// DEBUG
@@ -328,7 +329,9 @@ public class VCFSegregation {
 		    or = (double)(caseVars*controlRefs)/(double)(controlVars*caseRefs);
 		}
 		// output the line
-                System.out.println(contig+"\t"+start+"\t"+caseVars+"\t"+controlVars+"\t"+caseRefs+"\t"+controlRefs+"\t"+p+"\t"+or);
+                System.out.println(contig+"\t"+start+"\t"+id+"\t"+
+                                   vc.getReference().toString()+"\t"+vc.getAlternateAlleles().toString().replace(" ","")+"\t"+
+                                   caseVars+"\t"+controlVars+"\t"+caseRefs+"\t"+controlRefs+"\t"+p+"\t"+or);
             }
         }
     }
