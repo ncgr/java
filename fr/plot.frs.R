@@ -3,7 +3,7 @@
 
 source("params.R")
 
-plot.frs = function(xmin=0, xmax=0, ymin=0, ymax=0, requiredNode=0) {
+plot.frs = function(xmin=0, xmax=0, ymin=0, ymax=0, requiredNode=0, xlegend="bottomleft", connect=TRUE) {
 
     sigPri = 200
 
@@ -48,7 +48,10 @@ plot.frs = function(xmin=0, xmax=0, ymin=0, ymax=0, requiredNode=0) {
             }
             if (length(frNodes)==1) {
                 pchar = 19
-                if (frs$pri[i]>sigPri) {
+                if (frNodes==requiredNode) {
+                    lines(rep(frNodes,2), ylim, lty=3, col=color, lwd=2)
+                    text(frNodes, ylim[1]-(ylim[2]-ylim[1])*0.02, frNodes, col=color, cex=1.0)
+                } else if (frs$pri[i]>sigPri) {
                     lines(rep(frNodes,2), ylim, lty=3, col=color)
                     text(frNodes, ylim[1]-(ylim[2]-ylim[1])*0.02, frNodes, col=color, cex=0.7)
                 }
@@ -56,6 +59,9 @@ plot.frs = function(xmin=0, xmax=0, ymin=0, ymax=0, requiredNode=0) {
                 pchar = 0
             }
             points(frNodes, rep(frs$pri[i],length(frNodes)), col=color, pch=pchar)
+            if (connect) {
+                lines(frNodes, rep(frs$pri[i],length(frNodes)), col=color, lwd=1)
+            }
             lastFR = frs[i,]
             lastFRNodes = frNodes
         }
@@ -64,5 +70,5 @@ plot.frs = function(xmin=0, xmax=0, ymin=0, ymax=0, requiredNode=0) {
     points(lastFRNodes, rep(lastFR$pri,length(lastFRNodes)), col=color, pch=15)
     text(lastFRNodes, ylim[2]+(ylim[2]-ylim[1])*0.02, lastFRNodes, col=color, cex=0.7)
 
-    params(x="bottomleft")
+    params(x=xlegend)
 }

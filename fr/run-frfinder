@@ -57,7 +57,7 @@ priorityoption=$4
 echo "# $graph alpha=$alpha kappa=$kappa priorityOption=$priorityoption"
 
 ## TXT input
-java -server -Xms100g -Xmx600g -XX:+UseG1GC -XX:+UseStringDeduplication -cp "build/install/fr/lib/*" org.ncgr.pangenomics.fr.FRFinder \
+java -server -Xms1g -Xmx600g -XX:+UseG1GC -XX:+UseStringDeduplication -cp "build/install/fr/lib/*" org.ncgr.pangenomics.fr.FRFinder \
      --verbose --skipnodepaths --keepoption=subset $5 $6 $7 $8 $9 \
      --txt --graph=$graph \
      --alphastart=$alpha --alphaend=$alpha --kappastart=$kappa --kappaend=$kappa --priorityoption=$priorityoption

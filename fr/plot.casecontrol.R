@@ -3,27 +3,36 @@
 ## requires labelCounts
 ##
 
-plot.casecontrol = function() {
+source("params.R")
 
-    xlim = c(0, max(frs$ctrl))
-    ylim = c(0, max(frs$case))
+plot.casecontrol = function(xmin=0, xmax=0, ymin=0, ymax=0, connect=FALSE) {
+
+    if (xmax==0) xmax = max(frs$ctrl)
+    if (ymax==0) ymax = max(frs$case)
+
+    xlim = c(xmin, xmax)
+    ylim = c(ymin, ymax)
 
     plot(frs$ctrl, frs$case,
          xlim=xlim, ylim=ylim,
          xlab="control sample support",  ylab="case sample support",
-         col=alpha("black",0.5), cex.axis=cex.axis, cex.lab=cex.lab
+         col=alpha("black",0.5)  # , cex.axis=cex.axis, cex.lab=cex.lab
          )
-    title(main=paste(graphPrefix," alpha=",alpha," kappa=",kappa, sep=""), cex.main=cex.main)
+    title(main=paste(graphPrefix," alpha=",alpha," kappa=",kappa, sep="")) # , cex.main=cex.main)
+
+    if (connect) {
+        lines(frs$ctrl, frs$case)
+    }
     
     ## fr:pri
     text(frs$ctrl, frs$case,
          paste(rownames(frs),":",frs$pri,sep=""),
-         cex=cexText, pos=1, offset=0.4, col=alpha("black",0.5)
+         pos=1, offset=0.4, col=alpha("black",0.5) # cex=cexText, 
          )
 
     lines(c(0,labelCounts["ctrl",1]*100),c(0,labelCounts["case",1]*100), col="gray")
 
-    source("params.R")
+    params()
 
     ## highlight low-p values on top
     lowp = frs$p<1e-2

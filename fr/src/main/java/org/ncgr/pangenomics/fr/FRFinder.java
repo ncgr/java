@@ -199,7 +199,15 @@ public class FRFinder {
             // add interesting single-node FRs in round 0, since we won't hit them in the loop
             for (FrequentedRegion fr : allFrequentedRegions.values()) {
                 if (isInteresting(fr)) {
-                    frequentedRegions.put(fr.nodes.toString(), fr);
+                    if (requiredNodes.size()==0) {
+                        frequentedRegions.put(fr.nodes.toString(), fr);
+                    } else {
+                        for (Node n : requiredNodes) {
+                            if (fr.nodes.contains(n)) {
+                                frequentedRegions.put(fr.nodes.toString(), fr);
+                            }
+                        }
+                    }
                 }
             }
         }
