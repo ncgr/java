@@ -25,5 +25,5 @@ alpha=$2
 kappa=$3
 nodes=$4
 
-java -server -Xmx160g -XX:+UseParallelGC -Xms2g -XX:SoftRefLRUPolicyMSPerMB=1 -XX:MaxHeapFreeRatio=99 -cp "build/install/fr/lib/*" org.ncgr.pangenomics.fr.FrequentedRegion \
+java -server -Xms100g -Xmx600g -XX:+UseG1GC -XX:+UseStringDeduplication  -cp "build/install/fr/lib/*" org.ncgr.pangenomics.fr.FrequentedRegion \
      --txt --graph=$graph --alpha=$alpha --kappa=$kappa --priorityoption=0 --nodes=$nodes
