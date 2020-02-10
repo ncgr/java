@@ -325,19 +325,30 @@ public class FrequentedRegion implements Comparable {
 
     /**
      * Return the Fisher's exact test p value for cases vs controls.
+     *
+     *      | support     | non-support    |
+     *      |------------------------------|
+     * case | caseSupport | caseNonSupport |
+     * ctrl | ctrlSupport | ctrlNonSupport |
      */
     public double fisherExactP() {
-        int maxSize = graph.getCasePathCount() + graph.getCtrlPathCount() + caseSupport + ctrlSupport;
+        int caseNonSupport = graph.getCasePathCount() - caseSupport;
+        int ctrlNonSupport = graph.getCtrlPathCount() - ctrlSupport;
+        int maxSize = caseSupport + caseNonSupport + ctrlSupport + ctrlNonSupport;
         FisherExact fisherExact = new FisherExact(maxSize);
-        return fisherExact.getTwoTailedP(caseSupport, ctrlSupport, graph.getCasePathCount(), graph.getCtrlPathCount());
+        return fisherExact.getTwoTailedP(caseSupport, caseNonSupport, ctrlSupport, ctrlNonSupport);
     }
 
     /**
      * Return the odds ratio for cases vs controls.
+     * 0 = zero case support or full control support
+     * POSITIVE_INFINITY = zero control support or full case support (including full total support)
      */
     public double oddsRatio() {
-        if (ctrlSupport>0) {
-            return ((double)caseSupport/(double)ctrlSupport) / ((double)graph.getCasePathCount()/(double)graph.getCtrlPathCount());
+        int caseNonSupport = graph.getCasePathCount() - caseSupport;
+        int ctrlNonSupport = graph.getCtrlPathCount() - ctrlSupport;
+        if (ctrlSupport>0 && caseNonSupport>0) {
+            return (double)caseSupport * (double)ctrlNonSupport / ( (double)ctrlSupport * (double)caseNonSupport );
         } else {
             return Double.POSITIVE_INFINITY;
         }

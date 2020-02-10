@@ -61,18 +61,14 @@ class PGraphXAdapter extends JGraphXAdapter<Node,Edge> {
                         double or = graph.oddsRatio(n);
                         double p = graph.fisherExactP(n);
                         // color based on segregation
-                        if (Double.isInfinite(or)) {
-                            // 100% case node
-                            setCellStyles("fillColor", "#ff8080", cells);
+                        if (Double.isInfinite(or) && graph.getPathCount(n)==graph.getPathCount()) {
+                            // all paths go through node
+                            setCellStyles("fillColor", "white", cells);
                             setCellStyles("fontColor", "black", cells);
-                        } else if (or==0.00) {
-                            // 100% ctrl node
-                            setCellStyles("fillColor", "#80ff80", cells);
-                            setCellStyles("fontColor", "black", cells);
-                        } else if (or>1.0) {
-                            // case node
-                            double log10or = Math.log10(or);
-                            int rInt = Math.min((int)(127.0*log10or), 127) + 128;
+                        } else if (Double.isInfinite(or) || or>1.0) {
+                            // case-heavy node
+                            double mlog10p = -Math.log10(p);
+                            int rInt = Math.min((int)(64*mlog10p), 127) + 128; // full color at p=1e-2
                             String rHex = Integer.toHexString(rInt);
                             String fillColor = "#"+rHex+"8080";
                             setCellStyles("fillColor", fillColor, cells);
@@ -82,10 +78,10 @@ class PGraphXAdapter extends JGraphXAdapter<Node,Edge> {
                             } else {
                                 setCellStyles("fontColor", "black", cells);
                             }
-                        } else if (or<1.0) {
-                            // ctrl node
-                            double log10or = -Math.log10(or);
-                            int gInt = Math.min((int)(127.0*log10or), 127) + 128;
+                        } else if (or==0.00 || or<1.0) {
+                            // control-heavy node
+                            double mlog10p = -Math.log10(p);
+                            int gInt = Math.min((int)(64*mlog10p), 127) + 128; // full color at p=1e-2
                             String gHex = Integer.toHexString(gInt);
                             String fillColor = "#80"+gHex+"80";
                             setCellStyles("fillColor", fillColor, cells);

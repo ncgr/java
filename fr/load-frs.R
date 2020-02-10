@@ -47,3 +47,4 @@ if (labelsExist) {
 
 ## nodes
 nodes = read.table(file=paste(graphName,"nodes","txt",sep="."), row.names=1, col.names=c("node","sequence"))
+

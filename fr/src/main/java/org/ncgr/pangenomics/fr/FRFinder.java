@@ -238,41 +238,42 @@ public class FRFinder {
             // start parallel streams
             allFrequentedRegions.entrySet().parallelStream().forEach(entry1 -> {
                     FrequentedRegion fr1 = entry1.getValue();
-                    if (debug()) System.out.println("fr1:"+fr1);
+                    // if (debug()) System.out.println("fr1:"+fr1);
                     allFrequentedRegions.entrySet().parallelStream().forEach(entry2 -> {
                             FrequentedRegion fr2 = entry2.getValue();
+                            if (debug()) System.out.println("fr1:"+fr1+" fr2:"+fr2);
                             if (fr2.nodes.compareTo(fr1.nodes)>0) {
                                 FRPair frpair = new FRPair(fr1, fr2);
                                 String nodesKey = frpair.nodes.toString();
                                 boolean rejected = false;
-				if (frequentedRegions.containsKey(nodesKey)) {
-				    // if already found, bail
-				    rejected = true;
-				} else if (acceptedFRPairs.containsKey(nodesKey)) {
+                                if (frequentedRegions.containsKey(nodesKey)) {
+                                    // if already found, bail
+                                    rejected = true;
+                                } else if (acceptedFRPairs.containsKey(nodesKey)) {
                                     // get stored FRPair since already accepted and merged in a previous round
                                     frpair = acceptedFRPairs.get(nodesKey);
                                 } else if (rejectedNodeSets.contains(nodesKey)) {
                                     // already rejected, bail
-				    rejected = true;
-				}
+                                    rejected = true;
+                                }
 				// reject if not all the required nodes are present
-				if (!rejected && requiredNodes.size()>0) {
-				    for (Node n : requiredNodes) {
-					if (!frpair.nodes.contains(n)) {
-					    rejected = true; // lacking a required node
-					    break;
-					}
-				    }
-				}
+                                if (!rejected && requiredNodes.size()>0) {
+                                    for (Node n : requiredNodes) {
+                                        if (!frpair.nodes.contains(n)) {
+                                            rejected = true; // lacking a required node
+                                            break;
+                                        }
+                                    }
+                                }
 				// reject if one of the excluded nodes is present
-				if (!rejected && excludedNodes.size()>0) {
-				    for (Node n : excludedNodes) {
-					if (frpair.nodes.contains(n)) {
-					    rejected = true; // containing an excluded node
-					    break;
-					}
-				    }
-				}
+                                if (!rejected && excludedNodes.size()>0) {
+                                    for (Node n : excludedNodes) {
+                                        if (frpair.nodes.contains(n)) {
+                                            rejected = true; // containing an excluded node
+                                            break;
+                                        }
+                                    }
+                                }
                                 if (rejected) {
                                     // add this rejected NodeSet to the rejected list
                                     rejectedNodeSets.add(nodesKey);

@@ -3,7 +3,7 @@
 
 source("params.R")
 
-plot.frs = function(xmin=0, xmax=0, ymin=0, ymax=0, requiredNode=0, xlegend="bottomleft", connect=TRUE) {
+plot.frs.pri = function(xmin=0, xmax=0, ymin=0, ymax=0, requiredNode=0, xlegend="bottomleft", connect=TRUE) {
 
     sigPri = 200
 
@@ -16,7 +16,7 @@ plot.frs = function(xmin=0, xmax=0, ymin=0, ymax=0, requiredNode=0, xlegend="bot
     xlim = c(xmin,xmax)
     
     if (ymin==0) {
-        ymin = minPriority
+        ymin = min(frs$pri)
     }
     if (ymax==0) {
         ymax = max(frs$pri)
@@ -62,6 +62,7 @@ plot.frs = function(xmin=0, xmax=0, ymin=0, ymax=0, requiredNode=0, xlegend="bot
             if (connect) {
                 lines(frNodes, rep(frs$pri[i],length(frNodes)), col=color, lwd=1)
             }
+            text(max(frNodes), frs$pri[i], paste(frs$case[i],"/",frs$ctrl[i]), col="black", pos=4, cex=0.7)
             lastFR = frs[i,]
             lastFRNodes = frNodes
         }

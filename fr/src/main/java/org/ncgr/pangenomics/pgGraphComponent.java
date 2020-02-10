@@ -42,7 +42,7 @@ class pgGraphComponent extends mxGraphComponent implements ActionListener {
         setToolTips(true);
 
         // zoom in button -- plus is equals plus shift
-        getInputMap().put(KeyStroke.getKeyStroke(KeyEvent.VK_EQUALS,KeyEvent.SHIFT_MASK), "zoomIn");
+        getInputMap().put(KeyStroke.getKeyStroke(KeyEvent.VK_EQUALS,KeyEvent.SHIFT_DOWN_MASK), "zoomIn");
         getActionMap().put("zoomIn", new AbstractAction() {
                 public void actionPerformed(ActionEvent e) {
                     zoomInButton.doClick();

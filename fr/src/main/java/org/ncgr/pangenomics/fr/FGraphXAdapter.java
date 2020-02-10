@@ -54,7 +54,6 @@ public class FGraphXAdapter extends JGraphXAdapter<Node,Edge> {
         // FR stats
         double frOR = fr.oddsRatio();
         double frP = fr.fisherExactP();
-        int frPlevel = (int)(-Math.log10(frP)*10);
         
         // color the nodes
         selectAll();
@@ -69,25 +68,19 @@ public class FGraphXAdapter extends JGraphXAdapter<Node,Edge> {
                         // significance decoration
                         setCellStyle(baseFRStyle, cells);
                         if (frP<P_THRESHOLD) {
-                            if (Double.isInfinite(frOR)) {
-                                // 100% case node
-                                setCellStyles("fillColor", "#ff8080", cells);
-                                setCellStyles("fontColor", "black", cells);
-                            } else if (frOR==0.00) {
-                                // 100% ctrl node
-                                setCellStyles("fillColor", "#80ff80", cells);
-                                setCellStyles("fontColor", "black", cells);
-                            } else if (frOR>1.0) {
-                                // case node
-                                int rInt = Math.min(frPlevel, 127) + 128;
+                            if (Double.isInfinite(frOR) || frOR>1.0) {
+                                // case-heavy node
+                                double mlog10p = -Math.log10(frP);
+                                int rInt = Math.min((int)(64*mlog10p), 127) + 128;
                                 String rHex = Integer.toHexString(rInt);
                                 String fillColor = "#"+rHex+"8080";
                                 setCellStyles("fillColor", fillColor, cells); 
                                 setCellStyles("fontColor", "white", cells);
                                 setCellStyles("fontStyle", String.valueOf(mxConstants.FONT_BOLD), cells);
-                            } else if (frOR<1.0) {
-                                // ctrl node
-                                int gInt = Math.min(frPlevel, 127) + 128;
+                            } else if (frOR==0.00 || frOR<1.0) {
+                                // control-heavy node
+                                double mlog10p = -Math.log10(frP);
+                                int gInt = Math.min((int)(64*mlog10p), 127) + 128;
                                 String gHex = Integer.toHexString(gInt);
                                 String fillColor = "#80"+gHex+"80";
                                 setCellStyles("fillColor", fillColor, cells);
@@ -96,41 +89,16 @@ public class FGraphXAdapter extends JGraphXAdapter<Node,Edge> {
                             }
                         }
                     } else {
+                        // just gray or white
                         double or = graph.oddsRatio(n);
-                        double p = graph.fisherExactP(n);
-                        // color based on segregation
-                        if (Double.isInfinite(or)) {
-                            // 100% case node
-                            setCellStyles("fillColor", "#ff8080", cells);
+                        if (Double.isInfinite(or) && graph.getPathCount(n)==graph.getPathCount()) {
+                            // all paths go through node, white
+                            setCellStyles("fillColor", "white", cells);
                             setCellStyles("fontColor", "black", cells);
-                        } else if (or==0.00) {
-                            // 100% ctrl node
-                            setCellStyles("fillColor", "#80ff80", cells);
+                        } else {
+                            // light gray
+                            setCellStyles("fillColor", "#AAAAAA", cells);
                             setCellStyles("fontColor", "black", cells);
-                        } else if (or>1.0) {
-                            // case node
-                            double log10or = Math.log10(or);
-                            int rInt = Math.min((int)(127.0*log10or), 127) + 128;
-                            String rHex = Integer.toHexString(rInt);
-                            String fillColor = "#"+rHex+"8080";
-                            setCellStyles("fillColor", fillColor, cells);
-                            if (p<1e-2) {
-                                setCellStyles("fontColor", "white", cells);
-                            } else {
-                                setCellStyles("fontColor", "black", cells);
-                            }
-                        } else if (or<1.0) {
-                            // ctrl node
-                            double log10or = -Math.log10(or);
-                            int gInt = Math.min((int)(127.0*log10or), 127) + 128;
-                            String gHex = Integer.toHexString(gInt);
-                            String fillColor = "#80"+gHex+"80";
-                            setCellStyles("fillColor", fillColor, cells);
-                            if (p<1e-2) {
-                                setCellStyles("fontColor", "white", cells);
-                            } else {
-                                setCellStyles("fontColor", "black", cells);
-                            }
                         }
                     }
                 }

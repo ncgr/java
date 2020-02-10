@@ -90,7 +90,7 @@ public class frGraphComponent extends mxGraphComponent implements ActionListener
         frKeys = frequentedRegions.keySet().toArray();
 
         // zoom in button -- plus is equals plus shift
-        getInputMap().put(KeyStroke.getKeyStroke(KeyEvent.VK_EQUALS,KeyEvent.SHIFT_MASK), "zoomIn");
+        getInputMap().put(KeyStroke.getKeyStroke(KeyEvent.VK_EQUALS,KeyEvent.SHIFT_DOWN_MASK), "zoomIn");
         getActionMap().put("zoomIn", new AbstractAction() {
                 public void actionPerformed(ActionEvent e) {
                     zoomInButton.doClick();
@@ -344,11 +344,11 @@ public class frGraphComponent extends mxGraphComponent implements ActionListener
         infoLabel.setText(infoLabelString);
         // thermometer
         if (or>1.0) {
-            thermPlot.setSubrangePaint(ThermometerPlot.NORMAL, Color.BLUE);
+            thermPlot.setSubrangePaint(ThermometerPlot.NORMAL, Color.GRAY);
             thermPlot.setSubrangePaint(ThermometerPlot.WARNING, Color.RED);
             thermPlot.setSubrangePaint(ThermometerPlot.CRITICAL, Color.RED);
         } else {
-            thermPlot.setSubrangePaint(ThermometerPlot.NORMAL, Color.BLUE);
+            thermPlot.setSubrangePaint(ThermometerPlot.NORMAL, Color.GRAY);
             thermPlot.setSubrangePaint(ThermometerPlot.WARNING, Color.GREEN);
             thermPlot.setSubrangePaint(ThermometerPlot.CRITICAL, Color.GREEN);
         }

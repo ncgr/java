@@ -513,28 +513,39 @@ public class PangenomicGraph extends DirectedAcyclicGraph<Node,Edge> {
 
     /**
      * Return the odds ratio for case paths versus control paths that traverse the given node.
+     * 0 = zero case paths on node or all control paths on node
+     * POSITIVE_INFINITY = zero ctrl paths on node or all case paths on node (including all paths total on node)
      */
     public double oddsRatio(Node n) {
         Map<String,Integer> nodeLabelCounts = getLabelCounts(n);
-        int allCasePaths = labelCounts.get("case");
-        int allCtrlPaths = labelCounts.get("ctrl");
         int nodeCasePaths = 0; if (nodeLabelCounts.containsKey("case")) nodeCasePaths = nodeLabelCounts.get("case");
         int nodeCtrlPaths = 0; if (nodeLabelCounts.containsKey("ctrl")) nodeCtrlPaths = nodeLabelCounts.get("ctrl");
-        return ((double)nodeCasePaths/(double)nodeCtrlPaths) / ((double)allCasePaths/(double)allCtrlPaths);
+        int otherCasePaths = labelCounts.get("case") - nodeCasePaths;
+        int otherCtrlPaths = labelCounts.get("ctrl") - nodeCtrlPaths;
+        if (nodeCtrlPaths>0 && otherCasePaths>0) {
+            return (double)nodeCasePaths * (double)otherCtrlPaths / ( (double)nodeCtrlPaths * (double)otherCasePaths );
+        } else {
+            return Double.POSITIVE_INFINITY;
+        }
     }
 
     /**
      * Return the Fisher's exact test p value for case paths vs control paths that traverse the given node.
+     *
+     *      | node paths    | other paths    |
+     *      |--------------------------------|
+     * case | nodeCasePaths | otherCasePaths |
+     * ctrl | nodeCtrlPaths | otherCtrlPaths |
      */
     public double fisherExactP(Node n) {
         Map<String,Integer> nodeLabelCounts = getLabelCounts(n);
-        int allCasePaths = labelCounts.get("case");
-        int allCtrlPaths = labelCounts.get("ctrl");
         int nodeCasePaths = 0; if (nodeLabelCounts.containsKey("case")) nodeCasePaths = nodeLabelCounts.get("case");
         int nodeCtrlPaths = 0; if (nodeLabelCounts.containsKey("ctrl")) nodeCtrlPaths = nodeLabelCounts.get("ctrl");
-        int maxSize = allCasePaths + allCtrlPaths + nodeCasePaths + nodeCtrlPaths;
+        int otherCasePaths = labelCounts.get("case") - nodeCasePaths;
+        int otherCtrlPaths = labelCounts.get("ctrl") - nodeCtrlPaths;
+        int maxSize = nodeCasePaths + nodeCtrlPaths + otherCasePaths + otherCtrlPaths;
         FisherExact fisherExact = new FisherExact(maxSize);
-        return fisherExact.getTwoTailedP(nodeCasePaths, nodeCtrlPaths, allCasePaths, allCtrlPaths);
+        return fisherExact.getTwoTailedP(nodeCasePaths, otherCasePaths, nodeCtrlPaths, otherCtrlPaths);
     }
 
     /**
