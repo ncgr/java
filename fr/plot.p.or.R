@@ -3,13 +3,22 @@ source("params.R")
 ## plot the FR p-value vs. odds ratio
 plot.p.or = function(xmin=0, xmax=0, ymin=0, ymax=0) {
 
-    if (xmin==0) {
-        xmin = min(log10(frs$OR))
+    ## represents infinity
+    INFINITY = log10(max(frs$OR[is.finite(frs$OR)])*2)
+
+    if (xmin==0 && min(frs$OR)>0) {
+        xmin = log10(min(frs$OR))
+    } else if (xmin==0) {
+        xmin = -INFINITY
     }
-    if (xmax==0) {
-        xmax = max(log10(frs$OR))
+    if (xmax==0 && is.finite(max(frs$OR))) {
+        xmax = log10(max(frs$OR))
+    } else if (xmax==0) {
+        xmax = INFINITY
     }
     xlim = c(xmin,xmax)
+
+    print(xlim)
 
     if (ymin==0) {
         ymin = min(-log10(frs$p))

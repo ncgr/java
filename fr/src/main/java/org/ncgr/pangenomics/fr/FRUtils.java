@@ -53,15 +53,16 @@ public class FRUtils {
         for (Node n : graph.getNodes()) {
             nodeMap.put(n.getId(), n);
         }
-	// build the FRs
+
+        // build the FRs
         HashMap<String,FrequentedRegion> frequentedRegions = new HashMap<>();
         String subpathsFilename = getFRSubpathsFilename(inputPrefix);
         BufferedReader reader = new BufferedReader(new FileReader(subpathsFilename));
         String line = null;
         while ((line=reader.readLine())!=null) {
-            // 0     1    2       3      4           5           6   7  8
-            // nodes size support avgLen caseSupport ctrlSupport OR  p  priority
-            // [2,7,9,10,14,15]	6	24	52.79	24	0	257	∞	2.66E-3
+            // 0                1       2       3       4           5           6   7       8
+            // nodes            size    support avgLen  caseSupport ctrlSupport OR  p       priority
+            // [2,7,9,10,14,15]	6	24	52.79	24	    0	        ∞   2.66E-3 257
             // 371985.1.case:[2]
             // 131922.1.case:[2]
             // ...
@@ -73,8 +74,10 @@ public class FRUtils {
             int caseSupport = Integer.parseInt(fields[4]);
             int ctrlSupport = Integer.parseInt(fields[5]);
             double or = Double.POSITIVE_INFINITY;
-            if (ctrlSupport>0) {
+            try {
                 or = Double.parseDouble(fields[6]);
+            } catch (NumberFormatException e) {
+                // do nothing, it's an infinity symbol
             }
             double p = Double.parseDouble(fields[7]);
             int priority = Integer.parseInt(fields[8]);

@@ -5,6 +5,9 @@ source("params.R")
 
 plot.frs.or = function(xmin=0, xmax=0, ymin=0, ymax=0, requiredNode=0, xlegend="bottomleft", connect=TRUE) {
 
+    ## represents infinity
+    INFINITY = max(frs$OR[is.finite(frs$OR)])*2
+    
     if (xmin==0) {
         xmin = min(as.numeric(rownames(nodes)))
     }
@@ -16,8 +19,10 @@ plot.frs.or = function(xmin=0, xmax=0, ymin=0, ymax=0, requiredNode=0, xlegend="
     if (ymin==0) {
         ymin = min(frs$OR)
     }
-    if (ymax==0) {
+    if (ymax==0 && is.finite(max(frs$OR))) {
         ymax = max(frs$OR)
+    } else if (ymax==0) {
+        ymax = INFINITY
     }
     ylim = c(ymin, ymax)
 
@@ -33,7 +38,7 @@ plot.frs.or = function(xmin=0, xmax=0, ymin=0, ymax=0, requiredNode=0, xlegend="
     for (i in 1:nrow(frs)) {
         nodeString = frs$nodes[i]
         frNodes = as.numeric(strsplit(sub("\\[","",sub("\\]","",nodeString)), ",")[[1]])
-        if ((frs$OR[i]>=ymin && frs$OR[i]<=ymax) && (requiredNode==0 || requiredNode %in% frNodes)) {
+        if (requiredNode==0 || requiredNode %in% frNodes) {
             if (frs$p[i]<1e-2 && frs$OR[i]>1.0) {
                 color = "darkred"
             } else if (frs$p[i]<1e-2 && frs$OR[i]<1.0) {
@@ -53,18 +58,27 @@ plot.frs.or = function(xmin=0, xmax=0, ymin=0, ymax=0, requiredNode=0, xlegend="
             } else {
                 pchar = 0
             }
-            points(frNodes, rep(frs$OR[i],length(frNodes)), col=color, pch=pchar)
-            if (connect) {
-                lines(frNodes, rep(frs$OR[i],length(frNodes)), col=color, lwd=1)
+            if (is.finite(frs$OR[i])) {
+                points(frNodes, rep(frs$OR[i],length(frNodes)), col=color, pch=pchar)
+                if (connect) {
+                    lines(frNodes, rep(frs$OR[i],length(frNodes)), col=color, lwd=1)
+                }
+                text(max(frNodes), frs$OR[i], paste(frs$case[i],"/",frs$ctrl[i]), col="black", pos=4, cex=0.7)
+                lastOR = frs$OR[i]
+            } else {
+                points(frNodes, rep(INFINITY, length(frNodes)), col=color, pch=pchar)
+                if (connect) {
+                    lines(frNodes, rep(INFINITY, length(frNodes)), col=color, lwd=1)
+                }
+                text(max(frNodes), INFINITY, paste(frs$case[i],"/",frs$ctrl[i]), col="black", pos=4, cex=0.7)
+                lastOR = INFINITY
             }
-            text(max(frNodes), frs$OR[i], paste(frs$case[i],"/",frs$ctrl[i]), col="black", pos=4, cex=0.7)
-            lastFR = frs[i,]
             lastFRNodes = frNodes
         }
     }
     
-    points(lastFRNodes, rep(lastFR$OR,length(lastFRNodes)), col=color, pch=15)
-    text(lastFRNodes, rep(lastFR$OR,length(lastFRNodes))+0.1, lastFRNodes, col=color, cex=0.7)
+    points(lastFRNodes, rep(lastOR,length(lastFRNodes)), col=color, pch=15)
+    text(lastFRNodes, rep(lastOR,length(lastFRNodes))+0.02*(ymax-ymin), lastFRNodes, col=color, cex=0.7)
 
     params(x=xlegend)
 }

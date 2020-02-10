@@ -238,10 +238,9 @@ public class FRFinder {
             // start parallel streams
             allFrequentedRegions.entrySet().parallelStream().forEach(entry1 -> {
                     FrequentedRegion fr1 = entry1.getValue();
-                    // if (debug()) System.out.println("fr1:"+fr1);
+                    if (debug()) System.out.println("fr1:"+fr1);
                     allFrequentedRegions.entrySet().parallelStream().forEach(entry2 -> {
                             FrequentedRegion fr2 = entry2.getValue();
-                            if (debug()) System.out.println("fr1:"+fr1+" fr2:"+fr2);
                             if (fr2.nodes.compareTo(fr1.nodes)>0) {
                                 FRPair frpair = new FRPair(fr1, fr2);
                                 String nodesKey = frpair.nodes.toString();
