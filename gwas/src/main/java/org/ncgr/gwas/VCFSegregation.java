@@ -220,7 +220,7 @@ public class VCFSegregation {
 		if (diseaseVar!=null) diseaseValue = data[diseaseVarOffset];
                 boolean isCase = ccValue.equals(caseValue);
                 boolean isControl = ccValue.equals(controlValue);
-		boolean isDisease = diseaseVar==null || diseaseValue.equals(diseaseName);
+		boolean isDisease = diseaseVar==null || diseaseValue.contains(diseaseName);
                 if ((isDisease && isCase) || isControl) {
 		    for (String sampleId : sampleIds) {
 			subjectStatus.put(sampleId, isCase); // true = case
@@ -251,11 +251,9 @@ public class VCFSegregation {
         // 1 877558 rs4372192 C T 71.55 PASS AC=1;AF=4.04e-05;AN=24736;BaseQRankSum=-1.369;CCC=24750;... GT:AD:DP:GQ:PL 0/0:7,0:7:21:0,21,281 0/0:7,0:7:21:0,21,218 ...
 	VCFFileReader vcfReader = new VCFFileReader(new File(cmd.getOptionValue("vcffile")));
 	VCFHeader vcfHeader = vcfReader.getFileHeader();
-	// DEBUG
 	if (debug) {
 	    System.out.println(vcfHeader.getSampleNamesInOrder());
 	}
-	//
         for (VariantContext vc : vcfReader) {
             String id = vc.getID();
             String source = vc.getSource();
@@ -279,24 +277,9 @@ public class VCFSegregation {
 		    vcfSampleId = sampleId+"_"+sampleId;
 		    g = gc.get(vcfSampleId);
 		}
-		// coupla AREDS special cases
-		if (g==null && sampleId.equals("M5025422") || sampleId.equals("E9864525")) {
-		    vcfSampleId = "M5025422_E9864525";
-		    g = gc.get(vcfSampleId);
-		}
-		if (g==null && sampleId.equals("15640082") || sampleId.equals("H8594671")) {
-		    vcfSampleId = "15640082_H8594671";
-		    g = gc.get(vcfSampleId);
-		}
-		if (g==null && sampleId.equals("28525337") || sampleId.equals("J2659872")) {
-		    vcfSampleId = "28525337_J2659872";
-		    g = gc.get(vcfSampleId);
-		}
 		if (g!=null) {
                     GenotypeType type = g.getType();
-		    // DEBUG
 		    if (debug) System.out.println(vcfSampleId+":case="+isCase+":"+type.toString());
-		    //
                     if (type.equals(GenotypeType.NO_CALL)) {
                         noCall = true;
                     } else if (type.equals(GenotypeType.MIXED)) {
