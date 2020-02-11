@@ -23,14 +23,25 @@
 ## /erdos/ncbi/VCF/AREDS/Affy_gru_merge-GRCh38.norm.vcf.gz
 ## /erdos/ncbi/VCF/AREDS/Illumina_gru_merge-GRCh38.norm.vcf.gz
 
-PHENOFILE="/erdos/shokin/ncbi/dbGaP-22329/PhenoGenotypeFiles/RootStudyConsentSet_phs000001.AREDS.v3.p1.c2.GRU/PhenotypeFiles/phs000001.v3.pht000371.v2.p1.c2.amdlensphenotype.GRU.txt"
-SAMPLEFILE="/erdos/shokin/ncbi/dbGaP-22329/PhenoGenotypeFiles/RootStudyConsentSet_phs000001.AREDS.v3.p1.c2.GRU/PhenotypeFiles/phs000001.v3.pht002478.v1.p1.AREDS_Sample.MULTI.txt"
-CASEVAL=11
-CONTROLVAL=1
-CASECONTROLVAR="AMDSTAT"
-SAMPLEVAR="specnum"
-ZYGOSITY="HET"
+#PHENOFILE="/erdos/ncbi/dbGaP-22329/PhenoGenotypeFiles/RootStudyConsentSet_phs000001.AREDS.v3.p1.c2.GRU/PhenotypeFiles/phs000001.v3.pht000371.v2.p1.c2.amdlensphenotype.GRU.txt"
+#SAMPLEFILE="/erdos/ncbi/dbGaP-22329/PhenoGenotypeFiles/RootStudyConsentSet_phs000001.AREDS.v3.p1.c2.GRU/PhenotypeFiles/phs000001.v3.pht002478.v1.p1.AREDS_Sample.MULTI.txt"
+#CASEVAL=11
+#CONTROLVAL=1
+#CASECONTROLVAR="AMDSTAT"
+#SAMPLEVAR="specnum"
+#ZYGOSITY="HET"
+
+
+SAMPLEFILE="/erdos/ncbi/dbGaP-20036/PhenoGenotypeFiles/RootStudyConsentSet_phs001020.GenomicPsychiatryCohort.v1.p1.c1.DS-SZRD/PhenotypeFiles/phs001020.v1.pht005782.v1.p1.GPC_WGS_Sample.MULTI.txt"
+SAMPLEVAR="SAMPID"
+PHENOFILE="/erdos/ncbi/dbGaP-20036/PhenoGenotypeFiles/RootStudyConsentSet_phs001020.GenomicPsychiatryCohort.v1.p1.c1.DS-SZRD/PhenotypeFiles/phs001020.v1.pht005783.v1.p1.c1.GPC_WGS_Subject_Phenotypes.DS-SZRD.txt"
+DISEASENAME="Schizophrenia"
+DISEASEVAR="PRIMARY_DISEASE"
+CASECONTROLVAR="ANALYSIS_CAT"
+CASEVAL="Case"
+CONTROLVAL="Control"
+OUTFILE="GPC"
 
 java -server -cp "build/install/gwas/lib/*" org.ncgr.gwas.VCFSegSubjects  \
-     -pf $PHENOFILE -sf $SAMPLEFILE -sv $SAMPLEVAR -ccv $CASECONTROLVAR -caseval $CASEVAL -controlval $CONTROLVAL > AREDS.labels.txt
+     -pf $PHENOFILE -sf $SAMPLEFILE -sv $SAMPLEVAR -dn $DISEASENAME -dv $DISEASEVAR -ccv $CASECONTROLVAR -caseval $CASEVAL -controlval $CONTROLVAL > $OUTFILE.labels.txt
 

@@ -211,7 +211,7 @@ public class VCFSegSubjects {
 		if (diseaseVar!=null) diseaseValue = data[diseaseVarOffset];
                 boolean isCase = ccValue.equals(caseValue);
                 boolean isControl = ccValue.equals(controlValue);
-		boolean isDisease = diseaseVar==null || diseaseValue.equals(diseaseName);
+		boolean isDisease = diseaseVar==null || diseaseValue.contains(diseaseName);
                 if ((isDisease && isCase) || isControl) {
 		    for (String sampleId : sampleIds) {
 			subjectStatus.put(sampleId, isCase); // true = case
