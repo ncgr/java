@@ -1,14 +1,16 @@
 ##
 ## plot the odds ratio of each seg call on a single chromosome in the given start,end range
 ##
-plot.or.region = function(chr="1", start=1, end=0, label=FALSE, minAlts=0, showGenes=FALSE, ymin=0, ymax=0) {
+plot.or.region = function(chr="1", start=1, end=0, label=FALSE, minCalls=0, minAlts=0, showGenes=FALSE, ymin=0, ymax=0) {
     
-    pRed = 1e-4
+    pSig = 1e-2
     
     if (end==0) end = max(seg$pos[seg$chr==chr])
 
-    pts = is.finite(seg$log10OR) & seg$chr==chr & seg$pos>=start & seg$pos<=end & (seg$caseVars+seg$controlVars)>=minAlts
-    hpts = pts & seg$p<pRed
+    pts = is.finite(seg$log10OR) & seg$chr==chr & seg$pos>=start & seg$pos<=end &
+        (seg$caseVars+seg$controlVars+seg$caseRefs+seg$controlRefs)>=minCalls &
+        (seg$caseVars+seg$controlVars)>=minAlts
+    hpts = pts & seg$p<pSig
     
     xmin = start
     xmax = end
@@ -28,14 +30,16 @@ plot.or.region = function(chr="1", start=1, end=0, label=FALSE, minAlts=0, showG
          xlab=paste("Chr",chr,"position"),
          ylab="log10(OR)",
          ## main=paste("GRCh37 ",chr,":",start,"-",end," ",(end-start+1),"bp", sep=""),
-         pch=1, cex=0.5, col="black")
+         pch=1, cex=0.3, col="black")
+
+    lines(xlim, c(0,0), col="gray")
 
     ## highlight highly significant p values
-    points(seg$pos[hpts], seg$log10OR[hpts], pch=19, cex=0.8, col="darkblue")
+    points(seg$pos[hpts], seg$log10OR[hpts], pch=19, cex=0.6, col="darkblue")
 
     ## label them with position if requested
     if (label) {
-        text(seg$pos[hpts], seg$log10OR[hpts], col="darkblue", pos=4, cex=0.8, offset=0.2,
+        text(seg$pos[hpts], seg$log10OR[hpts], col="darkblue", pos=4, cex=0.6, offset=0.2,
              paste(seg$id[hpts]," ",seg$ref[hpts],seg$alts[hpts]," (",signif(seg$p[hpts],3),")",sep="")
              )
     }

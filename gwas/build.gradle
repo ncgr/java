@@ -20,19 +20,19 @@ run {
 
 dependencies {
     // This dependency is used internally, and not exposed to consumers on their own compile classpath.
-    // implementation 'com.google.guava:guava:23.0'
+    // implementation group: 'com.google.guava:guava:23.0'
 
     // Use JUnit test framework
     testImplementation 'junit:junit:4.12'
 
     // https://mvnrepository.com/artifact/com.github.samtools/htsjdk
-    compile group: 'com.github.samtools', name: 'htsjdk', version: '2.16.1'
+    implementation group: 'com.github.samtools', name: 'htsjdk', version: '2.16.1'
 
     // https://mvnrepository.com/artifact/org.biojava/biojava-genome
-    compile group: 'org.biojava', name: 'biojava-genome', version: '5.1.1'
+    implementation group: 'org.biojava', name: 'biojava-genome', version: '5.1.1'
 
     // https://mvnrepository.com/artifact/commons-cli/commons-cli
-    compile group: 'commons-cli', name: 'commons-cli', version: '1.4'
+    implementation group: 'commons-cli', name: 'commons-cli', version: '1.4'
 
 }
 
