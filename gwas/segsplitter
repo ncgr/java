@@ -1,0 +1,2 @@
+#!/bin/sh
+java -server -cp "build/install/gwas/lib/*" org.ncgr.gwas.SegSplitter $1
