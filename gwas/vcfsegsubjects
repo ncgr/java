@@ -31,16 +31,26 @@
 #SAMPLEVAR="specnum"
 #ZYGOSITY="HET"
 
+# SAMPLEFILE="/erdos/ncbi/dbGaP-20036/PhenoGenotypeFiles/RootStudyConsentSet_phs001020.GenomicPsychiatryCohort.v1.p1.c1.DS-SZRD/PhenotypeFiles/phs001020.v1.pht005782.v1.p1.GPC_WGS_Sample.MULTI.txt"
+# SAMPLEVAR="SAMPID"
+# PHENOFILE="/erdos/ncbi/dbGaP-20036/PhenoGenotypeFiles/RootStudyConsentSet_phs001020.GenomicPsychiatryCohort.v1.p1.c1.DS-SZRD/PhenotypeFiles/phs001020.v1.pht005783.v1.p1.c1.GPC_WGS_Subject_Phenotypes.DS-SZRD.txt"
+# DISEASENAME="Schizophrenia"
+# DISEASEVAR="PRIMARY_DISEASE"
+# CASECONTROLVAR="ANALYSIS_CAT"
+# CASEVAL="Case"
+# CONTROLVAL="Control"
+# OUTFILE="GPC"
 
-SAMPLEFILE="/erdos/ncbi/dbGaP-20036/PhenoGenotypeFiles/RootStudyConsentSet_phs001020.GenomicPsychiatryCohort.v1.p1.c1.DS-SZRD/PhenotypeFiles/phs001020.v1.pht005782.v1.p1.GPC_WGS_Sample.MULTI.txt"
-SAMPLEVAR="SAMPID"
-PHENOFILE="/erdos/ncbi/dbGaP-20036/PhenoGenotypeFiles/RootStudyConsentSet_phs001020.GenomicPsychiatryCohort.v1.p1.c1.DS-SZRD/PhenotypeFiles/phs001020.v1.pht005783.v1.p1.c1.GPC_WGS_Subject_Phenotypes.DS-SZRD.txt"
-DISEASENAME="Schizophrenia"
-DISEASEVAR="PRIMARY_DISEASE"
-CASECONTROLVAR="ANALYSIS_CAT"
-CASEVAL="Case"
-CONTROLVAL="Control"
-OUTFILE="GPC"
+PHENODIR=/erdos/shokin/ncbi/dbGaP-20036/PhenoGenotypeFiles/RootStudyConsentSet_phs000473.SchizophreniaSwedish_Sklar.v2.p2.c1.GRU/PhenotypeFiles
+PHENOFILE=$PHENODIR/phs000473.v2.pht002600.v2.p2.c1.Schizophrenia_Swedish_Subject_Phenotypes.GRU.txt
+SAMPLEFILE=$PHENODIR/phs000473.v2.pht002599.v2.p2.Schizophrenia_Swedish_Sample.MULTI.txt
+SAMPLEVAR=SAMPID
+DISEASENAME=Schizophrenia
+DISEASEVAR=PRIMARY_DISEASE
+CASECONTROLVAR=ANALYSIS_CAT
+CASEVAL=Case
+CONTROLVAL=Control
+OUTFILE=SchizophreniaSwedish_Sklar
 
 java -server -cp "build/install/gwas/lib/*" org.ncgr.gwas.VCFSegSubjects  \
      -pf $PHENOFILE -sf $SAMPLEFILE -sv $SAMPLEVAR -dn $DISEASENAME -dv $DISEASEVAR -ccv $CASECONTROLVAR -caseval $CASEVAL -controlval $CONTROLVAL > $OUTFILE.labels.txt
