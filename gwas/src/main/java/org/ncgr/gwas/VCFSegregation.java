@@ -7,6 +7,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 
 import java.util.List;
+import java.util.Arrays;
 import java.util.ArrayList;
 import java.util.Map;
 import java.util.HashMap;
@@ -160,9 +161,6 @@ public class VCFSegregation {
 		    String dbGaPSubjectId = data[0]; // assume first column is dbGaP_Subject_ID, which I hope is always true -- not necessarily unique!!
 		    String sampleId = data[sampleVarOffset]; // presume this is unique
 		    sampleIdMap.put(sampleId, dbGaPSubjectId);
-		    // DEBUG
-		    if (debug) System.out.println(sampleId+"\t"+dbGaPSubjectId);
-		    //
 		}
             }
 	}
@@ -222,6 +220,7 @@ public class VCFSegregation {
                 boolean isControl = ccValue.equals(controlValue);
 		boolean isDisease = diseaseVar==null || diseaseValue.contains(diseaseName);
                 if ((isDisease && isCase) || isControl) {
+                    if (debug) System.err.println(sampleIds+"\t"+diseaseValue+"\t"+isCase);
 		    for (String sampleId : sampleIds) {
 			subjectStatus.put(sampleId, isCase); // true = case
 		    }
@@ -235,7 +234,8 @@ public class VCFSegregation {
         }
 
 	// DEBUG
-	if (debug) System.out.println(nCases+" cases, "+nControls+" controls");
+        if (debug) System.err.println(subjectStatus);
+	if (debug) System.err.println(nCases+" cases, "+nControls+" controls");
 	//
 
         // initialize FisherExact with max a+b+c+d
@@ -250,15 +250,16 @@ public class VCFSegregation {
         // UNAVAILABLE There is no allele data availble for this sample (alleles.isEmpty)
         // 1 877558 rs4372192 C T 71.55 PASS AC=1;AF=4.04e-05;AN=24736;BaseQRankSum=-1.369;CCC=24750;... GT:AD:DP:GQ:PL 0/0:7,0:7:21:0,21,281 0/0:7,0:7:21:0,21,218 ...
 	VCFFileReader vcfReader = new VCFFileReader(new File(cmd.getOptionValue("vcffile")));
-	VCFHeader vcfHeader = vcfReader.getFileHeader();
 	if (debug) {
-	    System.out.println(vcfHeader.getSampleNamesInOrder());
+            VCFHeader vcfHeader = vcfReader.getFileHeader();
+	    System.err.println(vcfHeader.getSampleNamesInOrder());
 	}
         for (VariantContext vc : vcfReader) {
             String id = vc.getID();
             String source = vc.getSource();
             String contig = vc.getContig();
             int start = vc.getStart();
+            if (debug) System.err.println(contig+":"+start);
             GenotypesContext gc = vc.getGenotypes();
             boolean noCall = false;
             boolean mixed = false;
@@ -269,17 +270,20 @@ public class VCFSegregation {
             int controlVars = 0;
 	    // spin through the samples of interest
 	    for (String sampleId : subjectStatus.keySet()) {
+                if (debug) System.err.println(sampleId);
 		boolean isCase = subjectStatus.get(sampleId);
-		String vcfSampleId = sampleId;
-		Genotype g = gc.get(vcfSampleId);
+		Genotype g = gc.get(sampleId);
 		if (g==null) {
-		    // try underscore version
-		    vcfSampleId = sampleId+"_"+sampleId;
-		    g = gc.get(vcfSampleId);
+		    // try repeat-underscore version
+		    g = gc.get(sampleId+"_"+sampleId);
 		}
-		if (g!=null) {
+                if (g==null) {
+                    // OK bail because we want all our desired samples in the VCF!
+                    System.err.println("ERROR: sampleId="+sampleId+" does not appear in the VCF!");
+                    System.exit(1);
+                } else {
                     GenotypeType type = g.getType();
-		    if (debug) System.out.println(vcfSampleId+":case="+isCase+":"+type.toString());
+		    if (debug) System.err.println(sampleId+":case="+isCase+":"+type.toString());
                     if (type.equals(GenotypeType.NO_CALL)) {
                         noCall = true;
                     } else if (type.equals(GenotypeType.MIXED)) {

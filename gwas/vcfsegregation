@@ -52,7 +52,7 @@
 VCFFILE=/erdos/shokin/ncbi/VCF/SchizophreniaSwedish_Sklar/swe.vcf.gz
 PHENODIR=/erdos/shokin/ncbi/dbGaP-20036/PhenoGenotypeFiles/RootStudyConsentSet_phs000473.SchizophreniaSwedish_Sklar.v2.p2.c1.GRU/PhenotypeFiles
 PHENOFILE=$PHENODIR/phs000473.v2.pht002600.v2.p2.c1.Schizophrenia_Swedish_Subject_Phenotypes.GRU.txt
-SAMPLEFILE=$PHENODIR/phs000473.v2.pht002601.v2.p2.c1.Schizophrenia_Swedish_Sample_Attributes.GRU.txt
+SAMPLEFILE=$PHENODIR/phs000473.v2.pht002599.v2.p2.Schizophrenia_Swedish_Sample.MULTI.txt
 SAMPLEVAR=SAMPID
 DISEASENAME=Schizophrenia
 DISEASEVAR=PRIMARY_DISEASE
@@ -62,7 +62,7 @@ CONTROLVAL=Control
 ZYGOSITY=HET
 OUTFILE=SchizophreniaSwedish_Sklar
 
-java -server -Xms1g -Xmx600g -XX:+UseG1GC -XX:+UseStringDeduplication -cp "build/install/gwas/lib/*" org.ncgr.gwas.VCFSegregation  \
+java -server -Xms1g -Xmx600g -XX:+UseG1GC -XX:+UseStringDeduplication -cp "build/install/gwas/lib/*" org.ncgr.gwas.VCFSegregation $1 \
      -vf $VCFFILE \
      -pf $PHENOFILE \
      -sf $SAMPLEFILE \
