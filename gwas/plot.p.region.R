@@ -1,8 +1,13 @@
+source("snpData.R")
+
 ##
 ## plot log Fisher p value of each seg call on a single chromosome in the given start,end range
 ## we focus on loci with positive odds ratio since we're interested in ALTs that lead to the condition
 ##
-plot.p.region = function(chr="1", start=1, end=0, gene=NULL, label=FALSE, minCalls=0, minAlts=0, showGenes=FALSE, ymin=0, ymax=0, caseOnly=FALSE, ctrlOnly=FALSE) {
+## http://myvariant.info/v1/query?q=rs727503873
+##
+
+plot.p.region = function(chr="1", start=1, end=0, gene=NULL, label=FALSE, labelSNP=FALSE, minCalls=0, minAlts=0, showGenes=FALSE, ymin=0, ymax=0, caseOnly=FALSE, ctrlOnly=FALSE) {
    
     pSig = 1e-2
 
@@ -53,17 +58,62 @@ plot.p.region = function(chr="1", start=1, end=0, gene=NULL, label=FALSE, minCal
     if (hasCase) { points(seg$pos[ptsCase], seg$mlog10p[ptsCase], pch=19, cex=0.6, col="darkred") }
 
     ## label them with position if requested
-    if (label && hasControl) {
-        text(seg$pos[ptsControl], seg$mlog10p[ptsControl], col="darkgreen", pos=4, cex=0.6, offset=0.2,
-             paste(seg$id[ptsControl]," ",seg$ref[ptsControl],seg$alts[ptsControl],
-                   " (",seg$caseVars[ptsControl],"/",seg$caseRefs[ptsControl],"|",seg$controlVars[ptsControl],"/",seg$controlRefs[ptsControl],";OR=",signif(seg$OR[ptsControl],3),")",sep="")
-             )
-    }
-    if (label && hasCase) {
-        text(seg$pos[ptsCase], seg$mlog10p[ptsCase], col="darkred", pos=4, cex=0.6, offset=0.2,
-             paste(seg$id[ptsCase]," ",seg$ref[ptsCase],seg$alts[ptsCase],
-                   " (",seg$caseVars[ptsCase],"/",seg$caseRefs[ptsCase],"|",seg$controlVars[ptsCase],"/",seg$controlRefs[ptsCase],";OR=",signif(seg$OR[ptsCase],3),")",sep="")
-             )
+    if (label) {
+        if (hasControl) {
+            if (labelSNP) {
+                snpInfo = c()
+                for (rsId in seg$id[ptsControl]) {
+                    if (startsWith(rsId, "rs")) {
+                        ## query the SNP API
+                        json = snpData(rsId)
+                        if (is.null(json$hits$clinvar)) {
+                            clinVarSig = "Not in ClinVar"
+                        } else {
+                            clinVar = json$hits$clinvar
+                            clinVarSig = clinVar$rcv$clinical_significance
+                        }
+                        snpInfo = c(snpInfo, clinVarSig)
+                    } else {
+                        snpInfo = c(snpInfo, "")
+                    }
+                }
+            } else {
+                snpInfo = rep("", nrow(seg[ptsControl,]))
+            }
+            text(seg$pos[ptsControl], seg$mlog10p[ptsControl], paste(seg$id[ptsControl]," ",seg$ref[ptsControl],seg$alts[ptsControl]," (",
+                                                                     seg$caseVars[ptsControl],"/",seg$caseRefs[ptsControl],"|",
+                                                                     seg$controlVars[ptsControl],"/",seg$controlRefs[ptsControl],
+                                                                     ";OR=",signif(seg$OR[ptsControl],3),") ",snpInfo,sep=""),
+                 col="darkgreen", pos=4, cex=0.6, offset=0.2)
+        }
+        if (hasCase) {
+            if (labelSNP) {
+                snpInfo = c()
+                for (rsId in seg$id[ptsCase]) {
+                    if (startsWith(rsId, "rs")) {
+                        ## query the SNP API
+                        json = snpData(rsId)
+                        if (is.null(json$hits$clinvar)) {
+                            clinVarSig = "Not in ClinVar"
+                        } else {
+                            clinVar = json$hits$clinvar
+                            clinVarSig = clinVar$rcv$clinical_significance
+                        }
+                        snpInfo = c(snpInfo, clinVarSig)
+                    } else {
+                        snpInfo = c(snpInfo, "")
+                    }
+                }
+            } else {
+                snpInfo = rep("", nrow(seg[ptsCase,]))
+            }
+            text(seg$pos[ptsCase], seg$mlog10p[ptsCase], paste(seg$id[ptsCase]," ",
+                                                               seg$ref[ptsCase],seg$alts[ptsCase]," (",
+                                                               seg$caseVars[ptsCase],"/",seg$caseRefs[ptsCase],"|",
+                                                               seg$controlVars[ptsCase],"/",seg$controlRefs[ptsCase],";OR=",
+                                                               signif(seg$OR[ptsCase],3),") ",snpInfo,sep=""),
+                 col="darkred", pos=4, cex=0.6, offset=0.2)
+        }
     }
 
     ## show gene or genes if requested

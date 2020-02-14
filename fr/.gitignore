@@ -5,6 +5,7 @@ eMERGE_EMRPhenome
 SchizophreniaSwedish_Sklar
 AREDS
 GenomicPsychiatryCohort
+runs
 .gradle
 build
 buildOutputCleanup

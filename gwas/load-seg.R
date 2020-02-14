@@ -13,8 +13,7 @@ seg = read.table(file=segFile, header=F, sep="\t")
 colnames(seg) = c("chr","pos","id","ref","alts","caseVars","controlVars","caseRefs","controlRefs","p","OR")
 
 ## recalculate the odds ratio so we get infinite values, handy in R
-## or = (double)(caseVars*controlRefs)/(double)(controlVars*caseRefs);
-seg$OR = (seg$caseVars*seg$controlRefs) / (seg$caseRefs*seg$controlVars)
+seg$OR = (seg$caseVars*seg$controlRefs) / (seg$controlVars*seg$caseRefs)
 
 ## chromosomes aren't all numbers
 chrs = unique(seg$chr)
