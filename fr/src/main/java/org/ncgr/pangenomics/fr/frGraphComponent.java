@@ -45,6 +45,7 @@ public class frGraphComponent extends mxGraphComponent implements ActionListener
     static DecimalFormat orf = new DecimalFormat("0.000");
     static DecimalFormat prif = new DecimalFormat("000");
     static String INFINITY = "\u221e";
+    static String MATH_MINUS = "\u2212";
     
     // constructor parameters
     PangenomicGraph graph;
@@ -170,7 +171,7 @@ public class frGraphComponent extends mxGraphComponent implements ActionListener
         topPanel.add(nextButton);
 
         // zoom buttons
-        zoomOutButton = new JButton(INFINITY); // math minus
+        zoomOutButton = new JButton(MATH_MINUS);
         zoomOutButton.setActionCommand("zoomOut");
         zoomOutButton.setFont(zoomOutButton.getFont().deriveFont(Font.BOLD));
         zoomOutButton.addActionListener(this);

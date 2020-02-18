@@ -72,9 +72,10 @@ public class FRFinder {
     // the keepoption value, if there is one after the colon
     int keepOptionValue;
     
-    // diagnostic
+    // diagnostics
     long clockTime;
-
+    PrintStream logOut;
+    
     /**
      * Construct with a populated Graph and default parameters.
      */
@@ -121,11 +122,12 @@ public class FRFinder {
       */
     public void findFRs(double alpha, int kappa) throws FileNotFoundException, IOException,
                                                         NullNodeException, NullSequenceException, NoPathsException, NoNodePathsException {
-
-	System.out.println("# Starting findFRs: alpha="+alpha+" kappa="+kappa+
-                           " priorityOption="+getPriorityOption()+" minPriority="+getMinPriority()+
-                           " minSup="+getMinSup()+" minSize="+getMinSize()+" minLen="+getMinLen()+
-                           " requiredNodes="+getRequiredNodes()+" excludedNodes="+getExcludedNodes()+" keepOption="+getKeepOption()+" maxRound="+getMaxRound());
+        // initialize log file
+        logOut = new PrintStream(formOutputPrefix(alpha, kappa)+".log");
+	printToLog("# Starting findFRs: alpha="+alpha+" kappa="+kappa+
+                   " priorityOption="+getPriorityOption()+" minPriority="+getMinPriority()+
+                   " minSup="+getMinSup()+" minSize="+getMinSize()+" minLen="+getMinLen()+
+                   " requiredNodes="+getRequiredNodes()+" excludedNodes="+getExcludedNodes()+" keepOption="+getKeepOption()+" maxRound="+getMaxRound());
 
         // output the graph files if graph loaded from GFA
         if (getGfaFilename()!=null) graph.printAll(getGraphName());
@@ -151,7 +153,7 @@ public class FRFinder {
 
         if (resume()) {
             // resume from a previous run
-            System.out.println("# Resuming from previous run");
+            printToLog("# Resuming from previous run");
             String line = null;
             // allFrequentedRegions
             BufferedReader sfrReader = new BufferedReader(new FileReader(getGraphName()+"."+ALL_FREQUENTED_REGIONS_SAVE));
@@ -178,10 +180,10 @@ public class FRFinder {
                 round++; // increment round so we start where we left off
             }
 	    // informativationalism
-            System.out.println("# Loaded "+allFrequentedRegions.size()+" allFrequentedRegions.");
-	    System.out.println("# Loaded "+rejectedNodeSets.size()+" rejectedNodeSets.");
-            System.out.println("# Loaded "+frequentedRegions.size()+" frequentedRegions.");
-            System.out.println("# Now continuing with FR finding...");
+            printToLog("# Loaded "+allFrequentedRegions.size()+" allFrequentedRegions.");
+	    printToLog("# Loaded "+rejectedNodeSets.size()+" rejectedNodeSets.");
+            printToLog("# Loaded "+frequentedRegions.size()+" frequentedRegions.");
+            printToLog("# Now continuing with FR finding...");
         } else {
             // load the single-node FRs into allFrequentedRegions
             ConcurrentSkipListSet<Node> nodeSet = new ConcurrentSkipListSet<>(graph.getNodes());
@@ -222,7 +224,7 @@ public class FRFinder {
         // dump out the pre-search FRs of interest, sorted by priority
         TreeSet<FrequentedRegion> sortedFRs = new TreeSet<>(frequentedRegions.values());
         for (FrequentedRegion fr : sortedFRs) {
-            System.out.println("0:"+fr.toString());
+            printToLog("0:"+fr.toString());
         }
 
         // build the FRs round by round
@@ -329,12 +331,13 @@ public class FRFinder {
                     // add this FR to the mergeable FRs map
                     allFrequentedRegions.put(fr.nodes.toString(), fr);
                     frequentedRegions.put(fr.nodes.toString(), fr);
-                    System.out.println(round+":"+fr+"\t"+(fr.priority-oldPriority));
                     oldPriority = fr.priority;
+                    // output this FR
+                    printToLog(round+":"+fr+"\t"+(fr.priority-oldPriority));
                 } else {
                     // show the top remaining FR that wasn't added
-                    System.out.println("-------------------------------------------------------------------------------------------------------");
-                    System.out.println("TR:"+fr);
+                    printToLog("-------------------------------------------------------------------------------------------------------");
+                    printToLog("TR:"+fr);
                 }
             }
             // output current state for continuation if aborted
@@ -779,6 +782,14 @@ public class FRFinder {
                 }
             }
         }
+    }
+
+    /**
+     * Print to both the console and the log file
+     */
+    void printToLog(String text) {
+        System.out.println(text);
+        logOut.println(text);
     }
 
     /**
