@@ -1,2 +1,0 @@
-#!/bin/sh
-java -cp build/install/fr/lib/fr.jar VCFChanger /home/localhost/shokin/ncbi/dbGaP-20506/vcf/$1.4.recode.vcf $2
