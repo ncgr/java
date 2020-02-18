@@ -14,3 +14,5 @@ buildOutputCleanup
 *.bin
 *.png
 *.pdf
+*.txt
+*.fasta
