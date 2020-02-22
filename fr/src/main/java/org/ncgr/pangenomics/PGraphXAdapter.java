@@ -125,22 +125,27 @@ class PGraphXAdapter extends JGraphXAdapter<Node,Edge> {
         if (c.isVertex()) {
             Node n = (Node) c.getValue();
             String seq = n.getSequence();
-            int pathCount = graph.getPathCount(n);
-            double frac = (double)pathCount/(double)graph.getPathCount();
+            int graphPathCount = graph.getPathCount();
+            int nodePathCount = graph.getPathCount(n);
+            double nodeFrac = (double)nodePathCount/(double)graphPathCount; // MAF
             String tip = "<html>" +
                 seq+"<br/>" +
                 seq.length()+" bp<br/>" +
-                pathCount+" paths<br/>" +
-                percf.format(frac);
+                nodePathCount+" paths<br/>" +
+                percf.format(nodeFrac);
             if (hasCaseControlLabels) {
                 double or = graph.oddsRatio(n);
                 double p = graph.fisherExactP(n);
-                Map<String,Integer> labelCounts = graph.getLabelCounts(n);
-                int caseCounts = 0;
-                int ctrlCounts = 0;
-                if (labelCounts.containsKey("case")) caseCounts = labelCounts.get("case");
-                if (labelCounts.containsKey("ctrl")) ctrlCounts = labelCounts.get("ctrl");
-                tip += "<br/>"+caseCounts+"/"+ctrlCounts+"<br/>" +
+                Map<String,Integer> graphLabelCounts = graph.getLabelCounts();
+                Map<String,Integer> nodeLabelCounts = graph.getLabelCounts(n);
+                int nodeCaseCounts = 0;
+                int nodeCtrlCounts = 0;
+                if (nodeLabelCounts.containsKey("case")) nodeCaseCounts = nodeLabelCounts.get("case");
+                if (nodeLabelCounts.containsKey("ctrl")) nodeCtrlCounts = nodeLabelCounts.get("ctrl");
+                double nodeCaseFrac = (double)nodeCaseCounts/(double)graphLabelCounts.get("case");
+                double nodeCtrlFrac = (double)nodeCtrlCounts/(double)graphLabelCounts.get("ctrl");
+                tip += "<br/>"+nodeCaseCounts+"/"+nodeCtrlCounts+"<br/>" +
+                    percf.format(nodeCaseFrac)+"/"+percf.format(nodeCtrlFrac)+"<br/>" +
                     "OR="+orf.format(or)+"<br/>" +
                     "p="+pf.format(p);
             }
@@ -148,16 +153,22 @@ class PGraphXAdapter extends JGraphXAdapter<Node,Edge> {
             return tip;
         } else if (c.isEdge()) {
             Edge e = (Edge) c.getValue();
-            String tip = percf.format((double)graph.getPathCount(e)/(double)graph.getPathCount());
+            int graphPathCount = graph.getPathCount();
+            int edgePathCount = graph.getPathCount(e);
+            String tip = percf.format((double)edgePathCount/(double)graphPathCount);
             if (hasCaseControlLabels) {
-                Map<String,Integer> labelCounts = graph.getLabelCounts(e);
-                int caseCounts = 0;
-                int ctrlCounts = 0;
-                if (labelCounts.containsKey("case")) caseCounts = labelCounts.get("case");
-                if (labelCounts.containsKey("ctrl")) ctrlCounts = labelCounts.get("ctrl");
-                tip += " ("+caseCounts+"/"+ctrlCounts+")";
+                Map<String,Integer> graphLabelCounts = graph.getLabelCounts();
+                Map<String,Integer> edgeLabelCounts = graph.getLabelCounts(e);
+                int edgeCaseCounts = 0;
+                int edgeCtrlCounts = 0;
+                if (edgeLabelCounts.containsKey("case")) edgeCaseCounts = edgeLabelCounts.get("case");
+                if (edgeLabelCounts.containsKey("ctrl")) edgeCtrlCounts = edgeLabelCounts.get("ctrl");
+                double edgeCaseFrac = (double)edgeCaseCounts/(double)graphLabelCounts.get("case");
+                double edgeCtrlFrac = (double)edgeCtrlCounts/(double)graphLabelCounts.get("ctrl");
+                tip += " ("+percf.format(edgeCaseFrac)+"/"+percf.format(edgeCtrlFrac)+")";
             } else {
-                tip += " ("+graph.getPathCount(e)+")";
+                double edgeFrac = (double)edgePathCount/(double)graphPathCount;
+                tip += " ("+percf.format(edgeFrac)+")";
             }
             return tip;
         } else {

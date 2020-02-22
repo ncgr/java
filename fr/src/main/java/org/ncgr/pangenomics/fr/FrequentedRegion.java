@@ -148,7 +148,6 @@ public class FrequentedRegion implements Comparable {
         this.subpaths = subpaths;
         this.alpha = alpha;
         this.kappa = kappa;
-        this.priorityOption = priorityOption;
         this.support = support;
         this.avgLength = avgLength;
         this.priorityOption = priorityOption;

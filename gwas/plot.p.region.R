@@ -7,23 +7,18 @@ source("snpData.R")
 ## http://myvariant.info/v1/query?q=rs727503873
 ##
 
-plot.p.region = function(chr="1", start=1, end=0, gene=NULL, label=FALSE, labelSNP=FALSE, minCalls=0, minAlts=0, showGenes=FALSE, ymin=0, ymax=0, caseOnly=FALSE, ctrlOnly=FALSE) {
+plot.p.region = function(chr="1", start=0, end=0, gene=NULL, label=FALSE, labelSNP=FALSE, minCalls=0, minAlts=0, showGenes=FALSE, ymin=0, ymax=0, caseOnly=FALSE, ctrlOnly=FALSE) {
    
     pSig = 1e-2
 
     if (!is.null(gene)) {
-        ## genes$start[genes$name=="HLA-A"]
-        ## [1] 29909037
-        ## genes$end[genes$name=="HLA-A"]
-        ## [1] 29913661
-        ## genes$seqid[genes$name=="HLA-A"]
-        ## [1] 6
         geneRecord = genes[genes$name==gene,]
         chr = geneRecord$seqid
         start = geneRecord$start
         end = geneRecord$end
     }
         
+    if (start==0) start = min(seg$pos[seg$chr==chr])
     if (end==0) end = max(seg$pos[seg$chr==chr])
     
     pts = seg$chr==chr & seg$pos>=start & seg$pos<=end &
