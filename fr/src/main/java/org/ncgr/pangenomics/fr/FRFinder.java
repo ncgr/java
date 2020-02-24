@@ -333,7 +333,7 @@ public class FRFinder {
                     frequentedRegions.put(fr.nodes.toString(), fr);
                     oldPriority = fr.priority;
                     // output this FR
-                    printToLog(round+":"+fr+"\t"+(fr.priority-oldPriority));
+                    printToLog(round+":"+fr);
                 } else {
                     // show the top remaining FR that wasn't added
                     printToLog("-------------------------------------------------------------------------------------------------------");
