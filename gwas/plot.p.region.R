@@ -7,7 +7,7 @@ source("snpData.R")
 ## http://myvariant.info/v1/query?q=rs727503873
 ##
 
-plot.p.region = function(chr="1", start=0, end=0, gene=NULL, label=FALSE, labelSNP=FALSE, minCalls=0, minAlts=0, showGenes=FALSE, ymin=0, ymax=0, caseOnly=FALSE, ctrlOnly=FALSE) {
+plot.p.region = function(seg=seg, chr="1", start=0, end=0, gene=NULL, label=FALSE, labelSNP=FALSE, minCalls=0, minAlts=0, showGenes=FALSE, ymin=0, ymax=0, caseOnly=FALSE, ctrlOnly=FALSE) {
    
     pSig = 1e-2
 
@@ -42,7 +42,6 @@ plot.p.region = function(chr="1", start=0, end=0, gene=NULL, label=FALSE, labelS
          ylab="-log10(p)",
          xlim=c(start,end),
          ylim=ylim,
-         main=segFile,
          pch=1, cex=0.3, col="black")
 
     ## significance line at 1e-2

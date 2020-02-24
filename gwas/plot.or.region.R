@@ -1,7 +1,7 @@
 ##
 ## plot the odds ratio of each seg call on a single chromosome in the given start,end range
 ##
-plot.or.region = function(chr="1", start=1, end=0, label=FALSE, minCalls=0, minAlts=0, showGenes=FALSE, ymin=0, ymax=0) {
+plot.or.region = function(seg=seg, chr="1", start=1, end=0, label=FALSE, minCalls=0, minAlts=0, showGenes=FALSE, ymin=0, ymax=0) {
     
     pSig = 1e-2
     
