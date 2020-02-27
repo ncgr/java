@@ -25,7 +25,7 @@
 ##     text(xtext, ytext-dytext*6, paste("graph has been pruned"), pos=4, cex=cexText)
 ## }
 
-params = function(x="topleft") {
+plot.params = function(x="topleft") {
 
     alphaKappa = paste("ɑ=",alpha,sep="")
     if (kappa=="Inf") {

@@ -1,9 +1,9 @@
 ## plot a sort of heatmap of FRs versus nodes
 ## frs and nodes must already be loaded
 
-source("params.R")
+source("plot.params.R")
 
-plot.frs.or = function(xmin=0, xmax=0, ymin=0, ymax=0, requiredNode=0, xlegend="bottomleft", connect=TRUE) {
+plot.frs.or = function(xmin=0, xmax=0, ymin=0, ymax=0, xlegend="bottomleft", connect=TRUE) {
 
     ## represents infinity
     INFINITY = max(frs$OR[is.finite(frs$OR)])*2
@@ -27,9 +27,10 @@ plot.frs.or = function(xmin=0, xmax=0, ymin=0, ymax=0, requiredNode=0, xlegend="
     ylim = c(ymin, ymax)
 
     xlab = "node"
-    if (requiredNode>0) xlab = paste(xlab, " (", requiredNode," required)", sep="")
 
     ylab = "odds ratio"
+
+    reqNodes = as.numeric(strsplit(sub("\\[","",sub("\\]","",requiredNodes)), ",")[[1]])
 
     plot(xlim, rep(1.0,2), type="l", lty=2, col="lightgray",
          xlim=xlim, ylim=ylim,
@@ -38,47 +39,33 @@ plot.frs.or = function(xmin=0, xmax=0, ymin=0, ymax=0, requiredNode=0, xlegend="
     for (i in 1:nrow(frs)) {
         nodeString = frs$nodes[i]
         frNodes = as.numeric(strsplit(sub("\\[","",sub("\\]","",nodeString)), ",")[[1]])
-        if (requiredNode==0 || requiredNode %in% frNodes) {
-            if (frs$p[i]<1e-2 && frs$OR[i]>1.0) {
-                color = "darkred"
-            } else if (frs$p[i]<1e-2 && frs$OR[i]<1.0) {
-                color = "darkgreen"
-            } else {
-                color = "darkgray"
-            }
-            if (length(frNodes)==1) {
-                pchar = 19
-                if (frNodes==requiredNode) {
-                    lines(rep(frNodes,2), ylim, lty=3, col=color, lwd=2)
-                    text(frNodes, ylim[1]-(ylim[2]-ylim[1])*0.02, frNodes, col=color, cex=1.0)
-                } else if (frs$p[i]<1e-2) {
-                    lines(rep(frNodes,2), ylim, lty=3, col=color)
-                    text(frNodes, ylim[1]-(ylim[2]-ylim[1])*0.02, frNodes, col=color, cex=0.7)
-                }
-            } else {
-                pchar = 0
-            }
-            if (is.finite(frs$OR[i])) {
-                points(frNodes, rep(frs$OR[i],length(frNodes)), col=color, pch=pchar)
-                if (connect) {
-                    lines(frNodes, rep(frs$OR[i],length(frNodes)), col=color, lwd=1)
-                }
-                text(max(frNodes), frs$OR[i], paste(frs$case[i],"/",frs$ctrl[i]), col="black", pos=4, cex=0.7)
-                lastOR = frs$OR[i]
-            } else {
-                points(frNodes, rep(INFINITY, length(frNodes)), col=color, pch=pchar)
-                if (connect) {
-                    lines(frNodes, rep(INFINITY, length(frNodes)), col=color, lwd=1)
-                }
-                text(max(frNodes), INFINITY, paste(frs$case[i],"/",frs$ctrl[i]), col="black", pos=4, cex=0.7)
-                lastOR = INFINITY
-            }
-            lastFRNodes = frNodes
+        if (frs$p[i]<1e-2 && frs$OR[i]>1.0) {
+            color = "darkred"
+        } else if (frs$p[i]<1e-2 && frs$OR[i]<1.0) {
+            color = "darkgreen"
+        } else {
+            color = "darkgray"
         }
+        if (is.finite(frs$OR[i])) {
+            points(frNodes, rep(frs$OR[i],length(frNodes)), col=color, pch=0)
+            if (connect) {
+                lines(frNodes, rep(frs$OR[i],length(frNodes)), col=color, lwd=1)
+            }
+            text(max(frNodes), frs$OR[i], paste(frs$case[i],"/",frs$ctrl[i]), col="black", pos=4, cex=0.7)
+            lastOR = frs$OR[i]
+        } else {
+            points(frNodes, rep(INFINITY, length(frNodes)), col=color, pch=0)
+            if (connect) {
+                lines(frNodes, rep(INFINITY, length(frNodes)), col=color, lwd=1)
+            }
+            text(max(frNodes), INFINITY, paste(frs$case[i],"/",frs$ctrl[i]), col="black", pos=4, cex=0.7)
+            lastOR = INFINITY
+        }
+        lastFRNodes = frNodes
     }
     
     points(lastFRNodes, rep(lastOR,length(lastFRNodes)), col=color, pch=15)
     text(lastFRNodes, rep(lastOR,length(lastFRNodes))+0.02*(ymax-ymin), lastFRNodes, col=color, cex=0.7)
 
-    params(x=xlegend)
+    plot.params(x=xlegend)
 }

@@ -18,7 +18,10 @@ import com.mxgraph.view.mxStylesheet;
  */
 public class FGraphXAdapter extends JGraphXAdapter<Node,Edge> {
 
-    static final double P_THRESHOLD = 5e-2;
+    // use GWAS standard
+    static final double P_THRESHOLD = 5e-8;
+    static int COLOR_FACTOR = 16;
+    
     static DecimalFormat pf = new DecimalFormat("0.0E0");
     static DecimalFormat orf = new DecimalFormat("0.000");
     static DecimalFormat percf = new DecimalFormat("0.0%");
@@ -71,7 +74,7 @@ public class FGraphXAdapter extends JGraphXAdapter<Node,Edge> {
                             if (Double.isInfinite(frOR) || frOR>1.0) {
                                 // case-heavy node
                                 double mlog10p = -Math.log10(frP);
-                                int rInt = Math.min((int)(64*mlog10p), 127) + 128;
+                                int rInt = Math.min((int)(COLOR_FACTOR*mlog10p), 127) + 128;
                                 String rHex = Integer.toHexString(rInt);
                                 String fillColor = "#"+rHex+"8080";
                                 setCellStyles("fillColor", fillColor, cells); 
@@ -80,7 +83,7 @@ public class FGraphXAdapter extends JGraphXAdapter<Node,Edge> {
                             } else if (frOR==0.00 || frOR<1.0) {
                                 // control-heavy node
                                 double mlog10p = -Math.log10(frP);
-                                int gInt = Math.min((int)(64*mlog10p), 127) + 128;
+                                int gInt = Math.min((int)(COLOR_FACTOR*mlog10p), 127) + 128;
                                 String gHex = Integer.toHexString(gInt);
                                 String fillColor = "#80"+gHex+"80";
                                 setCellStyles("fillColor", fillColor, cells);

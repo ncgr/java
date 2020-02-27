@@ -18,6 +18,10 @@ class PGraphXAdapter extends JGraphXAdapter<Node,Edge> {
     static DecimalFormat orf = new DecimalFormat("0.000");
     static DecimalFormat percf = new DecimalFormat("0.0%");
 
+    // in line with standard GWAS value
+    static double P_THRESHOLD = 5.0e-8;
+    static int COLOR_FACTOR = 16;
+
     PangenomicGraph graph;
     boolean hasCaseControlLabels;
     java.util.List<Edge> highlightPathEdges;
@@ -68,11 +72,11 @@ class PGraphXAdapter extends JGraphXAdapter<Node,Edge> {
                         } else if (Double.isInfinite(or) || or>1.0) {
                             // case-heavy node
                             double mlog10p = -Math.log10(p);
-                            int rInt = Math.min((int)(64*mlog10p), 127) + 128; // full color at p=1e-2
+                            int rInt = Math.min((int)(COLOR_FACTOR*mlog10p), 127) + 128; // full color at COLOR_FACTOR*mlog10p=127
                             String rHex = Integer.toHexString(rInt);
                             String fillColor = "#"+rHex+"8080";
                             setCellStyles("fillColor", fillColor, cells);
-                            if (p<1e-2) {
+                            if (p<P_THRESHOLD) {
                                 setCellStyles("fontColor", "white", cells);
                                 setCellStyles("fontStyle", String.valueOf(mxConstants.FONT_BOLD), cells);
                             } else {
@@ -81,11 +85,11 @@ class PGraphXAdapter extends JGraphXAdapter<Node,Edge> {
                         } else if (or==0.00 || or<1.0) {
                             // control-heavy node
                             double mlog10p = -Math.log10(p);
-                            int gInt = Math.min((int)(64*mlog10p), 127) + 128; // full color at p=1e-2
+                            int gInt = Math.min((int)(COLOR_FACTOR*mlog10p), 127) + 128; // full color at COLOR_FACTOR*mlog10p=127
                             String gHex = Integer.toHexString(gInt);
                             String fillColor = "#80"+gHex+"80";
                             setCellStyles("fillColor", fillColor, cells);
-                            if (p<1e-2) {
+                            if (p<P_THRESHOLD) {
                                 setCellStyles("fontColor", "white", cells);
                                 setCellStyles("fontStyle", String.valueOf(mxConstants.FONT_BOLD), cells);
                             } else {
