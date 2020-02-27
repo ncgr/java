@@ -32,7 +32,7 @@ import org.mskcc.cbio.portal.stats.FisherExact;
 
 /**
  * Loads a VCF file and computes segregation between the case and control samples using Fisher's exact test.
- * Counts are in terms of individual diploid genotypes:
+ * Counts are in terms of individual chromosomes:
  *
  *   HOM REF = +2 ref count
  *   HET VAR = +1 ref count, +1 var count
@@ -69,9 +69,9 @@ public class VCFSegregation {
         vcfFileOption.setRequired(true);
         options.addOption(vcfFileOption);
 	//
-	// Option zygosityOption = new Option("z", "zygosity", true, "zygosity for VAR call: HET or HOM");
-        // zygosityOption.setRequired(true);
-        // options.addOption(zygosityOption);
+	Option zygosityOption = new Option("z", "zygosity", true, "zygosity for VAR call: HET or HOM or BOTH (BOTH)");
+        zygosityOption.setRequired(true);
+        options.addOption(zygosityOption);
         //
         Option ccVarOption = new Option("ccv", "casecontrolvar", true, "case/control variable in dbGaP phenotype file (e.g. ANALYSIS_CAT)");
 	ccVarOption.setRequired(true);
@@ -96,6 +96,14 @@ public class VCFSegregation {
 	Option debugOption = new Option("d", "debug", false, "enable debug mode");
 	debugOption.setRequired(false);
 	options.addOption(debugOption);
+	//
+	Option allCalledOption = new Option("ac", "allcalled", false, "require that all samples are called HOM_REF, HET_REF or HOM_VAR at output loci");
+	allCalledOption.setRequired(false);
+	options.addOption(allCalledOption);
+	//
+	Option minVarsOption = new Option("mv", "minvars", true, "minimum number of VAR calls for a locus to be output (0)");
+	minVarsOption.setRequired(false);
+	options.addOption(minVarsOption);
 	
         try {
             cmd = parser.parse(options, args);
@@ -118,9 +126,17 @@ public class VCFSegregation {
 	String controlValue = cmd.getOptionValue("controlval");
 	String sampleVar = cmd.getOptionValue("samplevar");
 
-	// boolean callHomOnly = cmd.getOptionValue("zygosity").toUpperCase().equals("HOM");
+	boolean callHetOnly = cmd.getOptionValue("zygosity").toUpperCase().equals("HET");
+	boolean callHomOnly = cmd.getOptionValue("zygosity").toUpperCase().equals("HOM");
+	boolean callBoth = cmd.getOptionValue("zygosity").toUpperCase().equals("BOTH");
 
 	boolean debug = cmd.hasOption("debug");
+	boolean allCalled = cmd.hasOption("allcalled");
+
+	int minVars = 0;
+	if (cmd.hasOption("minvars")) {
+	    minVars = Integer.parseInt(cmd.getOptionValue("minvars"));
+	}
 
 	String diseaseVar = null;
 	String diseaseName = null;
@@ -246,15 +262,15 @@ public class VCFSegregation {
 	//
 
         // initialize FisherExact with max a+b+c+d
-        FisherExact fisherExact = new FisherExact(nCases+nControls);
+        FisherExact fisherExact = new FisherExact(nCases*2+nControls*2);
 
         // GenotypeType:
         // HET         The sample is heterozygous, with at least one ref and at least one one alt in any order
         // HOM_REF     The sample is homozygous reference
         // HOM_VAR     All alleles are non-reference
         // MIXED       Some chromosomes are NO_CALL and others are called
-        // NO_CALL     The sample is no-called (all alleles are NO_CALL
-        // UNAVAILABLE There is no allele data availble for this sample (alleles.isEmpty)
+        // NO_CALL     The sample is no-called (all alleles are NO_CALL)
+        // UNAVAILABLE There is no allele data available for this sample (alleles.isEmpty)
         // 1 877558 rs4372192 C T 71.55 PASS AC=1;AF=4.04e-05;AN=24736;BaseQRankSum=-1.369;CCC=24750;... GT:AD:DP:GQ:PL 0/0:7,0:7:21:0,21,281 0/0:7,0:7:21:0,21,218 ...
 	VCFFileReader vcfReader = new VCFFileReader(new File(cmd.getOptionValue("vcffile")));
 	if (debug) {
@@ -268,9 +284,9 @@ public class VCFSegregation {
             int start = vc.getStart();
             if (debug) System.err.println(contig+":"+start);
             GenotypesContext gc = vc.getGenotypes();
-            boolean noCall = false;
-            boolean mixed = false;
-            boolean unavailable = false;
+	    int noCalls = 0;
+	    int mixedCalls = 0;
+	    int unavailable = 0;
             int caseRefs = 0;
             int caseVars = 0;
             int controlRefs = 0;
@@ -290,43 +306,45 @@ public class VCFSegregation {
                     GenotypeType type = g.getType();
 		    if (debug) System.err.println(sampleId+":case="+isCase+":"+type.toString());
                     if (type.equals(GenotypeType.NO_CALL)) {
-                        noCall = true;
+			noCalls++;
                     } else if (type.equals(GenotypeType.MIXED)) {
-                        mixed = true;
+			mixedCalls++;
                     } else if (type.equals(GenotypeType.UNAVAILABLE)) {
-                        unavailable = true;
+                        unavailable++;
                     } else if (type.equals(GenotypeType.HOM_REF)) {
-                        if (isCase) caseRefs+=2; else controlRefs+=2;
-                    } else if (type.equals(GenotypeType.HOM_VAR)) {
-                        if (isCase) caseVars+=2; else controlVars+=2;
-                    } else if (type.equals(GenotypeType.HET)) {
+                        if (isCase) {
+			    caseRefs += 2;
+			} else {
+			    controlRefs += 2;
+			}
+                    } else if (type.equals(GenotypeType.HOM_VAR) && (callHomOnly || callBoth)) {
+                        if (isCase) {
+			    caseVars += 2;
+			} else {
+			    controlVars += 2;
+			}
+                    } else if (type.equals(GenotypeType.HET) && (callHetOnly || callBoth)) {
 			if (isCase) {
-			    caseRefs+=1;
-			    caseVars+=1;
+			    caseRefs += 1;
+			    caseVars += 1;
                         } else {
-			    controlRefs+=1;
-			    controlVars+=1;
+			    controlRefs += 1;
+			    controlVars += 1;
 			}
                     }
 		}
             }
-            // if (!noCall && !mixed && !unavailable) {
-	    // Fisher's exact test on this contingency table
-	    double p = fisherExact.getP(caseVars, controlVars, caseRefs, controlRefs);
-	    // Odds ratio
-	    double or = or = (double)(caseVars*controlRefs)/(double)(controlVars*caseRefs);
-	    // if (caseVars==0 || controlRefs==0) {
-	    // 	or = 1e-6; // default if zero numerator to avoid log(0)
-	    // } else if (controlVars==0 || caseRefs==0) {
-	    // 	or = 1e+6; // default if zero denominator to avoid infinity
-	    // } else {
-		
-	    // }
-	    // output the line
-	    System.out.println(contig+"\t"+start+"\t"+id+"\t"+
-			       vc.getReference().toString()+"\t"+vc.getAlternateAlleles().toString().replace(" ","")+"\t"+
-			       caseVars+"\t"+controlVars+"\t"+caseRefs+"\t"+controlRefs+"\t"+p+"\t"+or);
-	    // }
+	    if ((caseVars+controlVars)>=minVars && (!allCalled || (noCalls==0 && mixedCalls==0 && unavailable==0))) {
+		// Fisher's exact test on this contingency table
+		double p = fisherExact.getTwoTailedP(caseVars, controlVars, caseRefs, controlRefs);
+		// Odds ratio
+		double or = (double)(caseVars*controlRefs)/(double)(controlVars*caseRefs);
+		// output the line
+		System.out.println(contig+"\t"+start+"\t"+id+"\t"+
+				   vc.getReference().toString()+"\t"+vc.getAlternateAlleles().toString().replace(" ","")+"\t"+
+				   caseVars+"\t"+controlVars+"\t"+caseRefs+"\t"+controlRefs+"\t"+p+"\t"+or+"\t"+
+				   noCalls+"\t"+mixedCalls+"\t"+unavailable);
+	    }
         }
     }
 }

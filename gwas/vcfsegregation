@@ -1,5 +1,7 @@
 #!/bin/sh
 # usage: VCFSegregation
+#  -ac,--allcalled               require that all samples are called
+#                                HOM_REF, HET_REF or HOM_VAR at output loci
 #  -caseval <arg>                case value in dbGaP phenotype file (e.g.
 #                                Case)
 #  -ccv,--casecontrolvar <arg>   case/control variable in dbGaP phenotype
@@ -12,6 +14,8 @@
 #                                required if -dv)
 #  -dv,--diseasevar <arg>        disease variable in dbGaP phenotype file
 #                                (e.g. PRIMARY_DISEASE; required if -dn)
+#  -mv,--minvars <arg>           minimum number of VAR calls for a locus to
+#                                be output (0)
 #  -pf,--phenofile <arg>         dbGaP phenotype file
 #  -sf,--samplefile <arg>        dbGaP samples file (needed if contains
 #                                mapping from dbGaP_Subject_ID to sample ID
@@ -19,7 +23,8 @@
 #  -sv,--samplevar <arg>         study sample ID variable in dbGaP samples
 #                                file (e.g. SAMPID; required if -sf)
 #  -vf,--vcffile <arg>           VCF file
-#  -z,--zygosity <arg>           zygosity for VAR call: HET or HOM
+#  -z,--zygosity <arg>           zygosity for VAR call: HET or HOM or BOTH
+#                                (BOTH)
 
 ## maps to GRCh38
 ## /erdos/ncbi/VCF/AREDS/Affy_gru_merge-GRCh38.norm.vcf.gz
@@ -34,9 +39,10 @@
 # CASECONTROLVAR=AMDSTAT
 # CASEVAL=11
 # CONTROLVAL=1
+# ZYGOSITY=BOTH
 # OUTFILE=AREDS
 
-# java -server -Xms1g -Xmx600g -XX:+UseG1GC -XX:+UseStringDeduplication -cp "build/install/gwas/lib/*" org.ncgr.gwas.VCFSegregation $1 \
+# java -server -Xms1g -Xmx600g -XX:+UseG1GC -XX:+UseStringDeduplication -cp "build/install/gwas/lib/*" org.ncgr.gwas.VCFSegregation --allcalled $1 \
 #      -vf $VCFFILE \
 #      -pf $PHENOFILE \
 #      -sf $SAMPLEFILE \
@@ -54,6 +60,7 @@
 # CASECONTROLVAR=ANALYSIS_CAT
 # CASEVAL=Case
 # CONTROLVAL=Control
+# ZYGOSITY=BOTH
 # OUTFILE=GenomicPsychiatryCohort
 
 VCFFILE=/erdos/shokin/ncbi/VCF/SchizophreniaSwedish_Sklar/swe.vcf.gz
@@ -66,6 +73,8 @@ DISEASEVAR=PRIMARY_DISEASE
 CASECONTROLVAR=ANALYSIS_CAT
 CASEVAL=Case
 CONTROLVAL=Control
+ZYGOSITY=BOTH
+MINVARS=100
 OUTFILE=SchizophreniaSwedish_Sklar
 
 java -server -Xms1g -Xmx600g -XX:+UseG1GC -XX:+UseStringDeduplication -cp "build/install/gwas/lib/*" org.ncgr.gwas.VCFSegregation $1 \
@@ -75,5 +84,7 @@ java -server -Xms1g -Xmx600g -XX:+UseG1GC -XX:+UseStringDeduplication -cp "build
      -sv $SAMPLEVAR \
      -dn $DISEASENAME \
      -dv $DISEASEVAR \
+     -z $ZYGOSITY \
+     -mv $MINVARS \
      -ccv $CASECONTROLVAR -caseval $CASEVAL -controlval $CONTROLVAL \
      > $OUTFILE.seg.txt
