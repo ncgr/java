@@ -32,6 +32,12 @@ import org.mskcc.cbio.portal.stats.FisherExact;
 
 /**
  * Loads a VCF file and computes segregation between the case and control samples using Fisher's exact test.
+ * Counts are in terms of individual diploid genotypes:
+ *
+ *   HOM REF = +2 ref count
+ *   HET VAR = +1 ref count, +1 var count
+ *   HOM VAR = +2 var count
+ *
  * Cases and controls are given by a phenotype file in dbGaP format.
  *
  * @author Sam Hokin
@@ -63,9 +69,9 @@ public class VCFSegregation {
         vcfFileOption.setRequired(true);
         options.addOption(vcfFileOption);
 	//
-	Option zygosityOption = new Option("z", "zygosity", true, "zygosity for VAR call: HET or HOM");
-        zygosityOption.setRequired(true);
-        options.addOption(zygosityOption);
+	// Option zygosityOption = new Option("z", "zygosity", true, "zygosity for VAR call: HET or HOM");
+        // zygosityOption.setRequired(true);
+        // options.addOption(zygosityOption);
         //
         Option ccVarOption = new Option("ccv", "casecontrolvar", true, "case/control variable in dbGaP phenotype file (e.g. ANALYSIS_CAT)");
 	ccVarOption.setRequired(true);
@@ -112,7 +118,8 @@ public class VCFSegregation {
 	String controlValue = cmd.getOptionValue("controlval");
 	String sampleVar = cmd.getOptionValue("samplevar");
 
-	boolean callHomOnly = cmd.getOptionValue("zygosity").toUpperCase().equals("HOM");
+	// boolean callHomOnly = cmd.getOptionValue("zygosity").toUpperCase().equals("HOM");
+
 	boolean debug = cmd.hasOption("debug");
 
 	String diseaseVar = null;
@@ -278,9 +285,7 @@ public class VCFSegregation {
 		    g = gc.get(sampleId+"_"+sampleId);
 		}
                 if (g==null) {
-                    // OK bail because we want all our desired samples in the VCF!
-                    System.err.println("ERROR: sampleId="+sampleId+" does not appear in the VCF!");
-                    System.exit(1);
+		    if (debug) System.err.println("ERROR: sampleId="+sampleId+" does not appear in the VCF!");
                 } else {
                     GenotypeType type = g.getType();
 		    if (debug) System.err.println(sampleId+":case="+isCase+":"+type.toString());
@@ -291,35 +296,37 @@ public class VCFSegregation {
                     } else if (type.equals(GenotypeType.UNAVAILABLE)) {
                         unavailable = true;
                     } else if (type.equals(GenotypeType.HOM_REF)) {
-                        if (isCase) caseRefs++; else controlRefs++;
+                        if (isCase) caseRefs+=2; else controlRefs+=2;
                     } else if (type.equals(GenotypeType.HOM_VAR)) {
-                        if (isCase) caseVars++; else controlVars++;
+                        if (isCase) caseVars+=2; else controlVars+=2;
                     } else if (type.equals(GenotypeType.HET)) {
-                        if (callHomOnly) {
-                            if (isCase) caseRefs++; else controlRefs++;
+			if (isCase) {
+			    caseRefs+=1;
+			    caseVars+=1;
                         } else {
-                            if (isCase) caseVars++; else controlVars++;
-                        }
+			    controlRefs+=1;
+			    controlVars+=1;
+			}
                     }
 		}
             }
-            if (!noCall && !mixed && !unavailable) {
-                // Fisher's exact test on this contingency table
-                double p = fisherExact.getP(caseVars, controlVars, caseRefs, controlRefs);
-		// Odds ratio
-		double or = 0;
-		if (caseVars==0 || controlRefs==0) {
-		    or = 1e-6; // default if zero numerator to avoid log(0)
-		} else if (controlVars==0 || caseRefs==0) {
-		    or = 1e+6; // default if zero denominator to avoid infinity
-		} else {
-		    or = (double)(caseVars*controlRefs)/(double)(controlVars*caseRefs);
-		}
-		// output the line
-                System.out.println(contig+"\t"+start+"\t"+id+"\t"+
-                                   vc.getReference().toString()+"\t"+vc.getAlternateAlleles().toString().replace(" ","")+"\t"+
-                                   caseVars+"\t"+controlVars+"\t"+caseRefs+"\t"+controlRefs+"\t"+p+"\t"+or);
-            }
+            // if (!noCall && !mixed && !unavailable) {
+	    // Fisher's exact test on this contingency table
+	    double p = fisherExact.getP(caseVars, controlVars, caseRefs, controlRefs);
+	    // Odds ratio
+	    double or = or = (double)(caseVars*controlRefs)/(double)(controlVars*caseRefs);
+	    // if (caseVars==0 || controlRefs==0) {
+	    // 	or = 1e-6; // default if zero numerator to avoid log(0)
+	    // } else if (controlVars==0 || caseRefs==0) {
+	    // 	or = 1e+6; // default if zero denominator to avoid infinity
+	    // } else {
+		
+	    // }
+	    // output the line
+	    System.out.println(contig+"\t"+start+"\t"+id+"\t"+
+			       vc.getReference().toString()+"\t"+vc.getAlternateAlleles().toString().replace(" ","")+"\t"+
+			       caseVars+"\t"+controlVars+"\t"+caseRefs+"\t"+controlRefs+"\t"+p+"\t"+or);
+	    // }
         }
     }
 }

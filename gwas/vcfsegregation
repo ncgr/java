@@ -25,18 +25,26 @@
 ## /erdos/ncbi/VCF/AREDS/Affy_gru_merge-GRCh38.norm.vcf.gz
 ## /erdos/ncbi/VCF/AREDS/Illumina_gru_merge-GRCh38.norm.vcf.gz
 
-# VCFFILE=/erdos/ncbi/VCF/AREDS/Affy_gru_merge-GRCh38.norm.vcf.gz
-# PHENODIR=/erdos/ncbi/dbGaP-22329/PhenoGenotypeFiles/RootStudyConsentSet_phs000001.AREDS.v3.p1.c2.GRU/PhenotypeFiles
-# PHENOFILE=phs000001.v3.pht000371.v2.p1.c2.amdlensphenotype.GRU.txt
-# SAMPLEFILE=phs000001.v3.pht002478.v1.p1.AREDS_Sample.MULTI.txt
+# ## NOTE: no disease name or disease var
+# VCFFILE=/erdos/shokin/ncbi/VCF/AREDS/Affy_gru_merge-GRCh38.norm.vcf.gz
+# PHENODIR=/erdos/shokin/ncbi/dbGaP-22329/PhenoGenotypeFiles/RootStudyConsentSet_phs000001.AREDS.v3.p1.c2.GRU/PhenotypeFiles
+# PHENOFILE=$PHENODIR/phs000001.v3.pht000371.v2.p1.c2.amdlensphenotype.GRU.txt
+# SAMPLEFILE=$PHENODIR/phs000001.v3.pht002478.v1.p1.AREDS_Sample.MULTI.txt
+# SAMPLEVAR=specnum
+# CASECONTROLVAR=AMDSTAT
 # CASEVAL=11
 # CONTROLVAL=1
-# CASECONTROLVAR=AMDSTAT
-# SAMPLEVAR=specnum
-# ZYGOSITY=HET
 # OUTFILE=AREDS
 
-# VCFFILE=/erdos/shokin/ncbi/VCF/GPC/c1_gpc.vcf.gz
+# java -server -Xms1g -Xmx600g -XX:+UseG1GC -XX:+UseStringDeduplication -cp "build/install/gwas/lib/*" org.ncgr.gwas.VCFSegregation $1 \
+#      -vf $VCFFILE \
+#      -pf $PHENOFILE \
+#      -sf $SAMPLEFILE \
+#      -sv $SAMPLEVAR \
+#      -ccv $CASECONTROLVAR -caseval $CASEVAL -controlval $CONTROLVAL \
+#      > $OUTFILE.seg.txt
+
+# VCFFILE=/erdos/shokin/ncbi/VCF/GenomicPsychiatryCohort/c1_gpc.vcf.gz
 # PHENODIR=/erdos/shokin/ncbi/dbGaP-20036/PhenoGenotypeFiles/RootStudyConsentSet_phs001020.GenomicPsychiatryCohort.v1.p1.c1.DS-SZRD/PhenotypeFiles
 # PHENOFILE=$PHENODIR/phs001020.v1.pht005783.v1.p1.c1.GPC_WGS_Subject_Phenotypes.DS-SZRD.txt
 # SAMPLEFILE=$PHENODIR/phs001020.v1.pht005782.v1.p1.GPC_WGS_Sample.MULTI.txt
@@ -46,8 +54,7 @@
 # CASECONTROLVAR=ANALYSIS_CAT
 # CASEVAL=Case
 # CONTROLVAL=Control
-# ZYGOSITY=HET
-# OUTFILE=GPC
+# OUTFILE=GenomicPsychiatryCohort
 
 VCFFILE=/erdos/shokin/ncbi/VCF/SchizophreniaSwedish_Sklar/swe.vcf.gz
 PHENODIR=/erdos/shokin/ncbi/dbGaP-20036/PhenoGenotypeFiles/RootStudyConsentSet_phs000473.SchizophreniaSwedish_Sklar.v2.p2.c1.GRU/PhenotypeFiles
@@ -59,7 +66,6 @@ DISEASEVAR=PRIMARY_DISEASE
 CASECONTROLVAR=ANALYSIS_CAT
 CASEVAL=Case
 CONTROLVAL=Control
-ZYGOSITY=HET
 OUTFILE=SchizophreniaSwedish_Sklar
 
 java -server -Xms1g -Xmx600g -XX:+UseG1GC -XX:+UseStringDeduplication -cp "build/install/gwas/lib/*" org.ncgr.gwas.VCFSegregation $1 \
@@ -70,5 +76,4 @@ java -server -Xms1g -Xmx600g -XX:+UseG1GC -XX:+UseStringDeduplication -cp "build
      -dn $DISEASENAME \
      -dv $DISEASEVAR \
      -ccv $CASECONTROLVAR -caseval $CASEVAL -controlval $CONTROLVAL \
-     -z $ZYGOSITY > $OUTFILE.seg.txt
-
+     > $OUTFILE.seg.txt
