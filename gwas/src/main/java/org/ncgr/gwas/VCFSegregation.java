@@ -11,6 +11,8 @@ import java.util.Arrays;
 import java.util.ArrayList;
 import java.util.Map;
 import java.util.HashMap;
+import java.util.Set;
+import java.util.HashSet;
 
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
@@ -93,17 +95,13 @@ public class VCFSegregation {
         diseaseNameOption.setRequired(false);
         options.addOption(diseaseNameOption);
 	//
-	Option debugOption = new Option("d", "debug", false, "enable debug mode");
-	debugOption.setRequired(false);
-	options.addOption(debugOption);
-	//
-	Option allCalledOption = new Option("ac", "allcalled", false, "require that all samples are called HOM_REF, HET_REF or HOM_VAR at output loci");
-	allCalledOption.setRequired(false);
-	options.addOption(allCalledOption);
-	//
 	Option minVarsOption = new Option("mv", "minvars", true, "minimum number of VAR calls for a locus to be output (0)");
 	minVarsOption.setRequired(false);
 	options.addOption(minVarsOption);
+        //
+        Option maxNoCallsOption = new Option("mnc", "maxnocalls", true, "maximum number of no-calls for a locus to be output (1000)");
+        maxNoCallsOption.setRequired(false);
+        options.addOption(maxNoCallsOption);
 	
         try {
             cmd = parser.parse(options, args);
@@ -130,13 +128,15 @@ public class VCFSegregation {
 	boolean callHomOnly = cmd.getOptionValue("zygosity").toUpperCase().equals("HOM");
 	boolean callBoth = cmd.getOptionValue("zygosity").toUpperCase().equals("BOTH");
 
-	boolean debug = cmd.hasOption("debug");
-	boolean allCalled = cmd.hasOption("allcalled");
-
 	int minVars = 0;
 	if (cmd.hasOption("minvars")) {
 	    minVars = Integer.parseInt(cmd.getOptionValue("minvars"));
 	}
+
+        int maxNoCalls = 1000;
+        if (cmd.hasOption("maxnocalls")) {
+            maxNoCalls = Integer.parseInt(cmd.getOptionValue("maxnocalls"));
+        }
 
 	String diseaseVar = null;
 	String diseaseName = null;
@@ -243,7 +243,6 @@ public class VCFSegregation {
                 boolean isControl = ccValue.equals(controlValue);
 		boolean isDisease = diseaseVar==null || diseaseValue.contains(diseaseName);
                 if ((isDisease && isCase) || isControl) {
-                    if (debug) System.err.println(sampleIds+"\t"+diseaseValue+"\t"+isCase);
 		    for (String sampleId : sampleIds) {
 			subjectStatus.put(sampleId, isCase); // true = case
 		    }
@@ -255,11 +254,6 @@ public class VCFSegregation {
 		}
             }
         }
-
-	// DEBUG
-        if (debug) System.err.println(subjectStatus);
-	if (debug) System.err.println(nCases+" cases, "+nControls+" controls");
-	//
 
         // initialize FisherExact with max a+b+c+d
         FisherExact fisherExact = new FisherExact(nCases*2+nControls*2);
@@ -273,78 +267,76 @@ public class VCFSegregation {
         // UNAVAILABLE There is no allele data available for this sample (alleles.isEmpty)
         // 1 877558 rs4372192 C T 71.55 PASS AC=1;AF=4.04e-05;AN=24736;BaseQRankSum=-1.369;CCC=24750;... GT:AD:DP:GQ:PL 0/0:7,0:7:21:0,21,281 0/0:7,0:7:21:0,21,218 ...
 	VCFFileReader vcfReader = new VCFFileReader(new File(cmd.getOptionValue("vcffile")));
-	if (debug) {
-            VCFHeader vcfHeader = vcfReader.getFileHeader();
-	    System.err.println(vcfHeader.getSampleNamesInOrder());
+
+        // find the desired sample names as they appear in the VCF file
+        VCFHeader vcfHeader = vcfReader.getFileHeader();
+        List<String> vcfSampleNames = vcfHeader.getSampleNamesInOrder(); // all subjects in the VCF
+        Set<String> vcfCaseSampleNames = new HashSet<>();                // case subjects in the VCF
+        Set<String> vcfControlSampleNames = new HashSet<>();             // control subjects in the VCF
+        for (String sampleName : subjectStatus.keySet()) {
+            boolean found = false;
+            if (vcfSampleNames.contains(sampleName)) {
+                found = true;
+                if (subjectStatus.get(sampleName)) {
+                    vcfCaseSampleNames.add(sampleName);
+                } else {
+                    vcfControlSampleNames.add(sampleName);
+                }
+            } else {
+                // perhaps the VCF uses sample_sample format
+                String doubleSampleName = sampleName+"_"+sampleName;
+                if (vcfSampleNames.contains(doubleSampleName)) {
+                    found = true;
+                    if (subjectStatus.get(sampleName)) {
+                        vcfCaseSampleNames.add(doubleSampleName);
+                    } else {
+                        vcfControlSampleNames.add(doubleSampleName);
+                    }
+                }
+            }
+            if (!found) System.err.println("Subject "+sampleName+" NOT FOUND in VCF.");
 	}
+
+        // spin through the VCF records, getting case/control counts from case/control subcontexts
         for (VariantContext vc : vcfReader) {
             String id = vc.getID();
             String source = vc.getSource();
             String contig = vc.getContig();
             int start = vc.getStart();
-            if (debug) System.err.println(contig+":"+start);
-            GenotypesContext gc = vc.getGenotypes();
-	    int noCalls = 0;
-	    int mixedCalls = 0;
-	    int unavailable = 0;
-            int caseRefs = 0;
-            int caseVars = 0;
-            int controlRefs = 0;
-            int controlVars = 0;
-	    // spin through the samples of interest
-	    for (String sampleId : subjectStatus.keySet()) {
-                if (debug) System.err.println(sampleId);
-		boolean isCase = subjectStatus.get(sampleId);
-		Genotype g = gc.get(sampleId);
-		if (g==null) {
-		    // try repeat-underscore version
-		    g = gc.get(sampleId+"_"+sampleId);
-		}
-                if (g==null) {
-		    if (debug) System.err.println("ERROR: sampleId="+sampleId+" does not appear in the VCF!");
-                } else {
-                    GenotypeType type = g.getType();
-		    if (debug) System.err.println(sampleId+":case="+isCase+":"+type.toString());
-                    if (type.equals(GenotypeType.NO_CALL)) {
-			noCalls++;
-                    } else if (type.equals(GenotypeType.MIXED)) {
-			mixedCalls++;
-                    } else if (type.equals(GenotypeType.UNAVAILABLE)) {
-                        unavailable++;
-                    } else if (type.equals(GenotypeType.HOM_REF)) {
-                        if (isCase) {
-			    caseRefs += 2;
-			} else {
-			    controlRefs += 2;
-			}
-                    } else if (type.equals(GenotypeType.HOM_VAR) && (callHomOnly || callBoth)) {
-                        if (isCase) {
-			    caseVars += 2;
-			} else {
-			    controlVars += 2;
-			}
-                    } else if (type.equals(GenotypeType.HET) && (callHetOnly || callBoth)) {
-			if (isCase) {
-			    caseRefs += 1;
-			    caseVars += 1;
-                        } else {
-			    controlRefs += 1;
-			    controlVars += 1;
-			}
-                    }
-		}
+            VariantContext caseVC = vc.subContextFromSamples(vcfCaseSampleNames);
+            VariantContext controlVC = vc.subContextFromSamples(vcfControlSampleNames);
+            // no-call count criterion
+            int caseNoCallCount = caseVC.getNoCallCount();
+            int controlNoCallCount = controlVC.getNoCallCount();
+            if ((caseNoCallCount+controlNoCallCount)>maxNoCalls) {
+                continue;
             }
-	    if ((caseVars+controlVars)>=minVars && (!allCalled || (noCalls==0 && mixedCalls==0 && unavailable==0))) {
-		// Fisher's exact test on this contingency table
-		double p = fisherExact.getTwoTailedP(caseVars, controlVars, caseRefs, controlRefs);
-		// Odds ratio
-		double or = (double)(caseVars*controlRefs)/(double)(controlVars*caseRefs);
-		// output the line
-		System.out.println(contig+"\t"+start+"\t"+id+"\t"+
-				   vc.getReference().toString()+"\t"+vc.getAlternateAlleles().toString().replace(" ","")+"\t"+
-				   caseVars+"\t"+controlVars+"\t"+caseRefs+"\t"+controlRefs+"\t"+p+"\t"+or+"\t"+
-				   noCalls+"\t"+mixedCalls+"\t"+unavailable);
-	    }
+            // var count criterion
+            int caseHomVarCount = caseVC.getHomVarCount();
+            int caseHetCount = caseVC.getHetCount();
+            int controlHomVarCount = controlVC.getHomVarCount();
+            int controlHetCount = controlVC.getHetCount();
+            // count var chromosomes
+            int caseVars = caseHomVarCount*2 + caseHetCount;
+            int controlVars = controlHomVarCount*2 + controlHetCount;
+            if ((caseVars+controlVars)<minVars) {
+                continue;
+            }
+            // output this record
+            int caseHomRefCount = caseVC.getHomRefCount();
+            int controlHomRefCount = controlVC.getHomRefCount();
+            // count ref chromosomes
+            int caseRefs = caseHomRefCount*2 + caseHetCount;
+            int controlRefs = controlHomRefCount*2 + controlHetCount;
+            // Fisher's exact test on this contingency table -- always use two-tailed p!!
+            double p = fisherExact.getTwoTailedP(caseVars, controlVars, caseRefs, controlRefs);
+            // Odds ratio
+            double or = (double)(caseVars*controlRefs)/(double)(controlVars*caseRefs);
+            // output the line
+            System.out.println(contig+"\t"+start+"\t"+id+"\t"+
+                               vc.getReference().toString()+"\t"+vc.getAlternateAlleles().toString().replace(" ","")+"\t"+
+                               caseVars+"\t"+controlVars+"\t"+caseRefs+"\t"+controlRefs+"\t"+p+"\t"+or+"\t"+
+                               caseNoCallCount+"\t"+controlNoCallCount);
         }
     }
 }

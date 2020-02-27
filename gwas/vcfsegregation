@@ -1,19 +1,18 @@
 #!/bin/sh
 # usage: VCFSegregation
-#  -ac,--allcalled               require that all samples are called
-#                                HOM_REF, HET_REF or HOM_VAR at output loci
 #  -caseval <arg>                case value in dbGaP phenotype file (e.g.
 #                                Case)
 #  -ccv,--casecontrolvar <arg>   case/control variable in dbGaP phenotype
 #                                file (e.g. ANALYSIS_CAT)
 #  -controlval <arg>             control value in dbGaP phenotype file (e.g.
 #                                Control)
-#  -d,--debug                    enable debug mode
 #  -dn,--diseasename <arg>       desired case disease name in dbGaP
 #                                phenotype file (e.g. Schizophrenia;
 #                                required if -dv)
 #  -dv,--diseasevar <arg>        disease variable in dbGaP phenotype file
 #                                (e.g. PRIMARY_DISEASE; required if -dn)
+#  -mnc,--maxnocalls <arg>       maximum number of no-calls for a locus to
+#                                be output (1000)
 #  -mv,--minvars <arg>           minimum number of VAR calls for a locus to
 #                                be output (0)
 #  -pf,--phenofile <arg>         dbGaP phenotype file
@@ -42,7 +41,7 @@
 # ZYGOSITY=BOTH
 # OUTFILE=AREDS
 
-# java -server -Xms1g -Xmx600g -XX:+UseG1GC -XX:+UseStringDeduplication -cp "build/install/gwas/lib/*" org.ncgr.gwas.VCFSegregation --allcalled $1 \
+# java -server -Xms1g -Xmx600g -XX:+UseG1GC -XX:+UseStringDeduplication -cp "build/install/gwas/lib/*" org.ncgr.gwas.VCFSegregation $1 \
 #      -vf $VCFFILE \
 #      -pf $PHENOFILE \
 #      -sf $SAMPLEFILE \
@@ -75,6 +74,7 @@ CASEVAL=Case
 CONTROLVAL=Control
 ZYGOSITY=BOTH
 MINVARS=100
+MAXNOCALLS=100
 OUTFILE=SchizophreniaSwedish_Sklar
 
 java -server -Xms1g -Xmx600g -XX:+UseG1GC -XX:+UseStringDeduplication -cp "build/install/gwas/lib/*" org.ncgr.gwas.VCFSegregation $1 \
@@ -86,5 +86,6 @@ java -server -Xms1g -Xmx600g -XX:+UseG1GC -XX:+UseStringDeduplication -cp "build
      -dv $DISEASEVAR \
      -z $ZYGOSITY \
      -mv $MINVARS \
+     -mnc $MAXNOCALLS \
      -ccv $CASECONTROLVAR -caseval $CASEVAL -controlval $CONTROLVAL \
      > $OUTFILE.seg.txt
