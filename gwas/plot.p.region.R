@@ -7,9 +7,9 @@ source("snpData.R")
 ## http://myvariant.info/v1/query?q=rs727503873
 ##
 
-plot.p.region = function(seg=seg, chr="1", start=0, end=0, gene=NULL, label=FALSE, labelSNP=FALSE, minCalls=0, minAlts=0, showGenes=FALSE, ymin=0, ymax=0, caseOnly=FALSE, ctrlOnly=FALSE) {
+plot.p.region = function(seg=seg, chr="0", start=0, end=0, gene=NULL, label=FALSE, labelSNP=FALSE, minCalls=0, minAlts=0, showGenes=FALSE, ymin=0, ymax=0, caseOnly=FALSE, ctrlOnly=FALSE) {
    
-    pSig = 1e-2
+    pSig = 1e-8
 
     if (!is.null(gene)) {
         geneRecord = genes[genes$name==gene,]
@@ -18,12 +18,13 @@ plot.p.region = function(seg=seg, chr="1", start=0, end=0, gene=NULL, label=FALS
         end = geneRecord$end
     }
         
-    if (start==0) start = min(seg$pos[seg$chr==chr])
-    if (end==0) end = max(seg$pos[seg$chr==chr])
-    
-    pts = seg$chr==chr & seg$pos>=start & seg$pos<=end &
-        (seg$caseVars+seg$controlVars+seg$caseRefs+seg$controlRefs)>=minCalls &
-        (seg$caseVars+seg$controlVars)>=minAlts
+    if (chr!="0" && start==0) start = min(seg$pos[seg$chr==chr])
+    if (chr!="0" && end==0) end = max(seg$pos[seg$chr==chr])
+
+    pts = (seg$caseVars+seg$controlVars+seg$caseRefs+seg$controlRefs)>=minCalls & (seg$caseVars+seg$controlVars)>=minAlts
+    if (chr!="0") {
+        pts = pts & seg$chr==chr & seg$pos>=start & seg$pos<=end
+    }
     if (caseOnly) {
         pts = pts & is.finite(seg$log10OR) & seg$log10OR>0
     } else if (ctrlOnly) {
@@ -37,19 +38,52 @@ plot.p.region = function(seg=seg, chr="1", start=0, end=0, gene=NULL, label=FALS
     if (ymax==0) ymax = max(seg$mlog10p[pts])
     ylim = c(ymin, ymax)
 
-    plot(seg$pos[pts], seg$mlog10p[pts],
-         xlab=paste("Chr",chr,"position"),
-         ylab="-log10(p)",
-         xlim=c(start,end),
-         ylim=ylim,
-         pch=1, cex=0.3, col="black")
+    if (chr=="0") {
+        plot(seg$mlog10p[pts],
+             xlab=paste("All Chromosomes"),
+             ylab="-log10(p)",
+             ylim=ylim,
+             pch=1, cex=0.3, col="black")
+    } else {
+        plot(seg$pos[pts], seg$mlog10p[pts],
+             xlab=paste("Chr",chr,"position"),
+             ylab="-log10(p)",
+             xlim=c(start,end),
+             ylim=ylim,
+             pch=1, cex=0.3, col="black")
+    }
 
-    ## significance line at 1e-2
-    lines(c(1,1e9), rep(2,2), col="gray", lty=2)
+    ## chromosome lines if plotting full genome
+    if (chr=="0") {
+        segpts = seg[pts,]
+        currentChr = "0"
+        for (i in 1:nrow(segpts)) {
+            if (segpts$chr[i]!=currentChr) {
+                currentChr = segpts$chr[i]
+                lines(c(i,i), ylim, lwd=1, col="gray")
+                text(i, ylim[2], currentChr, cex=0.5)
+            }
+        }
+    }
+    
+    ## ## significance line at 1e-8
+    ## lines(c(1,1e9), rep(8,8), col="gray", lty=2)
     
     ## highlight highly significant p values
-    if (hasControl) { points(seg$pos[ptsControl], seg$mlog10p[ptsControl], pch=19, cex=0.6, col="darkgreen") }
-    if (hasCase) { points(seg$pos[ptsCase], seg$mlog10p[ptsCase], pch=19, cex=0.6, col="darkred") }
+    if (hasCase) {
+        if (chr=="0") {
+            points(as.numeric(rownames(seg)[ptsCase]), seg$mlog10p[ptsCase], pch=19, cex=0.6, col="darkred")
+        } else {
+            points(seg$pos[ptsCase], seg$mlog10p[ptsCase], pch=19, cex=0.6, col="darkred")
+        }
+    }
+    if (hasControl) {
+        if (chr=="0") {
+            points(as.numeric(rownames(seg)[ptsControl]), seg$mlog10p[ptsControl], pch=19, cex=0.6, col="darkgreen")
+        } else {
+            points(seg$pos[ptsControl], seg$mlog10p[ptsControl], pch=19, cex=0.6, col="darkgreen")
+        }
+    }
 
     ## label them with position if requested
     if (label) {
