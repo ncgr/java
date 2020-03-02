@@ -1,7 +1,10 @@
 package org.ncgr.pangenomics;
 
 import java.text.DecimalFormat;
+
+import java.util.List;
 import java.util.Map;
+import java.util.HashMap;
 
 import org.jgrapht.ext.JGraphXAdapter;
 import org.jgrapht.graph.DefaultListenableGraph;
@@ -24,13 +27,20 @@ class PGraphXAdapter extends JGraphXAdapter<Node,Edge> {
 
     PangenomicGraph graph;
     boolean hasCaseControlLabels;
-    java.util.List<Edge> highlightPathEdges;
+    Map<Path,List<Edge>> highlightPathEdges;
 
-    public PGraphXAdapter(PangenomicGraph graph, Path highlightPath, boolean decorateEdges) {
+    public PGraphXAdapter(PangenomicGraph graph, List<Path> highlightPaths, boolean decorateEdges) {
         super(new DefaultListenableGraph<Node,Edge>(graph));
         this.graph = graph;
-        if (highlightPath!=null) highlightPathEdges = highlightPath.getEdges();
         
+        // need to store highlighted paths up here so we don't recalculate on every node
+        highlightPathEdges = new HashMap<>();
+        if (highlightPaths!=null) {
+            for (Path p : highlightPaths) {
+                highlightPathEdges.put(p, p.getEdges());
+            }
+        }
+
         mxStylesheet defaultStylesheet = getStylesheet();
 
         // set default edge style
@@ -105,14 +115,17 @@ class PGraphXAdapter extends JGraphXAdapter<Node,Edge> {
                     double strokeWidth = Math.max(1.0, 5.0*(double)graph.getPathCount(e)/(double)graph.getPathCount());
                     setCellStyles("strokeWidth", String.valueOf(strokeWidth), cells);
                 }
-                if (highlightPath!=null && highlightPathEdges.contains(e)) {
-                    // highlight path's edges
-                    if (highlightPath.isCase()) {
-                        setCellStyles("strokeColor", "red", cells);
-                    } else if (highlightPath.isControl()) {
-                        setCellStyles("strokeColor", "green", cells);
-                    } else {
-                        setCellStyles("strokeColor", "blue", cells);
+                // highlighted paths
+                for (Path p : highlightPathEdges.keySet()) {
+                    List<Edge> edges = highlightPathEdges.get(p);
+                    if (edges.contains(e)) {
+                        if (p.isCase()) {
+                            setCellStyles("strokeColor", "red", cells);
+                        } else if (p.isControl()) {
+                            setCellStyles("strokeColor", "green", cells);
+                        } else {
+                            setCellStyles("strokeColor", "blue", cells);
+                        }
                     }
                 }
             }

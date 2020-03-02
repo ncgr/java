@@ -61,6 +61,7 @@ public class PangenomicGraph extends DirectedAcyclicGraph<Node,Edge> {
     
     // each Path provides the ordered list of nodes that it traverses, along with its full sequence
     List<Path> paths;
+    Map<String,Path> pathsMap;
     
     // maps a Node to the Paths that traverse it
     ConcurrentHashMap<Long,List<Path>> nodePaths; // keyed and ordered by Node Id, synchronized when constructed
@@ -89,6 +90,8 @@ public class PangenomicGraph extends DirectedAcyclicGraph<Node,Edge> {
         importer.setGenotype(genotype);
         importer.importGraph(this, gfaFile);
         paths = importer.getPaths();
+        pathsMap = new HashMap<>();
+        for (Path p : paths) pathsMap.put(p.getNameGenotype(),p);
         if (skipNodePaths) {
             System.out.println("# Skipped building node paths and removing orphans");
         } else {
@@ -109,6 +112,8 @@ public class PangenomicGraph extends DirectedAcyclicGraph<Node,Edge> {
         importer.setGenotype(genotype);
         importer.importGraph(this, nodesFile, pathsFile);
         paths = importer.getPaths();
+        pathsMap = new HashMap<>();
+        for (Path p : paths) pathsMap.put(p.getNameGenotype(),p);
         if (skipNodePaths) {
             System.out.println("# Skipped building node paths");
         } else {
@@ -479,15 +484,17 @@ public class PangenomicGraph extends DirectedAcyclicGraph<Node,Edge> {
     }
 
     /**
+     * Return true if this graph contains the path with the given nameGenotype.
+     */
+    public boolean hasPath(String nameGenotype) {
+        return pathsMap.containsKey(nameGenotype);
+    }
+    
+    /**
      * Get the path with the given name.genotype.
      */
     public Path getPath(String nameGenotype) {
-        for (Path p : paths) {
-            if (p.getNameGenotype().equals(nameGenotype)) {
-                return p;
-            }
-        }
-        return null;
+        return pathsMap.get(nameGenotype);
     }
 
     /**
