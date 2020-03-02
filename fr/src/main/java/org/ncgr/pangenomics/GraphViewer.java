@@ -3,6 +3,10 @@ package org.ncgr.pangenomics;
 import java.awt.Dimension;
 import java.io.File;
 import java.io.IOException;
+
+import java.util.List;
+import java.util.ArrayList;
+
 import javax.swing.JFrame;
 import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
@@ -27,8 +31,6 @@ public class GraphViewer {
 
     /**
      * Main application.
-     *
-     * @param args command line arguments: graphName [highlightPathName]
      */
     public static void main(String[] args) {
 
@@ -80,7 +82,7 @@ public class GraphViewer {
     /**
      * Do the GUI work.
      * @param graphName the name of the graph, from which the nodes and paths files will be formed
-     * @param highlightPathName the name of a path to be highlighted, if not null
+     * @param highlightPathName the name of a path or paths to be highlighted, if not null
      */
     private static void createAndShowGUI(String graphName, String highlightPathName, boolean decorateEdges) throws IOException, NullNodeException, NullSequenceException {
         String nodesFilename = graphName+".nodes.txt";
@@ -95,18 +97,28 @@ public class GraphViewer {
         graph.importTXT(nodesFile, pathsFile);
         graph.tallyLabelCounts();
 
-        // get the highlight path if provided
-        Path highlightPath = null;
+        // get the highlight path(s) if provided
+        List<Path> highlightPaths = new ArrayList<>();
         if (highlightPathName!=null) {
-            highlightPath = graph.getPath(highlightPathName);
-            if (highlightPath==null) {
+            if (graph.hasPath(highlightPathName)) {
+                highlightPaths.add(graph.getPath(highlightPathName));
+            } else {
+                // try two genotypes
+                if (graph.hasPath(highlightPathName+".0")) {
+                    highlightPaths.add(graph.getPath(highlightPathName+".0"));
+                }
+                if (graph.hasPath(highlightPathName+".1")) {
+                    highlightPaths.add(graph.getPath(highlightPathName+".1"));
+                }
+            }
+            if (highlightPaths.size()==0) {
                 System.err.println("ERROR: requested highlight path "+highlightPathName+" is not in graph.");
                 System.exit(1);
             }
         }
 
         // PGraphXAdapter extends JGraphXAdapter which extends mxGraph
-        PGraphXAdapter pgxAdapter = new PGraphXAdapter(graph, highlightPath, decorateEdges);
+        PGraphXAdapter pgxAdapter = new PGraphXAdapter(graph, highlightPaths, decorateEdges);
 
         // pgGraphComponent extends mxGraphComponent
         pgGraphComponent component = new pgGraphComponent(graph, pgxAdapter);
