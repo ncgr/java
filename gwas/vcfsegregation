@@ -9,6 +9,8 @@
 #  -dn,--diseasename <arg>       desired case disease name in dbGaP
 #                                phenotype file (e.g. Schizophrenia;
 #                                required if -dv)
+#  -ds,--desiredsex <arg>        phenotype value of desired sex (e.g. M or
+#                                1)
 #  -dv,--diseasevar <arg>        disease variable in dbGaP phenotype file
 #                                (e.g. PRIMARY_DISEASE; required if -dn)
 #  -mnc,--maxnocalls <arg>       maximum number of no-calls for a locus to
@@ -49,23 +51,10 @@
 #      -ccv $CASECONTROLVAR -caseval $CASEVAL -controlval $CONTROLVAL \
 #      > $OUTFILE.seg.txt
 
-# VCFFILE=/erdos/shokin/ncbi/VCF/GenomicPsychiatryCohort/c1_gpc.vcf.gz
-# PHENODIR=/erdos/shokin/ncbi/dbGaP-20036/PhenoGenotypeFiles/RootStudyConsentSet_phs001020.GenomicPsychiatryCohort.v1.p1.c1.DS-SZRD/PhenotypeFiles
-# PHENOFILE=$PHENODIR/phs001020.v1.pht005783.v1.p1.c1.GPC_WGS_Subject_Phenotypes.DS-SZRD.txt
-# SAMPLEFILE=$PHENODIR/phs001020.v1.pht005782.v1.p1.GPC_WGS_Sample.MULTI.txt
-# SAMPLEVAR=SAMPID
-# DISEASENAME=Schizophrenia
-# DISEASEVAR=PRIMARY_DISEASE
-# CASECONTROLVAR=ANALYSIS_CAT
-# CASEVAL=Case
-# CONTROLVAL=Control
-# ZYGOSITY=BOTH
-# OUTFILE=GenomicPsychiatryCohort
-
-VCFFILE=/erdos/shokin/ncbi/VCF/SchizophreniaSwedish_Sklar/swe.vcf.gz
-PHENODIR=/erdos/shokin/ncbi/dbGaP-20036/PhenoGenotypeFiles/RootStudyConsentSet_phs000473.SchizophreniaSwedish_Sklar.v2.p2.c1.GRU/PhenotypeFiles
-PHENOFILE=$PHENODIR/phs000473.v2.pht002600.v2.p2.c1.Schizophrenia_Swedish_Subject_Phenotypes.GRU.txt
-SAMPLEFILE=$PHENODIR/phs000473.v2.pht002599.v2.p2.Schizophrenia_Swedish_Sample.MULTI.txt
+VCFFILE=/erdos/shokin/ncbi/VCF/GenomicPsychiatryCohort/c1_gpc.vcf.gz
+PHENODIR=/erdos/shokin/ncbi/dbGaP-20036/PhenoGenotypeFiles/RootStudyConsentSet_phs001020.GenomicPsychiatryCohort.v1.p1.c1.DS-SZRD/PhenotypeFiles
+PHENOFILE=phs001020.v1.pht005783.v1.p1.c1.GPC_WGS_Subject_Phenotypes.DS-SZRD.txt
+SAMPLEFILE=phs001020.v1.pht005782.v1.p1.GPC_WGS_Sample.MULTI.txt
 SAMPLEVAR=SAMPID
 DISEASENAME=Schizophrenia
 DISEASEVAR=PRIMARY_DISEASE
@@ -73,14 +62,30 @@ CASECONTROLVAR=ANALYSIS_CAT
 CASEVAL=Case
 CONTROLVAL=Control
 ZYGOSITY=BOTH
-MINVARS=100
-MAXNOCALLS=100
-OUTFILE=SchizophreniaSwedish_Sklar
+MINVARS=10
+MAXNOCALLS=10
+DESIREDSEX=2
+OUTFILE=GenomicPsychiatryCohort.F
+
+# VCFFILE=/erdos/shokin/ncbi/VCF/SchizophreniaSwedish_Sklar/swe.vcf.gz
+# PHENODIR=/erdos/shokin/ncbi/dbGaP-20036/PhenoGenotypeFiles/RootStudyConsentSet_phs000473.SchizophreniaSwedish_Sklar.v2.p2.c1.GRU/PhenotypeFiles
+# PHENOFILE=phs000473.v2.pht002600.v2.p2.c1.Schizophrenia_Swedish_Subject_Phenotypes.GRU.txt
+# SAMPLEFILE=phs000473.v2.pht002599.v2.p2.Schizophrenia_Swedish_Sample.MULTI.txt
+# SAMPLEVAR=SAMPID
+# DISEASENAME=Schizophrenia
+# DISEASEVAR=PRIMARY_DISEASE
+# CASECONTROLVAR=ANALYSIS_CAT
+# CASEVAL=Case
+# CONTROLVAL=Control
+# ZYGOSITY=BOTH
+# MINVARS=100
+# MAXNOCALLS=100
+# OUTFILE=SchizophreniaSwedish_Sklar
 
 java -server -Xms1g -Xmx600g -XX:+UseG1GC -XX:+UseStringDeduplication -cp "build/install/gwas/lib/*" org.ncgr.gwas.VCFSegregation $1 \
      -vf $VCFFILE \
-     -pf $PHENOFILE \
-     -sf $SAMPLEFILE \
+     -pf $PHENODIR/$PHENOFILE \
+     -sf $PHENODIR/$SAMPLEFILE \
      -sv $SAMPLEVAR \
      -dn $DISEASENAME \
      -dv $DISEASEVAR \
@@ -88,4 +93,5 @@ java -server -Xms1g -Xmx600g -XX:+UseG1GC -XX:+UseStringDeduplication -cp "build
      -mv $MINVARS \
      -mnc $MAXNOCALLS \
      -ccv $CASECONTROLVAR -caseval $CASEVAL -controlval $CONTROLVAL \
+     -ds $DESIREDSEX \
      > $OUTFILE.seg.txt
