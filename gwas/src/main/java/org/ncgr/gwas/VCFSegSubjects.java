@@ -31,7 +31,7 @@ import org.mskcc.cbio.portal.stats.FisherExact;
 
 /**
  * Loads a VCF file and spits out the subject IDs with case or control status using the same inputs as VCFSegregation.
- * Cases and controls are given by a phenotype file in dbGaP format.
+ * Cases and controls are given by a phenotype file in dbGaP format. Sex may also be specified.
  *
  * @author Sam Hokin
  */
@@ -81,6 +81,10 @@ public class VCFSegSubjects {
 	Option debugOption = new Option("d", "debug", false, "enable debug mode");
 	debugOption.setRequired(false);
 	options.addOption(debugOption);
+        //
+	Option desiredSexOption = new Option("ds", "desiredsex", true, "phenotype value of desired sex (e.g. M or 1)");
+	desiredSexOption.setRequired(false);
+	options.addOption(desiredSexOption);
 	
         try {
             cmd = parser.parse(options, args);
@@ -110,6 +114,11 @@ public class VCFSegSubjects {
 	if (cmd.hasOption("diseasevar")) {
 	    diseaseVar = cmd.getOptionValue("diseasevar");
 	    diseaseName = cmd.getOptionValue("diseasename");
+	}
+
+        String desiredSexValue = null;
+	if (cmd.hasOption("desiredsex")) {
+	    desiredSexValue = cmd.getOptionValue("desiredsex");
 	}
 
 	// the optional sample file relates dbGaP_Subject_ID in the phenotypes file to the sample ID used in the VCF file
@@ -169,12 +178,13 @@ public class VCFSegSubjects {
 	// # 1) the table name and the variable (phv#) accessions below; or
 	// # 2) you may cite a variable as phv#.v2.p2.c1.
 	// ##      phv00167460.v2.p2.c1    phv00167461.v2.p2.c1    phv00167462.v2.p2.c1    phv00167463.v2.p2.c1    phv00167464.v2.p2.c1    phv00169020.v2.p2.c1
-	// dbGaP_Subject_ID        SUBJID  SEX     PRIMARY_DISEASE ANALYSIS_CAT    SITE    Coverage_Pass
-	// 1287483 PT-FJ7E M       Bipolar_Disorder        Case    BROAD   N
+	// dbGaP_Subject_ID SUBJID  SEX PRIMARY_DISEASE   ANALYSIS_CAT SITE  Coverage_Pass
+	// 1287483          PT-FJ7E M   Bipolar_Disorder  Case         BROAD N
         Map<String,Boolean> subjectStatus = new HashMap<>(); // true if case, false if control, keyed by study ID used in VCF
         String line = "";
         boolean headerLine = true;
         int ccVarOffset = -1;
+	int sexVarOffset = -1;
 	int diseaseVarOffset = -1;
         int nCases = 0;
         int nControls = 0;
@@ -189,6 +199,7 @@ public class VCFSegSubjects {
                 String[] vars = line.split("\t");
                 for (int i=0; i<vars.length; i++) {
                     if (vars[i].equals(ccVar)) ccVarOffset = i;
+		    if (vars[i].equals("SEX")) sexVarOffset = i;
 		    if (diseaseVar!=null && vars[i].equals(diseaseVar)) diseaseVarOffset = i;
                 }
                 headerLine = false;
@@ -207,12 +218,15 @@ public class VCFSegSubjects {
 		    }
 		}
                 String ccValue = data[ccVarOffset];
+		String sexValue = data[sexVarOffset];
 		String diseaseValue = null;
 		if (diseaseVar!=null) diseaseValue = data[diseaseVarOffset];
                 boolean isCase = ccValue.equals(caseValue);
                 boolean isControl = ccValue.equals(controlValue);
 		boolean isDisease = diseaseVar==null || diseaseValue.contains(diseaseName);
-                if ((isDisease && isCase) || isControl) {
+		boolean isDesiredSex = true;
+		if (desiredSexValue!=null) isDesiredSex = sexValue.equals(desiredSexValue);
+                if (((isDisease && isCase) || isControl) && isDesiredSex) {
 		    for (String sampleId : sampleIds) {
 			subjectStatus.put(sampleId, isCase); // true = case
 		    }
