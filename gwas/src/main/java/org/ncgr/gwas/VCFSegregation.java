@@ -34,11 +34,7 @@ import org.mskcc.cbio.portal.stats.FisherExact;
 
 /**
  * Loads a VCF file and computes segregation between the case and control samples using Fisher's exact test.
- * Counts are in terms of individual chromosomes:
- *
- *   HOM REF = +2 ref count
- *   HET VAR = +1 ref count, +1 var count
- *   HOM VAR = +2 var count
+ * You can specify whether to count HET calls, HOM calls or BOTH.
  *
  * Cases and controls are given by a phenotype file in dbGaP format.
  *
@@ -128,9 +124,10 @@ public class VCFSegregation {
 	String controlValue = cmd.getOptionValue("controlval");
 	String sampleVar = cmd.getOptionValue("samplevar");
 
-	boolean callHetOnly = cmd.getOptionValue("zygosity").toUpperCase().equals("HET");
-	boolean callHomOnly = cmd.getOptionValue("zygosity").toUpperCase().equals("HOM");
-	boolean callBoth = cmd.getOptionValue("zygosity").toUpperCase().equals("BOTH");
+        // call choice
+	boolean countHetOnly = cmd.getOptionValue("zygosity").toUpperCase().equals("HET");
+	boolean countHomOnly = cmd.getOptionValue("zygosity").toUpperCase().equals("HOM");
+	boolean countBoth = cmd.getOptionValue("zygosity").toUpperCase().equals("BOTH");
 
 	int minVars = 0;
 	if (cmd.hasOption("minvars")) {
@@ -280,7 +277,9 @@ public class VCFSegregation {
         // MIXED       Some chromosomes are NO_CALL and others are called
         // NO_CALL     The sample is no-called (all alleles are NO_CALL)
         // UNAVAILABLE There is no allele data available for this sample (alleles.isEmpty)
+        //
         // 1 877558 rs4372192 C T 71.55 PASS AC=1;AF=4.04e-05;AN=24736;BaseQRankSum=-1.369;CCC=24750;... GT:AD:DP:GQ:PL 0/0:7,0:7:21:0,21,281 0/0:7,0:7:21:0,21,218 ...
+        //
 	VCFFileReader vcfReader = new VCFFileReader(new File(cmd.getOptionValue("vcffile")));
 
         // find the desired sample names as they appear in the VCF file
@@ -326,23 +325,31 @@ public class VCFSegregation {
             if ((caseNoCallCount+controlNoCallCount)>maxNoCalls) {
                 continue;
             }
-            // var count criterion
+            // var counts
             int caseHomVarCount = caseVC.getHomVarCount();
             int caseHetCount = caseVC.getHetCount();
             int controlHomVarCount = controlVC.getHomVarCount();
             int controlHetCount = controlVC.getHetCount();
-            // count var chromosomes
-            int caseVars = caseHomVarCount*2 + caseHetCount;
-            int controlVars = controlHomVarCount*2 + controlHetCount;
+            // count according to zygosity choice
+            int caseVars = 0;
+            int controlVars = 0;
+            if (countBoth) {
+                caseVars = caseHetCount + caseHomVarCount;
+                controlVars = controlHetCount + controlHomVarCount;
+            } else if (countHetOnly) {
+                caseVars = caseHetCount;
+                controlVars = controlHetCount;
+            } else if (countHomOnly) {
+                caseVars = caseHomVarCount;
+                controlVars = controlHomVarCount;
+            }
+            // minimum variants criterion
             if ((caseVars+controlVars)<minVars) {
                 continue;
             }
-            // output this record
-            int caseHomRefCount = caseVC.getHomRefCount();
-            int controlHomRefCount = controlVC.getHomRefCount();
-            // count ref chromosomes
-            int caseRefs = caseHomRefCount*2 + caseHetCount;
-            int controlRefs = controlHomRefCount*2 + controlHetCount;
+            // get the REF counts
+            int caseRefs = caseVC.getHomRefCount();
+            int controlRefs = controlVC.getHomRefCount();
             // Fisher's exact test on this contingency table -- always use two-tailed p!!
             double p = fisherExact.getTwoTailedP(caseVars, controlVars, caseRefs, controlRefs);
             // Odds ratio
