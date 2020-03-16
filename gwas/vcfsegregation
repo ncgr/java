@@ -64,8 +64,8 @@ CONTROLVAL=Control
 ZYGOSITY=BOTH
 MINVARS=10
 MAXNOCALLS=10
-DESIREDSEX=2
-OUTFILE=GenomicPsychiatryCohort.F
+DESIREDSEX=
+OUTFILE=GenomicPsychiatryCohort
 
 # VCFFILE=/erdos/shokin/ncbi/VCF/SchizophreniaSwedish_Sklar/swe.vcf.gz
 # PHENODIR=/erdos/shokin/ncbi/dbGaP-20036/PhenoGenotypeFiles/RootStudyConsentSet_phs000473.SchizophreniaSwedish_Sklar.v2.p2.c1.GRU/PhenotypeFiles
@@ -93,5 +93,4 @@ java -server -Xms1g -Xmx600g -XX:+UseG1GC -XX:+UseStringDeduplication -cp "build
      -mv $MINVARS \
      -mnc $MAXNOCALLS \
      -ccv $CASECONTROLVAR -caseval $CASEVAL -controlval $CONTROLVAL \
-     -ds $DESIREDSEX \
      > $OUTFILE.seg.txt
