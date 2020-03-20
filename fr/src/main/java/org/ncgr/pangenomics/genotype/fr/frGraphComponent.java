@@ -1,6 +1,6 @@
-package org.ncgr.pangenomics.fr;
+package org.ncgr.pangenomics.genotype.fr;
 
-import org.ncgr.pangenomics.allele.*;
+import org.ncgr.pangenomics.genotype.*;
 
 import java.awt.Color;
 import java.awt.Dimension;

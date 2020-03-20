@@ -1,4 +1,4 @@
-package org.ncgr.pangenomics.fr;
+package org.ncgr.pangenomics.allele.fr;
 
 import org.ncgr.pangenomics.allele.*;
 
