@@ -18,13 +18,13 @@ graph=$1
 labels=$2
 
 ## GFA with labels
-java -server -cp "build/install/fr/lib/*" org.ncgr.pangenomics.PangenomicGraph --verbose $3 $4 \
+java -server -cp "build/install/fr/lib/*" org.ncgr.pangenomics.allele.PangenomicGraph --verbose $3 $4 \
      --gfa --graph $graph --pathlabels $labels --outputprefix $graph --skipsequences --mergecommonnodes
 
 ## GFA without labels
-#java -server -cp "build/install/fr/lib/*" org.ncgr.pangenomics.PangenomicGraph --verbose $3 $4 \
+#java -server -cp "build/install/fr/lib/*" org.ncgr.pangenomics.allele.PangenomicGraph --verbose $3 $4 \
 #     --gfa --graph $graph --outputprefix $graph --skipedges --skipsequences --skipnodepaths
 
 ## TXT
-#java -server -cp "build/install/fr/lib/*" org.ncgr.pangenomics.PangenomicGraph --verbose $3 $4 \
+#java -server -cp "build/install/fr/lib/*" org.ncgr.pangenomics.allele.PangenomicGraph --verbose $3 $4 \
 #     --txt --graph $graph --outputprefix $graph --skipedges --skipsequences --skipnodepaths

@@ -1,6 +1,6 @@
 package org.ncgr.pangenomics.fr;
 
-import org.ncgr.pangenomics.*;
+import org.ncgr.pangenomics.allele.*;
 
 import java.text.DecimalFormat;
 import java.util.Map;

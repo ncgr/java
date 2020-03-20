@@ -7,4 +7,4 @@
 
 graph=$1
 
-java  -cp "build/install/fr/lib/*" org.ncgr.pangenomics.GraphViewer -g $graph $2 $3
+java  -cp "build/install/fr/lib/*" org.ncgr.pangenomics.genotype.GraphViewer -g $graph $2 $3

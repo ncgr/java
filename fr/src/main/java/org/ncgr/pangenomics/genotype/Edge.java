@@ -1,4 +1,4 @@
-package org.ncgr.pangenomics;
+package org.ncgr.pangenomics.genotype;
 
 import org.jgrapht.graph.DefaultEdge;
 
@@ -12,19 +12,19 @@ public class Edge extends DefaultEdge {
     @Override
     public boolean equals(Object o) {
 	Edge that = (Edge) o;
-        String thisSource = this.getSource().toString();
-        String thatSource = that.getSource().toString();
-        String thisTarget = this.getTarget().toString();
-        String thatTarget = that.getTarget().toString();
-        return thisSource.equals(thatSource) && thisTarget.equals(thatTarget);
+        Node thisSourceNode = this.getSourceNode();
+        Node thatSourceNode = that.getSourceNode();
+        Node thisTargetNode = this.getTargetNode();
+        Node thatTargetNode = that.getTargetNode();
+        return thisSourceNode.equals(thatSourceNode) && thisTargetNode.equals(thatTargetNode);
     }
 
     /**
-     * Return a String representation.
+     * Return a bespoke String representation.
      */
     @Override
     public String toString() {
-        return this.getSource().toString()+":"+this.getTarget().toString();
+        return this.getSourceNode().toString()+":"+this.getTargetNode().toString();
     }
 
     /**

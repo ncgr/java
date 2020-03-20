@@ -1,15 +1,10 @@
 package org.ncgr.pangenomics.fr;
 
+import org.ncgr.pangenomics.allele.*;
+
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Set;
-
-import org.ncgr.pangenomics.Edge;
-import org.ncgr.pangenomics.Node;
-import org.ncgr.pangenomics.NodeSet;
-import org.ncgr.pangenomics.NullNodeException;
-import org.ncgr.pangenomics.NullSequenceException;
-import org.ncgr.pangenomics.PangenomicGraph;
 
 /**
  * Container for a pair of FrequentedRegions and their merged result with a comparator for ranking it.

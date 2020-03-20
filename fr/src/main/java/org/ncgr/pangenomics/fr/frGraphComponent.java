@@ -1,6 +1,6 @@
 package org.ncgr.pangenomics.fr;
 
-import org.ncgr.pangenomics.*;
+import org.ncgr.pangenomics.allele.*;
 
 import java.awt.Color;
 import java.awt.Dimension;
@@ -22,8 +22,6 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.KeyStroke;
 import javax.swing.SwingConstants;
-
-
 
 import org.jfree.chart.JFreeChart;
 import org.jfree.data.general.DefaultValueDataset;

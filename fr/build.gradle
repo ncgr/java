@@ -85,9 +85,11 @@ repositories {
     mavenCentral()
     maven {
           url 'http://davidsoergel.com/nexus/content/repositories/releases'
+	  allowInsecureProtocol true
     }
     maven {
           url 'http://davidsoergel.com/nexus/content/repositories/thirdparty'
+	  allowInsecureProtocol true
     }
     maven {
 	  url 'https://dl.bintray.com/flowtick/jgraphx/'

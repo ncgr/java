@@ -1,15 +1,8 @@
 package org.ncgr.pangenomics.fr;
 
-import org.ncgr.pangenomics.Edge;
-import org.ncgr.pangenomics.Node;
-import org.ncgr.pangenomics.NodeSet;
-import org.ncgr.pangenomics.NullNodeException;
-import org.ncgr.pangenomics.NullSequenceException;
-import org.ncgr.pangenomics.PangenomicGraph;
-import org.ncgr.pangenomics.Path;
+import org.ncgr.pangenomics.allele.*;
 
 import org.jgrapht.GraphPath;
-
 
 import java.io.BufferedReader;
 import java.io.File;

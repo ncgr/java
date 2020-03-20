@@ -1,4 +1,4 @@
-package org.ncgr.pangenomics;
+package org.ncgr.pangenomics.allele;
 
 /**
  * An exception thrown when a Node in the graph is null.

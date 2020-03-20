@@ -1,8 +1,17 @@
 #!/bin/sh
+# usage: PangenomicGraph
+#  -g,--graph <arg>       name of graph
+#  -l,--labelfile <arg>   tab-delimited file containing one sample<tab>label
+#                         per line
+#  -txt,--txtfile         load graph from <graph>.nodes.txt and
+#                         <graph>.paths.txt
+#  -v,--verbose           verbose output (false)
+#  -vcf,--vcffile         load graph from <graph>.vcf.gz
 
-VCFFILE=$1
+GRAPH=$1
+LABELSFILE=$2
+FILECMD=$3
 
-#java -server -Xms1g -Xmx600g -XX:+UseG1GC -XX:+UseStringDeduplication -cp "build/install/fr/lib/*" org.ncgr.pangenomics.GenotypeGraph -vf $VCFFILE
+#java -server -Xms1g -Xmx600g -XX:+UseG1GC -XX:+UseStringDeduplication -cp "build/install/fr/lib/*" org.ncgr.pangenomics.genotype.GenotypeGraph -v -g $GRAPH $FILECMD -l $LABELSFILE
 
-java -cp "build/install/fr/lib/*" org.ncgr.pangenomics.GenotypeGraph -vf $VCFFILE
-
+java -cp "build/install/fr/lib/*" org.ncgr.pangenomics.genotype.PangenomicGraph -v -g $GRAPH $FILECMD -l $LABELSFILE

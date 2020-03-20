@@ -7,9 +7,7 @@ source("snpData.R")
 ## http://myvariant.info/v1/query?q=rs727503873
 ##
 
-plot.p.region = function(seg=seg, chr="0", start=0, end=0, gene=NULL, label=FALSE, labelSNP=FALSE, minCalls=0, minAlts=0, showGenes=FALSE, ymin=0, ymax=0, caseOnly=FALSE, ctrlOnly=FALSE) {
-   
-    pSig = 1e-8
+plot.p.region = function(seg=seg, chr="0", start=0, end=0, gene=NULL, label=FALSE, labelSNP=FALSE, minCalls=0, minAlts=0, showGenes=FALSE, ymin=0, ymax=0, caseOnly=FALSE, ctrlOnly=FALSE, pSig=1e-8) {
 
     if (!is.null(gene)) {
         geneRecord = genes[genes$name==gene,]
@@ -43,6 +41,7 @@ plot.p.region = function(seg=seg, chr="0", start=0, end=0, gene=NULL, label=FALS
              xlab=paste("All Chromosomes"),
              ylab="-log10(p)",
              ylim=ylim,
+             main=deparse(substitute(seg)),
              pch=1, cex=0.3, col="black")
     } else {
         plot(seg$pos[pts], seg$mlog10p[pts],
@@ -50,6 +49,7 @@ plot.p.region = function(seg=seg, chr="0", start=0, end=0, gene=NULL, label=FALS
              ylab="-log10(p)",
              xlim=c(start,end),
              ylim=ylim,
+             main=deparse(substitute(seg)),
              pch=1, cex=0.3, col="black")
     }
 

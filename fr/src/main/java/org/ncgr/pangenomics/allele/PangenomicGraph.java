@@ -1,4 +1,4 @@
-package org.ncgr.pangenomics;
+package org.ncgr.pangenomics.allele;
 
 import java.io.BufferedReader;
 import java.io.File;
