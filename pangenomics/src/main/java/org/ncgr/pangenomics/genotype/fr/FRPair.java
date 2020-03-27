@@ -61,7 +61,14 @@ public class FRPair implements Comparable {
      * Algorithm 2 from Cleary, et al. returns the supporting path segments for the given merge of FRs.
      */
     public void merge() {
-        merged = new FrequentedRegion(graph, NodeSet.merge(fr1.nodes,fr2.nodes), alpha, kappa, priorityOption);
+        NodeSet mergedNodes = NodeSet.merge(fr1.nodes,fr2.nodes);
+        try {
+            merged = new FrequentedRegion(graph, mergedNodes, alpha, kappa, priorityOption);
+        } catch (Exception e) {
+            System.err.println(e);
+            System.err.println("ERROR MERGING "+mergedNodes);
+            System.exit(1);
+        }
     }
 
     /**

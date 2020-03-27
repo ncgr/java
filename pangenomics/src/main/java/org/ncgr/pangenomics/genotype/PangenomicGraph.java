@@ -67,6 +67,9 @@ public class PangenomicGraph extends DirectedAcyclicGraph<Node,Edge> {
     public Map<String,Integer> labelCounts; // keyed by label
 
     // computed once to save time
+    public FisherExact fisherExact;
+
+    // computed once to save time
     DijkstraShortestPath<Node,Edge> dsp;
 
     /**
@@ -115,6 +118,7 @@ public class PangenomicGraph extends DirectedAcyclicGraph<Node,Edge> {
                 lastNode = node;
             }
         }
+        fisherExact = new FisherExact(paths.size());
         if (verbose) System.out.println("done.");
     }
 
@@ -154,6 +158,7 @@ public class PangenomicGraph extends DirectedAcyclicGraph<Node,Edge> {
                 lastNode = node;
             }
         }
+        fisherExact = new FisherExact(paths.size());
         if (verbose) System.out.println("done.");
     }
 
@@ -438,8 +443,6 @@ public class PangenomicGraph extends DirectedAcyclicGraph<Node,Edge> {
         int nodeCtrlPaths = 0; if (map.containsKey("ctrl")) nodeCtrlPaths = map.get("ctrl");
         int otherCasePaths = labelCounts.get("case") - nodeCasePaths;
         int otherCtrlPaths = labelCounts.get("ctrl") - nodeCtrlPaths;
-        int maxSize = nodeCasePaths + nodeCtrlPaths + otherCasePaths + otherCtrlPaths;
-        FisherExact fisherExact = new FisherExact(maxSize);
         return fisherExact.getTwoTailedP(nodeCasePaths, otherCasePaths, nodeCtrlPaths, otherCtrlPaths);
     }
 

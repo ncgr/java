@@ -243,7 +243,7 @@ public class FRFinder {
                                     // already rejected, bail
                                     rejected = true;
                                 }
-				// reject if not all the required nodes are present
+                                // reject if not all the required nodes are present
                                 if (!rejected && requiredNodes.size()>0) {
                                     for (Node n : requiredNodes) {
                                         if (!frpair.nodes.contains(n)) {
@@ -252,7 +252,7 @@ public class FRFinder {
                                         }
                                     }
                                 }
-				// reject if one of the excluded nodes is present
+                                // reject if one of the excluded nodes is present
                                 if (!rejected && excludedNodes.size()>0) {
                                     for (Node n : excludedNodes) {
                                         if (frpair.nodes.contains(n)) {
@@ -267,12 +267,8 @@ public class FRFinder {
                                 } else {
                                     // merge this FRPair if not already merged
                                     if (frpair.merged==null) {
-                                        try {
-                                            // have to catch Exceptions here since in a parallel stream
-                                            if (frpair.merged==null) frpair.merge();
-                                        } catch (Exception e) {
-                                            System.err.println(e);
-                                            System.exit(1);
+                                        if (frpair.merged==null) {
+                                            frpair.merge();
                                         }
                                     }
                                     // should we keep this merged FR according to keepOption?
