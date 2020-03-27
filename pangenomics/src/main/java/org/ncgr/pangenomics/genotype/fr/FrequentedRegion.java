@@ -218,9 +218,9 @@ class FrequentedRegion implements Comparable {
     }
 
     /**
-     * Return the support associated with the label (i.e. multiple subpaths of a path only contribute once in total).
+     * Return the support associated with paths with the given label (not subpaths).
      */
-    public int getLabelSupport(String label) {
+    public int getPathLabelSupport(String label) {
         int count = 0;
         List<String> countedPaths = new ArrayList<>();
         for (Path subpath : subpaths) {
@@ -235,7 +235,7 @@ class FrequentedRegion implements Comparable {
     /**
      * Return the count of subpaths labeled with the given label. Here multiple subpaths of a path count individually.
      */
-    public int getLabelSubpathCount(String label) {
+    public int getLabelSupport(String label) {
         int count = 0;
         for (Path subpath : subpaths) {
             if (subpath.label!=null && subpath.label.equals(label)) {
@@ -303,14 +303,14 @@ class FrequentedRegion implements Comparable {
      * Return the Fisher's exact test p value for cases vs controls.
      * NOTE: uses graph.fisherExact, which is computed once.
      *
-     *      | support     | non-support    |
-     *      |------------------------------|
-     * case | caseSupport | caseNonSupport |
-     * ctrl | ctrlSupport | ctrlNonSupport |
+     *      | support         | non-support    |
+     *      |----------------------------------|
+     * case | casePathSupport | caseNonSupport |
+     * ctrl | ctrlPathSupport | ctrlNonSupport |
      */
     public double fisherExactP() {
-        int caseNonSupport = graph.getCasePathCount() - caseSupport;
-        int ctrlNonSupport = graph.getCtrlPathCount() - ctrlSupport;
+        int caseNonSupport = graph.getCasePathCount() - getPathLabelSupport("case");
+        int ctrlNonSupport = graph.getCtrlPathCount() - getPathLabelSupport("ctrl");
         if (caseNonSupport<0 || ctrlNonSupport<0) {
             System.err.println(nodes.toString()+":graph.getCasePathCount()="+graph.getCasePathCount()+" caseSupport="+caseSupport);
             System.err.println(nodes.toString()+":graph.getCtrlPathCount()="+graph.getCtrlPathCount()+" ctrlSupport="+ctrlSupport);
