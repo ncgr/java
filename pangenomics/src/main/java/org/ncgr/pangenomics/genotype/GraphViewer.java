@@ -88,9 +88,9 @@ public class GraphViewer {
         // get the graph
         PangenomicGraph graph = new PangenomicGraph();
         graph.verbose = true;
-        graph.graphName = graphName;
-        graph.nodesFile = new File(graph.graphName+".nodes.txt");
-        graph.pathsFile = new File(graph.graphName+".paths.txt");
+        graph.name = graphName;
+        graph.nodesFile = new File(graph.name+".nodes.txt");
+        graph.pathsFile = new File(graph.name+".paths.txt");
         graph.loadTXT();
         graph.tallyLabelCounts();
         graph.buildNodePaths();

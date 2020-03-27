@@ -7,6 +7,7 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.PrintStream;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Map;
@@ -35,7 +36,7 @@ public class PangenomicGraph extends DirectedAcyclicGraph<Node,Edge> {
     public boolean verbose = false;
 
     // a name for this graph
-    public String graphName;
+    public String name;
 
     // the file holding the labels for each path (typically "case" and "control")
     public File labelsFile;
@@ -137,7 +138,8 @@ public class PangenomicGraph extends DirectedAcyclicGraph<Node,Edge> {
             pathNameMap.put(path.name, path);
             // add edges
             Node lastNode = null;
-            for (Node node : path.getNodes()) {
+            for (Object n : path.getNodes()) {
+                Node node = (Node) n;
                 if (lastNode!=null) {
                     if (!containsEdge(lastNode, node)) {
                         try {
@@ -211,7 +213,7 @@ public class PangenomicGraph extends DirectedAcyclicGraph<Node,Edge> {
         // now load the paths in parallel
         ConcurrentSkipListSet<Path> concurrentPaths = new ConcurrentSkipListSet<Path>(paths);
         concurrentPaths.parallelStream().forEach(path -> {
-                ConcurrentSkipListSet<Node> concurrentNodes = new ConcurrentSkipListSet<Node>(path.getNodes());
+                ConcurrentSkipListSet<Node> concurrentNodes = new ConcurrentSkipListSet<Node>((List<Node>) path.getNodes());
                 concurrentNodes.parallelStream().forEach(n -> {
                         nodePaths.get(n).add(path);
                     });
@@ -305,6 +307,30 @@ public class PangenomicGraph extends DirectedAcyclicGraph<Node,Edge> {
      */
     public List<Node> getNodes() {
         return new ArrayList<Node>(vertexSet());
+    }
+
+    /**
+     * Construct a NodeSet from a string representation, e.g. [1350,1352,1353,1465,1467,1468,1469].
+     */
+    public NodeSet getNodeSet(String str) {
+        NodeSet nodes = new NodeSet();
+        List<Node> allNodes = getNodes();
+        Map<Long,Node> allNodeMap = new HashMap<>();
+        for (Node n : allNodes) allNodeMap.put(n.id, n);
+        List<String> nodeStrings = Arrays.asList(str.replace("[","").replace("]","").split(","));
+        for (String s : nodeStrings) {
+            if (s.length()>0) {
+                long id = Long.parseLong(s);
+                if (allNodeMap.containsKey(id)) {
+                    nodes.add(allNodeMap.get(id));
+                } else {
+                    // bail, we're asked for a node that is not in the graph
+                    System.err.println("ERROR: graph does not contain node "+id);
+                    System.exit(1);
+                }
+            }
+        }
+        return nodes;
     }
 
     /**
@@ -462,41 +488,41 @@ public class PangenomicGraph extends DirectedAcyclicGraph<Node,Edge> {
      * Run all the PangenomicGraph printing methods to files.
      */
     public void printAll() throws FileNotFoundException, IOException {
-        if (graphName==null) return;
+        if (name==null) return;
         // if (labelCounts!=null && labelCounts.size()>0) {
-        //     PrintStream labelCountsOut = new PrintStream(graphName+".labelcounts.txt");
+        //     PrintStream labelCountsOut = new PrintStream(name+".labelcounts.txt");
         //     printLabelCounts(labelCountsOut);
         // }
 
         if (verbose) System.out.print("Writing nodes file...");
-        PrintStream nodesOut = new PrintStream(graphName+".nodes.txt");
+        PrintStream nodesOut = new PrintStream(name+".nodes.txt");
         printNodes(nodesOut);
         if (verbose) System.out.println("done.");
 
         // if (verbose) System.out.print("Writing nodes histogram...");
-        // PrintStream nodeHistogramOut = new PrintStream(graphName+".nodehistogram.txt");
+        // PrintStream nodeHistogramOut = new PrintStream(name+".nodehistogram.txt");
         // printNodeHistogram(nodeHistogramOut);
         // if (verbose) System.out.println("done.");
 
         if (verbose) System.out.print("Writing paths file...");
-        PrintStream pathsOut = new PrintStream(graphName+".paths.txt");
+        PrintStream pathsOut = new PrintStream(name+".paths.txt");
         printPaths(pathsOut);
         if (verbose) System.out.println("done.");
 
         // if (!skipNodePaths) {
         //     if (verbose) System.out.print("Writing node paths file...");
-        //     PrintStream nodePathsOut = new PrintStream(graphName+".nodepaths.txt");
+        //     PrintStream nodePathsOut = new PrintStream(name+".nodepaths.txt");
         //     printNodePaths(nodePathsOut);
         //     if (verbose) System.out.println("done.");
         //     if (verbose) System.out.print("Writing path PCA file...");
-        //     PrintStream pcaDataOut = new PrintStream(graphName+".pathpca.txt");
+        //     PrintStream pcaDataOut = new PrintStream(name+".pathpca.txt");
         //     printPcaData(pcaDataOut);
         //     if (verbose) System.out.println("done.");
         // }
         
         // if (!skipSequences) {
         //     if (verbose) System.out.print("Writing path sequences file...");
-        //     PrintStream pathSequencesOut = new PrintStream(graphName+".pathsequences.fasta");
+        //     PrintStream pathSequencesOut = new PrintStream(name+".pathsequences.fasta");
         //     printPathSequences(pathSequencesOut);
         //     if (verbose) System.out.println("done.");
         // }
@@ -518,6 +544,7 @@ public class PangenomicGraph extends DirectedAcyclicGraph<Node,Edge> {
 
     /**
      * Load the graph from a pair of TXT files.
+     * nodesFile and pathsFile must already be set.
      */
     public void loadTXT() throws FileNotFoundException, IOException {
         if (nodesFile==null || pathsFile==null) {
@@ -588,17 +615,17 @@ public class PangenomicGraph extends DirectedAcyclicGraph<Node,Edge> {
         if (cmd.hasOption("verbose")) graph.verbose = true;
 
         // populate graph instance vars from parameters
-        graph.graphName = cmd.getOptionValue("graph");
+        graph.name = cmd.getOptionValue("graph");
         if (loadVCF) {
-            graph.vcfFile = new File(graph.graphName+".vcf.gz");
+            graph.vcfFile = new File(graph.name+".vcf.gz");
             graph.labelsFile = new File(cmd.getOptionValue("labelfile"));
             graph.readSampleLabels();
             graph.loadVCF();
             graph.tallyLabelCounts();
         }
         if (loadTXT) {
-            graph.nodesFile = new File(graph.graphName+".nodes.txt");
-            graph.pathsFile = new File(graph.graphName+".paths.txt");
+            graph.nodesFile = new File(graph.name+".nodes.txt");
+            graph.pathsFile = new File(graph.name+".paths.txt");
             graph.loadTXT();
             graph.tallyLabelCounts();
         }

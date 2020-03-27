@@ -73,14 +73,13 @@ public class FRFinder {
     public FRFinder(PangenomicGraph graph) {
         initializeParameters();
         this.graph = graph;
-        this.paths = graph.getPaths();
+        this.paths = graph.paths;
     }
 
     /**
      * Construct with the output from a previous run. Be sure to set minSup, minSize, minLen filters as needed before running postprocess().
      */
-    public FRFinder(String inputPrefix) throws FileNotFoundException, IOException,
-                                               NullNodeException, NullSequenceException, NoNodesException {
+    public FRFinder(String inputPrefix) throws FileNotFoundException, IOException {
         initializeParameters();
         parameters = FRUtils.readParameters(inputPrefix); // sets properties from file
         readFrequentedRegions();
@@ -111,17 +110,13 @@ public class FRFinder {
      *                alternatively, `1-alpha` is the fraction of inserted sequence
      * int kappa = maximum insertion: the maximum number of inserted nodes that a supporting path may have.
       */
-    public void findFRs(double alpha, int kappa) throws FileNotFoundException, IOException,
-                                                        NullNodeException, NullSequenceException, NoPathsException, NoNodePathsException {
+    public void findFRs(double alpha, int kappa) throws FileNotFoundException, IOException {
         // initialize log file
         logOut = new PrintStream(formOutputPrefix(alpha, kappa)+".log");
 	printToLog("# Starting findFRs: alpha="+alpha+" kappa="+kappa+
                    " priorityOption="+getPriorityOption()+" minPriority="+getMinPriority()+
                    " minSup="+getMinSup()+" minSize="+getMinSize()+" minLen="+getMinLen()+
                    " requiredNodes="+getRequiredNodes()+" excludedNodes="+getExcludedNodes()+" keepOption="+getKeepOption()+" maxRound="+getMaxRound());
-
-        // output the graph files if graph loaded from GFA
-        if (getGfaFilename()!=null) graph.printAll(getGraphName());
 
         // store the saved FRs in a map
         frequentedRegions = new ConcurrentHashMap<>();
@@ -401,12 +396,6 @@ public class FRFinder {
             } else {
                 reason += " SIZE";
             }
-            if (fr.avgLength<getMinLen()) {
-                passes = false;
-                reason += " avgLength";
-            } else {
-                reason += " AVGLENGTH";
-            }
             if (passes) filteredFRs.put(fr.nodes.toString(), fr);
             if (verbose()) System.out.println(fr.toString()+reason);
         }
@@ -466,12 +455,6 @@ public class FRFinder {
     public String getKeepOption() {
         return parameters.getProperty("keepOption");
     }
-    public String getGfaFilename() {
-        return parameters.getProperty("gfaFile");
-    }
-    public String getTxtFilename() {
-        return parameters.getProperty("txtFile");
-    }
     
     // parameter setters
     public void setVerbose() {
@@ -529,18 +512,11 @@ public class FRFinder {
     public void setGraphName(String graphName) {
         parameters.setProperty("graphName", graphName);
     }
-    public void setGfaFilename(String gfaFilename) {
-        parameters.setProperty("gfaFile", gfaFilename);
-    }
-    public void setTxtFilename(String txtFilename) {
-        parameters.setProperty("txtFile", txtFilename);
-    }
 
     /**
      * Command-line utility
      */
-    public static void main(String[] args) throws FileNotFoundException, IOException,
-                                                  NullNodeException, NullSequenceException, NoNodesException, NoPathsException, NoNodePathsException {
+    public static void main(String[] args) throws FileNotFoundException, IOException {
         Options options = new Options();
         CommandLineParser parser = new DefaultParser();
         HelpFormatter formatter = new HelpFormatter();
@@ -562,26 +538,13 @@ public class FRFinder {
         kappaEndOption.setRequired(false);
         options.addOption(kappaEndOption);
         //
-        Option genotypeOption = new Option("g", "genotype", true, "which genotype to include (0,1) from the input file; "+
-                                           PangenomicGraph.BOTH_GENOTYPES+" to include all ["+PangenomicGraph.BOTH_GENOTYPES+"]");
-        genotypeOption.setRequired(false);
-        options.addOption(genotypeOption);
-        //
         Option graphOption = new Option("graph", "graph", true, "graph name");
         graphOption.setRequired(true);
         options.addOption(graphOption);
         //
-        Option gfaOption = new Option("gfa", "gfa", false, "load from [graph].paths.gfa");
-        gfaOption.setRequired(false);
-        options.addOption(gfaOption);
-        //
         Option txtOption = new Option("txt", "txt", false, "load from [graph].nodes.txt and [graph].paths.txt");
         txtOption.setRequired(false);
         options.addOption(txtOption);
-        //
-        Option minLenOption = new Option("l", "minlen", true, "minimum allowed average length (bp) of an FR's subpaths [1.0]");
-        minLenOption.setRequired(false);
-        options.addOption(minLenOption);
         //
         Option minSupOption = new Option("m", "minsup", true, "minimum number of supporting paths for a region to be considered interesting [1]");
         minSupOption.setRequired(false);
@@ -657,12 +620,6 @@ public class FRFinder {
             System.exit(1);
             return;
         }
-        
-        // parameter validation
-        if (!cmd.hasOption("inputprefix") && !cmd.hasOption("gfa") && !cmd.hasOption("txt")) {
-            System.err.println("You must specify loading from a vg GFA file (--gfa) or TXT files (--txt), or provide input prefix for post-processing (--inputPrefix)");
-            System.exit(1);
-        }
 
         // path labels file
         File labelsFile = null;
@@ -696,40 +653,22 @@ public class FRFinder {
             if (cmd.hasOption("writesavefiles")) frf.setWriteSaveFiles();
             frf.postprocess();
         } else {
-            // import a PangenomicGraph from a GFA file or pair of TXT files
-            PangenomicGraph pg = new PangenomicGraph();
-            if (cmd.hasOption("verbose")) pg.setVerbose();
-            // graph name
             String graphName = cmd.getOptionValue("graph");
-            if (cmd.hasOption("gfa")) {
-                // GFA file
-                File gfaFile = new File(graphName+".paths.gfa");
-                pg.importGFA(gfaFile);
-                System.out.println("# Graph has "+pg.vertexSet().size()+" nodes and "+pg.edgeSet().size()+" edges with "+pg.getPaths().size()+" paths.");
-                // if a labels file is given, add them to the paths
-                if (labelsFile!=null) {
-                    pg.readPathLabels(labelsFile);
-                    pg.tallyLabelCounts();
-                    System.out.println("# Graph has "+pg.getLabelCounts().get("case")+" case paths and "+pg.getLabelCounts().get("ctrl")+" ctrl paths.");
-                }
-            } else if (cmd.hasOption("txt")) {
-                // TXT file
-                File nodesFile = new File(graphName+".nodes.txt");
-                File pathsFile = new File(graphName+".paths.txt");
-                pg.importTXT(nodesFile, pathsFile);
-                System.out.println("# Graph has "+pg.vertexSet().size()+" nodes and "+pg.edgeSet().size()+" edges with "+pg.getPaths().size()+" paths.");
-                pg.tallyLabelCounts();
-                System.out.println("# Graph has "+pg.getLabelCounts().get("case")+" case paths and "+pg.getLabelCounts().get("ctrl")+" ctrl paths.");
-            }
+            // load graph from TXT file
+            PangenomicGraph pg = new PangenomicGraph();
+            pg.name = graphName;
+            pg.nodesFile = new File(graphName+".nodes.txt");
+            pg.pathsFile = new File(graphName+".paths.txt");
+            pg.loadTXT();
+            System.out.println("# Graph has "+pg.vertexSet().size()+" nodes and "+pg.edgeSet().size()+" edges with "+pg.paths.size()+" paths.");
+            pg.tallyLabelCounts();
+            System.out.println("# Graph has "+pg.getLabelCounts().get("case")+" case paths and "+pg.getLabelCounts().get("ctrl")+" ctrl paths.");
             // set graph options
-            if (cmd.hasOption("verbose")) pg.setVerbose();
-            if (cmd.hasOption("genotype")) pg.setGenotype(Integer.parseInt(cmd.getOptionValue("genotype")));
-            if (cmd.hasOption("skipnodepaths")) pg.setSkipNodePaths();
+            if (cmd.hasOption("verbose")) pg.verbose = true;
+            // if (cmd.hasOption("skipnodepaths")) pg.setSkipNodePaths();
             // instantiate the FRFinder with this PangenomicGraph
             FRFinder frf = new FRFinder(pg);
             frf.setGraphName(graphName);
-            if (cmd.hasOption("gfa")) frf.setGfaFilename(graphName+".paths.gfa");
-            if (cmd.hasOption("txt")) frf.setTxtFilename(graphName+".nodes.txt");
             if (cmd.hasOption("priorityoption")) {
                 frf.setPriorityOption(cmd.getOptionValue("priorityoption"));
             }
@@ -806,7 +745,7 @@ public class FRFinder {
             } else {
                 out.print("\t");
             }
-            out.print(path.getNameGenotypeLabel());
+            out.print(path.name+"."+path.label);
         }
         out.println("");
         // rows are FRs
@@ -834,10 +773,10 @@ public class FRFinder {
         PrintStream out = new PrintStream(FRUtils.getPathFRsSVMFilename(outputPrefix));
         // only rows, one per path
         for (Path path : paths) {
-            out.print(path.getNameGenotype());
+            out.print(path.name+"."+path.label);
             // TODO: update these to strings along with fixing the SVM code to handle strings
             String group = "";
-            if (path.getLabel()!=null) group = path.getLabel();
+            if (path.label!=null) group = path.label;
             out.print("\t"+group);
             int c = 0;
             for (FrequentedRegion fr : frequentedRegions.values()) {
@@ -887,13 +826,13 @@ public class FRFinder {
         // data
         out.println("@DATA");
         for (Path path : paths) {
-            out.print(path.getNameGenotype()+",");
+            out.print(path.name+"."+path.label);
             c = 0;
             for (FrequentedRegion fr : frequentedRegions.values()) {
                 c++;
                 out.print(fr.countSubpathsOf(path)+",");
             }
-            out.println(path.getLabel());
+            out.println(path.label);
         }
         out.close();
     }
@@ -964,19 +903,19 @@ public class FRFinder {
      * 628863.1.case:[18,20,21,23,24,26,27,29,30,33,34]
      * etc.
      */
-    void readFrequentedRegions() throws FileNotFoundException, IOException, NullNodeException, NullSequenceException, NoNodesException {
+    void readFrequentedRegions() throws FileNotFoundException, IOException {
         // get alpha, kappa from the input prefix
         double alpha = FRUtils.readAlpha(getInputPrefix());
         int kappa = FRUtils.readKappa(getInputPrefix());
         // get the graph from the nodes and paths files
-        File nodesFile = new File(FRUtils.getNodesFilename(getInputPrefix()));
-        File pathsFile = new File(FRUtils.getPathsFilename(getInputPrefix()));
         graph = new PangenomicGraph();
-        graph.importTXT(nodesFile, pathsFile);
+        graph.nodesFile = new File(FRUtils.getNodesFilename(getInputPrefix()));
+        graph.pathsFile = new File(FRUtils.getPathsFilename(getInputPrefix()));
+        graph.loadTXT();
         // create a node map for building subpaths
         Map<Long,Node> nodeMap = new HashMap<>();
         for (Node n : graph.getNodes()) {
-            nodeMap.put(n.getId(), n);
+            nodeMap.put(n.id, n);
         }
 	// build the FRs
         frequentedRegions = new ConcurrentHashMap<>();
@@ -987,20 +926,16 @@ public class FRFinder {
             String[] fields = line.split("\t");
             NodeSet nodes = graph.getNodeSet(fields[0]);
             int support = Integer.parseInt(fields[1]);
-            double avgLength = Double.parseDouble(fields[2]);
             List<Path> subpaths = new ArrayList<>();
             for (int i=0; i<support; i++) {
                 line = reader.readLine();
                 String[] parts = line.split(":");
                 String pathFull = parts[0];
                 String nodeString = parts[1];
-                // split out the name, genotype, label, nodes
+                // split out the name, label, nodes
                 String[] nameParts = pathFull.split("\\.");
                 String name = nameParts[0];
-                int genotype = -1;
-                if (nameParts.length>1) genotype = Integer.parseInt(nameParts[1]);
-                String label = null;
-                if (nameParts.length>2) label = nameParts[2];
+                String label = label = nameParts[2];
                 List<Node> subNodes = new ArrayList<>();
                 String[] nodesAsStrings = nodeString.replace("[","").replace("]","").split(",");
                 for (String nodeAsString : nodesAsStrings) {
@@ -1008,9 +943,9 @@ public class FRFinder {
                     subNodes.add(nodeMap.get(nodeId));
                 }
                 // add to the subpaths
-                subpaths.add(new Path(graph, subNodes, name, genotype, label, graph.getSkipSequences()));
+                subpaths.add(new Path(graph, subNodes, name, label));
             }
-            FrequentedRegion fr = new FrequentedRegion(nodes, subpaths, alpha, kappa, getPriorityOption(), support, avgLength);
+            FrequentedRegion fr = new FrequentedRegion(nodes, subpaths, alpha, kappa, getPriorityOption(), support);
             frequentedRegions.put(fr.nodes.toString(), fr);
         }
     }
@@ -1039,6 +974,6 @@ public class FRFinder {
      * Return true if the given FR is "interesting". (Note that the alpha, kappa requirements are enforced by fr.support>=minSup.)
      */
     boolean isInteresting(FrequentedRegion fr) {
-        return fr.support>=getMinSup() && fr.avgLength>=getMinLen() && fr.nodes.size()>=getMinSize() && fr.priority>=getMinPriority();
+        return fr.support>=getMinSup() && fr.nodes.size()>=getMinSize() && fr.priority>=getMinPriority();
     }
 }

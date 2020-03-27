@@ -32,8 +32,7 @@ public class FRUtils {
      * 628863.1.case:[18,20,21,23,24,26,27,29,30,33,34]
      * etc.
      */
-    public static HashMap<String,FrequentedRegion> readFrequentedRegions(String inputPrefix, PangenomicGraph graph)
-        throws FileNotFoundException, IOException, NullNodeException, NullSequenceException {
+    public static HashMap<String,FrequentedRegion> readFrequentedRegions(String inputPrefix, PangenomicGraph graph) throws FileNotFoundException, IOException {
         // get alpha, kappa from the input prefix
         double alpha = readAlpha(inputPrefix);
         int kappa = readKappa(inputPrefix);
@@ -44,7 +43,7 @@ public class FRUtils {
         // create a node map for building subpaths
         Map<Long,Node> nodeMap = new HashMap<>();
         for (Node n : graph.getNodes()) {
-            nodeMap.put(n.getId(), n);
+            nodeMap.put(n.id, n);
         }
 
         // build the FRs
@@ -53,9 +52,9 @@ public class FRUtils {
         BufferedReader reader = new BufferedReader(new FileReader(subpathsFilename));
         String line = null;
         while ((line=reader.readLine())!=null) {
-            // 0                1       2       3       4           5           6   7       8
-            // nodes            size    support avgLen  caseSupport ctrlSupport OR  p       priority
-            // [2,7,9,10,14,15]	6	24	52.79	24	    0	        ∞   2.66E-3 257
+            // 0                1       2       3           4           5   6       7
+            // nodes            size    support caseSupport ctrlSupport OR  p       priority
+            // [2,7,9,10,14,15]	6	24	24	    0	        ∞   2.66E-3 257
             // 371985.1.case:[2]
             // 131922.1.case:[2]
             // ...
@@ -63,17 +62,16 @@ public class FRUtils {
             NodeSet nodes = graph.getNodeSet(fields[0]);
             int size = Integer.parseInt(fields[1]);
             int support = Integer.parseInt(fields[2]);
-            double avgLength = Double.parseDouble(fields[3]);
-            int caseSupport = Integer.parseInt(fields[4]);
-            int ctrlSupport = Integer.parseInt(fields[5]);
+            int caseSupport = Integer.parseInt(fields[3]);
+            int ctrlSupport = Integer.parseInt(fields[4]);
             double or = Double.POSITIVE_INFINITY;
             try {
-                or = Double.parseDouble(fields[6]);
+                or = Double.parseDouble(fields[5]);
             } catch (NumberFormatException e) {
                 // do nothing, it's an infinity symbol
             }
-            double p = Double.parseDouble(fields[7]);
-            int priority = Integer.parseInt(fields[8]);
+            double p = Double.parseDouble(fields[6]);
+            int priority = Integer.parseInt(fields[7]);
             List<Path> subpaths = new ArrayList<>();
             for (int i=0; i<support; i++) {
                 line = reader.readLine();
@@ -94,9 +92,9 @@ public class FRUtils {
                     subNodes.add(nodeMap.get(nodeId));
                 }
                 // add to the subpaths
-                subpaths.add(new Path(graph, subNodes, name, genotype, label, graph.getSkipSequences()));
+                subpaths.add(new Path(graph, subNodes, name, label));
             }
-            FrequentedRegion fr = new FrequentedRegion(graph, nodes, subpaths, alpha, kappa, priorityOption, support, avgLength);
+            FrequentedRegion fr = new FrequentedRegion(graph, nodes, subpaths, alpha, kappa, priorityOption, support);
             frequentedRegions.put(fr.nodes.toString(), fr);
         }
         return frequentedRegions;

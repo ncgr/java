@@ -313,9 +313,9 @@ public class frGraphComponent extends mxGraphComponent implements ActionListener
         if (fr.kappa==Integer.MAX_VALUE) kappaString = INFINITY;
         // info text
         String infoLabelString = "<html>"+
-            "<b>"+graph.getName()+"</b><br/>" +
+            "<b>"+graph.name+"</b><br/>" +
             graph.getNodes().size()+" nodes<br/>" +
-            graph.getPaths().size()+" paths<br/>" +
+            graph.paths.size()+" paths<br/>" +
             graph.getLabelCounts().get("case")+"/"+graph.getLabelCounts().get("ctrl") +
             "<hr/>" +
             "alpha="+fr.alpha+"<br/>" +
@@ -334,7 +334,6 @@ public class frGraphComponent extends mxGraphComponent implements ActionListener
             "<hr/>" +
             "FR "+(current+1)+":<br/>" +
             "size="+fr.nodes.size()+"<br/>" +
-            "avgLen="+df.format(fr.avgLength)+"<br/>" +
             "support="+fr.caseSupport+"/"+fr.ctrlSupport+"<br/>" +
             "p="+pf.format(p)+"<br/>" +
             "O.R.="+orf.format(or)+"<br/>" +

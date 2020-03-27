@@ -128,19 +128,17 @@ public class FGraphXAdapter extends JGraphXAdapter<Node,Edge> {
     }
 
     /**
-     * Override to show stats and node sequence as tooltip.
+     * Override to show stats and node genotype as tooltip.
      */
     @Override
     public String getToolTipForCell(Object o) {
         mxCell c = (mxCell) o;
         if (c.isVertex()) {
             Node n = (Node) c.getValue();
-            String seq = n.getSequence();
             int pathCount = graph.getPathCount(n);
             double frac = (double)pathCount/(double)graph.getPathCount();
             String tip = "<html>" +
-                seq+"<br/>" +
-                seq.length()+" bp<br/>" +
+                n.genotype+"<br/>" +
                 pathCount+" paths<br/>" +
                 percf.format(frac);
             Map<String,Integer> labelCounts = graph.getLabelCounts(n);

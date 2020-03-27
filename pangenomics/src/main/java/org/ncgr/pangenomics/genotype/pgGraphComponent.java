@@ -100,7 +100,7 @@ class pgGraphComponent extends mxGraphComponent implements ActionListener, ListS
         JPanel topPanel = new JPanel();
         topPanel.setBackground(Color.LIGHT_GRAY);
         // graph label in bold
-        JLabel graphLabel = new JLabel(graph.graphName);
+        JLabel graphLabel = new JLabel(graph.name);
         graphLabel.setFont(graphLabel.getFont().deriveFont(Font.BOLD));
         topPanel.add(graphLabel);
         // zoom buttons

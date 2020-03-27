@@ -8,12 +8,22 @@ import java.io.Serializable;
  */
 public class Node implements Comparable, Serializable {
     public long id;
-    public String rs;
     public String contig;
     public int start;
     public int end;
+    public String rs;
     public String genotype;
 
+    /**
+     * Minimal constructor.
+     */
+    public Node(long id) {
+        this.id = id;
+    }
+
+    /**
+     * Construct the full monty.
+     */
     public Node(long id, String rs, String contig, int start, int end, String genotype) {
         this.id = id;
 	this.contig = contig;

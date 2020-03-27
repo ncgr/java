@@ -29,7 +29,7 @@ import org.mskcc.cbio.portal.stats.FisherExact;
  *
  * @author Sam Hokin
  */
-public class FrequentedRegion implements Comparable {
+class FrequentedRegion implements Comparable {
 
     static String PRIORITY_OPTIONS =
         "0=total support, " +
@@ -59,9 +59,6 @@ public class FrequentedRegion implements Comparable {
     int caseSupport = 0;
     int ctrlSupport = 0;
 
-    // the average length of the subpath sequences
-    double avgLength;
-
     // a subpath must satisfy the requirement that it traverses at least a fraction alpha of this.nodes
     double alpha;
 
@@ -76,7 +73,7 @@ public class FrequentedRegion implements Comparable {
     /**
      * Construct given a PangenomicGraph, NodeSet and alpha and kappa filter parameters.
      */
-    FrequentedRegion(PangenomicGraph graph, NodeSet nodes, double alpha, int kappa, String priorityOption) throws NullNodeException, NullSequenceException {
+    FrequentedRegion(PangenomicGraph graph, NodeSet nodes, double alpha, int kappa, String priorityOption) {
         this.graph = graph;
         this.nodes = nodes;
         this.alpha = alpha;
@@ -90,11 +87,10 @@ public class FrequentedRegion implements Comparable {
      * 0                               1       2               3       4       5       6       7
      * [7,9,14,19,103,132,174] 7       3030    21105.00        1582    1448    1554    1.373   2.89E-16
      */
-    FrequentedRegion(PangenomicGraph graph, String frString, double alpha, int kappa, String priorityOption) throws NullNodeException, NullSequenceException {
+    FrequentedRegion(PangenomicGraph graph, String frString, double alpha, int kappa, String priorityOption) {
         String[] parts = frString.split("\t");
         String nodeString = parts[0];
         support = Integer.parseInt(parts[1]);
-        avgLength = Double.parseDouble(parts[2]);
         if (parts.length>3) {
             caseSupport = Integer.parseInt(parts[3]);
             ctrlSupport = Integer.parseInt(parts[4]);
@@ -110,7 +106,7 @@ public class FrequentedRegion implements Comparable {
     /**
      * Construct given a PangenomicGraph, NodeSet and Subpaths
      */
-    FrequentedRegion(PangenomicGraph graph, NodeSet nodes, List<Path> subpaths, double alpha, int kappa, String priorityOption) throws NullNodeException, NullSequenceException {
+    FrequentedRegion(PangenomicGraph graph, NodeSet nodes, List<Path> subpaths, double alpha, int kappa, String priorityOption) {
         this.graph = graph;
         this.nodes = nodes;
         this.subpaths = subpaths;
@@ -121,16 +117,15 @@ public class FrequentedRegion implements Comparable {
     }
 
     /**
-     * Construct given a PangenomicGraph, NodeSet and Subpaths and already known support and avgLength
+     * Construct given a PangenomicGraph, NodeSet and Subpaths and already known support 
      */
-    FrequentedRegion(PangenomicGraph graph, NodeSet nodes, List<Path> subpaths, double alpha, int kappa, String priorityOption, int support, double avgLength) throws NullNodeException, NullSequenceException {
+    FrequentedRegion(PangenomicGraph graph, NodeSet nodes, List<Path> subpaths, double alpha, int kappa, String priorityOption, int support) {
         this.graph = graph;
         this.nodes = nodes;
         this.subpaths = subpaths;
         this.alpha = alpha;
         this.kappa = kappa;
         this.support = support;
-        this.avgLength = avgLength;
         this.priorityOption = priorityOption;
         update();
     }
@@ -138,23 +133,21 @@ public class FrequentedRegion implements Comparable {
     /**
      * Construct given only basic information, used for post-processing. NO GRAPH.
      */
-    FrequentedRegion(NodeSet nodes, List<Path> subpaths, double alpha, int kappa, String priorityOption, int support, double avgLength) throws NullNodeException, NullSequenceException {
+    FrequentedRegion(NodeSet nodes, List<Path> subpaths, double alpha, int kappa, String priorityOption, int support) {
         this.nodes = nodes;
         this.subpaths = subpaths;
         this.alpha = alpha;
         this.kappa = kappa;
         this.support = support;
-        this.avgLength = avgLength;
         this.priorityOption = priorityOption;
         update();
     }
 
     /**
-     * Update the subpaths, average length, priority, etc.
+     * Update the subpaths, priority, etc.
      */
-    void update() throws NullNodeException, NullSequenceException {
+    void update() {
         updateSupport();
-        updateAvgLength();
         updatePriorityLabel();
         updatePriority();
     }
@@ -183,25 +176,12 @@ public class FrequentedRegion implements Comparable {
     }
 
     /**
-     * Update the average length of this frequented region's subpath sequences.
-     */
-    void updateAvgLength() {
-        int totalLength = 0;
-        for (Path subpath : subpaths) {
-            for (Node node : subpath.getNodes()) {
-                totalLength += node.getSequence().length();
-            }
-        }
-        avgLength = (double)totalLength/(double)subpaths.size();
-    }
-
-    /**
      * Update the subpaths and support from the graph paths for the current alpha and kappa values.
      */
-    void updateSupport() throws NullNodeException, NullSequenceException {
+    void updateSupport() {
         subpaths = new ArrayList<>();
-        for (Path p : graph.getPaths()) {
-            List<Path> supportPaths = p.computeSupport(nodes, alpha, kappa);
+        for (Path p : graph.paths) {
+            List<Path> supportPaths = computeSupport(p);
             subpaths.addAll(supportPaths);
         }
         support = subpaths.size();
@@ -245,19 +225,19 @@ public class FrequentedRegion implements Comparable {
     public int getLabelSupport(String label) {
         int count = 0;
         for (Path subpath : subpaths) {
-            if (subpath.getLabel()!=null && subpath.getLabel().equals(label)) count++;
+            if (subpath.label!=null && subpath.label.equals(label)) count++;
         }
         return count;
     }
 
     /**
-     * Return the count of subpaths labeled with the given label and genotype.
+     * Return the count of subpaths labeled with the given label.
      */
-    public int getLabelGenotypeCount(String label, int genotype) {
+    public int getLabelCount(String label) {
         int count = 0;
         for (Path subpath : subpaths) {
-            if (subpath.getLabel()!=null) {
-                if (subpath.getLabel().equals(label) && subpath.getGenotype()==genotype) count++;
+            if (subpath.label!=null) {
+                if (subpath.label.equals(label)) count++;
             }
         }
         return count;
@@ -354,15 +334,14 @@ public class FrequentedRegion implements Comparable {
     public String toString() {
         String s = nodes.toString()+"\t"+nodes.size()+"\t"+support;
         if (support>0) {
-            s += "\t"+df.format(avgLength);
             // show label support if available
             if (graph!=null && graph.getLabelCounts().size()>0) {
                 // count the support per label
                 Map<String,Integer> labelCounts = new TreeMap<>();
                 for (Path subpath : subpaths) {
-                    if (subpath.getLabel()!=null) {
-                        if (!labelCounts.containsKey(subpath.getLabel())) {
-                            labelCounts.put(subpath.getLabel(), getLabelSupport(subpath.getLabel()));
+                    if (subpath.label!=null) {
+                        if (!labelCounts.containsKey(subpath.label)) {
+                            labelCounts.put(subpath.label, getLabelSupport(subpath.label));
                         }
                     }
                 }
@@ -417,7 +396,7 @@ public class FrequentedRegion implements Comparable {
     public int countSubpathsOf(Path path) {
         int count = 0;
         for (Path sp : subpaths) {
-            if (sp.getName().equals(path.getName()) && sp.getGenotype()==path.getGenotype()) count++;
+            if (sp.name.equals(path.name)) count++;
         }
         return count;
     }
@@ -439,7 +418,7 @@ public class FrequentedRegion implements Comparable {
     public int labelCount(String label) {
         int count = 0;
         for (Path sp : subpaths) {
-            if (sp.getLabel().equals(label)) count++;
+            if (sp.label.equals(label)) count++;
         }
         return count;
     }
@@ -495,16 +474,9 @@ public class FrequentedRegion implements Comparable {
     }
 
     /**
-     * Return this FR's average length.
-     */
-    public double getAvgLength() {
-        return avgLength;
-    }
-
-    /**
      * Command-line utility gives results for an input cluster of nodes and alpha, kappa and graph.
      */
-    public static void main(String[] args) throws FileNotFoundException, IOException, NullSequenceException, NullNodeException {
+    public static void main(String[] args) throws FileNotFoundException, IOException {
         Options options = new Options();
  
         Option alphaOption = new Option("a", "alpha", true, "starting value of alpha for a scan (can equal alphaend)");
@@ -518,11 +490,6 @@ public class FrequentedRegion implements Comparable {
         Option priorityOptionOption = new Option("pri", "priorityoption", true, "option for priority weighting of FRs: "+FrequentedRegion.PRIORITY_OPTIONS);
         priorityOptionOption.setRequired(true);
         options.addOption(priorityOptionOption);
-        //
-        Option genotypeOption = new Option("g", "genotype", true, "which genotype to include (0,1) from the input file; "+
-                                           PangenomicGraph.BOTH_GENOTYPES+" to include all ["+PangenomicGraph.BOTH_GENOTYPES+"]");
-        genotypeOption.setRequired(false);
-        options.addOption(genotypeOption);
         //
         Option graphOption = new Option("graph", "graph", true, "graph name");
         graphOption.setRequired(true);
@@ -573,27 +540,13 @@ public class FrequentedRegion implements Comparable {
         
         // import a PangenomicGraph from the GFA file
         PangenomicGraph pg = new PangenomicGraph();
-	// apply options
-        if (cmd.hasOption("genotype")) pg.setGenotype(Integer.parseInt(cmd.getOptionValue("genotype")));
-	// graph name
 	String graphName = cmd.getOptionValue("graph");
-	if (cmd.hasOption("gfa")) {
-            // GFA file
-	    File gfaFile = new File(graphName+".paths.gfa");
-	    pg.importGFA(gfaFile);
-	    // if a labels file is given, add them to the paths
-	    if (labelsFile!=null) {
-		pg.readPathLabels(labelsFile);
-                pg.tallyLabelCounts();
-	    }
-	} else if (cmd.hasOption("txt")) {
-            // TXT file
-	    File nodesFile = new File(graphName+".nodes.txt");
-	    File pathsFile = new File(graphName+".paths.txt");
-            pg.importTXT(nodesFile, pathsFile);
-            pg.tallyLabelCounts();
-        }
-        System.out.println("# Graph has "+pg.getNodes().size()+" nodes and "+pg.getPaths().size()+" paths.");
+        // NOTE: only can import TXT file
+        pg.nodesFile = new File(graphName+".nodes.txt");
+        pg.pathsFile = new File(graphName+".paths.txt");
+        pg.loadTXT();
+        pg.tallyLabelCounts();
+        System.out.println("# Graph has "+pg.getNodes().size()+" nodes and "+pg.paths.size()+" paths.");
         System.out.println("# Graph has "+pg.getLabelCounts().get("case")+" case paths and "+pg.getLabelCounts().get("ctrl")+" ctrl paths.");
 
         // create the FrequentedRegion with this PangenomicGraph
@@ -604,5 +557,65 @@ public class FrequentedRegion implements Comparable {
         // print it out
         System.out.println(fr.columnHeading());
         System.out.println(fr.toString());
+    }
+
+    /**
+     * Algorithm 1 from Cleary, et al. generates the supporting path segments of this path for the given NodeSet and alpha and kappa parameters.
+     *
+     * @param nodes the NodeSet, or cluster C as it's called in Algorithm 1
+     * @param alpha the penetrance parameter = minimum fraction of nodes in C that are in subpath
+     * @param kappa the insertion parameter = maximum inserted number of nodes
+     * @return the set of supporting path segments
+     */
+    public List<Path> computeSupport(Path p) {
+        // s = the supporting subpaths
+        List<Path> s = new ArrayList<>();
+        // m = the list of the path's nodes that are in C=nodes
+        List<Node> m = new ArrayList<>();
+        for (Node n : p.getNodes()) {
+            if (nodes.contains(n)) m.add(n);
+        }
+        // find maximal subpaths
+        for (int i=0; i<m.size(); i++) {
+            Node nl = m.get(i);
+            Node nr = null;
+            int num = 0;
+            for (int j=i; j<m.size(); j++) {
+                // kappa test
+                Path subpath = p.subpath(nl, m.get(j));
+                int maxInsertion = 0; // max insertion
+                int insertion = 0; // continguous insertion
+                for (Node n : subpath.getNodes()) {
+                    if (nodes.contains(n)) {
+                        // reset and save previous insertion if large
+                        if (insertion>maxInsertion) maxInsertion = insertion;
+                        insertion = 0;
+                    } else {
+                        insertion += 1;
+                    }
+                }
+                if (maxInsertion>kappa) break;
+                // we're good, set nr from this cycle
+                nr = m.get(j);
+                num = j - i + 1; // number of this path's nodes in nodes collection
+            }
+            // is this a subpath of an already counted subpath? (maximality test)
+            Path subpath = p.subpath(nl,nr);
+            boolean ignore = false;
+            for (Path checkpath : s) {
+                if (checkpath.contains(subpath)) {
+                    ignore = true;
+                    break;
+                }
+            }
+            // sanity check
+            if (subpath.getNodes().size()==0) {
+                System.err.println("ERROR: subpath.getNodes().size()=0; path="+this.toString()+" nl="+nl+" nr="+nr);
+                ignore = true;
+            }
+            // alpha test on maximal subpath
+            if (!ignore && num>=alpha*nodes.size()) s.add(subpath);
+        }
+        return s;
     }
 }
