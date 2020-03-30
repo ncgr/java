@@ -316,6 +316,9 @@ class FrequentedRegion implements Comparable {
             System.err.println(nodes.toString()+":graph.getCtrlPathCount()="+graph.getCtrlPathCount()+" ctrlSupport="+ctrlSupport);
             System.exit(1);
         }
+        // DEBUG
+        System.out.println(caseSupport+","+caseNonSupport+","+ctrlSupport+","+ctrlNonSupport);
+        //
         return graph.fisherExact.getTwoTailedP(caseSupport, caseNonSupport, ctrlSupport, ctrlNonSupport);
     }
 
