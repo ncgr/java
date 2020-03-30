@@ -203,10 +203,10 @@ class FrequentedRegion implements Comparable {
 
     /**
      * Return the column heading for the toString() fields
-     * nodes size support avgLen caseCounts ctrlCounts pri OR p
+     * nodes size support case ctrl OR p pri
      */
     public String columnHeading() {
-        String s = "nodes\tsize\tsupport\tavgLen";
+        String s = "nodes\tsize\tsupport";
         if (graph!=null && graph.getLabelCounts().size()>0) {
             for (String label : graph.getLabelCounts().keySet()) {
                 s += "\t"+label;

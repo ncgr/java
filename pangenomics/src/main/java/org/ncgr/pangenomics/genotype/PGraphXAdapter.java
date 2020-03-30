@@ -145,12 +145,12 @@ class PGraphXAdapter extends JGraphXAdapter<Node,Edge> {
             double nodeFrac = (double)nodePathCount/(double)graphPathCount; // MAF
             String tip = "<html>";
             if (n.rs!=null) tip += n.rs+"<br/>";
-            tip += n.contig+":"+n.start+"-"+n.end+"<br/>" +
-                n.genotype+"<br/>" +
-                nodePathCount+" paths<br/>" +
-                percf.format(nodeFrac);
+            tip += n.contig+":"+n.start+"-"+n.end+"<br/>";
+            tip += n.genotype+"<br/>";
+            tip += nodePathCount+" paths<br/>";
+            tip += percf.format(nodeFrac);
             if (hasCaseControlLabels) {
-                double or = graph.oddsRatio(n);
+                double lOR = Math.log10(graph.oddsRatio(n));
                 double p = graph.fisherExactP(n);
                 Map<String,Integer> graphLabelCounts = graph.getLabelCounts();
                 Map<String,Integer> nodeLabelCounts = graph.getLabelCounts(n);
@@ -163,7 +163,7 @@ class PGraphXAdapter extends JGraphXAdapter<Node,Edge> {
                 tip += "<br/>"+
                     nodeCaseCounts+"/"+nodeCtrlCounts+"<br/>" +
                     percf.format(nodeCaseFrac)+"/"+percf.format(nodeCtrlFrac)+"<br/>" +
-                    "OR="+orf.format(or)+"<br/>" +
+                    "lOR="+orf.format(lOR)+"<br/>" +
                     "p="+pf.format(p);
             }
             tip += "</html>";

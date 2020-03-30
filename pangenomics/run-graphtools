@@ -1,2 +1,0 @@
-#!/bin/sh
-java -server -cp "build/install/fr/lib/*" org.ncgr.pangenomics.GraphTools $1 $2 $3 $4 $5 $6 $7 $8

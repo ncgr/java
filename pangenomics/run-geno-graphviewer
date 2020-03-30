@@ -1,0 +1,9 @@
+#!/bin/sh
+# usage: GraphViewer
+#  -d,--decorateedges   decorate edges according to the number of paths
+#                       [false]
+#  -g,--graph <arg>     name of graph
+ 
+graph=$1
+
+java -cp "build/install/fr/lib/*" org.ncgr.pangenomics.genotype.GraphViewer -g $graph

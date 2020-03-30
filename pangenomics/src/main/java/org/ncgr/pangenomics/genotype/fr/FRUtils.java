@@ -27,9 +27,10 @@ import java.util.Properties;
 public class FRUtils {    
     /**
      * Read FRs from the text files written by a FRFinder run, given the graph as well.
-     * [18,34]	70	299	54	16
-     * 509678.0.ctrl:[18,20,21,23,24,26,27,29,30,33,34]
-     * 628863.1.case:[18,20,21,23,24,26,27,29,30,33,34]
+     * nodes   size    support case    ctrl    OR      p       pri
+     * [1341]  1       21      19      2       9.500   9.48E-3 202
+     * 509678.ctrl:[18,20,21,23,24,26,27,29,30,33,34]
+     * 628863.case:[18,20,21,23,24,26,27,29,30,33,34]
      * etc.
      */
     public static HashMap<String,FrequentedRegion> readFrequentedRegions(String inputPrefix, PangenomicGraph graph) throws FileNotFoundException, IOException {
@@ -52,11 +53,11 @@ public class FRUtils {
         BufferedReader reader = new BufferedReader(new FileReader(subpathsFilename));
         String line = null;
         while ((line=reader.readLine())!=null) {
-            // 0                1       2       3           4           5   6       7
-            // nodes            size    support caseSupport ctrlSupport OR  p       priority
-            // [2,7,9,10,14,15]	6	24	24	    0	        ∞   2.66E-3 257
-            // 371985.1.case:[2]
-            // 131922.1.case:[2]
+            // 0                1       2       3           4           5     6       7
+            // nodes            size    support caseSupport ctrlSupport OR    p       priority
+            // [1341]           1       21      19          2           9.500 9.48E-3 202
+            // 429266.case:1341]
+            // 158005.case:1341]
             // ...
             String[] fields = line.split("\t");
             NodeSet nodes = graph.getNodeSet(fields[0]);
@@ -78,13 +79,11 @@ public class FRUtils {
                 String[] parts = line.split(":");
                 String pathFull = parts[0];
                 String nodeString = parts[1];
-                // split out the name, genotype, label, nodes
+                // split out the name, label, nodes
                 String[] nameParts = pathFull.split("\\.");
                 String name = nameParts[0];
-                int genotype = -1;
-                if (nameParts.length>1) genotype = Integer.parseInt(nameParts[1]);
                 String label = null;
-                if (nameParts.length>2) label = nameParts[2];
+                if (nameParts.length>1) label = nameParts[1];
                 List<Node> subNodes = new ArrayList<>();
                 String[] nodesAsStrings = nodeString.replace("[","").replace("]","").split(",");
                 for (String nodeAsString : nodesAsStrings) {

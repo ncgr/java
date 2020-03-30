@@ -45,10 +45,6 @@ public class FRViewer {
         prefixOption.setRequired(true);
         options.addOption(prefixOption);
         //
-        Option highlightPathOption = new Option("h", "highlightpath", true, "path to highlight");
-        highlightPathOption.setRequired(false);
-        options.addOption(highlightPathOption);
-        //
         Option decorateEdgesOption = new Option("d", "decorateedges", false, "decorate edges according to the number of paths [false]");
         decorateEdgesOption.setRequired(false);
         options.addOption(decorateEdgesOption);
@@ -63,7 +59,6 @@ public class FRViewer {
         }
 
         String prefix = cmd.getOptionValue("p");
-        String highlightPathName = cmd.getOptionValue("h");
         boolean decorateEdges = cmd.hasOption("d");
         
         // schedule a job for the event dispatch thread: creating and showing this application's GUI.
@@ -72,7 +67,7 @@ public class FRViewer {
                     // turn off metal's use of bold fonts
                     UIManager.put("swing.boldMetal", Boolean.FALSE);
                     try {
-                        createAndShowGUI(prefix, highlightPathName, decorateEdges);
+                        createAndShowGUI(prefix, decorateEdges);
                     } catch (Exception e) {
                         System.err.println(e);
                         System.exit(1);
@@ -86,7 +81,7 @@ public class FRViewer {
      *
      * @param prefix the FRFinder run prefix, e.g. HTT-0.1-100
      */
-    public static void createAndShowGUI(String prefix, String highlightPathName, boolean decorateEdges) throws IOException {
+    public static void createAndShowGUI(String prefix, boolean decorateEdges) throws IOException {
         String[] pieces = prefix.split("-");
         String graphName = pieces[0];
         double alpha = Double.parseDouble(pieces[1]);
@@ -108,17 +103,8 @@ public class FRViewer {
         graph.nodesFile = nodesFile;
         graph.pathsFile = pathsFile;
         graph.loadTXT();
+        graph.buildNodePaths();
         graph.tallyLabelCounts();
-
-        // get the highlight path if provided
-        Path highlightPath = null;
-        if (highlightPathName!=null) {
-            highlightPath = graph.getPath(highlightPathName);
-            if (highlightPath==null) {
-                System.err.println("ERROR: requested highlight path "+highlightPathName+" is not in graph.");
-                System.exit(1);
-            }
-        }
 
         // load the FRs into a sorted map so we see the juicy ones first
         Map<String,FrequentedRegion> unsortedFRs = FRUtils.readFrequentedRegions(prefix, graph);
@@ -132,10 +118,11 @@ public class FRViewer {
 
         // the FGraphXAdapter is an mxGraph; instantiate with the first FR in the list
         Object[] frKeys = frequentedRegions.keySet().toArray();
-        FGraphXAdapter fgxAdapter = new FGraphXAdapter(graph, frequentedRegions.get((String)frKeys[0]), highlightPath, decorateEdges);
+        FGraphXAdapter fgxAdapter = new FGraphXAdapter(graph, frequentedRegions.get((String)frKeys[0]), null, decorateEdges);
 
         // frGraphComponent extends mxGraphComponent which extends JScrollPane (implements Printable)
-        frGraphComponent component = new frGraphComponent(graph, frequentedRegions, fgxAdapter, parameters, highlightPath, decorateEdges);
+        frGraphComponent component = new frGraphComponent(graph, fgxAdapter, decorateEdges,
+                                                          frequentedRegions, parameters);
         component.setBackground(Color.LIGHT_GRAY);
 
         // add the component to the frame, clean up frame and show

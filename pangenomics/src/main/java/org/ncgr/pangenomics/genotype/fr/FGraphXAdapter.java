@@ -3,6 +3,7 @@ package org.ncgr.pangenomics.genotype.fr;
 import org.ncgr.pangenomics.genotype.*;
 
 import java.text.DecimalFormat;
+import java.util.List;
 import java.util.Map;
 
 import org.jgrapht.ext.JGraphXAdapter;
@@ -28,13 +29,19 @@ public class FGraphXAdapter extends JGraphXAdapter<Node,Edge> {
 
     PangenomicGraph graph;
     FrequentedRegion fr;
-    java.util.List<Edge> highlightPathEdges;
 
-    public FGraphXAdapter(PangenomicGraph graph, FrequentedRegion fr, Path highlightPath, boolean decorateEdges) {
+    Path highlightedPath = null;
+    List<Edge> highlightedPathEdges;
+
+    public FGraphXAdapter(PangenomicGraph graph, FrequentedRegion fr, Path highlightedPath, boolean decorateEdges) {
         super(new DefaultListenableGraph<Node,Edge>(graph));
         this.graph = graph;
         this.fr = fr;
-        if (highlightPath!=null) highlightPathEdges = highlightPath.getEdges();
+
+        // get the highlighted path edges
+        if (highlightedPath!=null) {
+            highlightedPathEdges = highlightedPath.getEdges();
+        }
 
         // set default styles
         mxStylesheet defaultStylesheet = getStylesheet();
@@ -57,7 +64,7 @@ public class FGraphXAdapter extends JGraphXAdapter<Node,Edge> {
         // FR stats
         double frOR = fr.oddsRatio();
         double frP = fr.fisherExactP();
-        
+
         // color the nodes
         selectAll();
         Object[] allCells = getSelectionCells();
@@ -112,14 +119,17 @@ public class FGraphXAdapter extends JGraphXAdapter<Node,Edge> {
                     double strokeWidth = Math.max(1.0, 5.0*(double)graph.getPathCount(e)/(double)graph.getPathCount());
                     setCellStyles("strokeWidth", String.valueOf(strokeWidth), cells);
                 }
-                if (highlightPath!=null && highlightPathEdges.contains(e)) {
-                    // highlight path's edges
-                    if (highlightPath.isCase()) {
-                        setCellStyles("strokeColor", "red", cells);
-                    } else if (highlightPath.isControl()) {
-                        setCellStyles("strokeColor", "green", cells);
-                    } else {
-                        setCellStyles("strokeColor", "black", cells);
+                // highlighted path
+                if (highlightedPath!=null) {
+                    if (highlightedPathEdges.contains(e)) {
+                        if (highlightedPath.isCase()) {
+                            setCellStyles("strokeColor", "red", cells);
+                        } else if (highlightedPath.isControl()) {
+                            setCellStyles("strokeColor", "green", cells);
+                        } else {
+                            setCellStyles("strokeColor", "blue", cells);
+                        }
+                        setCellStyles("strokeWidth", "2.0", cells);
                     }
                 }
             }
@@ -137,10 +147,12 @@ public class FGraphXAdapter extends JGraphXAdapter<Node,Edge> {
             Node n = (Node) c.getValue();
             int pathCount = graph.getPathCount(n);
             double frac = (double)pathCount/(double)graph.getPathCount();
-            String tip = "<html>" +
-                n.genotype+"<br/>" +
-                pathCount+" paths<br/>" +
-                percf.format(frac);
+            String tip = "<html>";
+            if (n.rs!=null) tip += n.rs+"<br/>";
+            tip += n.contig+":"+n.start+"-"+n.end+"<br/>";
+            tip += n.genotype+"<br/>";
+            tip += pathCount+" paths<br/>";
+            tip += percf.format(frac);
             Map<String,Integer> labelCounts = graph.getLabelCounts(n);
             if (labelCounts.containsKey("case") || labelCounts.containsKey("ctrl")) {
                 int caseCounts = 0;
@@ -150,7 +162,7 @@ public class FGraphXAdapter extends JGraphXAdapter<Node,Edge> {
                 if (labelCounts.containsKey("case")) caseCounts = labelCounts.get("case");
                 if (labelCounts.containsKey("ctrl")) ctrlCounts = labelCounts.get("ctrl");
                 tip += "<br/>"+caseCounts+"/"+ctrlCounts+"<br/>" +
-                    "OR="+orf.format(or)+"<br/>" +
+                    "lOR="+orf.format(Math.log10(or))+"<br/>" +
                     "p="+pf.format(p);
                 if (fr.containsNode(n)) {
                     // show case|control subpath counts for this node since it's in the FR

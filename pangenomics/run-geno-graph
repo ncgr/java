@@ -12,6 +12,4 @@ GRAPH=$1
 LABELSFILE=$2
 FILECMD=$3
 
-#java -server -Xms1g -Xmx600g -XX:+UseG1GC -XX:+UseStringDeduplication -cp "build/install/fr/lib/*" org.ncgr.pangenomics.genotype.GenotypeGraph -v -g $GRAPH $FILECMD -l $LABELSFILE
-
 java -cp "build/install/fr/lib/*" org.ncgr.pangenomics.genotype.PangenomicGraph -v -g $GRAPH $FILECMD -l $LABELSFILE

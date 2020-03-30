@@ -77,7 +77,7 @@ public class Path extends GraphWalk<Node,Edge> implements Comparable {
      */
     @Override
     public String toString() {
-    	return name+"("+label+")"+getNodes();
+    	return name+"."+label+":"+getNodes();
     }
 
     /**

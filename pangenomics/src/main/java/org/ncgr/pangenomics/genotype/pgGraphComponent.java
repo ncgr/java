@@ -121,7 +121,6 @@ class pgGraphComponent extends mxGraphComponent implements ActionListener, ListS
         }
         sampleList = new JList<String>(sampleLabels);
         sampleList.setLayoutOrientation(JList.VERTICAL);
-        // sampleList.setVisibleRowCount​(1);
         sampleList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         sampleList.addListSelectionListener​(this);
         JScrollPane scrollPane = new JScrollPane(sampleList);

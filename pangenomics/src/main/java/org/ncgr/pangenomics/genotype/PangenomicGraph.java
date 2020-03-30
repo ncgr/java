@@ -82,7 +82,7 @@ public class PangenomicGraph extends DirectedAcyclicGraph<Node,Edge> {
     /**
      * Build this graph from the provided Nodes and sample name collections.
      */
-    void buildGraph(Map<String,String> sampleLabels, List<Node> nodes, Map<String,List<Node>> sampleNodesMap, Map<Node,List<String>> nodeSamplesMap) {
+    public void buildGraph(Map<String,String> sampleLabels, List<Node> nodes, Map<String,List<Node>> sampleNodesMap, Map<Node,List<String>> nodeSamplesMap) {
         this.sampleLabels = sampleLabels;
         paths = new ArrayList<Path>();
         pathNameMap = new HashMap<>();
@@ -125,7 +125,7 @@ public class PangenomicGraph extends DirectedAcyclicGraph<Node,Edge> {
     /**
      * Build this graph from the provided Lists of Nodes and Paths.
      */
-    void buildGraph(List<Node> nodes, List<Path> paths) {
+    public void buildGraph(List<Node> nodes, List<Path> paths) {
         this.paths = paths;
         pathNameMap = new HashMap<>();
         nodeIdMap = new HashMap<>();
@@ -208,7 +208,7 @@ public class PangenomicGraph extends DirectedAcyclicGraph<Node,Edge> {
     /**
      * Build the node paths: the set of paths that run through each node.
      */
-    void buildNodePaths() {
+    public void buildNodePaths() {
 	if (verbose) System.out.print("Building node paths...");
         nodePaths = new HashMap<>();
         // initialize empty paths for each node
