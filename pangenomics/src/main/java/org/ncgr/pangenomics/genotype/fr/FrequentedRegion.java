@@ -300,8 +300,9 @@ class FrequentedRegion implements Comparable {
     }
 
     /**
-     * Return the Fisher's exact test p value for cases vs controls.
-     * NOTE: uses graph.fisherExact, which is computed once.
+     * Return the Fisher's exact test p value for case graph paths vs control graph paths.
+     * NOTE1: this does NOT depend on subpaths support!
+     * NOTE2: uses graph.fisherExact, which is computed once, since sum(cells)=sum(paths).
      *      | support         | non-support        |
      *      |--------------------------------------|
      * case | casePathSupport | casePathNonsupport |
@@ -318,19 +319,16 @@ class FrequentedRegion implements Comparable {
     }
 
     /**
-     * Return the odds ratio for cases vs controls in terms of paths, not subpaths.
-     * 0 = zero case support or full control support
-     * POSITIVE_INFINITY = zero control support or full case support (including full total support)
+     * Return the odds ratio for cases vs controls in terms of subpaths vs. graph paths.
+     * 0 = zero case subpath support, POSITIVE_INFINITY = zero control subpath support
      */
     public double oddsRatio() {
 	int casePaths = graph.getPathCount("case");
 	int ctrlPaths = graph.getPathCount("ctrl");
-	int casePathSupport = getPathSupport("case");
-	int ctrlPathSupport = getPathSupport("ctrl");
-	int casePathNonsupport = casePaths - casePathSupport;
-	int ctrlPathNonsupport = ctrlPaths - ctrlPathSupport;
-        if (ctrlPathSupport>0 && casePathNonsupport>0) {
-            return (double)casePathSupport * (double)ctrlPathNonsupport / ( (double)ctrlPathSupport * (double)casePathNonsupport );
+	int caseSubpathSupport = getSubpathSupport("case");
+	int ctrlSubpathSupport = getSubpathSupport("ctrl");
+        if (ctrlSubpathSupport>0) {
+            return (double)caseSubpathSupport * (double)ctrlPaths / ( (double)ctrlSubpathSupport * (double)casePaths );
         } else {
             return Double.POSITIVE_INFINITY;
         }
