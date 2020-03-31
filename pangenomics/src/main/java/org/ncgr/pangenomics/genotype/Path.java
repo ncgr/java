@@ -73,11 +73,12 @@ public class Path extends GraphWalk<Node,Edge> implements Comparable {
     }
 
     /**
-     * Return a bespoke string representation.
+     * Return a bespoke string representation, using NodeSet.toString() to list the nodes.
      */
     @Override
     public String toString() {
-    	return name+"."+label+":"+getNodes();
+        NodeSet ns = new NodeSet(getNodes());
+    	return name+"."+label+":"+ns.toString();
     }
 
     /**
