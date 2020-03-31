@@ -54,8 +54,8 @@ class FrequentedRegion implements Comparable {
     int support = 0;
 
     // the case and control subpath support of this FR
-    int caseSupport = 0;
-    int ctrlSupport = 0;
+    int caseSubpathSupport = 0;
+    int ctrlSubpathSupport = 0;
 
     // a subpath must satisfy the requirement that it traverses at least a fraction alpha of this.nodes
     double alpha;
@@ -90,8 +90,8 @@ class FrequentedRegion implements Comparable {
         String nodeString = parts[0];
         support = Integer.parseInt(parts[1]);
         if (parts.length>3) {
-            caseSupport = Integer.parseInt(parts[3]);
-            ctrlSupport = Integer.parseInt(parts[4]);
+            caseSubpathSupport = Integer.parseInt(parts[3]);
+            ctrlSubpathSupport = Integer.parseInt(parts[4]);
         }
         this.graph = graph;
         this.nodes = new NodeSet(nodeString);
@@ -183,8 +183,8 @@ class FrequentedRegion implements Comparable {
             subpaths.addAll(supportPaths);
         }
         support = subpaths.size();
-        caseSupport = getLabelSupport("case");
-        ctrlSupport = getLabelSupport("ctrl");
+        caseSubpathSupport = getSubpathSupport("case");
+        ctrlSubpathSupport = getSubpathSupport("ctrl");
     }
 
     /**
@@ -220,7 +220,7 @@ class FrequentedRegion implements Comparable {
     /**
      * Return the support associated with paths with the given label (not subpaths).
      */
-    public int getPathLabelSupport(String label) {
+    public int getPathSupport(String label) {
         int count = 0;
         List<String> countedPaths = new ArrayList<>();
         for (Path subpath : subpaths) {
@@ -235,7 +235,7 @@ class FrequentedRegion implements Comparable {
     /**
      * Return the count of subpaths labeled with the given label. Here multiple subpaths of a path count individually.
      */
-    public int getLabelSupport(String label) {
+    public int getSubpathSupport(String label) {
         int count = 0;
         for (Path subpath : subpaths) {
             if (subpath.label!=null && subpath.label.equals(label)) {
@@ -272,15 +272,15 @@ class FrequentedRegion implements Comparable {
             priority = support;
         } else if (priorityOption.startsWith("1")) {
             if (priorityLabel.equals("case")) {
-                priority = caseSupport - ctrlSupport;
+                priority = caseSubpathSupport - ctrlSubpathSupport;
             } else if (priorityLabel.equals("ctrl")) {
-                priority = ctrlSupport - caseSupport;
+                priority = ctrlSubpathSupport - caseSubpathSupport;
             } else {
                 System.err.println("ERROR: priority label "+priorityLabel+" is not supported by FrequentedRegion.updatePriority().");
                 System.exit(1);
             }
         } else if (priorityOption.startsWith("2")) {
-            priority = Math.abs(caseSupport - ctrlSupport);
+            priority = Math.abs(caseSubpathSupport - ctrlSubpathSupport);
         } else if (priorityOption.startsWith("3")) {
             if (priorityLabel.equals("case")) {
                 priority = (int)(Math.round(Math.log10(oddsRatio())*1000));
@@ -302,36 +302,35 @@ class FrequentedRegion implements Comparable {
     /**
      * Return the Fisher's exact test p value for cases vs controls.
      * NOTE: uses graph.fisherExact, which is computed once.
-     *
-     *      | support         | non-support    |
-     *      |----------------------------------|
-     * case | casePathSupport | caseNonSupport |
-     * ctrl | ctrlPathSupport | ctrlNonSupport |
+     *      | support         | non-support        |
+     *      |--------------------------------------|
+     * case | casePathSupport | casePathNonsupport |
+     * ctrl | ctrlPathSupport | ctrlPathNonsupport |
      */
     public double fisherExactP() {
-        int caseNonSupport = graph.getCasePathCount() - getPathLabelSupport("case");
-        int ctrlNonSupport = graph.getCtrlPathCount() - getPathLabelSupport("ctrl");
-        if (caseNonSupport<0 || ctrlNonSupport<0) {
-            System.err.println(nodes.toString()+":graph.getCasePathCount()="+graph.getCasePathCount()+" caseSupport="+caseSupport);
-            System.err.println(nodes.toString()+":graph.getCtrlPathCount()="+graph.getCtrlPathCount()+" ctrlSupport="+ctrlSupport);
-            System.exit(1);
-        }
-        // DEBUG
-        System.out.println(caseSupport+","+caseNonSupport+","+ctrlSupport+","+ctrlNonSupport);
-        //
-        return graph.fisherExact.getTwoTailedP(caseSupport, caseNonSupport, ctrlSupport, ctrlNonSupport);
+	int casePaths = graph.getPathCount("case");
+	int ctrlPaths = graph.getPathCount("ctrl");
+	int casePathSupport = getPathSupport("case");
+	int ctrlPathSupport = getPathSupport("ctrl");
+	int casePathNonsupport = casePaths - casePathSupport;
+	int ctrlPathNonsupport = ctrlPaths - ctrlPathSupport;
+        return graph.fisherExact.getTwoTailedP(casePathSupport, casePathNonsupport, ctrlPathSupport, ctrlPathNonsupport);
     }
 
     /**
-     * Return the odds ratio for cases vs controls.
+     * Return the odds ratio for cases vs controls in terms of paths, not subpaths.
      * 0 = zero case support or full control support
      * POSITIVE_INFINITY = zero control support or full case support (including full total support)
      */
     public double oddsRatio() {
-        int caseNonSupport = graph.getCasePathCount() - caseSupport;
-        int ctrlNonSupport = graph.getCtrlPathCount() - ctrlSupport;
-        if (ctrlSupport>0 && caseNonSupport>0) {
-            return (double)caseSupport * (double)ctrlNonSupport / ( (double)ctrlSupport * (double)caseNonSupport );
+	int casePaths = graph.getPathCount("case");
+	int ctrlPaths = graph.getPathCount("ctrl");
+	int casePathSupport = getPathSupport("case");
+	int ctrlPathSupport = getPathSupport("ctrl");
+	int casePathNonsupport = casePaths - casePathSupport;
+	int ctrlPathNonsupport = ctrlPaths - ctrlPathSupport;
+        if (ctrlPathSupport>0 && casePathNonsupport>0) {
+            return (double)casePathSupport * (double)ctrlPathNonsupport / ( (double)ctrlPathSupport * (double)casePathNonsupport );
         } else {
             return Double.POSITIVE_INFINITY;
         }
@@ -350,7 +349,7 @@ class FrequentedRegion implements Comparable {
                 for (Path subpath : subpaths) {
                     if (subpath.label!=null) {
                         if (!labelCounts.containsKey(subpath.label)) {
-                            labelCounts.put(subpath.label, getLabelSupport(subpath.label));
+                            labelCounts.put(subpath.label, getSubpathSupport(subpath.label));
                         }
                     }
                 }

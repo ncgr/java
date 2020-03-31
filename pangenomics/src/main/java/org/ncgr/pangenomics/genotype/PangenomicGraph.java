@@ -244,28 +244,6 @@ public class PangenomicGraph extends DirectedAcyclicGraph<Node,Edge> {
     }
 
     /**
-     * Get the count of "case"-labeled paths, if any.
-     */
-    public int getCasePathCount() {
-        if (labelCounts.containsKey("case")) {
-            return labelCounts.get("case");
-        } else {
-            return 0;
-        }
-    }
-
-    /**
-     * Get the count of "ctrl"-labeled paths, if any.
-     */
-    public int getCtrlPathCount() {
-        if (labelCounts.containsKey("ctrl")) {
-            return labelCounts.get("ctrl");
-        } else {
-            return 0;
-        }
-    }
-
-    /**
      * Return the node with the given id, else null.
      */
     public Node getNode(long id) {
@@ -291,6 +269,17 @@ public class PangenomicGraph extends DirectedAcyclicGraph<Node,Edge> {
      */
     public int getPathCount() {
         return paths.size();
+    }
+
+    /**
+     * Get the count of paths with the given label.
+     */
+    public int getPathCount(String label) {
+        if (labelCounts.containsKey(label)) {
+            return labelCounts.get(label);
+        } else {
+            return 0;
+        }
     }
 
     /**

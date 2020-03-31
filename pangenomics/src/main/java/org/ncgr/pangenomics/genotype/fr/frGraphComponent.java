@@ -154,7 +154,7 @@ public class frGraphComponent extends mxGraphComponent implements ActionListener
         frLabels = new String[frKeys.length];
         for (int i=0; i<frKeys.length; i++) {
             FrequentedRegion fr = frequentedRegions.get((String)frKeys[i]);
-            frLabels[i] = fr.nodes.toString()+":"+fr.caseSupport+"/"+fr.ctrlSupport+":"+fr.priority;
+            frLabels[i] = fr.nodes.toString()+":"+fr.caseSubpathSupport+"/"+fr.ctrlSubpathSupport+":"+fr.priority;
         }
         frList = new JList<String>(frLabels);
         frList.setLayoutOrientation(JList.VERTICAL);
@@ -300,7 +300,7 @@ public class frGraphComponent extends mxGraphComponent implements ActionListener
             "<hr/>" +
             "FR "+(current+1)+":<br/>" +
             "size="+fr.nodes.size()+"<br/>" +
-            "support="+fr.caseSupport+"/"+fr.ctrlSupport+"<br/>" +
+            "support="+fr.caseSubpathSupport+"/"+fr.ctrlSubpathSupport+"<br/>" +
             "p="+pf.format(p)+"<br/>" +
             "log10(OR)="+orf.format(Math.log10(or))+"<br/>" +
             "priority="+fr.priority +
