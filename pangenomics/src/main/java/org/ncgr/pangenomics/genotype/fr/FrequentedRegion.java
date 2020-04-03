@@ -282,10 +282,19 @@ class FrequentedRegion implements Comparable {
         } else if (priorityOption.startsWith("2")) {
             priority = Math.abs(caseSubpathSupport - ctrlSubpathSupport);
         } else if (priorityOption.startsWith("3")) {
+            double or = oddsRatio();
             if (priorityLabel.equals("case")) {
-                priority = (int)(Math.round(Math.log10(oddsRatio())*1000));
+                if (or==Double.POSITIVE_INFINITY) {
+                    priority = getSubpathSupport("case")*1000;
+                } else {
+                    priority = (int)(Math.round(Math.log10(or)*1000));
+                }
             } else if (priorityLabel.equals("ctrl")) {
-                priority = -(int)(Math.round(Math.log10(oddsRatio())*1000));
+                if (or==Double.POSITIVE_INFINITY) {
+                    priority = -getSubpathSupport("ctrl")*1000;
+                } else {
+                    priority = -(int)(Math.round(Math.log10(or)*1000));
+                }
             } else {
                 System.err.println("ERROR: priority label "+priorityLabel+" is not supported by FrequentedRegion.updatePriority().");
                 System.exit(1);

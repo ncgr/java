@@ -2,8 +2,6 @@
 ## usage: FrequentedRegion
 ##  -a,--alpha <arg>              starting value of alpha for a scan (can
 ##                                equal alphaend)
-##  -g,--genotype <arg>           which genotype to include (0,1) from the
-##                                input file; -1 to include all [-1]
 ##  -gfa,--gfa                    load from [graph].paths.gfa
 ##  -graph,--graph <arg>          graph name
 ##  -k,--kappa <arg>              starting value of kappa for a scan (can
@@ -25,5 +23,5 @@ alpha=$2
 kappa=$3
 nodes=$4
 
-java -server -Xms100g -Xmx600g -XX:+UseG1GC -XX:+UseStringDeduplication  -cp "build/install/fr/lib/*" org.ncgr.pangenomics.fr.FrequentedRegion \
-     --txt --graph=$graph --alpha=$alpha --kappa=$kappa --priorityoption=0 --nodes=$nodes
+java -cp "build/install/fr/lib/*" org.ncgr.pangenomics.genotype.fr.FrequentedRegion \
+     --txt --graph=$graph --alpha=$alpha --kappa=$kappa --priorityoption=3:case --nodes=$nodes
