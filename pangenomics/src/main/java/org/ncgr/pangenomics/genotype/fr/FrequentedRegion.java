@@ -285,13 +285,13 @@ class FrequentedRegion implements Comparable {
             double or = oddsRatio();
             if (priorityLabel.equals("case")) {
                 if (or==Double.POSITIVE_INFINITY) {
-                    priority = getPathSupport("case")*nodes.size();
+                    priority = getPathSupport("case")*nodes.size()*10;
                 } else {
                     priority = (int)(Math.round(Math.log10(or)*1000));
                 }
             } else if (priorityLabel.equals("ctrl")) {
                 if (or==Double.POSITIVE_INFINITY) {
-                    priority = -getPathSupport("ctrl")*nodes.size();
+                    priority = -getPathSupport("ctrl")*nodes.size()*10;
                 } else {
                     priority = -(int)(Math.round(Math.log10(or)*1000));
                 }
