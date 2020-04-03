@@ -328,16 +328,16 @@ class FrequentedRegion implements Comparable {
     }
 
     /**
-     * Return the odds ratio for cases vs controls in terms of subpaths vs. graph paths.
+     * Return the odds ratio for cases vs controls in terms of supporting paths vs. graph paths.
      * 0 = zero case subpath support, POSITIVE_INFINITY = zero control subpath support
      */
     public double oddsRatio() {
 	int casePaths = graph.getPathCount("case");
 	int ctrlPaths = graph.getPathCount("ctrl");
-	int caseSubpathSupport = getSubpathSupport("case");
-	int ctrlSubpathSupport = getSubpathSupport("ctrl");
-        if (ctrlSubpathSupport>0) {
-            return (double)caseSubpathSupport * (double)ctrlPaths / ( (double)ctrlSubpathSupport * (double)casePaths );
+	int casePathSupport = getPathSupport("case");
+	int ctrlPathSupport = getPathSupport("ctrl");
+        if (ctrlPathSupport>0) {
+            return (double)casePathSupport * (double)ctrlPaths / ( (double)ctrlPathSupport * (double)casePaths );
         } else {
             return Double.POSITIVE_INFINITY;
         }
