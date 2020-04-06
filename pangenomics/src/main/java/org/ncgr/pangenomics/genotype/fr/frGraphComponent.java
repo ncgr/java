@@ -63,8 +63,10 @@ public class frGraphComponent extends mxGraphComponent implements ActionListener
 
     // the JList of FRs
     JList frList;
+    Object[] frKeys;            // the FR map keys for navigating through the FRs
     String[] frLabels;
     int currentFRIndex;
+    FrequentedRegion currentFR; // the current FR being shown
 
     // the JList of sample names and whatnot
     JList sampleList;
@@ -79,12 +81,8 @@ public class frGraphComponent extends mxGraphComponent implements ActionListener
     JLabel infoLabel;
     JLabel nodesLabel;
     ThermometerPlot thermPlot;
-    
-    Object[] frKeys;            // the FR map keys for navigating through the FRs
 
     double scale = 1.0;         // starting zoom scale
-    int current = 0;            // key index of current FR being shown
-    FrequentedRegion currentFR; // the current FR being shown
     
     /**
      * Constructor takes a FGraphXAdapter
@@ -151,39 +149,45 @@ public class frGraphComponent extends mxGraphComponent implements ActionListener
         topPanel.add(emptyLabel1);
         
         // FR selector
+        int maxFRLabelLength = 0;
         frLabels = new String[frKeys.length];
         for (int i=0; i<frKeys.length; i++) {
             FrequentedRegion fr = frequentedRegions.get((String)frKeys[i]);
-            frLabels[i] = fr.nodes.toString()+":"+fr.caseSubpathSupport+"/"+fr.ctrlSubpathSupport+":"+fr.priority;
+            frLabels[i] = (i+1)+":"+fr.nodes.toString()+fr.support+"|"+fr.priority+"|"+orf.format(Math.log10(fr.oddsRatio()));
+            if (frLabels[i].length()>maxFRLabelLength) maxFRLabelLength = frLabels[i].length();
         }
+        int preferredFRXsize = maxFRLabelLength*9;
         frList = new JList<String>(frLabels);
         frList.setLayoutOrientation(JList.VERTICAL);
         frList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         frList.addListSelectionListener(this);
         JScrollPane frScrollPane = new JScrollPane(frList);
         frScrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
-        frScrollPane.setPreferredSize(new Dimension(300, 18));
+        frScrollPane.setPreferredSize(new Dimension(preferredFRXsize, 18));
         c.insets = new Insets(1, 4, 1, 4); // top, left, bottom, right
         gridbag.setConstraints(frScrollPane, c);
         topPanel.add(frScrollPane);
 
         // path selector
+        int maxSampleLabelLength = 0;
         sampleNames = graph.getPathNames();
         String[] sampleLabels = new String[sampleNames.length];
         for (int i=0; i<sampleNames.length; i++) {
             Path p = graph.getPath(sampleNames[i]);
             sampleLabels[i] = sampleNames[i]+" ("+p.label+")";
+            if (sampleLabels[i].length()>maxSampleLabelLength) maxSampleLabelLength = sampleLabels[i].length();
         }
+        int preferredSampleNameXsize = maxSampleLabelLength*9;
         sampleList = new JList<String>(sampleLabels);
         sampleList.setLayoutOrientation(JList.VERTICAL);
         sampleList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         sampleList.addListSelectionListener​(this);
-        JScrollPane sampScrollPane = new JScrollPane(sampleList);
-        sampScrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
-        sampScrollPane.setPreferredSize(new Dimension(128, 18));
+        JScrollPane sampleScrollPane = new JScrollPane(sampleList);
+        sampleScrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
+        sampleScrollPane.setPreferredSize(new Dimension(preferredSampleNameXsize, 18));
         c.insets = new Insets(1, 4, 1, 4); // top, left, bottom, right
-        gridbag.setConstraints(sampScrollPane, c);
-        topPanel.add(sampScrollPane);
+        gridbag.setConstraints(sampleScrollPane, c);
+        topPanel.add(sampleScrollPane);
         
         // zoom buttons
         zoomOutButton = new JButton(MATH_MINUS);
@@ -298,7 +302,7 @@ public class frGraphComponent extends mxGraphComponent implements ActionListener
         }
         infoLabelString +=
             "<hr/>" +
-            "FR "+(current+1)+":<br/>" +
+            "FR "+(currentFRIndex+1)+":<br/>" +
             "size="+fr.nodes.size()+"<br/>" +
             "support="+fr.caseSubpathSupport+"/"+fr.ctrlSubpathSupport+"<br/>" +
             "p="+pf.format(p)+"<br/>" +

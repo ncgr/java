@@ -111,7 +111,7 @@ public class FRViewer {
         FRpriorityComparator frComparator = new FRpriorityComparator(unsortedFRs);
         TreeMap<String,FrequentedRegion> frequentedRegions = new TreeMap<>(frComparator);
         frequentedRegions.putAll(unsortedFRs);
-        
+
         // create the JFrame
         JFrame frame = new JFrame(prefix);
         frame.setPreferredSize(DEFAULT_SIZE);
