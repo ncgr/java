@@ -14,8 +14,6 @@ import java.util.List;
 import java.util.ArrayList;
 import java.util.Map;
 import java.util.HashMap;
-import java.util.Set;
-import java.util.concurrent.ConcurrentSkipListSet;
 
 /**
  * Importer for TXT files [graph].nodes.txt and [graph].paths.txt containing Nodes and Paths.
@@ -91,31 +89,34 @@ public class TXTImporter {
         // read the paths file
         if (verbose) System.out.print("Reading path lines from TXT file...");
         BufferedReader pathsReader = new BufferedReader(new FileReader(pathsFile));
-        ConcurrentSkipListSet<String> lines = new ConcurrentSkipListSet<String>();
+        List<String> lines = new ArrayList<String>();
         while ((line=pathsReader.readLine())!=null) {
             lines.add(line);
         }
         if (verbose) System.out.println("done.");
         // now build the maps in parallel, since each line contains a distinct sample
         if (verbose) System.out.print("Building sample/node maps...");
-        ConcurrentSkipListSet concurrentPaths = new ConcurrentSkipListSet<Path>();
-        lines.parallelStream().forEach(l -> {
-                String[] parts = l.split("\t");
-                String name = parts[0];
-                String label = parts[1];
-                sampleLabels.put(name, label);
-                List<Node> nodeList = new ArrayList<>();
-                for (int i=2; i<parts.length; i++) {
-                    nodeList.add(nodeMap.get(Long.parseLong(parts[i])));
-                }
-                sampleNodesMap.put(name, nodeList);
-                for (Node n : nodeList) {
-                    List<String> nodeSamples = nodeSamplesMap.get(n);
-                    if (nodeSamples==null) nodeSamples = new ArrayList<>();
-                    nodeSamples.add(name);
-                    nodeSamplesMap.put(n, nodeSamples);
-                }
-            });
+	for (String l : lines) {
+	    String[] parts = l.split("\t");
+	    String name = parts[0];
+	    String label = parts[1];
+	    sampleLabels.put(name, label);
+	    List<Node> nodeList = new ArrayList<>();
+	    for (int i=2; i<parts.length; i++) {
+		nodeList.add(nodeMap.get(Long.parseLong(parts[i])));
+	    }
+	    sampleNodesMap.put(name, nodeList);
+	    for (Node n : nodeList) {
+		List<String> nodeSamples;
+		if (nodeSamplesMap.containsKey(n)) {
+		    nodeSamples = nodeSamplesMap.get(n);
+		} else {
+		    nodeSamples = new ArrayList<>();
+		}
+		nodeSamples.add(name);
+		nodeSamplesMap.put(n, nodeSamples);
+	    }
+	}
         if (verbose) System.out.println("done.");
     }
 }
