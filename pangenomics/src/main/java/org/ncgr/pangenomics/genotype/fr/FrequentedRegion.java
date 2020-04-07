@@ -34,7 +34,7 @@ class FrequentedRegion implements Comparable {
         "1:label=label support-other support [case], " +
         "2=|case support-control support|, " +
         "3:label=odds ratio in label's favor [case], " +
-        "4=Fisher's exact test double-sided p value";
+        "4:label=Fisher's exact test double-sided p value [null]";
 
     // static utility stuff
     static DecimalFormat df = new DecimalFormat("0.00");
@@ -264,7 +264,7 @@ class FrequentedRegion implements Comparable {
      *   1:label = label support - other label support
      *   2 = |case support - control support|
      *   3:label = odds ratio in label's favor
-     *   4 = -log10(p) where p = Fisher's exact test double-sided p value
+     *   4:label = -log10(p) where p = Fisher's exact test double-sided p value; label enforces rating only if label-leaning
      */
     void updatePriority() {
         priority = 0;
@@ -291,7 +291,7 @@ class FrequentedRegion implements Comparable {
                     double or = oddsRatio();
                     if (or>1.0) mlog10OR = Math.log10(oddsRatio());
                 }
-                priority = (int)(getPathSupport("case")*nodes.size()*mlog10OR);
+                priority = (int)(nodes.size()*mlog10OR*100);
             } else if (priorityLabel.equals("ctrl")) {
                 if (caseSubpathSupport==0) {
                     mlog10OR = 1.0; // zero case support, treat as if OR=1/10
@@ -300,7 +300,7 @@ class FrequentedRegion implements Comparable {
                     double or = oddsRatio();
                     if (or<1.0) mlog10OR = -Math.log10(or);
                 }
-                priority = (int)(getPathSupport("ctrl")*nodes.size()*mlog10OR);
+                priority = (int)(nodes.size()*mlog10OR*100);
             } else {
                 System.err.println("ERROR: priority label "+priorityLabel+" is not supported by FrequentedRegion.updatePriority().");
                 System.exit(1);
@@ -350,16 +350,14 @@ class FrequentedRegion implements Comparable {
     }
 
     /**
-     * Return the odds ratio for cases vs controls in terms of supporting paths vs. graph paths.
+     * Return the odds ratio for cases vs controls in terms of supporting subpaths vs. graph paths.
      * 0 = zero case subpath support, POSITIVE_INFINITY = zero control subpath support
      */
     public double oddsRatio() {
 	int casePaths = graph.getPathCount("case");
 	int ctrlPaths = graph.getPathCount("ctrl");
-	int casePathSupport = getPathSupport("case");
-	int ctrlPathSupport = getPathSupport("ctrl");
-        if (ctrlPathSupport>0) {
-            return (double)casePathSupport * (double)ctrlPaths / ( (double)ctrlPathSupport * (double)casePaths );
+        if (ctrlSubpathSupport>0) {
+            return (double)caseSubpathSupport * (double)ctrlPaths / ( (double)ctrlSubpathSupport * (double)casePaths );
         } else {
             return Double.POSITIVE_INFINITY;
         }

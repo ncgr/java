@@ -850,10 +850,16 @@ public class PangenomicGraph extends DirectedAcyclicGraph<Node,Edge> {
         HelpFormatter formatter = new HelpFormatter();
         CommandLine cmd;
 
-        Option graphOption = new Option("graph", "graph", true, "name of graph");
+	// REQUIRED parameters
+        Option graphOption = new Option("g", "graph", true, "name of graph");
         graphOption.setRequired(true);
         options.addOption(graphOption);
         //
+        Option labelsOption = new Option("l", "labelfile", true, "tab-delimited file containing one sample<tab>label per line");
+        labelsOption.setRequired(true);
+        options.addOption(labelsOption);
+
+        // EITHER/OR parameters
         Option gfaOption = new Option("gfa", "gfa", false, "load from a vg GFA file");
         gfaOption.setRequired(false);
         options.addOption(gfaOption);
@@ -861,18 +867,11 @@ public class PangenomicGraph extends DirectedAcyclicGraph<Node,Edge> {
         Option txtOption = new Option("txt", "txt", false, "load from previously dumped TXT files");
         txtOption.setRequired(false);
         options.addOption(txtOption);
-        //
+
+        // OPTIONAL PARAMETERS
         Option genotypeOption = new Option("gt", "genotype", true, "which genotype to include (0,1) from the GFA file; -1 to include both (-1)");
         genotypeOption.setRequired(false);
         options.addOption(genotypeOption);
-        //
-        Option labelsOption = new Option("p", "pathlabels", true, "tab-delimited file containing one pathname<tab>label per line");
-        labelsOption.setRequired(false);
-        options.addOption(labelsOption);
-        //
-        Option outputprefixOption = new Option("o", "outputprefix", true, "output file prefix (stdout)");
-        outputprefixOption.setRequired(false);
-        options.addOption(outputprefixOption);
         //
         Option verboseOption = new Option("v", "verbose", false, "verbose output (false)");
         verboseOption.setRequired(false);
@@ -935,8 +934,8 @@ public class PangenomicGraph extends DirectedAcyclicGraph<Node,Edge> {
             File gfaFile = new File(graphName+".paths.gfa");
             graph.importGFA(gfaFile);
             // if a labels file is given, add them to the paths
-            if (cmd.hasOption("pathlabels")) {
-                File labelsFile = new File(cmd.getOptionValue("pathlabels"));
+            if (cmd.hasOption("labelfile")) {
+                File labelsFile = new File(cmd.getOptionValue("labelfile"));
                 graph.readPathLabels(labelsFile);
                 graph.tallyLabelCounts();
             }
@@ -957,15 +956,10 @@ public class PangenomicGraph extends DirectedAcyclicGraph<Node,Edge> {
 
         // output
         if (cmd.hasOption("gfa")) {
-            if (cmd.hasOption("outputprefix")) {
-                // verbosity
-                if (cmd.hasOption("verbose")) graph.printLabelCounts(System.out);
-                // files
-                graph.printAll(cmd.getOptionValue("outputprefix"));
-            } else {
-                // stdout
-                graph.printAll();
-            }
+	    // verbosity
+	    if (cmd.hasOption("verbose")) graph.printLabelCounts(System.out);
+	    // files
+	    graph.printAll(graphName);
         }
     }
 }
