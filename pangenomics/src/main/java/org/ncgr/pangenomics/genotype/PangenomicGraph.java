@@ -401,21 +401,18 @@ public class PangenomicGraph extends DirectedAcyclicGraph<Node,Edge> {
     }
 
     /**
-     * Return the odds ratio for case paths versus control paths that traverse the given node.
-     * 0                 = zero case paths on node or all control paths on node
-     * POSITIVE_INFINITY = zero ctrl paths on node or all case paths on node (including all paths total on node)
+     * Return the odds ratio for case paths versus control paths that traverse the given node
+     * versus total case and control paths.
+     * 0                 = all control paths on node
+     * POSITIVE_INFINITY = all case paths on node
      */
     public double oddsRatio(Node n) {
+        int totalCasePaths = labelCounts.get("case");
+        int totalCtrlPaths = labelCounts.get("ctrl");
         Map<String,Integer> map = getLabelCounts(n);
         int nodeCasePaths = 0; if (map.containsKey("case")) nodeCasePaths = map.get("case");
         int nodeCtrlPaths = 0; if (map.containsKey("ctrl")) nodeCtrlPaths = map.get("ctrl");
-        int otherCasePaths = labelCounts.get("case") - nodeCasePaths;
-        int otherCtrlPaths = labelCounts.get("ctrl") - nodeCtrlPaths;
-        if (nodeCtrlPaths>0 && otherCasePaths>0) {
-            return (double)nodeCasePaths * (double)otherCtrlPaths / ( (double)nodeCtrlPaths * (double)otherCasePaths );
-        } else {
-            return Double.POSITIVE_INFINITY;
-        }
+        return (double)(nodeCasePaths*totalCtrlPaths) / (double)(nodeCtrlPaths*totalCasePaths);
     }
 
     /**

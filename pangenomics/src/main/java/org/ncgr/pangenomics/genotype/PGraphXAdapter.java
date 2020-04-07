@@ -21,8 +21,8 @@ class PGraphXAdapter extends JGraphXAdapter<Node,Edge> {
     static DecimalFormat orf = new DecimalFormat("0.000");
     static DecimalFormat percf = new DecimalFormat("0.0%");
 
-    // in line with standard GWAS value
-    static double P_THRESHOLD = 5.0e-8;
+    
+    static double P_THRESHOLD = 5.0e-8; // standard GWAS value
     static int COLOR_FACTOR = 16;
 
     PangenomicGraph graph;
@@ -74,36 +74,39 @@ class PGraphXAdapter extends JGraphXAdapter<Node,Edge> {
                         double or = graph.oddsRatio(n);
                         double p = graph.fisherExactP(n);
                         // color based on segregation
-                        if (Double.isInfinite(or) && graph.getPathCount(n)==graph.getPathCount()) {
-                            // all paths go through node
+                        if (graph.getPathCount(n)==graph.getPathCount()) {
+                            // all paths go through node, uninteresting
                             setCellStyles("fillColor", "white", cells);
                             setCellStyles("fontColor", "black", cells);
-                        } else if (Double.isInfinite(or) || or>1.0) {
+                        } else if (Double.isInfinite(or)) {
+                            // case-only node
+                            String fillColor = "#FF8080";
+                            setCellStyles("fillColor", fillColor, cells);
+                        } else if (or>1.0) {
                             // case-heavy node
                             double mlog10p = -Math.log10(p);
                             int rInt = Math.min((int)(COLOR_FACTOR*mlog10p), 127) + 128; // full color at COLOR_FACTOR*mlog10p=127
                             String rHex = Integer.toHexString(rInt);
                             String fillColor = "#"+rHex+"8080";
                             setCellStyles("fillColor", fillColor, cells);
-                            if (p<P_THRESHOLD) {
-                                setCellStyles("fontColor", "white", cells);
-                                setCellStyles("fontStyle", String.valueOf(mxConstants.FONT_BOLD), cells);
-                            } else {
-                                setCellStyles("fontColor", "black", cells);
-                            }
-                        } else if (or==0.00 || or<1.0) {
+                        } else if (or==0.00) {
+                            // control-only node
+                            String fillColor = "#8080FF";
+                            setCellStyles("fillColor", fillColor, cells);
+                        } else if (or<1.0) {
                             // control-heavy node
                             double mlog10p = -Math.log10(p);
-                            int gInt = Math.min((int)(COLOR_FACTOR*mlog10p), 127) + 128; // full color at COLOR_FACTOR*mlog10p=127
-                            String gHex = Integer.toHexString(gInt);
-                            String fillColor = "#80"+gHex+"80";
+                            int bInt = Math.min((int)(COLOR_FACTOR*mlog10p), 127) + 128; // full color at COLOR_FACTOR*mlog10p=127
+                            String bHex = Integer.toHexString(bInt);
+                            String fillColor = "#8080"+bHex;
                             setCellStyles("fillColor", fillColor, cells);
-                            if (p<P_THRESHOLD) {
-                                setCellStyles("fontColor", "white", cells);
-                                setCellStyles("fontStyle", String.valueOf(mxConstants.FONT_BOLD), cells);
-                            } else {
-                                setCellStyles("fontColor", "black", cells);
-                            }
+                        }
+                        // bold white letters if significant
+                        if (p<P_THRESHOLD) {
+                            setCellStyles("fontColor", "white", cells);
+                            setCellStyles("fontStyle", String.valueOf(mxConstants.FONT_BOLD), cells);
+                        } else {
+                            setCellStyles("fontColor", "black", cells);
                         }
                     }
                 }

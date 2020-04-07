@@ -19,8 +19,7 @@ import com.mxgraph.view.mxStylesheet;
  */
 public class FGraphXAdapter extends JGraphXAdapter<Node,Edge> {
 
-    // use GWAS standard
-    static final double P_THRESHOLD = 5e-8;
+    static final double P_THRESHOLD = 5e-8; // GWAS standard
     static int COLOR_FACTOR = 16;
     
     static DecimalFormat pf = new DecimalFormat("0.0E0");
@@ -62,7 +61,6 @@ public class FGraphXAdapter extends JGraphXAdapter<Node,Edge> {
         String baseFRStyle = "shape="+mxConstants.SHAPE_RECTANGLE+";fontColor=black;fillColor=#808080;strokeColor=black;gradientColor=none";
 
         // FR stats
-        double frOR = fr.oddsRatio();
         double frP = fr.fisherExactP();
 
         // color the nodes
@@ -74,42 +72,41 @@ public class FGraphXAdapter extends JGraphXAdapter<Node,Edge> {
             if (c.isVertex()) {
                 Node n = (Node) c.getValue();
                 if (c.getEdgeCount()>0) {
+                    double or = graph.oddsRatio(n);
+                    double p = graph.fisherExactP(n);
+                    double mlog10p = -Math.log10(p);
                     if (fr.containsNode(n)) {
-                        // significance decoration
+                        // special cell style for FR nodes
                         setCellStyle(baseFRStyle, cells);
-                        if (frP<P_THRESHOLD) {
-                            if (Double.isInfinite(frOR) || frOR>1.0) {
-                                // case-heavy node
-                                double mlog10p = -Math.log10(frP);
-                                int rInt = Math.min((int)(COLOR_FACTOR*mlog10p), 127) + 128;
-                                String rHex = Integer.toHexString(rInt);
-                                String fillColor = "#"+rHex+"8080";
-                                setCellStyles("fillColor", fillColor, cells); 
-                                setCellStyles("fontColor", "white", cells);
-                                setCellStyles("fontStyle", String.valueOf(mxConstants.FONT_BOLD), cells);
-                            } else if (frOR==0.00 || frOR<1.0) {
-                                // control-heavy node
-                                double mlog10p = -Math.log10(frP);
-                                int gInt = Math.min((int)(COLOR_FACTOR*mlog10p), 127) + 128;
-                                String gHex = Integer.toHexString(gInt);
-                                String fillColor = "#80"+gHex+"80";
-                                setCellStyles("fillColor", fillColor, cells);
-                                setCellStyles("fontColor", "white", cells);
-                                setCellStyles("fontStyle", String.valueOf(mxConstants.FONT_BOLD), cells);
-                            }
-                        }
+                        mlog10p = -Math.log10(frP);
+                    }
+                    if (Double.isInfinite(or)) {
+                        // case-only node
+                        String fillColor = "#FF8080";
+                        setCellStyles("fillColor", fillColor, cells); 
+                    } else if (or>1.0) {
+                        // case-heavy node
+                        int rInt = Math.min((int)(COLOR_FACTOR*mlog10p), 127) + 128;
+                        String rHex = Integer.toHexString(rInt);
+                        String fillColor = "#"+rHex+"8080";
+                        setCellStyles("fillColor", fillColor, cells); 
+                    } else if (or==0.0) {
+                        // control-only node
+                        String fillColor = "#8080FF";
+                        setCellStyles("fillColor", fillColor, cells); 
+                    } else if (or<1.0) {
+                        // control-heavy node
+                        int bInt = Math.min((int)(COLOR_FACTOR*mlog10p), 127) + 128;
+                        String bHex = Integer.toHexString(bInt);
+                        String fillColor = "#8080"+bHex;
+                        setCellStyles("fillColor", fillColor, cells);
+                    }
+                    // bold white letters if significant
+                    if (p<P_THRESHOLD) {
+                        setCellStyles("fontColor", "white", cells);
+                        setCellStyles("fontStyle", String.valueOf(mxConstants.FONT_BOLD), cells);
                     } else {
-                        // just gray or white
-                        double or = graph.oddsRatio(n);
-                        if (Double.isInfinite(or) && graph.getPathCount(n)==graph.getPathCount()) {
-                            // all paths go through node, white
-                            setCellStyles("fillColor", "white", cells);
-                            setCellStyles("fontColor", "black", cells);
-                        } else {
-                            // light gray
-                            setCellStyles("fillColor", "#AAAAAA", cells);
-                            setCellStyles("fontColor", "black", cells);
-                        }
+                        setCellStyles("fontColor", "black", cells);
                     }
                 }
             } else if (c.isEdge()) {

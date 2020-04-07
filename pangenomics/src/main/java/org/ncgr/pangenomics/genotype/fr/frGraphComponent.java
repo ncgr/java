@@ -318,8 +318,8 @@ public class frGraphComponent extends mxGraphComponent implements ActionListener
             thermPlot.setSubrangePaint(ThermometerPlot.CRITICAL, Color.RED);
         } else {
             thermPlot.setSubrangePaint(ThermometerPlot.NORMAL, Color.GRAY);
-            thermPlot.setSubrangePaint(ThermometerPlot.WARNING, Color.GREEN);
-            thermPlot.setSubrangePaint(ThermometerPlot.CRITICAL, Color.GREEN);
+            thermPlot.setSubrangePaint(ThermometerPlot.WARNING, Color.BLUE);
+            thermPlot.setSubrangePaint(ThermometerPlot.CRITICAL, Color.BLUE);
         }
         thermPlot.setDataset(new DefaultValueDataset(fr.priority));
     }
