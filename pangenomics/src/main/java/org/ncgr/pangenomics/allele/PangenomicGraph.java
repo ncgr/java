@@ -840,16 +840,16 @@ public class PangenomicGraph extends DirectedAcyclicGraph<Node,Edge> {
         Option graphOption = new Option("g", "graph", true, "name of graph");
         graphOption.setRequired(true);
         options.addOption(graphOption);
-        //
-        Option labelsOption = new Option("l", "labelfile", true, "tab-delimited file containing one sample<tab>label per line");
-        labelsOption.setRequired(true);
-        options.addOption(labelsOption);
 
-        // EITHER/OR parameters
+        // EITHER
         Option gfaOption = new Option("gfa", "gfa", false, "load from a vg GFA file");
         gfaOption.setRequired(false);
         options.addOption(gfaOption);
         //
+        Option labelsOption = new Option("l", "labelfile", true, "tab-delimited file containing one sample<tab>label per line");
+        labelsOption.setRequired(false);
+        options.addOption(labelsOption);
+        // OR
         Option txtOption = new Option("txt", "txt", false, "load from previously dumped TXT files");
         txtOption.setRequired(false);
         options.addOption(txtOption);

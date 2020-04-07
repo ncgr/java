@@ -1,30 +1,10 @@
 #!/bin/sh
-# usage: PangenomicGraph
-#  -gfa,--gfa                load from a vg GFA file
-#  -graph,--graph <arg>      name of graph
-#  -gt,--genotype <arg>      which genotype to include (0,1) from the GFA
-#                            file; -1 to include both (-1)
-#  -mcn,--mergecommonnodes   merge common adjacent nodes (false)
-#  -o,--outputprefix <arg>   output file prefix (stdout)
-#  -p,--pathlabels <arg>     tab-delimited file containing one
-#                            pathname<tab>label per line
-#  -se,--skipedges           skip adding edges to graph (false)
-#  -snp,--skipnodepaths      skip building list of paths per node (false)
-#  -ss,--skipsequences       skip building sequences of paths (false)
-#  -txt,--txt                load from previously dumped TXT files
-#  -v,--verbose              verbose output (false)
+# usage: GraphViewer
+#  -d,--decorateedges         decorate edges according to the number of
+#                             paths [false]
+#  -g,--graph <arg>           name of graph
+#  -h,--highlightpath <arg>   path to highlight
 
 graph=$1
-labels=$2
 
-## GFA with labels
-java -server -cp "build/install/fr/lib/*" org.ncgr.pangenomics.allele.PangenomicGraph --verbose $3 $4 \
-     --gfa --graph $graph --pathlabels $labels --outputprefix $graph --skipsequences --mergecommonnodes
-
-## GFA without labels
-#java -server -cp "build/install/fr/lib/*" org.ncgr.pangenomics.allele.PangenomicGraph --verbose $3 $4 \
-#     --gfa --graph $graph --outputprefix $graph --skipedges --skipsequences --skipnodepaths
-
-## TXT
-#java -server -cp "build/install/fr/lib/*" org.ncgr.pangenomics.allele.PangenomicGraph --verbose $3 $4 \
-#     --txt --graph $graph --outputprefix $graph --skipedges --skipsequences --skipnodepaths
+java -server -cp "build/install/fr/lib/*" org.ncgr.pangenomics.allele.GraphViewer --graph $1
