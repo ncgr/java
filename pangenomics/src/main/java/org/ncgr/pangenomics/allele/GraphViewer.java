@@ -84,7 +84,7 @@ public class GraphViewer {
      * @param graphName the name of the graph, from which the nodes and paths files will be formed
      * @param highlightPathName the name of a path or paths to be highlighted, if not null
      */
-    private static void createAndShowGUI(String graphName, String highlightPathName, boolean decorateEdges) throws IOException, NullNodeException, NullSequenceException {
+    private static void createAndShowGUI(String graphName, String highlightPathName, boolean decorateEdges) throws IOException {
         String nodesFilename = graphName+".nodes.txt";
         String pathsFilename = graphName+".paths.txt";
         File nodesFile = new File(nodesFilename);

@@ -56,8 +56,8 @@ public class FrequentedRegion implements Comparable {
     int support = 0;
 
     // the case and control subpath support of this FR
-    int caseSupport = 0;
-    int ctrlSupport = 0;
+    int caseSubpathSupport = 0;
+    int ctrlSubpathSupport = 0;
 
     // the average length of the subpath sequences
     double avgLength;
@@ -76,7 +76,7 @@ public class FrequentedRegion implements Comparable {
     /**
      * Construct given a PangenomicGraph, NodeSet and alpha and kappa filter parameters.
      */
-    FrequentedRegion(PangenomicGraph graph, NodeSet nodes, double alpha, int kappa, String priorityOption) throws NullNodeException, NullSequenceException {
+    FrequentedRegion(PangenomicGraph graph, NodeSet nodes, double alpha, int kappa, String priorityOption) { 
         this.graph = graph;
         this.nodes = nodes;
         this.alpha = alpha;
@@ -90,14 +90,14 @@ public class FrequentedRegion implements Comparable {
      * 0                               1       2               3       4       5       6       7
      * [7,9,14,19,103,132,174] 7       3030    21105.00        1582    1448    1554    1.373   2.89E-16
      */
-    FrequentedRegion(PangenomicGraph graph, String frString, double alpha, int kappa, String priorityOption) throws NullNodeException, NullSequenceException {
+    FrequentedRegion(PangenomicGraph graph, String frString, double alpha, int kappa, String priorityOption) {
         String[] parts = frString.split("\t");
         String nodeString = parts[0];
         support = Integer.parseInt(parts[1]);
         avgLength = Double.parseDouble(parts[2]);
         if (parts.length>3) {
-            caseSupport = Integer.parseInt(parts[3]);
-            ctrlSupport = Integer.parseInt(parts[4]);
+            caseSubpathSupport = Integer.parseInt(parts[3]);
+            ctrlSubpathSupport = Integer.parseInt(parts[4]);
         }
         this.graph = graph;
         this.nodes = new NodeSet(nodeString);
@@ -110,7 +110,7 @@ public class FrequentedRegion implements Comparable {
     /**
      * Construct given a PangenomicGraph, NodeSet and Subpaths
      */
-    FrequentedRegion(PangenomicGraph graph, NodeSet nodes, List<Path> subpaths, double alpha, int kappa, String priorityOption) throws NullNodeException, NullSequenceException {
+    FrequentedRegion(PangenomicGraph graph, NodeSet nodes, List<Path> subpaths, double alpha, int kappa, String priorityOption) {
         this.graph = graph;
         this.nodes = nodes;
         this.subpaths = subpaths;
@@ -123,7 +123,7 @@ public class FrequentedRegion implements Comparable {
     /**
      * Construct given a PangenomicGraph, NodeSet and Subpaths and already known support and avgLength
      */
-    FrequentedRegion(PangenomicGraph graph, NodeSet nodes, List<Path> subpaths, double alpha, int kappa, String priorityOption, int support, double avgLength) throws NullNodeException, NullSequenceException {
+    FrequentedRegion(PangenomicGraph graph, NodeSet nodes, List<Path> subpaths, double alpha, int kappa, String priorityOption, int support, double avgLength) {
         this.graph = graph;
         this.nodes = nodes;
         this.subpaths = subpaths;
@@ -138,7 +138,7 @@ public class FrequentedRegion implements Comparable {
     /**
      * Construct given only basic information, used for post-processing. NO GRAPH.
      */
-    FrequentedRegion(NodeSet nodes, List<Path> subpaths, double alpha, int kappa, String priorityOption, int support, double avgLength) throws NullNodeException, NullSequenceException {
+    FrequentedRegion(NodeSet nodes, List<Path> subpaths, double alpha, int kappa, String priorityOption, int support, double avgLength) {
         this.nodes = nodes;
         this.subpaths = subpaths;
         this.alpha = alpha;
@@ -152,7 +152,7 @@ public class FrequentedRegion implements Comparable {
     /**
      * Update the subpaths, average length, priority, etc.
      */
-    void update() throws NullNodeException, NullSequenceException {
+    void update() {
         updateSupport();
         updateAvgLength();
         updatePriorityLabel();
@@ -186,27 +186,39 @@ public class FrequentedRegion implements Comparable {
      * Update the average length of this frequented region's subpath sequences.
      */
     void updateAvgLength() {
-        int totalLength = 0;
-        for (Path subpath : subpaths) {
-            for (Node node : subpath.getNodes()) {
-                totalLength += node.getSequence().length();
+        try {
+            int totalLength = 0;
+            for (Path subpath : subpaths) {
+                for (Node node : subpath.getNodes()) {
+                    totalLength += node.sequence.length();
+                }
             }
+            avgLength = (double)totalLength/(double)subpaths.size();
+        } catch (Exception e) {
+            System.err.println("Exception thrown in FrequentedRegion.updateAvgLength():");
+            System.err.println(e);
+            System.exit(1);
         }
-        avgLength = (double)totalLength/(double)subpaths.size();
     }
 
     /**
      * Update the subpaths and support from the graph paths for the current alpha and kappa values.
      */
-    void updateSupport() throws NullNodeException, NullSequenceException {
-        subpaths = new ArrayList<>();
-        for (Path p : graph.getPaths()) {
-            List<Path> supportPaths = p.computeSupport(nodes, alpha, kappa);
-            subpaths.addAll(supportPaths);
+    void updateSupport() {
+        try {
+            subpaths = new ArrayList<>();
+            for (Path p : graph.getPaths()) {
+                List<Path> supportPaths = p.computeSupport(nodes, alpha, kappa);
+                subpaths.addAll(supportPaths);
+            }
+            support = subpaths.size();
+            caseSubpathSupport = getLabelSupport("case");
+            ctrlSubpathSupport = getLabelSupport("ctrl");
+        } catch (Exception e) {
+            System.err.println("Exception thrown in FrequentedRegion.updateSupport():");
+            System.err.println(e);
+            System.exit(1);
         }
-        support = subpaths.size();
-        caseSupport = getLabelSupport("case");
-        ctrlSupport = getLabelSupport("ctrl");
     }
 
     /**
@@ -240,12 +252,40 @@ public class FrequentedRegion implements Comparable {
     }
 
     /**
+     * Return the support associated with paths with the given label (not subpaths).
+     */
+    public int getPathSupport(String label) {
+        int count = 0;
+        List<String> countedPaths = new ArrayList<>();
+        for (Path subpath : subpaths) {
+            if (!countedPaths.contains(subpath.name) && subpath.label!=null && subpath.label.equals(label)) {
+                countedPaths.add(subpath.name);
+                count++;
+            }
+        }
+        return count;
+    }
+
+    /**
+     * Return the count of subpaths labeled with the given label. Here multiple subpaths of a path count individually.
+     */
+    public int getSubpathSupport(String label) {
+        int count = 0;
+        for (Path subpath : subpaths) {
+            if (subpath.label!=null && subpath.label.equals(label)) {
+                count++;
+            }
+        }
+        return count;
+    }
+
+    /**
      * Return the support associated with the label.
      */
     public int getLabelSupport(String label) {
         int count = 0;
         for (Path subpath : subpaths) {
-            if (subpath.getLabel()!=null && subpath.getLabel().equals(label)) count++;
+            if (subpath.label!=null && subpath.label.equals(label)) count++;
         }
         return count;
     }
@@ -256,8 +296,8 @@ public class FrequentedRegion implements Comparable {
     public int getLabelGenotypeCount(String label, int genotype) {
         int count = 0;
         for (Path subpath : subpaths) {
-            if (subpath.getLabel()!=null) {
-                if (subpath.getLabel().equals(label) && subpath.getGenotype()==genotype) count++;
+            if (subpath.label!=null) {
+                if (subpath.label.equals(label) && subpath.genotype==genotype) count++;
             }
         }
         return count;
@@ -285,64 +325,72 @@ public class FrequentedRegion implements Comparable {
      *   4 = -log10(p) where p = Fisher's exact test double-sided p value
      */
     void updatePriority() {
-        priority = 0;
-        if (priorityOption.startsWith("0")) {
-            priority = support;
-        } else if (priorityOption.startsWith("1")) {
-            if (priorityLabel.equals("case")) {
-                priority = caseSupport - ctrlSupport;
-            } else if (priorityLabel.equals("ctrl")) {
-                priority = ctrlSupport - caseSupport;
+        try {
+            priority = 0;
+            if (priorityOption.startsWith("0")) {
+                priority = support;
+            } else if (priorityOption.startsWith("1")) {
+                if (priorityLabel.equals("case")) {
+                    priority = caseSubpathSupport - ctrlSubpathSupport;
+                } else if (priorityLabel.equals("ctrl")) {
+                    priority = ctrlSubpathSupport - caseSubpathSupport;
+                } else {
+                    System.err.println("ERROR: priority label "+priorityLabel+" is not supported by FrequentedRegion.updatePriority().");
+                    System.exit(1);
+                }
+            } else if (priorityOption.startsWith("2")) {
+                priority = Math.abs(caseSubpathSupport - ctrlSubpathSupport);
+            } else if (priorityOption.startsWith("3")) {
+                if (priorityLabel.equals("case")) {
+                    priority = (int)(Math.round(Math.log10(oddsRatio())*1000));
+                } else if (priorityLabel.equals("ctrl")) {
+                    priority = -(int)(Math.round(Math.log10(oddsRatio())*1000));
+                } else {
+                    System.err.println("ERROR: priority label "+priorityLabel+" is not supported by FrequentedRegion.updatePriority().");
+                    System.exit(1);
+                }
+            } else if (priorityOption.startsWith("4")) {
+                priority = -(int)Math.round(Math.log10(fisherExactP())*100);
             } else {
-                System.err.println("ERROR: priority label "+priorityLabel+" is not supported by FrequentedRegion.updatePriority().");
+                // we've got an unallowed priority key for case/control comparison
+                System.err.println("ERROR: priority option "+priorityOption+" is not supported by FrequentedRegion.updatePriority().");
                 System.exit(1);
             }
-        } else if (priorityOption.startsWith("2")) {
-            priority = Math.abs(caseSupport - ctrlSupport);
-        } else if (priorityOption.startsWith("3")) {
-            if (priorityLabel.equals("case")) {
-                priority = (int)(Math.round(Math.log10(oddsRatio())*1000));
-            } else if (priorityLabel.equals("ctrl")) {
-                priority = -(int)(Math.round(Math.log10(oddsRatio())*1000));
-            } else {
-                System.err.println("ERROR: priority label "+priorityLabel+" is not supported by FrequentedRegion.updatePriority().");
-                System.exit(1);
-            }
-        } else if (priorityOption.startsWith("4")) {
-            priority = -(int)Math.round(Math.log10(fisherExactP())*100);
-        } else {
-            // we've got an unallowed priority key for case/control comparison
-            System.err.println("ERROR: priority option "+priorityOption+" is not supported by FrequentedRegion.updatePriority().");
+        } catch (Exception e) {
+            System.err.println("Exception thrown in FrequentedRegion.updatePriority():");
+            System.err.println(e);
             System.exit(1);
         }
     }
 
     /**
-     * Return the Fisher's exact test p value for cases vs controls.
-     *
-     *      | support     | non-support    |
-     *      |------------------------------|
-     * case | caseSupport | caseNonSupport |
-     * ctrl | ctrlSupport | ctrlNonSupport |
+     * Return the Fisher's exact test p value for case graph paths vs control graph paths.
+     * NOTE1: this does NOT depend on subpaths support!
+     * NOTE2: uses graph.fisherExact, which is computed once, since sum(cells)=sum(paths).
+     *      | support         | non-support        |
+     *      |--------------------------------------|
+     * case | casePathSupport | casePathNonsupport |
+     * ctrl | ctrlPathSupport | ctrlPathNonsupport |
      */
     public double fisherExactP() {
-        int caseNonSupport = graph.getCasePathCount() - caseSupport;
-        int ctrlNonSupport = graph.getCtrlPathCount() - ctrlSupport;
-        int maxSize = caseSupport + caseNonSupport + ctrlSupport + ctrlNonSupport;
-        FisherExact fisherExact = new FisherExact(maxSize);
-        return fisherExact.getTwoTailedP(caseSupport, caseNonSupport, ctrlSupport, ctrlNonSupport);
+	int casePaths = graph.getPathCount("case");
+	int ctrlPaths = graph.getPathCount("ctrl");
+	int casePathSupport = getPathSupport("case");
+	int ctrlPathSupport = getPathSupport("ctrl");
+	int casePathNonsupport = casePaths - casePathSupport;
+	int ctrlPathNonsupport = ctrlPaths - ctrlPathSupport;
+        return graph.fisherExact.getTwoTailedP(casePathSupport, casePathNonsupport, ctrlPathSupport, ctrlPathNonsupport);
     }
 
     /**
-     * Return the odds ratio for cases vs controls.
-     * 0 = zero case support or full control support
-     * POSITIVE_INFINITY = zero control support or full case support (including full total support)
+     * Return the odds ratio for cases vs controls in terms of supporting subpaths vs. graph paths.
+     * 0 = zero case subpath support, POSITIVE_INFINITY = zero control subpath support
      */
     public double oddsRatio() {
-        int caseNonSupport = graph.getCasePathCount() - caseSupport;
-        int ctrlNonSupport = graph.getCtrlPathCount() - ctrlSupport;
-        if (ctrlSupport>0 && caseNonSupport>0) {
-            return (double)caseSupport * (double)ctrlNonSupport / ( (double)ctrlSupport * (double)caseNonSupport );
+	int casePaths = graph.getPathCount("case");
+	int ctrlPaths = graph.getPathCount("ctrl");
+        if (ctrlSubpathSupport>0) {
+            return (double)caseSubpathSupport * (double)ctrlPaths / ( (double)ctrlSubpathSupport * (double)casePaths );
         } else {
             return Double.POSITIVE_INFINITY;
         }
@@ -360,9 +408,9 @@ public class FrequentedRegion implements Comparable {
                 // count the support per label
                 Map<String,Integer> labelCounts = new TreeMap<>();
                 for (Path subpath : subpaths) {
-                    if (subpath.getLabel()!=null) {
-                        if (!labelCounts.containsKey(subpath.getLabel())) {
-                            labelCounts.put(subpath.getLabel(), getLabelSupport(subpath.getLabel()));
+                    if (subpath.label!=null) {
+                        if (!labelCounts.containsKey(subpath.label)) {
+                            labelCounts.put(subpath.label, getLabelSupport(subpath.label));
                         }
                     }
                 }
@@ -417,7 +465,7 @@ public class FrequentedRegion implements Comparable {
     public int countSubpathsOf(Path path) {
         int count = 0;
         for (Path sp : subpaths) {
-            if (sp.getName().equals(path.getName()) && sp.getGenotype()==path.getGenotype()) count++;
+            if (sp.name.equals(path.name) && sp.genotype==path.genotype) count++;
         }
         return count;
     }
@@ -439,7 +487,7 @@ public class FrequentedRegion implements Comparable {
     public int labelCount(String label) {
         int count = 0;
         for (Path sp : subpaths) {
-            if (sp.getLabel().equals(label)) count++;
+            if (sp.label.equals(label)) count++;
         }
         return count;
     }
@@ -504,7 +552,7 @@ public class FrequentedRegion implements Comparable {
     /**
      * Command-line utility gives results for an input cluster of nodes and alpha, kappa and graph.
      */
-    public static void main(String[] args) throws FileNotFoundException, IOException, NullSequenceException, NullNodeException {
+    public static void main(String[] args) throws FileNotFoundException, IOException {
         Options options = new Options();
  
         Option alphaOption = new Option("a", "alpha", true, "starting value of alpha for a scan (can equal alphaend)");

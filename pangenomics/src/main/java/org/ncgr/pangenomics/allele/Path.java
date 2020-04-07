@@ -16,16 +16,15 @@ import org.jgrapht.graph.GraphWalk;
  */
 public class Path extends GraphWalk<Node,Edge> implements Comparable {
 
-    private String name;     // the name identifying this path, a sample or individual
-    private int genotype;    // the genotype identifier for this path: 0 or 1
-    private String label;    // an optional label, like "+1", "-1", "case", "control", "M", "F"
-    private String sequence; // this path's full genomic sequence
+    public String name;     // the name identifying this path, a sample or individual
+    public int genotype;    // the genotype identifier for this path: 0 or 1
+    public String label;    // an optional label, like "+1", "-1", "case", "control", "M", "F"
+    public String sequence; // this path's full genomic sequence
 
     /**
      * Create a path defined by a sequence of nodes; weight=1.0.
      */
-    public Path(Graph<Node,Edge> graph, List<Node> nodeList, boolean skipSequence)
-        throws NullNodeException, NullSequenceException {
+    public Path(Graph<Node,Edge> graph, List<Node> nodeList, boolean skipSequence) {
         super(graph, nodeList, 1.0);
         if (!skipSequence) buildSequence();
     }
@@ -33,8 +32,7 @@ public class Path extends GraphWalk<Node,Edge> implements Comparable {
     /**
      * Create a path defined by a list of nodes as well as identifying info; weight=1.0.
      */
-    public Path(Graph<Node,Edge> graph, List<Node> nodeList, String name, int genotype, boolean skipSequence)
-        throws NullNodeException, NullSequenceException {
+    public Path(Graph<Node,Edge> graph, List<Node> nodeList, String name, int genotype, boolean skipSequence) {
         super(graph, nodeList, 1.0);
         this.name = name;
         this.genotype = genotype;
@@ -44,8 +42,7 @@ public class Path extends GraphWalk<Node,Edge> implements Comparable {
     /**
      * Create a path defined by a sequence of edges; weight=1.0.
      */
-    public Path(Graph<Node,Edge> graph, Node startNode, Node endNode, List<Edge> edgeList, boolean skipSequence)
-        throws NullNodeException, NullSequenceException {
+    public Path(Graph<Node,Edge> graph, Node startNode, Node endNode, List<Edge> edgeList, boolean skipSequence) {
         super(graph, startNode, endNode, edgeList, 1.0);
         if (!skipSequence) buildSequence();
     }
@@ -53,8 +50,7 @@ public class Path extends GraphWalk<Node,Edge> implements Comparable {
     /**
      * Create a path defined by both a sequence of edges and a sequence of nodes; weight=1.0.
      */
-    public Path(Graph<Node,Edge> graph, Node startNode, Node endNode, List<Node> nodeList, List<Edge> edgeList, boolean skipSequence)
-        throws NullNodeException, NullSequenceException {
+    public Path(Graph<Node,Edge> graph, Node startNode, Node endNode, List<Node> nodeList, List<Edge> edgeList, boolean skipSequence) {
         super(graph, startNode, endNode, nodeList, edgeList, 1.0);
         if (!skipSequence) buildSequence();
     }
@@ -62,8 +58,7 @@ public class Path extends GraphWalk<Node,Edge> implements Comparable {
     /**
      * Create a path defined by a list of nodes as well as identifying info; weight=1.0.
      */
-    public Path(Graph<Node,Edge> graph, List<Node> nodeList, String name, int genotype, String label, boolean skipSequence)
-        throws NullNodeException, NullSequenceException {
+    public Path(Graph<Node,Edge> graph, List<Node> nodeList, String name, int genotype, String label, boolean skipSequence) {
         super(graph, nodeList, 1.0);
         this.name = name;
         this.genotype = genotype;
@@ -97,37 +92,9 @@ public class Path extends GraphWalk<Node,Edge> implements Comparable {
             if (thisNodes.size()!=thatNodes.size()) {
                 return thisNodes.size() - thatNodes.size();
             } else {
-                return (int)(thisNodes.get(0).getId() - thatNodes.get(0).getId());
+                return (int)(thisNodes.get(0).id - thatNodes.get(0).id);
             }
         }
-    }
-
-    /**
-     * Set the name.
-     */
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    /**
-     * Get the name.
-     */
-    public String getName() {
-        return name;
-    }
-
-    /**
-     * Set the label.
-     */
-    public void setLabel(String label) {
-        this.label = label;
-    }
-
-    /**
-     * Get the label.
-     */
-    public String getLabel() {
-        return label;
     }
 
     /**
@@ -141,28 +108,7 @@ public class Path extends GraphWalk<Node,Edge> implements Comparable {
      * Return true if the label indicates a "control" path.
      */
     public boolean isControl() {
-        return label.equals("ctrl");
-    }
-
-    /**
-     * Set the genotype.
-     */
-    public void setGenotype(int genotype) {
-        this.genotype = genotype;
-    }
-
-    /**
-     * Get the genotype.
-     */
-    public int getGenotype() {
-        return genotype;
-    }
-
-    /**
-     * Get the sequence.
-     */
-    public String getSequence() {
-        return sequence;
+        return label.equals("ctrl") || label.equals("control");
     }
 
     /**
@@ -202,15 +148,10 @@ public class Path extends GraphWalk<Node,Edge> implements Comparable {
     /**
      * Build this path's sequence from its list of nodes.
      */
-    public void buildSequence() throws NullNodeException, NullSequenceException {
+    public void buildSequence() {
         StringBuilder builder = new StringBuilder();
         for (Node node : getNodes()) {
-	    if (node==null) {
-		throw new NullNodeException("Null node returned by Path.getNodes()!!");
-	    } else if (node.getSequence()==null) {
-		throw new NullSequenceException("Node "+node.getId()+" has no sequence!");
-	    }
-            builder.append(node.getSequence());
+            builder.append(node.sequence);
         }
         sequence = builder.toString();
     }
@@ -221,7 +162,7 @@ public class Path extends GraphWalk<Node,Edge> implements Comparable {
      * @param nr the "right" node
      * @return the subsequence inclusively between nl and nr
      */
-    public String subsequence(Node nl, Node nr) throws NullNodeException, NullSequenceException {
+    public String subsequence(Node nl, Node nr) {
         List<Node> nodeList = getNodes();
         if (!nodeList.contains(nl) || !nodeList.contains(nr)) return "";
         return subpath(nl,nr).sequence;
@@ -233,7 +174,7 @@ public class Path extends GraphWalk<Node,Edge> implements Comparable {
      * @param nr the "right" node
      * @return the Path inclusively between nl and nr
      */
-    public Path subpath(Node nl, Node nr) throws NullNodeException, NullSequenceException {
+    public Path subpath(Node nl, Node nr) {
         List<Node> subnodes = new ArrayList<>();
         List<Node> nodeList = getNodes();
         if (nodeList.contains(nl) && nodeList.contains(nr)) {
@@ -286,7 +227,7 @@ public class Path extends GraphWalk<Node,Edge> implements Comparable {
         s += ":[";
         StringJoiner joiner = new StringJoiner(",");
         for (Node node : getNodes()) {
-            joiner.add(String.valueOf(node.getId()));
+            joiner.add(String.valueOf(node.id));
         }
         s += joiner.toString();
         s += "]";
@@ -301,7 +242,7 @@ public class Path extends GraphWalk<Node,Edge> implements Comparable {
      * @param kappa the insertion parameter = maximum inserted number of nodes
      * @return the set of supporting path segments
      */
-    public List<Path> computeSupport(NodeSet nodes, double alpha, int kappa) throws NullNodeException, NullSequenceException {
+    public List<Path> computeSupport(NodeSet nodes, double alpha, int kappa) {
         // s = the supporting subpaths
         List<Path> s = new ArrayList<>();
         // m = the list of this path's nodes that are in C=nodes

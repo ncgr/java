@@ -47,7 +47,7 @@ public class TXTImporter {
      * @param nodesFile the nodes file (typically [graph].nodes.txt)
      * @param pathsFile the paths file (typically [graph].paths.txt)
      */
-    public void importGraph(Graph<Node,Edge> g, File nodesFile, File pathsFile) throws IOException, NullNodeException, NullSequenceException {
+    public void importGraph(Graph<Node,Edge> g, File nodesFile, File pathsFile) throws IOException {
         if (verbose) System.out.println("Loading graph from "+nodesFile.getName()+" and "+pathsFile.getName());
 
         // read the nodes, storing in a map for path building
@@ -89,13 +89,8 @@ public class TXTImporter {
                 for (int i=2; i<parts.length; i++) {
                     nodeList.add(nodeMap.get(Long.parseLong(parts[i])));
                 }
-                try {
-                    Path path = new Path(g, nodeList, name, genotype, label, skipSequences);
-                    paths.add(path);
-                } catch (Exception e) {
-                    System.err.println(e);
-                    System.exit(1);
-                }
+                Path path = new Path(g, nodeList, name, genotype, label, skipSequences);
+                paths.add(path);
             });
         if (verbose) System.out.println("done.");
 
@@ -135,15 +130,7 @@ public class TXTImporter {
     void buildPathSequences() {
         if (verbose) System.out.print("Building path sequences...");
         paths.parallelStream().forEach(path -> {
-                try {
-                    path.buildSequence();
-                } catch (NullNodeException e) {
-                    System.err.println(e);
-                    System.exit(1);
-                } catch (NullSequenceException e) {
-                    System.err.println(e);
-                    System.exit(1);
-                }
+                path.buildSequence();
             });
         if (verbose) System.out.println("done.");
     }

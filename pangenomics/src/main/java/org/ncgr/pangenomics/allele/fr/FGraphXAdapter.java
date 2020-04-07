@@ -135,7 +135,7 @@ public class FGraphXAdapter extends JGraphXAdapter<Node,Edge> {
         mxCell c = (mxCell) o;
         if (c.isVertex()) {
             Node n = (Node) c.getValue();
-            String seq = n.getSequence();
+            String seq = n.sequence;
             int pathCount = graph.getPathCount(n);
             double frac = (double)pathCount/(double)graph.getPathCount();
             String tip = "<html>" +

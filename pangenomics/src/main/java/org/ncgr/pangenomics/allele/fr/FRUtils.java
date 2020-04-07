@@ -32,8 +32,7 @@ public class FRUtils {
      * 628863.1.case:[18,20,21,23,24,26,27,29,30,33,34]
      * etc.
      */
-    public static HashMap<String,FrequentedRegion> readFrequentedRegions(String inputPrefix, PangenomicGraph graph)
-        throws FileNotFoundException, IOException, NullNodeException, NullSequenceException {
+    public static HashMap<String,FrequentedRegion> readFrequentedRegions(String inputPrefix, PangenomicGraph graph) throws FileNotFoundException, IOException {
         // get alpha, kappa from the input prefix
         double alpha = readAlpha(inputPrefix);
         int kappa = readKappa(inputPrefix);
@@ -44,7 +43,7 @@ public class FRUtils {
         // create a node map for building subpaths
         Map<Long,Node> nodeMap = new HashMap<>();
         for (Node n : graph.getNodes()) {
-            nodeMap.put(n.getId(), n);
+            nodeMap.put(n.id, n);
         }
 
         // build the FRs

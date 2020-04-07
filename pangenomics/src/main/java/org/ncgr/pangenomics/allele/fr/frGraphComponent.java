@@ -335,7 +335,7 @@ public class frGraphComponent extends mxGraphComponent implements ActionListener
             "FR "+(current+1)+":<br/>" +
             "size="+fr.nodes.size()+"<br/>" +
             "avgLen="+df.format(fr.avgLength)+"<br/>" +
-            "support="+fr.caseSupport+"/"+fr.ctrlSupport+"<br/>" +
+            "support="+fr.caseSubpathSupport+"/"+fr.ctrlSubpathSupport+"<br/>" +
             "p="+pf.format(p)+"<br/>" +
             "O.R.="+orf.format(or)+"<br/>" +
             "priority="+fr.priority +

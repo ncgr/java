@@ -79,8 +79,7 @@ public class FRFinder {
     /**
      * Construct with the output from a previous run. Be sure to set minSup, minSize, minLen filters as needed before running postprocess().
      */
-    public FRFinder(String inputPrefix) throws FileNotFoundException, IOException,
-                                               NullNodeException, NullSequenceException, NoNodesException {
+    public FRFinder(String inputPrefix) throws FileNotFoundException, IOException {
         initializeParameters();
         parameters = FRUtils.readParameters(inputPrefix); // sets properties from file
         readFrequentedRegions();
@@ -111,8 +110,7 @@ public class FRFinder {
      *                alternatively, `1-alpha` is the fraction of inserted sequence
      * int kappa = maximum insertion: the maximum number of inserted nodes that a supporting path may have.
       */
-    public void findFRs(double alpha, int kappa) throws FileNotFoundException, IOException,
-                                                        NullNodeException, NullSequenceException, NoPathsException, NoNodePathsException {
+    public void findFRs(double alpha, int kappa) throws FileNotFoundException, IOException {
         // initialize log file
         logOut = new PrintStream(formOutputPrefix(alpha, kappa)+".log");
 	printToLog("# Starting findFRs: alpha="+alpha+" kappa="+kappa+
@@ -181,13 +179,8 @@ public class FRFinder {
             nodeSet.parallelStream().forEach(node -> {
                     NodeSet c = new NodeSet();
                     c.add(node);
-                    try {
-                        FrequentedRegion fr = new FrequentedRegion(graph, c, alpha, kappa, getPriorityOption());
-                        allFrequentedRegions.put(c.toString(), fr);
-                    } catch (Exception e) {
-                        System.err.println(e);
-                        System.exit(1);
-                    }
+                    FrequentedRegion fr = new FrequentedRegion(graph, c, alpha, kappa, getPriorityOption());
+                    allFrequentedRegions.put(c.toString(), fr);
                 });
             // add interesting single-node FRs in round 0, since we won't hit them in the loop
             for (FrequentedRegion fr : allFrequentedRegions.values()) {
@@ -248,7 +241,7 @@ public class FRFinder {
                                     // already rejected, bail
                                     rejected = true;
                                 }
-				// reject if not all the required nodes are present
+                                // reject if not all the required nodes are present
                                 if (!rejected && requiredNodes.size()>0) {
                                     for (Node n : requiredNodes) {
                                         if (!frpair.nodes.contains(n)) {
@@ -257,7 +250,7 @@ public class FRFinder {
                                         }
                                     }
                                 }
-				// reject if one of the excluded nodes is present
+                                // reject if one of the excluded nodes is present
                                 if (!rejected && excludedNodes.size()>0) {
                                     for (Node n : excludedNodes) {
                                         if (frpair.nodes.contains(n)) {
@@ -271,15 +264,7 @@ public class FRFinder {
                                     rejectedNodeSets.add(nodesKey);
                                 } else {
                                     // merge this FRPair if not already merged
-                                    if (frpair.merged==null) {
-                                        try {
-                                            // have to catch Exceptions here since in a parallel stream
-                                            if (frpair.merged==null) frpair.merge();
-                                        } catch (Exception e) {
-                                            System.err.println(e);
-                                            System.exit(1);
-                                        }
-                                    }
+                                    if (frpair.merged==null) frpair.merge();
                                     // should we keep this merged FR according to keepOption?
                                     boolean keep = true; // default if keepOption not set
                                     if (getKeepOption().startsWith("subset") && frpair.merged.nodes.size()>=keepOptionValue) {
@@ -539,8 +524,7 @@ public class FRFinder {
     /**
      * Command-line utility
      */
-    public static void main(String[] args) throws FileNotFoundException, IOException,
-                                                  NullNodeException, NullSequenceException, NoNodesException, NoPathsException, NoNodePathsException {
+    public static void main(String[] args) throws FileNotFoundException, IOException {
         Options options = new Options();
         CommandLineParser parser = new DefaultParser();
         HelpFormatter formatter = new HelpFormatter();
@@ -837,7 +821,7 @@ public class FRFinder {
             out.print(path.getNameGenotype());
             // TODO: update these to strings along with fixing the SVM code to handle strings
             String group = "";
-            if (path.getLabel()!=null) group = path.getLabel();
+            if (path.label!=null) group = path.label;
             out.print("\t"+group);
             int c = 0;
             for (FrequentedRegion fr : frequentedRegions.values()) {
@@ -893,7 +877,7 @@ public class FRFinder {
                 c++;
                 out.print(fr.countSubpathsOf(path)+",");
             }
-            out.println(path.getLabel());
+            out.println(path.label);
         }
         out.close();
     }
@@ -964,7 +948,7 @@ public class FRFinder {
      * 628863.1.case:[18,20,21,23,24,26,27,29,30,33,34]
      * etc.
      */
-    void readFrequentedRegions() throws FileNotFoundException, IOException, NullNodeException, NullSequenceException, NoNodesException {
+    void readFrequentedRegions() throws FileNotFoundException, IOException {
         // get alpha, kappa from the input prefix
         double alpha = FRUtils.readAlpha(getInputPrefix());
         int kappa = FRUtils.readKappa(getInputPrefix());
@@ -976,7 +960,7 @@ public class FRFinder {
         // create a node map for building subpaths
         Map<Long,Node> nodeMap = new HashMap<>();
         for (Node n : graph.getNodes()) {
-            nodeMap.put(n.getId(), n);
+            nodeMap.put(n.id, n);
         }
 	// build the FRs
         frequentedRegions = new ConcurrentHashMap<>();

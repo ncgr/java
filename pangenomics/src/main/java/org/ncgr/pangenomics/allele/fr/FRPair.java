@@ -44,7 +44,7 @@ public class FRPair implements Comparable {
      * Construct from an FRPair.toString() line
      * [15] 1 1 66.00 1 0 0 ∞ 1.000E0;[2,5] 2 12 34.33 12 0 122 ∞ 6.041E-2;
      */
-    FRPair(String line, PangenomicGraph graph, double alpha, int kappa, String priorityOption, boolean alphaSatisfied) throws NullNodeException, NullSequenceException {
+    FRPair(String line, PangenomicGraph graph, double alpha, int kappa, String priorityOption, boolean alphaSatisfied) {
         String[] parts = line.split(";");
         fr1 = new FrequentedRegion(graph, parts[0], alpha, kappa, priorityOption);
         fr2 = new FrequentedRegion(graph, parts[1], alpha, kappa, priorityOption);
@@ -60,7 +60,7 @@ public class FRPair implements Comparable {
     /**
      * Algorithm 2 from Cleary, et al. returns the supporting path segments for the given merge of FRs.
      */
-    public void merge() throws NullNodeException, NullSequenceException {
+    public void merge() {
         merged = new FrequentedRegion(graph, NodeSet.merge(fr1.nodes,fr2.nodes), alpha, kappa, priorityOption);
     }
 

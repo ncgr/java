@@ -165,16 +165,8 @@ public class GFAImporter implements GraphImporter<Node,Edge> {
             String[] parts = pathName.split(":"); // separate out the genotype
             String name = parts[0];
             int genotype = Integer.parseInt(parts[1]);
-            try {
-                Path path = new Path(g, nodeList, name, genotype, skipSequences);
-                paths.add(path);
-            } catch (NullNodeException e) {
-                System.err.println(e);
-                System.exit(1);
-            } catch (NullSequenceException e) {
-                System.err.println(e);
-                System.exit(1);
-            }                    
+            Path path = new Path(g, nodeList, name, genotype, skipSequences);
+            paths.add(path);
         }
         if (verbose && skipSequences) System.out.println("# Skipped building path sequences");
 
@@ -203,15 +195,7 @@ public class GFAImporter implements GraphImporter<Node,Edge> {
     void buildPathSequences() {
         if (verbose) System.out.println("Building path sequences...");
         paths.parallelStream().forEach(path -> {
-                try {
-                    path.buildSequence();
-                } catch (NullNodeException e) {
-                    System.err.println(e);
-                    System.exit(1);
-                } catch (NullSequenceException e) {
-                    System.err.println(e);
-                    System.exit(1);
-                }
+                path.buildSequence();
             });
     }
 

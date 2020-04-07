@@ -141,7 +141,7 @@ class PGraphXAdapter extends JGraphXAdapter<Node,Edge> {
         mxCell c = (mxCell) o;
         if (c.isVertex()) {
             Node n = (Node) c.getValue();
-            String seq = n.getSequence();
+            String seq = n.sequence;
             int graphPathCount = graph.getPathCount();
             int nodePathCount = graph.getPathCount(n);
             double nodeFrac = (double)nodePathCount/(double)graphPathCount; // MAF

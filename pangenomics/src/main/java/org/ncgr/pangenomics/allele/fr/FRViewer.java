@@ -86,7 +86,7 @@ public class FRViewer {
      *
      * @param prefix the FRFinder run prefix, e.g. HTT-0.1-100
      */
-    public static void createAndShowGUI(String prefix, String highlightPathName, boolean decorateEdges) throws IOException, NullNodeException, NullSequenceException {
+    public static void createAndShowGUI(String prefix, String highlightPathName, boolean decorateEdges) throws IOException {
         String[] pieces = prefix.split("-");
         String graphName = pieces[0];
         double alpha = Double.parseDouble(pieces[1]);
