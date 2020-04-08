@@ -50,6 +50,8 @@ public class VCFImporter {
      * Read the nodes and paths in from a VCF file.
      *
      * 1 877558 rs4372192 C T 71.55 PASS AC=1;AF=4.04e-05;AN=24736;BaseQRankSum=-1.369;CCC=24750;... GT:AD:DP:GQ:PL 0/0:7,0:7:21:0,21,281 0/0:7,0:7:21:0,21,218 ...
+     *
+     * NOTE: non-calls (./.) are treated as a true lack of sequence, i.e. no node is created for that sample at that location.
      */
     public void read(File vcfFile) throws FileNotFoundException, IOException {
         if (verbose) System.out.print("Reading samples and nodes from VCF...");
@@ -68,6 +70,11 @@ public class VCFImporter {
 	for (VariantContext vc : vcfReader) {
 	    for (String sampleName : sampleNameList) {
 		Genotype g = vc.getGenotype(sampleName);
+                if (g.getGenotypeString().equals("./.")) {
+                    // skip non-calls
+                    System.err.println("Skipping non-call for sample "+sampleName+" at "+vc.getContig()+":"+vc.getStart()+"-"+vc.getEnd());
+                    continue;
+                }
                 String nodeString = vc.getContig()+"_"+vc.getStart()+"_"+vc.getEnd()+"_"+g.getGenotypeString();
                 Node n = nodesMap.get(nodeString);
                 if (n==null) {

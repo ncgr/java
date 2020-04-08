@@ -227,23 +227,6 @@ public class PangenomicGraph extends DirectedAcyclicGraph<Node,Edge> {
     }
 
     /**
-     * Remove orphan nodes, nodes which have no edges.
-     */
-    public void removeOrphanNodes() {
-        if (verbose) System.out.print("Removing orphan nodes...");
-        List<Node> removeableNodes = new ArrayList<>();
-        for (Node node : getNodes()) {
-            if (getPathCount(node)==0) {
-                removeableNodes.add(node);
-            }
-        }
-        for (Node node : removeableNodes) {
-            removeVertex(node);
-        }
-        if (verbose) System.out.println(removeableNodes.size()+" removed.");
-    }
-
-    /**
      * Return the node with the given id, else null.
      */
     public Node getNode(long id) {
@@ -606,6 +589,7 @@ public class PangenomicGraph extends DirectedAcyclicGraph<Node,Edge> {
         // populate graph instance vars from parameters
         graph.name = cmd.getOptionValue("graph");
         if (loadVCF) {
+            // VCF load needs separate sample labels load
             graph.vcfFile = new File(graph.name+".vcf.gz");
             graph.labelsFile = new File(cmd.getOptionValue("labelfile"));
             graph.readSampleLabels();
@@ -613,6 +597,7 @@ public class PangenomicGraph extends DirectedAcyclicGraph<Node,Edge> {
             graph.tallyLabelCounts();
         }
         if (loadTXT) {
+            // TXT load pulls sample labels from paths file
             graph.nodesFile = new File(graph.name+".nodes.txt");
             graph.pathsFile = new File(graph.name+".paths.txt");
             graph.loadTXT();

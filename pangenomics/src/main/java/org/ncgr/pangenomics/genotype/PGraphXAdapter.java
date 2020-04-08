@@ -123,9 +123,9 @@ class PGraphXAdapter extends JGraphXAdapter<Node,Edge> {
                         if (highlightedPath.isCase()) {
                             setCellStyles("strokeColor", "red", cells);
                         } else if (highlightedPath.isControl()) {
-                            setCellStyles("strokeColor", "green", cells);
-                        } else {
                             setCellStyles("strokeColor", "blue", cells);
+                        } else {
+                            setCellStyles("strokeColor", "black", cells);
                         }
                         setCellStyles("strokeWidth", "2.0", cells);
                     }
