@@ -285,22 +285,24 @@ class FrequentedRegion implements Comparable {
             double mlog10OR = 0.0;
             if (priorityLabel==null || priorityLabel.equals("case")) {
                 if (ctrlSubpathSupport==0) {
-                    mlog10OR = 1.0; // zero ctrl support, treat like OR=10
+		    // zero ctrl support, treat like OR=1000
+                    mlog10OR = 3.0;
                 } else {
                     // rate only if case-heavy
                     double or = oddsRatio();
                     if (or>1.0) mlog10OR = Math.log10(oddsRatio());
                 }
-                priority = (int)(nodes.size()*mlog10OR*100);
+                priority = (int)(caseSubpathSupport*mlog10OR*10);
             } else if (priorityLabel.equals("ctrl")) {
                 if (caseSubpathSupport==0) {
-                    mlog10OR = 1.0; // zero case support, treat as if OR=1/10
+		    // zero case support, treat as if OR=1/1000
+                    mlog10OR = 3.0;
                 } else {
                     // rate only if ctrl-heavy
                     double or = oddsRatio();
                     if (or<1.0) mlog10OR = -Math.log10(or);
                 }
-                priority = (int)(nodes.size()*mlog10OR*100);
+                priority = (int)(ctrlSubpathSupport*mlog10OR*10);
             } else {
                 System.err.println("ERROR: priority label "+priorityLabel+" is not supported by FrequentedRegion.updatePriority().");
                 System.exit(1);
@@ -310,15 +312,15 @@ class FrequentedRegion implements Comparable {
             if (priorityLabel==null) {
                 // rate all
                 mlog10p = Math.log10(fisherExactP());
-                priority = -(int)Math.round(mlog10p*100);
+                priority = -(int)(mlog10p*100);
             } else if (priorityLabel.equals("case")) {
                 // only rate if case-heavy
                 if (oddsRatio()>1.0) mlog10p = Math.log10(fisherExactP());
-                priority = -(int)Math.round(mlog10p*100);
+                priority = -(int)(mlog10p*100);
             } else if (priorityLabel.equals("ctrl")) {
                 // only rate if ctrl-heavy
                 if (oddsRatio()<1.0) mlog10p = Math.log10(fisherExactP());
-                priority = -(int)Math.round(mlog10p*100);
+                priority = -(int)(mlog10p*100);
             } else {
                 System.err.println("ERROR: priority label "+priorityLabel+" is not supported by FrequentedRegion.updatePriority().");
                 System.exit(1);
