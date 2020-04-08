@@ -70,11 +70,7 @@ public class VCFImporter {
 	for (VariantContext vc : vcfReader) {
 	    for (String sampleName : sampleNameList) {
 		Genotype g = vc.getGenotype(sampleName);
-                if (g.getGenotypeString().equals("./.")) {
-                    // skip non-calls
-                    System.err.println("Skipping non-call for sample "+sampleName+" at "+vc.getContig()+":"+vc.getStart()+"-"+vc.getEnd());
-                    continue;
-                }
+                if (g.getGenotypeString().equals("./.")) continue; // skip non-calls
                 String nodeString = vc.getContig()+"_"+vc.getStart()+"_"+vc.getEnd()+"_"+g.getGenotypeString();
                 Node n = nodesMap.get(nodeString);
                 if (n==null) {
