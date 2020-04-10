@@ -103,16 +103,7 @@ class pgGraphComponent extends mxGraphComponent implements ActionListener, ListS
         JLabel graphLabel = new JLabel(graph.name);
         graphLabel.setFont(graphLabel.getFont().deriveFont(Font.BOLD));
         topPanel.add(graphLabel);
-        // zoom buttons
-        zoomOutButton = new JButton("-");
-        zoomOutButton.setActionCommand("zoomOut");
-        zoomOutButton.addActionListener(this);
-        topPanel.add(zoomOutButton);
-        zoomInButton = new JButton("+");
-        zoomInButton.setActionCommand("zoomIn");
-        zoomInButton.addActionListener(this);
-        topPanel.add(zoomInButton);
-        // path selector
+        // sample path selector
         sampleNames = graph.getPathNames();
         String[] sampleLabels = new String[sampleNames.length];
         for (int i=0; i<sampleNames.length; i++) {
@@ -127,7 +118,16 @@ class pgGraphComponent extends mxGraphComponent implements ActionListener, ListS
         scrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
         scrollPane.setPreferredSize(new Dimension(128, 18));
         topPanel.add(scrollPane);
- 
+        // zoom out button
+        zoomOutButton = new JButton("-");
+        zoomOutButton.setActionCommand("zoomOut");
+        zoomOutButton.addActionListener(this);
+        topPanel.add(zoomOutButton);
+        // zoom in button
+        zoomInButton = new JButton("+");
+        zoomInButton.setActionCommand("zoomIn");
+        zoomInButton.addActionListener(this);
+        topPanel.add(zoomInButton);
         // graph info
         String infoLabelString = graph.getNodes().size()+" nodes "+graph.paths.size()+" paths";
         if (graph.getLabelCounts().get("case")!=null && graph.getLabelCounts().get("ctrl")!=null) {

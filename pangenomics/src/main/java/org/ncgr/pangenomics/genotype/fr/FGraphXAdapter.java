@@ -21,6 +21,11 @@ public class FGraphXAdapter extends JGraphXAdapter<Node,Edge> {
 
     static final double P_THRESHOLD = 5e-8; // GWAS standard
     static int COLOR_FACTOR = 16;
+
+    static String LABEL_COLOR_SIG = "white";
+    static String LABEL_COLOR_NONSIG = "black";
+    static String STROKE_COLOR_HOM = "black";
+    static String STROKE_COLOR_HET = "green";
     
     static DecimalFormat pf = new DecimalFormat("0.0E0");
     static DecimalFormat orf = new DecimalFormat("0.000");
@@ -53,12 +58,13 @@ public class FGraphXAdapter extends JGraphXAdapter<Node,Edge> {
         defaultVertexStyle.put("fillColor", "white");
         defaultVertexStyle.put("fontColor", "black");
         defaultVertexStyle.put("shape", mxConstants.SHAPE_ELLIPSE);
+        defaultVertexStyle.put("spacingTop", "2");
         defaultStylesheet.setDefaultVertexStyle(defaultVertexStyle);
         setStylesheet(defaultStylesheet);
         setAutoSizeCells(true);
         
-        // default case/control styles
-        String baseFRStyle = "shape="+mxConstants.SHAPE_RECTANGLE+";fontColor=black;fillColor=#808080;strokeColor=black;gradientColor=none";
+        // base style for FR nodes
+        String baseFRStyle = "shape=rectangle;fontColor=black;fillColor=#808080;strokeColor=black;strokeWidth=2.0;gradientColor=none;spacingTop=2";
 
         // FR stats
         double frP = fr.fisherExactP();
@@ -74,18 +80,18 @@ public class FGraphXAdapter extends JGraphXAdapter<Node,Edge> {
                 if (c.getEdgeCount()>0) {
                     double or = graph.oddsRatio(n);
                     double p = graph.fisherExactP(n);
-                    double mlog10p = -Math.log10(p);
+                    // special cell style for FR nodes
                     if (fr.containsNode(n)) {
-                        // special cell style for FR nodes
                         setCellStyle(baseFRStyle, cells);
-                        mlog10p = -Math.log10(frP);
                     }
+                    // color cell based on O.R. and p-value
                     if (Double.isInfinite(or)) {
                         // case-only node
                         String fillColor = "#FF8080";
                         setCellStyles("fillColor", fillColor, cells); 
                     } else if (or>1.0) {
                         // case-heavy node
+                        double mlog10p = -Math.log10(p);
                         int rInt = Math.min((int)(COLOR_FACTOR*mlog10p), 127) + 128;
                         String rHex = Integer.toHexString(rInt);
                         String fillColor = "#"+rHex+"8080";
@@ -96,17 +102,25 @@ public class FGraphXAdapter extends JGraphXAdapter<Node,Edge> {
                         setCellStyles("fillColor", fillColor, cells); 
                     } else if (or<1.0) {
                         // control-heavy node
+                        double mlog10p = -Math.log10(p);
                         int bInt = Math.min((int)(COLOR_FACTOR*mlog10p), 127) + 128;
                         String bHex = Integer.toHexString(bInt);
                         String fillColor = "#8080"+bHex;
                         setCellStyles("fillColor", fillColor, cells);
                     }
-                    // bold white letters if significant
+                    // use bold white letters if significant
                     if (p<P_THRESHOLD) {
-                        setCellStyles("fontColor", "white", cells);
+                        setCellStyles("fontColor", LABEL_COLOR_SIG, cells);
                         setCellStyles("fontStyle", String.valueOf(mxConstants.FONT_BOLD), cells);
                     } else {
-                        setCellStyles("fontColor", "black", cells);
+                        setCellStyles("fontColor", LABEL_COLOR_NONSIG, cells);
+                    }
+                    // set border color based on HOM/HET genotype
+                    String[] genotypes = n.genotype.split("/");
+                    if (genotypes[0].equals(genotypes[1])) {
+                        setCellStyles("strokeColor", STROKE_COLOR_HOM, cells);
+                    } else {
+                        setCellStyles("strokeColor", STROKE_COLOR_HET, cells);
                     }
                 }
             } else if (c.isEdge()) {
@@ -161,10 +175,6 @@ public class FGraphXAdapter extends JGraphXAdapter<Node,Edge> {
                 tip += "<br/>"+caseCounts+"/"+ctrlCounts+"<br/>" +
                     "lOR="+orf.format(Math.log10(or))+"<br/>" +
                     "p="+pf.format(p);
-                if (fr.containsNode(n)) {
-                    // show case|control subpath counts for this node since it's in the FR
-                    tip += "<br/>support="+fr.getCaseCount(n)+"/"+fr.getControlCount(n);
-                }
             }
             tip += "</html>";
             return tip;

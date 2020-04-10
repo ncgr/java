@@ -79,7 +79,6 @@ public class frGraphComponent extends mxGraphComponent implements ActionListener
     JButton zoomInButton, zoomOutButton;
     JLabel currentLabel;
     JLabel infoLabel;
-    JLabel nodesLabel;
     ThermometerPlot thermPlot;
 
     double scale = 1.0;         // starting zoom scale
@@ -104,6 +103,9 @@ public class frGraphComponent extends mxGraphComponent implements ActionListener
 
         // load the FR keys into an array to select the chosen FR with an int on action events
         frKeys = frequentedRegions.keySet().toArray();
+
+        // set the current FR to the first one
+        currentFR = frequentedRegions.get((String)frKeys[0]);
 
         // zoom in button -- plus is equals plus shift
         getInputMap().put(KeyStroke.getKeyStroke(KeyEvent.VK_EQUALS,KeyEvent.SHIFT_DOWN_MASK), "zoomIn");
@@ -133,27 +135,22 @@ public class frGraphComponent extends mxGraphComponent implements ActionListener
                     System.exit(0);
                 }
             });
-        
+
         // add a column header with navigation/zoom buttons
         JPanel topPanel = new JPanel();
-        GridBagLayout gridbag = new GridBagLayout();
         topPanel.setBackground(Color.LIGHT_GRAY);
-        topPanel.setLayout(gridbag);
-        
-        GridBagConstraints c = new GridBagConstraints();
 
-        // empty last label
-        JLabel emptyLabel1 = new JLabel("");
-        c.weightx = 1.0;
-        gridbag.setConstraints(emptyLabel1, c);
-        topPanel.add(emptyLabel1);
+        // use a GridBagLayout
+        GridBagLayout gridbag = new GridBagLayout();
+        GridBagConstraints c = new GridBagConstraints();
+        topPanel.setLayout(gridbag);
         
         // FR selector
         int maxFRLabelLength = 0;
         frLabels = new String[frKeys.length];
         for (int i=0; i<frKeys.length; i++) {
             FrequentedRegion fr = frequentedRegions.get((String)frKeys[i]);
-            frLabels[i] = (i+1)+":"+fr.nodes.toString()+fr.support+"|"+fr.priority+"|"+orf.format(Math.log10(fr.oddsRatio()));
+            frLabels[i] = (i+1)+":"+fr.nodes.toString()+" "+fr.support+"  "+orf.format(Math.log10(fr.oddsRatio()))+"  "+fr.priority;
             if (frLabels[i].length()>maxFRLabelLength) maxFRLabelLength = frLabels[i].length();
         }
         int preferredFRXsize = maxFRLabelLength*9;
@@ -168,7 +165,7 @@ public class frGraphComponent extends mxGraphComponent implements ActionListener
         gridbag.setConstraints(frScrollPane, c);
         topPanel.add(frScrollPane);
 
-        // path selector
+        // sample path selector
         int maxSampleLabelLength = 0;
         sampleNames = graph.getPathNames();
         String[] sampleLabels = new String[sampleNames.length];
@@ -189,7 +186,7 @@ public class frGraphComponent extends mxGraphComponent implements ActionListener
         gridbag.setConstraints(sampleScrollPane, c);
         topPanel.add(sampleScrollPane);
         
-        // zoom buttons
+        // zoom out button
         zoomOutButton = new JButton(MATH_MINUS);
         zoomOutButton.setActionCommand("zoomOut");
         zoomOutButton.setFont(zoomOutButton.getFont().deriveFont(Font.BOLD));
@@ -197,6 +194,8 @@ public class frGraphComponent extends mxGraphComponent implements ActionListener
         c.insets = new Insets(1, 4, 1, 4); // top, left, bottom, right
         gridbag.setConstraints(zoomOutButton, c);
         topPanel.add(zoomOutButton);
+        
+        // zoom in button
         zoomInButton = new JButton("+");
         zoomInButton.setActionCommand("zoomIn");
         zoomInButton.setFont(zoomInButton.getFont().deriveFont(Font.BOLD));
@@ -204,34 +203,18 @@ public class frGraphComponent extends mxGraphComponent implements ActionListener
         gridbag.setConstraints(zoomInButton, c);
         topPanel.add(zoomInButton);
 
-        // empty last label
-        JLabel emptyLabel2 = new JLabel("");
-        c.weightx = 1.0;
-        c.gridwidth = GridBagConstraints.REMAINDER; // last
-        gridbag.setConstraints(emptyLabel2, c);
-        topPanel.add(emptyLabel2);
-
-        // label with current FR's nodes on next line
-        nodesLabel = new JLabel("");
-        c.weightx = 0.0;
-        gridbag.setConstraints(nodesLabel, c);
-        topPanel.add(nodesLabel);
-
         // put the top panel on the graph
         setColumnHeaderView(topPanel);
 
-        // set the current FR to the first one
-        currentFR = frequentedRegions.get((String)frKeys[0]);
-        
         // the side panel for information
         JPanel sidePanel = new JPanel();
         sidePanel.setLayout(new GridLayout(2,1));
         sidePanel.setBackground(Color.LIGHT_GRAY);
-
         infoLabel = new JLabel();
         infoLabel.setVerticalAlignment(SwingConstants.TOP);
         sidePanel.add(infoLabel);
 
+        // priority-value thermometer
         thermPlot = new ThermometerPlot();
         thermPlot.setUnits(ThermometerPlot.UNITS_NONE);
         thermPlot.setColumnRadius(10);
@@ -250,8 +233,8 @@ public class frGraphComponent extends mxGraphComponent implements ActionListener
         thermPanel.setMaximumSize(new Dimension(1000,200));
         sidePanel.add(thermPanel);
 
+        // update for the current FR
         updateSidePanel(currentFR, parameters);
-        updateNodesLabel(currentFR);
         
         // put the side panel on the graph
         setRowHeaderView(sidePanel);
@@ -325,13 +308,6 @@ public class frGraphComponent extends mxGraphComponent implements ActionListener
     }
 
     /**
-     * Update the nodes label which shows the current FR's nodes.
-     */
-    public void updateNodesLabel(FrequentedRegion fr) {
-        nodesLabel.setText(fr.nodes.toString());
-    }
-
-    /**
      * Handle FR list and sample list selection changes.
      */
     public void valueChanged(ListSelectionEvent e) {
@@ -348,7 +324,6 @@ public class frGraphComponent extends mxGraphComponent implements ActionListener
                 fgxAdapter = new FGraphXAdapter(graph, currentFR, highlightedPath, decorateEdges);
                 setGraph(fgxAdapter);
                 updateSidePanel(currentFR, parameters);
-                updateNodesLabel(currentFR);
                 executeLayout();
             } else if (e.getSource().equals(sampleList)) {
                 if (firstIndex==currentSampleIndex) {

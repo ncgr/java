@@ -17,10 +17,15 @@ import com.mxgraph.view.mxStylesheet;
  * Extend JGraphXAdapter to customize tooltips, etc.
  */
 class PGraphXAdapter extends JGraphXAdapter<Node,Edge> {
+
     static DecimalFormat pf = new DecimalFormat("0.0E0");
     static DecimalFormat orf = new DecimalFormat("0.000");
     static DecimalFormat percf = new DecimalFormat("0.0%");
 
+    static String LABEL_COLOR_SIG = "white";
+    static String LABEL_COLOR_NONSIG = "black";
+    static String STROKE_COLOR_HOM = "black";
+    static String STROKE_COLOR_HET = "green";
     
     static double P_THRESHOLD = 5.0e-8; // standard GWAS value
     static int COLOR_FACTOR = 16;
@@ -53,6 +58,7 @@ class PGraphXAdapter extends JGraphXAdapter<Node,Edge> {
         defaultVertexStyle.put("fillColor", "white");
         defaultVertexStyle.put("fontColor", "black");
         defaultVertexStyle.put("shape", mxConstants.SHAPE_ELLIPSE);
+        defaultVertexStyle.put("spacingTop", "2");
         defaultStylesheet.setDefaultVertexStyle(defaultVertexStyle);
         // apply the default stylesheet
         setStylesheet(defaultStylesheet);
@@ -103,10 +109,17 @@ class PGraphXAdapter extends JGraphXAdapter<Node,Edge> {
                         }
                         // bold white letters if significant
                         if (p<P_THRESHOLD) {
-                            setCellStyles("fontColor", "white", cells);
+                            setCellStyles("fontColor", LABEL_COLOR_SIG, cells);
                             setCellStyles("fontStyle", String.valueOf(mxConstants.FONT_BOLD), cells);
                         } else {
-                            setCellStyles("fontColor", "black", cells);
+                            setCellStyles("fontColor", LABEL_COLOR_NONSIG, cells);
+                        }
+                        // set border color based on HOM/HET genotype
+                        String[] genotypes = n.genotype.split("/");
+                        if (genotypes[0].equals(genotypes[1])) {
+                            setCellStyles("strokeColor", STROKE_COLOR_HOM, cells);
+                        } else {
+                            setCellStyles("strokeColor", STROKE_COLOR_HET, cells);
                         }
                     }
                 }
