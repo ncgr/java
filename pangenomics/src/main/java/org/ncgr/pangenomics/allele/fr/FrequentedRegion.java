@@ -168,15 +168,15 @@ public class FrequentedRegion implements Comparable {
     }
 
     /**
-     * Comparison is based on priority, then node size (favoring smaller) and then nodes.
+     * Comparison is based on priority, then support, then just the nodes.
      */
     @Override
     public int compareTo(Object o) {
 	FrequentedRegion that = (FrequentedRegion) o;
         if (this.priority!=that.priority) {
             return this.priority - that.priority;
-        } else if (this.nodes.size()!=that.nodes.size()) {
-            return -(this.nodes.size() - that.nodes.size());
+        } else if (this.support!=that.support) {
+            return this.support - that.support;
         } else {
             return this.nodes.compareTo(that.nodes);
         }
