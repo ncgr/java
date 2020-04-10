@@ -73,6 +73,10 @@ public class FrequentedRegion implements Comparable {
     String priorityOption;
     String priorityLabel;
 
+    // store odds ratio and p-value here so only computed once
+    double orValue = Double.NEGATIVE_INFINITY;
+    double pValue = Double.NEGATIVE_INFINITY;
+
     /**
      * Construct given a PangenomicGraph, NodeSet and alpha and kappa filter parameters.
      */
@@ -147,6 +151,22 @@ public class FrequentedRegion implements Comparable {
         this.avgLength = avgLength;
         this.priorityOption = priorityOption;
         update();
+    }
+
+    /**
+     * Construct given the basic information from an FR file dump.
+     */
+    FrequentedRegion(NodeSet nodes, double alpha, int kappa, int support, double avgLength, int caseSubpathSupport, int ctrlSubpathSupport, double orValue, double pValue, int priority) {
+        this.nodes = nodes;
+        this.alpha = alpha;
+        this.kappa = kappa;
+        this.support = support;
+        this.avgLength = avgLength;
+        this.caseSubpathSupport = caseSubpathSupport;
+        this.ctrlSubpathSupport = ctrlSubpathSupport;
+        this.orValue = orValue;
+        this.pValue = pValue;
+        this.priority = priority;
     }
 
     /**
@@ -373,13 +393,16 @@ public class FrequentedRegion implements Comparable {
      * ctrl | ctrlPathSupport | ctrlPathNonsupport |
      */
     public double fisherExactP() {
-	int casePaths = graph.getPathCount("case");
-	int ctrlPaths = graph.getPathCount("ctrl");
-	int casePathSupport = getPathSupport("case");
-	int ctrlPathSupport = getPathSupport("ctrl");
-	int casePathNonsupport = casePaths - casePathSupport;
-	int ctrlPathNonsupport = ctrlPaths - ctrlPathSupport;
-        return graph.fisherExact.getTwoTailedP(casePathSupport, casePathNonsupport, ctrlPathSupport, ctrlPathNonsupport);
+        if (pValue==Double.NEGATIVE_INFINITY) {
+            int casePaths = graph.getPathCount("case");
+            int ctrlPaths = graph.getPathCount("ctrl");
+            int casePathSupport = getPathSupport("case");
+            int ctrlPathSupport = getPathSupport("ctrl");
+            int casePathNonsupport = casePaths - casePathSupport;
+            int ctrlPathNonsupport = ctrlPaths - ctrlPathSupport;
+            pValue = graph.fisherExact.getTwoTailedP(casePathSupport, casePathNonsupport, ctrlPathSupport, ctrlPathNonsupport);
+        }
+        return pValue;
     }
 
     /**
@@ -387,13 +410,16 @@ public class FrequentedRegion implements Comparable {
      * 0 = zero case subpath support, POSITIVE_INFINITY = zero control subpath support
      */
     public double oddsRatio() {
-	int casePaths = graph.getPathCount("case");
-	int ctrlPaths = graph.getPathCount("ctrl");
-        if (ctrlSubpathSupport>0) {
-            return (double)caseSubpathSupport * (double)ctrlPaths / ( (double)ctrlSubpathSupport * (double)casePaths );
-        } else {
-            return Double.POSITIVE_INFINITY;
+        if (orValue==Double.NEGATIVE_INFINITY) {
+            int casePaths = graph.getPathCount("case");
+            int ctrlPaths = graph.getPathCount("ctrl");
+            if (ctrlSubpathSupport>0) {
+                orValue = (double)caseSubpathSupport * (double)ctrlPaths / ( (double)ctrlSubpathSupport * (double)casePaths );
+            } else {
+                orValue = Double.POSITIVE_INFINITY;
+            }
         }
+        return orValue;
     }
 
     /**

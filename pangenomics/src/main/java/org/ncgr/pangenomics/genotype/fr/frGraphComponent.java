@@ -17,7 +17,7 @@ import java.text.DecimalFormat;
 
 import java.util.List;
 import java.util.ArrayList;
-import java.util.Map;
+import java.util.TreeMap;
 import java.util.Properties;
 
 import javax.swing.AbstractAction;
@@ -58,7 +58,7 @@ public class frGraphComponent extends mxGraphComponent implements ActionListener
     // constructor parameters
     PangenomicGraph graph;
     FGraphXAdapter fgxAdapter;
-    Map<String,FrequentedRegion> frequentedRegions;
+    TreeMap<String,FrequentedRegion> frequentedRegions;
     Properties parameters;
 
     // the JList of FRs
@@ -87,7 +87,7 @@ public class frGraphComponent extends mxGraphComponent implements ActionListener
      * Constructor takes a FGraphXAdapter
      */
     frGraphComponent(PangenomicGraph graph, FGraphXAdapter fgxAdapter, boolean decorateEdges,
-                     Map<String,FrequentedRegion> frequentedRegions, Properties parameters) {
+                     TreeMap<String,FrequentedRegion> frequentedRegions, Properties parameters) {
         super(fgxAdapter);
         this.fgxAdapter = fgxAdapter;
         this.graph = graph;

@@ -106,11 +106,8 @@ public class FRViewer {
         graph.buildNodePaths();
         graph.tallyLabelCounts();
 
-        // load the FRs into a sorted map so we see the juicy ones first
-        Map<String,FrequentedRegion> unsortedFRs = FRUtils.readFrequentedRegions(prefix, graph);
-        FRpriorityComparator frComparator = new FRpriorityComparator(unsortedFRs);
-        TreeMap<String,FrequentedRegion> frequentedRegions = new TreeMap<>(frComparator);
-        frequentedRegions.putAll(unsortedFRs);
+        // load the TreeMap of FRs so we see the juicy ones first
+        TreeMap<String,FrequentedRegion> frequentedRegions = FRUtils.readFrequentedRegions(prefix);
 
         // create the JFrame
         JFrame frame = new JFrame(prefix);

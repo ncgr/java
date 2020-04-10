@@ -66,9 +66,6 @@ public class FGraphXAdapter extends JGraphXAdapter<Node,Edge> {
         // base style for FR nodes
         String baseFRStyle = "shape=rectangle;fontColor=black;fillColor=#808080;strokeColor=black;strokeWidth=2.0;gradientColor=none;spacingTop=2";
 
-        // FR stats
-        double frP = fr.fisherExactP();
-
         // color the nodes
         selectAll();
         Object[] allCells = getSelectionCells();
