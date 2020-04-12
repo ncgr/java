@@ -31,10 +31,10 @@ class FrequentedRegion implements Comparable {
 
     static String PRIORITY_OPTIONS =
         "0=total support, " +
-        "1:label=label support-other support [case], " +
+        "1:label=label support-other support [case,ctrl,alt], " +
         "2=|case support-control support|, " +
-        "3:label=odds ratio in label's favor [case], " +
-        "4:label=Fisher's exact test double-sided p value [null]";
+        "3:label=odds ratio in label's favor [case,ctrl,alt], " +
+        "4:label=Fisher's exact test double-sided p value [null,case,ctrl,alt]";
 
     // static utility stuff
     static DecimalFormat df = new DecimalFormat("0.00");
@@ -64,9 +64,9 @@ class FrequentedRegion implements Comparable {
     int kappa;
 
     // the priority and priority option for comparison
-    int priority;
-    String priorityOption;
-    String priorityLabel;
+    int priority;                // the priority metric
+    int priorityOptionKey;       // 0, 1, 2, etc.
+    String priorityOptionLabel;  // label for priority update emphasis, can be null
 
     // the calculated p value and odds ratio (saved when methods called first time)
     double pValue = Double.NEGATIVE_INFINITY;
@@ -75,12 +75,13 @@ class FrequentedRegion implements Comparable {
     /**
      * Construct given a PangenomicGraph, NodeSet and alpha and kappa filter parameters.
      */
-    FrequentedRegion(PangenomicGraph graph, NodeSet nodes, double alpha, int kappa, String priorityOption) {
+    FrequentedRegion(PangenomicGraph graph, NodeSet nodes, double alpha, int kappa, int priorityOptionKey, String priorityOptionLabel) {
         this.graph = graph;
         this.nodes = nodes;
         this.alpha = alpha;
         this.kappa = kappa;
-        this.priorityOption = priorityOption;
+        this.priorityOptionKey = priorityOptionKey;
+        this.priorityOptionLabel = priorityOptionLabel;
         update();
     }
 
@@ -89,7 +90,7 @@ class FrequentedRegion implements Comparable {
      * 0                               1       2               3       4       5       6       7
      * [7,9,14,19,103,132,174] 7       3030    21105.00        1582    1448    1554    1.373   2.89E-16
      */
-    FrequentedRegion(PangenomicGraph graph, String frString, double alpha, int kappa, String priorityOption) {
+    FrequentedRegion(PangenomicGraph graph, String frString, double alpha, int kappa, int priorityOptionKey, String priorityOptionLabel) {
         String[] parts = frString.split("\t");
         String nodeString = parts[0];
         support = Integer.parseInt(parts[1]);
@@ -101,47 +102,51 @@ class FrequentedRegion implements Comparable {
         this.nodes = new NodeSet(nodeString);
         this.alpha = alpha;
         this.kappa = kappa;
-        this.priorityOption = priorityOption;
+        this.priorityOptionKey = priorityOptionKey;
+        this.priorityOptionLabel = priorityOptionLabel;
         update();
     }
 
     /**
      * Construct given a PangenomicGraph, NodeSet and Subpaths
      */
-    FrequentedRegion(PangenomicGraph graph, NodeSet nodes, List<Path> subpaths, double alpha, int kappa, String priorityOption) {
+    FrequentedRegion(PangenomicGraph graph, NodeSet nodes, List<Path> subpaths, double alpha, int kappa, int priorityOptionKey, String priorityOptionLabel) {
         this.graph = graph;
         this.nodes = nodes;
         this.subpaths = subpaths;
         this.alpha = alpha;
         this.kappa = kappa;
-        this.priorityOption = priorityOption;
+        this.priorityOptionKey = priorityOptionKey;
+        this.priorityOptionLabel = priorityOptionLabel;
         update();
     }
 
     /**
      * Construct given a PangenomicGraph, NodeSet and Subpaths and already known support 
      */
-    FrequentedRegion(PangenomicGraph graph, NodeSet nodes, List<Path> subpaths, double alpha, int kappa, String priorityOption, int support) {
+    FrequentedRegion(PangenomicGraph graph, NodeSet nodes, List<Path> subpaths, double alpha, int kappa, int priorityOptionKey, String priorityOptionLabel, int support) {
         this.graph = graph;
         this.nodes = nodes;
         this.subpaths = subpaths;
         this.alpha = alpha;
         this.kappa = kappa;
         this.support = support;
-        this.priorityOption = priorityOption;
+        this.priorityOptionKey = priorityOptionKey;
+        this.priorityOptionLabel = priorityOptionLabel;
         update();
     }
 
     /**
      * Construct given only basic information, used for post-processing. NO GRAPH.
      */
-    FrequentedRegion(NodeSet nodes, List<Path> subpaths, double alpha, int kappa, String priorityOption, int support) {
+    FrequentedRegion(NodeSet nodes, List<Path> subpaths, double alpha, int kappa, int priorityOptionKey, String priorityOptionLabel, int support) {
         this.nodes = nodes;
         this.subpaths = subpaths;
         this.alpha = alpha;
         this.kappa = kappa;
         this.support = support;
-        this.priorityOption = priorityOption;
+        this.priorityOptionKey = priorityOptionKey;
+        this.priorityOptionLabel = priorityOptionLabel;
         update();
     }
 
@@ -165,7 +170,6 @@ class FrequentedRegion implements Comparable {
      */
     void update() {
         updateSupport();
-        updatePriorityLabel();
         updatePriority();
     }
 
@@ -265,88 +269,72 @@ class FrequentedRegion implements Comparable {
     }
 
     /**
-     * Set the label to base label-based priority on.
-     */
-    void updatePriorityLabel() {
-        String[] parts = priorityOption.split(":");
-        if (parts.length>1) {
-            priorityLabel = parts[1];
-        } else {
-            priorityLabel = null;
-        }
-    }
-
-    /**
-     * Get the integer metric used for case vs. control comparisons.
-     * priorityOption:
-     *   0 = total support
-     *   1:label = label support - other label support
-     *   2 = |case support - control support|
-     *   3:label = odds ratio in label's favor
-     *   4:label = -log10(p) where p = Fisher's exact test double-sided p value; label enforces rating only if label-leaning
+     * Update the integer priority metric used for case vs. control comparisons.
      */
     void updatePriority() {
         priority = 0;
-        if (priorityOption.startsWith("0")) {
+        if (priorityOptionKey==0) {
             priority = support;
-        } else if (priorityOption.startsWith("1")) {
-            if (priorityLabel==null || priorityLabel.equals("case")) {
+        } else if (priorityOptionKey==1) {
+            if (priorityOptionLabel.equals("case")) {
+                // favor case support
                 priority = caseSubpathSupport - ctrlSubpathSupport;
-            } else if (priorityLabel.equals("ctrl")) {
+            } else if (priorityOptionLabel.equals("ctrl")) {
+                // favor control support
                 priority = ctrlSubpathSupport - caseSubpathSupport;
             } else {
-                System.err.println("ERROR: priority label "+priorityLabel+" is not supported by FrequentedRegion.updatePriority().");
+                System.err.println("ERROR: priorityOptionLabel="+priorityOptionLabel+" is not supported by FrequentedRegion.updatePriority() with priorityOptionKey="+priorityOptionKey+".");
                 System.exit(1);
             }
-        } else if (priorityOption.startsWith("2")) {
+        } else if (priorityOptionKey==2) {
             priority = Math.abs(caseSubpathSupport - ctrlSubpathSupport);
-        } else if (priorityOption.startsWith("3")) {
+        } else if (priorityOptionKey==3) {
             double mlog10OR = 0.0;
-            if (priorityLabel==null || priorityLabel.equals("case")) {
+            if (priorityOptionLabel.equals("case")) {
+                // rate only if case-heavy
                 if (ctrlSubpathSupport==0) {
 		    // zero ctrl support, treat like OR=1000
                     mlog10OR = 3.0;
                 } else {
-                    // rate only if case-heavy
                     double or = oddsRatio();
                     if (or>1.0) mlog10OR = Math.log10(oddsRatio());
                 }
                 priority = (int)(caseSubpathSupport*mlog10OR*10);
-            } else if (priorityLabel.equals("ctrl")) {
+            } else if (priorityOptionLabel.equals("ctrl")) {
+                // rate only if control-heavy
                 if (caseSubpathSupport==0) {
 		    // zero case support, treat as if OR=1/1000
                     mlog10OR = 3.0;
                 } else {
-                    // rate only if ctrl-heavy
                     double or = oddsRatio();
                     if (or<1.0) mlog10OR = -Math.log10(or);
                 }
                 priority = (int)(ctrlSubpathSupport*mlog10OR*10);
             } else {
-                System.err.println("ERROR: priority label "+priorityLabel+" is not supported by FrequentedRegion.updatePriority().");
+                System.err.println("ERROR: priorityOptionLabel="+priorityOptionLabel+" is not supported by FrequentedRegion.updatePriority() with priorityOptionKey="+priorityOptionKey+".");
                 System.exit(1);
             }
-        } else if (priorityOption.startsWith("4")) {
+        } else if (priorityOptionKey==4) {
             double mlog10p = 0.0;
-            if (priorityLabel==null) {
+            if (priorityOptionLabel==null) {
                 // rate all
                 mlog10p = Math.log10(fisherExactP());
                 priority = -(int)(mlog10p*100);
-            } else if (priorityLabel.equals("case")) {
-                // only rate if case-heavy
+            } else if (priorityOptionLabel.equals("case")) {
+                // rate only if case-heavy
                 if (oddsRatio()>1.0) mlog10p = Math.log10(fisherExactP());
                 priority = -(int)(mlog10p*100);
-            } else if (priorityLabel.equals("ctrl")) {
-                // only rate if ctrl-heavy
+            } else if (priorityOptionLabel.equals("ctrl")) {
+                // rate only if control-heavy
                 if (oddsRatio()<1.0) mlog10p = Math.log10(fisherExactP());
                 priority = -(int)(mlog10p*100);
             } else {
-                System.err.println("ERROR: priority label "+priorityLabel+" is not supported by FrequentedRegion.updatePriority().");
+                System.err.println("ERROR: priorityOptionLabel="+priorityOptionLabel+" is not supported by FrequentedRegion.updatePriority() with priorityOptionKey="+priorityOptionKey+".");
                 System.exit(1);
             }
         } else {
             // we've got an unallowed priority key for case/control comparison
-            System.err.println("ERROR: priority option "+priorityOption+" is not supported by FrequentedRegion.updatePriority().");
+            System.err.println("ERROR: priorityOptionLabel="+priorityOptionLabel+" is not supported by FrequentedRegion.updatePriority() with priorityOptionKey="+priorityOptionKey+".");
             System.exit(1);
         }
     }
@@ -359,6 +347,7 @@ class FrequentedRegion implements Comparable {
      *      |--------------------------------------|
      * case | casePathSupport | casePathNonsupport |
      * ctrl | ctrlPathSupport | ctrlPathNonsupport |
+     * NOTE3: this is calculated only ONCE and stored in pValue.
      */
     public double fisherExactP() {
         if (pValue==Double.NEGATIVE_INFINITY) {
@@ -375,7 +364,8 @@ class FrequentedRegion implements Comparable {
 
     /**
      * Return the odds ratio for cases vs controls in terms of supporting subpaths vs. graph paths.
-     * 0 = zero case subpath support, POSITIVE_INFINITY = zero control subpath support
+     * 0 = zero case subpath support, POSITIVE_INFINITY = zero control subpath support.
+     * NOTE: this is calculated ONCE and stored in orValue.
      */
     public double oddsRatio() {
         if (orValue==Double.NEGATIVE_INFINITY) {
@@ -595,10 +585,23 @@ class FrequentedRegion implements Comparable {
         File labelsFile = null;
         if (cmd.hasOption("pathlabels")) labelsFile = new File(cmd.getOptionValue("pathlabels"));
 
-        // alpha, kappa, priorityOption
+        // alpha, kappa
         double alpha = Double.parseDouble(cmd.getOptionValue("alpha"));
         int kappa = Integer.parseInt(cmd.getOptionValue("kappa"));
+
+        // parse the priorityOption and impose defaults
         String priorityOption = cmd.getOptionValue("priorityoption");
+        String[] parts = priorityOption.split(":");
+        int priorityOptionKey = Integer.parseInt(parts[0]);
+        String priorityOptionLabel = null;
+        if (parts.length>1) {
+            String priorityOptionParameter = parts[1];
+            if (parts[1].equals("case") || parts[1].equals("ctrl")) {
+                priorityOptionLabel = parts[1];
+            }
+        }
+        if (priorityOptionKey==1 && priorityOptionLabel==null) priorityOptionLabel = "case";
+        if (priorityOptionKey==3 && priorityOptionLabel==null) priorityOptionLabel = "case";
         
         // import a PangenomicGraph from the GFA file
         PangenomicGraph pg = new PangenomicGraph();
@@ -611,10 +614,11 @@ class FrequentedRegion implements Comparable {
         System.out.println("# Graph has "+pg.getNodes().size()+" nodes and "+pg.paths.size()+" paths.");
         System.out.println("# Graph has "+pg.getLabelCounts().get("case")+" case paths and "+pg.getLabelCounts().get("ctrl")+" ctrl paths.");
 
+
         // create the FrequentedRegion with this PangenomicGraph
         String nodeString = cmd.getOptionValue("nodes");
         NodeSet nodes = pg.getNodeSet(nodeString);
-        FrequentedRegion fr = new FrequentedRegion(pg, nodes, alpha, kappa, priorityOption);
+        FrequentedRegion fr = new FrequentedRegion(pg, nodes, alpha, kappa, priorityOptionKey, priorityOptionLabel);
 
         // print it out
         System.out.println(fr.columnHeading());

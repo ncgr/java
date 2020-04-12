@@ -41,7 +41,19 @@ public class FRUtils {
         // get alpha, kappa from the input prefix
         double alpha = readAlpha(inputPrefix);
         int kappa = readKappa(inputPrefix);
+        // parse the priorityOption and impose defaults
         String priorityOption = readPriorityOption(inputPrefix);
+        String[] priorityParts = priorityOption.split(":");
+        int priorityOptionKey = Integer.parseInt(priorityParts[0]);
+        String priorityOptionLabel = null;
+        if (priorityParts.length>1) {
+            String priorityOptionParameter = priorityParts[1];
+            if (priorityParts[1].equals("case") || priorityParts[1].equals("ctrl")) {
+                priorityOptionLabel = priorityParts[1];
+            }
+        }
+        if (priorityOptionKey==1 && priorityOptionLabel==null) priorityOptionLabel = "case";
+        if (priorityOptionKey==3 && priorityOptionLabel==null) priorityOptionLabel = "case";
         // get the graph from the nodes and paths files
         File nodesFile = new File(getNodesFilename(inputPrefix));
         File pathsFile = new File(getPathsFilename(inputPrefix));
@@ -96,7 +108,7 @@ public class FRUtils {
                 // add to the subpaths
                 subpaths.add(new Path(graph, subNodes, name, label));
             }
-            FrequentedRegion fr = new FrequentedRegion(graph, nodes, subpaths, alpha, kappa, priorityOption, support);
+            FrequentedRegion fr = new FrequentedRegion(graph, nodes, subpaths, alpha, kappa, priorityOptionKey, priorityOptionLabel, support);
             unsortedFRs.put(fr.nodes.toString(), fr);
         }
         // now sort them in a TreeMap

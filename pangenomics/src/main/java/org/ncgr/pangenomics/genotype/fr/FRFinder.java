@@ -61,7 +61,12 @@ public class FRFinder {
     ConcurrentHashMap<String,FrequentedRegion> frequentedRegions;
 
     // the keepoption value, if there is one after the colon
-    int keepOptionValue;
+    int keepOptionKey;
+
+    // priority option
+    int priorityOptionKey;           // 0, 1, 2, etc.
+    String priorityOptionLabel;      // the current label for priority update emphasis: "case" or "ctrl"
+    String priorityOptionParameter;  // parameter for priority update emphasis, can be null or "alt" or "case" or "ctrl"
     
     // diagnostics
     long clockTime;
@@ -146,7 +151,7 @@ public class FRFinder {
             while ((line=sfrReader.readLine())!=null) {
                 String[] parts = line.split("\t");
                 NodeSet nodes = graph.getNodeSet(parts[0]);
-                allFrequentedRegions.put(nodes.toString(), new FrequentedRegion(graph, nodes, alpha, kappa, getPriorityOption()));
+                allFrequentedRegions.put(nodes.toString(), new FrequentedRegion(graph, nodes, alpha, kappa, priorityOptionKey, priorityOptionLabel));
             }
 	    // rejectedNodeSets
 	    BufferedReader rnsReader = new BufferedReader(new FileReader(getGraphName()+"."+REJECTED_NODESETS_SAVE));
@@ -156,13 +161,12 @@ public class FRFinder {
             // frequentedRegions
 	    // 0                                                                                                1   2         3  4       
 	    // [1353,1355,1356,1357,1359,1360,1361,1363,1364,1366,1367,1368,...,1463,1464,1465,1467,1468,1469]	27  18621.00  1	 26
-	    
             BufferedReader frReader = new BufferedReader(new FileReader(getGraphName()+"."+FREQUENTED_REGIONS_SAVE));
 	    line = frReader.readLine(); // header
             while ((line=frReader.readLine())!=null) {
                 String[] parts = line.split("\t");
                 NodeSet nodes = graph.getNodeSet(parts[0]);
-                frequentedRegions.put(nodes.toString(), new FrequentedRegion(graph, nodes, alpha, kappa, getPriorityOption()));
+                frequentedRegions.put(nodes.toString(), new FrequentedRegion(graph, nodes, alpha, kappa, priorityOptionKey, priorityOptionLabel));
                 round++; // increment round so we start where we left off
             }
 	    // informativationalism
@@ -177,7 +181,7 @@ public class FRFinder {
                     NodeSet c = new NodeSet();
                     c.add(node);
                     try {
-                        FrequentedRegion fr = new FrequentedRegion(graph, c, alpha, kappa, getPriorityOption());
+                        FrequentedRegion fr = new FrequentedRegion(graph, c, alpha, kappa, priorityOptionKey, priorityOptionLabel);
                         allFrequentedRegions.put(c.toString(), fr);
                     } catch (Exception e) {
                         System.err.println(e);
@@ -201,7 +205,7 @@ public class FRFinder {
         }
 
         // add the required nodes to allFrequentedRegions
-        FrequentedRegion requiredFR = new FrequentedRegion(graph, requiredNodes, alpha, kappa, getPriorityOption());
+        FrequentedRegion requiredFR = new FrequentedRegion(graph, requiredNodes, alpha, kappa, priorityOptionKey, priorityOptionLabel);
         allFrequentedRegions.put(requiredFR.nodes.toString(), requiredFR);
         if (isInteresting(requiredFR)) {
             frequentedRegions.put(requiredFR.nodes.toString(), requiredFR);
@@ -230,7 +234,7 @@ public class FRFinder {
                     allFrequentedRegions.entrySet().parallelStream().forEach(entry2 -> {
                             FrequentedRegion fr2 = entry2.getValue();
                             if (fr2.nodes.compareTo(fr1.nodes)>0) {
-                                FRPair frpair = new FRPair(fr1, fr2);
+                                FRPair frpair = new FRPair(fr1, fr2, priorityOptionKey, priorityOptionLabel);
                                 String nodesKey = frpair.nodes.toString();
                                 boolean rejected = false;
                                 if (frequentedRegions.containsKey(nodesKey)) {
@@ -273,7 +277,7 @@ public class FRFinder {
                                     }
                                     // should we keep this merged FR according to keepOption?
                                     boolean keep = true; // default if keepOption not set
-                                    if (getKeepOption().startsWith("subset") && frpair.merged.nodes.size()>=keepOptionValue) {
+                                    if (getKeepOption().startsWith("subset") && frpair.merged.nodes.size()>=keepOptionKey) {
                                         // keep FRs that are subsets of others or have higher priority
                                         for (FrequentedRegion frOld : frequentedRegions.values()) {
                                             if (frpair.merged.nodes.isSupersetOf(frOld.nodes) && frpair.merged.priority<=frOld.priority) {
@@ -282,9 +286,9 @@ public class FRFinder {
                                             }
                                         }
                                     } else if (getKeepOption().startsWith("distance")) {
-                                        // keep FRs that are at least a distance of keepOptionValue away from others or have higher priority
+                                        // keep FRs that are at least a distance of keepOptionKey away from others or have higher priority
                                         for (FrequentedRegion frOld : frequentedRegions.values()) {
-                                            if (frpair.merged.nodes.distanceFrom(frOld.nodes)<keepOptionValue && frpair.merged.priority<=frOld.priority) {
+                                            if (frpair.merged.nodes.distanceFrom(frOld.nodes)<keepOptionKey && frpair.merged.priority<=frOld.priority) {
                                                 keep = false;
                                                 break;
                                             }
@@ -314,6 +318,8 @@ public class FRFinder {
                     allFrequentedRegions.put(fr.nodes.toString(), fr);
                     frequentedRegions.put(fr.nodes.toString(), fr);
                     oldPriority = fr.priority;
+                    // toggle priorityOptionLabel for next round if so desired
+                    if (priorityOptionParameter.equals("alt")) togglePriorityOptionLabel();
                     // output this FR
                     printToLog(round+":"+fr);
                 } else {
@@ -461,6 +467,7 @@ public class FRFinder {
     }
     public void setPriorityOption(String priorityOption) {
         parameters.setProperty("priorityOption", priorityOption);
+        parsePriorityOption(priorityOption);
     }
     public void setResume() {
         parameters.setProperty("resume", "true");
@@ -494,11 +501,11 @@ public class FRFinder {
         if (keepOption.startsWith("subset") || keepOption.startsWith("distance")) {
             String[] parts = keepOption.split(":");
             if (parts.length==2) {
-                keepOptionValue = Integer.parseInt(parts[1]);
+                keepOptionKey = Integer.parseInt(parts[1]);
             } else if (keepOption.equals("subset")) {
-                keepOptionValue = 3; // default
+                keepOptionKey = 3; // default
             } else if (keepOption.equals("distance")) {
-                keepOptionValue = 2; // default
+                keepOptionKey = 2; // default
             }
         } else {
             System.err.println("ERROR: allowed keepoption values are: subset[:N]|distance[:N]");
@@ -941,11 +948,10 @@ public class FRFinder {
                 // add to the subpaths
                 subpaths.add(new Path(graph, subNodes, name, label));
             }
-            FrequentedRegion fr = new FrequentedRegion(nodes, subpaths, alpha, kappa, getPriorityOption(), support);
+            FrequentedRegion fr = new FrequentedRegion(nodes, subpaths, alpha, kappa, priorityOptionKey, priorityOptionLabel, support);
             frequentedRegions.put(fr.nodes.toString(), fr);
         }
     }
-
 
     /**
      * Form an outputPrefix with given alpha and kappa.
@@ -971,5 +977,36 @@ public class FRFinder {
      */
     boolean isInteresting(FrequentedRegion fr) {
         return fr.support>=getMinSup() && fr.nodes.size()>=getMinSize() && fr.priority>=getMinPriority();
+    }
+
+    /**
+     * Toggle the current priority option label between "case" and "ctrl"; used with "alt" priority option parameter.
+     */
+    void togglePriorityOptionLabel() {
+        if (priorityOptionLabel==null || priorityOptionLabel.equals("case")) {
+            priorityOptionLabel = "ctrl";
+        } else {
+            priorityOptionLabel = "case";
+        }
+    }
+
+    /**
+     * Parse out the priority option key and parameter like "case", "ctrl", "alt", plus set the label if needed.
+     */
+    void parsePriorityOption(String priorityOption) {
+        String[] parts = priorityOption.split(":");
+        priorityOptionKey = Integer.parseInt(parts[0]);
+        if (parts.length>1) {
+            priorityOptionParameter = parts[1];
+            if (priorityOptionParameter.equals("case") || priorityOptionParameter.equals("ctrl")) {
+                priorityOptionLabel = priorityOptionParameter;
+            }
+        } else {
+            priorityOptionParameter = null;
+            priorityOptionLabel = null;
+        }
+        // impose defaults
+        if (priorityOptionKey==1 && priorityOptionLabel==null) priorityOptionLabel = "case";
+        if (priorityOptionKey==3 && priorityOptionLabel==null) priorityOptionLabel = "case";
     }
 }
