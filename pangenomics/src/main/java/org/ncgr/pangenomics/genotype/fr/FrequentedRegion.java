@@ -409,8 +409,10 @@ class FrequentedRegion implements Comparable {
      * Return true if this FR contains a subpath which belongs to the given Path.
      */
     public boolean containsSubpathOf(Path path) {
-        for (Path sp : subpaths) {
-            if (sp.equals(path)) return true;
+        if (subpaths!=null) {
+            for (Path sp : subpaths) {
+                if (sp.equals(path)) return true;
+            }
         }
         return false;
     }
@@ -420,8 +422,10 @@ class FrequentedRegion implements Comparable {
      */
     public int countSubpathsOf(Path path) {
         int count = 0;
-        for (Path sp : subpaths) {
-            if (sp.name.equals(path.name)) count++;
+        if (subpaths!=null) {
+            for (Path sp : subpaths) {
+                if (sp.name.equals(path.name)) count++;
+            }
         }
         return count;
     }

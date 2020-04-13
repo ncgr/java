@@ -54,6 +54,7 @@ public class frGraphComponent extends mxGraphComponent implements ActionListener
     static DecimalFormat prif = new DecimalFormat("000");
     static String INFINITY = "\u221e";
     static String MATH_MINUS = "\u2212";
+    static String CHECKMARK = "\u2713";
     
     // constructor parameters
     PangenomicGraph graph;
@@ -62,16 +63,17 @@ public class frGraphComponent extends mxGraphComponent implements ActionListener
     Properties parameters;
 
     // the JList of FRs
-    JList frList;
+    JList<String> frList;
     Object[] frKeys;            // the FR map keys for navigating through the FRs
     String[] frLabels;
     int currentFRIndex;
     FrequentedRegion currentFR; // the current FR being shown
 
     // the JList of sample names and whatnot
-    JList sampleList;
+    JList<String> sampleList;
     String[] sampleNames;
     int currentSampleIndex;
+    JScrollPane sampleScrollPane;
 
     Path highlightedPath;
     boolean decorateEdges;
@@ -106,6 +108,7 @@ public class frGraphComponent extends mxGraphComponent implements ActionListener
 
         // set the current FR to the first one
         currentFR = frequentedRegions.get((String)frKeys[0]);
+        currentFR.updateSupport();
 
         // zoom in button -- plus is equals plus shift
         getInputMap().put(KeyStroke.getKeyStroke(KeyEvent.VK_EQUALS,KeyEvent.SHIFT_DOWN_MASK), "zoomIn");
@@ -165,23 +168,15 @@ public class frGraphComponent extends mxGraphComponent implements ActionListener
         gridbag.setConstraints(frScrollPane, c);
         topPanel.add(frScrollPane);
 
-        // sample path selector
-        int maxSampleLabelLength = 0;
+        // sample/path selector
         sampleNames = graph.getPathNames();
-        String[] sampleLabels = new String[sampleNames.length];
-        for (int i=0; i<sampleNames.length; i++) {
-            Path p = graph.getPath(sampleNames[i]);
-            sampleLabels[i] = sampleNames[i]+" ("+p.label+")";
-            if (sampleLabels[i].length()>maxSampleLabelLength) maxSampleLabelLength = sampleLabels[i].length();
-        }
-        int preferredSampleNameXsize = maxSampleLabelLength*9;
-        sampleList = new JList<String>(sampleLabels);
+        sampleList = new JList<String>();
         sampleList.setLayoutOrientation(JList.VERTICAL);
         sampleList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         sampleList.addListSelectionListener​(this);
-        JScrollPane sampleScrollPane = new JScrollPane(sampleList);
+        sampleScrollPane = new JScrollPane(sampleList);
         sampleScrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
-        sampleScrollPane.setPreferredSize(new Dimension(preferredSampleNameXsize, 18));
+        updateSampleScrollPane();
         c.insets = new Insets(1, 4, 1, 4); // top, left, bottom, right
         gridbag.setConstraints(sampleScrollPane, c);
         topPanel.add(sampleScrollPane);
@@ -234,10 +229,29 @@ public class frGraphComponent extends mxGraphComponent implements ActionListener
         sidePanel.add(thermPanel);
 
         // update for the current FR
-        updateSidePanel(currentFR, parameters);
+        updateSidePanel();
         
         // put the side panel on the graph
         setRowHeaderView(sidePanel);
+    }
+
+    /**
+     * Update the sample scroll pane, called when the FR is changed to update the checkmarks.
+     */
+    void updateSampleScrollPane() {
+        int maxSampleLabelLength = 0;
+        String[] sampleLabels = new String[sampleNames.length];
+        for (int i=0; i<sampleNames.length; i++) {
+            Path p = graph.getPath(sampleNames[i]);
+            sampleLabels[i] = sampleNames[i]+" ("+p.label+")";
+            if (currentFR.containsSubpathOf(p)) {
+                sampleLabels[i] += CHECKMARK;
+            }
+            if (sampleLabels[i].length()>maxSampleLabelLength) maxSampleLabelLength = sampleLabels[i].length();
+        }
+        int preferredSampleNameXsize = maxSampleLabelLength*9;
+        sampleList.setListData(sampleLabels);
+        sampleScrollPane.setPreferredSize(new Dimension(preferredSampleNameXsize, 18));
     }
     
     /**
@@ -257,13 +271,13 @@ public class frGraphComponent extends mxGraphComponent implements ActionListener
     }
 
     /**
-     * Update the info label on the sidePanel with FR run parameters and graph info
+     * Update the info label on the sidePanel with currentFR run parameters and graph info.
      */
-    public void updateSidePanel(FrequentedRegion fr, Properties parameters) {
-        double p = fr.fisherExactP();
-        double or = fr.oddsRatio();
-        String kappaString = String.valueOf(fr.kappa);
-        if (fr.kappa==Integer.MAX_VALUE) kappaString = INFINITY;
+    public void updateSidePanel() {
+        double p = currentFR.fisherExactP();
+        double or = currentFR.oddsRatio();
+        String kappaString = String.valueOf(currentFR.kappa);
+        if (currentFR.kappa==Integer.MAX_VALUE) kappaString = INFINITY;
         // info text
         String infoLabelString = "<html>"+
             "<b>"+graph.name+"</b><br/>" +
@@ -271,7 +285,7 @@ public class frGraphComponent extends mxGraphComponent implements ActionListener
             graph.paths.size()+" paths<br/>" +
             graph.getLabelCounts().get("case")+"/"+graph.getLabelCounts().get("ctrl") +
             "<hr/>" +
-            "alpha="+fr.alpha+"<br/>" +
+            "alpha="+currentFR.alpha+"<br/>" +
             "kappa="+kappaString+"<br/>" +
             "minSup="+parameters.getProperty("minSup")+"<br/>" +
             "minLen="+parameters.getProperty("minLen")+"<br/>" +
@@ -286,11 +300,11 @@ public class frGraphComponent extends mxGraphComponent implements ActionListener
         infoLabelString +=
             "<hr/>" +
             "FR "+(currentFRIndex+1)+":<br/>" +
-            "size="+fr.nodes.size()+"<br/>" +
-            "support="+fr.caseSubpathSupport+"/"+fr.ctrlSubpathSupport+"<br/>" +
+            "size="+currentFR.nodes.size()+"<br/>" +
+            "support="+currentFR.caseSubpathSupport+"/"+currentFR.ctrlSubpathSupport+"<br/>" +
             "p="+pf.format(p)+"<br/>" +
             "log10(OR)="+orf.format(Math.log10(or))+"<br/>" +
-            "priority="+fr.priority +
+            "priority="+currentFR.priority +
             "<hr/>"+
             "</html>";
         infoLabel.setText(infoLabelString);
@@ -304,7 +318,7 @@ public class frGraphComponent extends mxGraphComponent implements ActionListener
             thermPlot.setSubrangePaint(ThermometerPlot.WARNING, Color.BLUE);
             thermPlot.setSubrangePaint(ThermometerPlot.CRITICAL, Color.BLUE);
         }
-        thermPlot.setDataset(new DefaultValueDataset(fr.priority));
+        thermPlot.setDataset(new DefaultValueDataset(currentFR.priority));
     }
 
     /**
@@ -321,9 +335,11 @@ public class frGraphComponent extends mxGraphComponent implements ActionListener
                     currentFRIndex = firstIndex;
                 }
                 currentFR = frequentedRegions.get((String)frKeys[currentFRIndex]);
+                if (currentFR.subpaths==null) currentFR.updateSupport();
                 fgxAdapter = new FGraphXAdapter(graph, currentFR, highlightedPath, decorateEdges);
                 setGraph(fgxAdapter);
-                updateSidePanel(currentFR, parameters);
+                updateSidePanel();
+                updateSampleScrollPane();
                 executeLayout();
             } else if (e.getSource().equals(sampleList)) {
                 if (firstIndex==currentSampleIndex) {

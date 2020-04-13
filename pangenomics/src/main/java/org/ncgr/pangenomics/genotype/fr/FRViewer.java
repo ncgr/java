@@ -108,6 +108,10 @@ public class FRViewer {
 
         // load the TreeMap of FRs so we see the juicy ones first
         TreeMap<String,FrequentedRegion> frequentedRegions = FRUtils.readFrequentedRegions(prefix);
+        // set the graph without doing all the other stuff
+        for (FrequentedRegion fr : frequentedRegions.values()) {
+            fr.graph = graph;
+        }
 
         // create the JFrame
         JFrame frame = new JFrame(prefix);
