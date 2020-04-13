@@ -79,9 +79,14 @@ class PGraphXAdapter extends JGraphXAdapter<Node,Edge> {
                     if (c.getEdgeCount()>0) {
                         double or = graph.oddsRatio(n);
                         double p = graph.fisherExactP(n);
-                        // color based on segregation
+                        boolean genotypeCalled = !n.genotype.equals("./.");
+                        // styling based on segregation and genotype
                         if (graph.getPathCount(n)==graph.getPathCount()) {
                             // all paths go through node, uninteresting
+                            setCellStyles("fillColor", "white", cells);
+                            setCellStyles("fontColor", "black", cells);
+                        } else if (!genotypeCalled) {
+                            // no call
                             setCellStyles("fillColor", "white", cells);
                             setCellStyles("fontColor", "black", cells);
                         } else if (Double.isInfinite(or)) {
@@ -108,18 +113,20 @@ class PGraphXAdapter extends JGraphXAdapter<Node,Edge> {
                             setCellStyles("fillColor", fillColor, cells);
                         }
                         // bold white letters if significant
-                        if (p<P_THRESHOLD) {
+                        if (genotypeCalled && p<P_THRESHOLD) {
                             setCellStyles("fontColor", LABEL_COLOR_SIG, cells);
                             setCellStyles("fontStyle", String.valueOf(mxConstants.FONT_BOLD), cells);
                         } else {
                             setCellStyles("fontColor", LABEL_COLOR_NONSIG, cells);
                         }
                         // set border color based on HOM/HET genotype
-                        String[] genotypes = n.genotype.split("/");
-                        if (genotypes[0].equals(genotypes[1])) {
-                            setCellStyles("strokeColor", STROKE_COLOR_HOM, cells);
-                        } else {
-                            setCellStyles("strokeColor", STROKE_COLOR_HET, cells);
+                        if (genotypeCalled) {
+                            String[] genotypes = n.genotype.split("/");
+                            if (genotypes[0].equals(genotypes[1])) {
+                                setCellStyles("strokeColor", STROKE_COLOR_HOM, cells);
+                            } else {
+                                setCellStyles("strokeColor", STROKE_COLOR_HET, cells);
+                            }
                         }
                     }
                 }

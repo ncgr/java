@@ -182,7 +182,7 @@ class FrequentedRegion implements Comparable {
     }
 
     /**
-     * Comparison is based on priority, then support, then just the nodes.
+     * Comparison is based on priority, then support, then size, then the nodes themselves.
      */
     @Override
     public int compareTo(Object o) {
@@ -191,6 +191,8 @@ class FrequentedRegion implements Comparable {
             return this.priority - that.priority;
         } else if (this.support!=that.support) {
             return this.support - that.support;
+        } else if (this.nodes.size()!=that.nodes.size()) {
+            return this.nodes.size() - that.nodes.size();
         } else {
             return this.nodes.compareTo(that.nodes);
         }
@@ -269,7 +271,7 @@ class FrequentedRegion implements Comparable {
     }
 
     /**
-     * Update the integer priority metric used for case vs. control comparisons.
+     * Update the integer priority metric used for ordering FRs.
      */
     void updatePriority() {
         priority = 0;
@@ -287,54 +289,25 @@ class FrequentedRegion implements Comparable {
                 System.exit(1);
             }
         } else if (priorityOptionKey==2) {
+            // case and control are the same
             priority = Math.abs(caseSubpathSupport - ctrlSubpathSupport);
         } else if (priorityOptionKey==3) {
             double mlog10OR = 0.0;
-            if (priorityOptionLabel.equals("case")) {
-                // rate only if case-heavy
-                if (ctrlSubpathSupport==0) {
-		    // zero ctrl support, treat like OR=1000
-                    mlog10OR = 3.0;
-                } else {
-                    double or = oddsRatio();
-                    if (or>1.0) mlog10OR = Math.log10(oddsRatio());
-                }
-                priority = (int)(caseSubpathSupport*mlog10OR*10);
-            } else if (priorityOptionLabel.equals("ctrl")) {
-                // rate only if control-heavy
-                if (caseSubpathSupport==0) {
-		    // zero case support, treat as if OR=1/1000
-                    mlog10OR = 3.0;
-                } else {
-                    double or = oddsRatio();
-                    if (or<1.0) mlog10OR = -Math.log10(or);
-                }
-                priority = (int)(ctrlSubpathSupport*mlog10OR*10);
+            if (ctrlSubpathSupport==0) {
+                // zero ctrl support, treat like OR=1000
+                mlog10OR = 3.0;
+            } else if (caseSubpathSupport==0) {
+                // zero case support, treat as if OR=1/1000
+                mlog10OR = 3.0;
             } else {
-                System.err.println("ERROR: priorityOptionLabel="+priorityOptionLabel+" is not supported by FrequentedRegion.updatePriority() with priorityOptionKey="+priorityOptionKey+".");
-                System.exit(1);
+                mlog10OR = Math.log10(oddsRatio());
             }
+            priority = (int)(support*mlog10OR*10);
         } else if (priorityOptionKey==4) {
-            double mlog10p = 0.0;
-            if (priorityOptionLabel==null) {
-                // rate all
-                mlog10p = Math.log10(fisherExactP());
-                priority = -(int)(mlog10p*100);
-            } else if (priorityOptionLabel.equals("case")) {
-                // rate only if case-heavy
-                if (oddsRatio()>1.0) mlog10p = Math.log10(fisherExactP());
-                priority = -(int)(mlog10p*100);
-            } else if (priorityOptionLabel.equals("ctrl")) {
-                // rate only if control-heavy
-                if (oddsRatio()<1.0) mlog10p = Math.log10(fisherExactP());
-                priority = -(int)(mlog10p*100);
-            } else {
-                System.err.println("ERROR: priorityOptionLabel="+priorityOptionLabel+" is not supported by FrequentedRegion.updatePriority() with priorityOptionKey="+priorityOptionKey+".");
-                System.exit(1);
-            }
+            priority = -(int)(Math.log10(fisherExactP())*100);
         } else {
-            // we've got an unallowed priority key for case/control comparison
-            System.err.println("ERROR: priorityOptionLabel="+priorityOptionLabel+" is not supported by FrequentedRegion.updatePriority() with priorityOptionKey="+priorityOptionKey+".");
+            // we've got an unallowed priority key
+            System.err.println("ERROR: priorityOptionKey="+priorityOptionKey+" is not supported by FrequentedRegion.updatePriority().");
             System.exit(1);
         }
     }
@@ -601,7 +574,6 @@ class FrequentedRegion implements Comparable {
             }
         }
         if (priorityOptionKey==1 && priorityOptionLabel==null) priorityOptionLabel = "case";
-        if (priorityOptionKey==3 && priorityOptionLabel==null) priorityOptionLabel = "case";
         
         // import a PangenomicGraph from the GFA file
         PangenomicGraph pg = new PangenomicGraph();
@@ -613,7 +585,6 @@ class FrequentedRegion implements Comparable {
         pg.tallyLabelCounts();
         System.out.println("# Graph has "+pg.getNodes().size()+" nodes and "+pg.paths.size()+" paths.");
         System.out.println("# Graph has "+pg.getLabelCounts().get("case")+" case paths and "+pg.getLabelCounts().get("ctrl")+" ctrl paths.");
-
 
         // create the FrequentedRegion with this PangenomicGraph
         String nodeString = cmd.getOptionValue("nodes");

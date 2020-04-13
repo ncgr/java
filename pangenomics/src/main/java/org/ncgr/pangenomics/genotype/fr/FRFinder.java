@@ -295,9 +295,12 @@ public class FRFinder {
                                         }
                                     }
                                     if (keep) {
-                                        // add this candidate merged pair
+                                        // add this candidate merged pair to acceptedFRPairs
                                         acceptedFRPairs.put(nodesKey, frpair);
-                                        frpairSet.add(frpair);
+                                        // add this to the current frpairSet if interesting
+                                        if (isInteresting(frpair.merged)) {
+                                            frpairSet.add(frpair);
+                                        }
                                     } else {
                                         // add this to the rejected list
                                         rejectedNodeSets.add(nodesKey);
@@ -310,23 +313,21 @@ public class FRFinder {
             ////////////////////////////////////////////////////////////////////////////////////////////////
             // add our new best merged FR
             if (frpairSet.size()>0) {
+                added = true;
                 FrequentedRegion fr = frpairSet.last().merged;
-                // we need to have the minimum support and priority, etc.
-                added = isInteresting(fr);
-                if (added) {
-                    // add this FR to the mergeable FRs map
-                    allFrequentedRegions.put(fr.nodes.toString(), fr);
-                    frequentedRegions.put(fr.nodes.toString(), fr);
-                    oldPriority = fr.priority;
-                    // toggle priorityOptionLabel for next round if so desired
-                    if (priorityOptionParameter.equals("alt")) togglePriorityOptionLabel();
-                    // output this FR
-                    printToLog(round+":"+fr);
-                } else {
-                    // show the top remaining FR that wasn't added
-                    printToLog("-------------------------------------------------------------------------------------------------------");
-                    printToLog("TR:"+fr);
-                }
+                // add this FR to the mergeable FRs map
+                allFrequentedRegions.put(fr.nodes.toString(), fr);
+                frequentedRegions.put(fr.nodes.toString(), fr);
+                oldPriority = fr.priority;
+                // toggle priorityOptionLabel for next round if so desired
+                if (priorityOptionParameter!=null && priorityOptionParameter.equals("alt")) togglePriorityOptionLabel();
+                // output this FR
+                printToLog(round+":"+fr);
+            } else {
+                // show the top remaining FR that wasn't added
+                TreeSet<FRPair> remainingFRPairs = new TreeSet<>(acceptedFRPairs.values());
+                printToLog("-------------------------------------------------------------------------------------------------------");
+                printToLog("TR:"+remainingFRPairs.last().merged);
             }
             // output current state for continuation if aborted
             if (frequentedRegions.size()>0 && writeSaveFiles()) {
@@ -974,19 +975,30 @@ public class FRFinder {
 
     /**
      * Return true if the given FR is "interesting". (Note that the alpha, kappa requirements are enforced by fr.support>=minSup.)
+     * This also uses priorityOptionLabel for the O.R- and p-based priorities.
      */
     boolean isInteresting(FrequentedRegion fr) {
-        return fr.support>=getMinSup() && fr.nodes.size()>=getMinSize() && fr.priority>=getMinPriority();
+        boolean interesting = fr.support>=getMinSup() && fr.nodes.size()>=getMinSize() && fr.priority>=getMinPriority();
+        if (priorityOptionKey==3 || priorityOptionKey==4) {
+            if (priorityOptionLabel!=null && priorityOptionLabel.equals("case")) {
+                interesting = interesting && fr.oddsRatio()>1.0;
+            } else if (priorityOptionLabel!=null && priorityOptionLabel.equals("ctrl")) {
+                interesting = interesting && fr.oddsRatio()<1.0;
+            }
+        }
+        return interesting;   
     }
 
     /**
-     * Toggle the current priority option label between "case" and "ctrl"; used with "alt" priority option parameter.
+     * Toggle the current priority option label between "case" and "ctrl". (Used with "alt" priority option parameter.)
      */
     void togglePriorityOptionLabel() {
-        if (priorityOptionLabel==null || priorityOptionLabel.equals("case")) {
-            priorityOptionLabel = "ctrl";
-        } else {
+        if (priorityOptionLabel==null) {
             priorityOptionLabel = "case";
+        } else if (priorityOptionLabel.equals("ctrl")) {
+            priorityOptionLabel = "case";
+        } else {
+            priorityOptionLabel = "ctrl";
         }
     }
 

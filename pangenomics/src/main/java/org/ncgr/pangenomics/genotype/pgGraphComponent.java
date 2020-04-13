@@ -104,19 +104,22 @@ class pgGraphComponent extends mxGraphComponent implements ActionListener, ListS
         graphLabel.setFont(graphLabel.getFont().deriveFont(Font.BOLD));
         topPanel.add(graphLabel);
         // sample path selector
+        int maxSampleLabelLength = 0;
         sampleNames = graph.getPathNames();
         String[] sampleLabels = new String[sampleNames.length];
         for (int i=0; i<sampleNames.length; i++) {
             Path p = graph.getPath(sampleNames[i]);
             sampleLabels[i] = sampleNames[i]+" ("+p.label+")";
+            if (sampleLabels[i].length()>maxSampleLabelLength) maxSampleLabelLength = sampleLabels[i].length();
         }
+        int preferredSampleNameXsize = maxSampleLabelLength*9;
         sampleList = new JList<String>(sampleLabels);
         sampleList.setLayoutOrientation(JList.VERTICAL);
         sampleList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         sampleList.addListSelectionListener​(this);
         JScrollPane scrollPane = new JScrollPane(sampleList);
         scrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
-        scrollPane.setPreferredSize(new Dimension(128, 18));
+        scrollPane.setPreferredSize(new Dimension(preferredSampleNameXsize, 18));
         topPanel.add(scrollPane);
         // zoom out button
         zoomOutButton = new JButton("-");
