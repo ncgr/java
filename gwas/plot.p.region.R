@@ -49,7 +49,7 @@ plot.p.region = function(seg=seg, chr="0", start=0, end=0, gene=NULL, label=FALS
              ylab="-log10(p)",
              xlim=c(start,end),
              ylim=ylim,
-             main=deparse(substitute(seg)),
+             main=paste(deparse(substitute(seg)),chr,":",start,"-",end),
              pch=1, cex=0.3, col="black")
     }
 
@@ -79,9 +79,9 @@ plot.p.region = function(seg=seg, chr="0", start=0, end=0, gene=NULL, label=FALS
     }
     if (hasControl) {
         if (chr=="0") {
-            points(as.numeric(rownames(seg)[ptsControl]), seg$mlog10p[ptsControl], pch=19, cex=0.6, col="darkgreen")
+            points(as.numeric(rownames(seg)[ptsControl]), seg$mlog10p[ptsControl], pch=19, cex=0.6, col="darkblue")
         } else {
-            points(seg$pos[ptsControl], seg$mlog10p[ptsControl], pch=19, cex=0.6, col="darkgreen")
+            points(seg$pos[ptsControl], seg$mlog10p[ptsControl], pch=19, cex=0.6, col="darkblue")
         }
     }
 
@@ -112,7 +112,7 @@ plot.p.region = function(seg=seg, chr="0", start=0, end=0, gene=NULL, label=FALS
                                                                      seg$caseVars[ptsControl],"/",seg$caseRefs[ptsControl],"|",
                                                                      seg$controlVars[ptsControl],"/",seg$controlRefs[ptsControl],
                                                                      ";OR=",signif(seg$OR[ptsControl],3),") ",snpInfo,sep=""),
-                 col="darkgreen", pos=4, cex=0.6, offset=0.2)
+                 col="darkblue", pos=4, cex=0.6, offset=0.2)
         }
         if (hasCase) {
             if (labelSNP) {
