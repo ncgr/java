@@ -42,6 +42,15 @@ import org.apache.commons.cli.ParseException;
  */
 public class FRFinder {
 
+    // save filename suffixes
+    static String FREQUENTED_REGIONS_SAVE = "save.frs.txt";
+    static String ALL_FREQUENTED_REGIONS_SAVE = "save.allFrequentedRegions.txt";
+    static String REJECTED_NODESETS_SAVE = "save.rejectedNodeSets.txt";
+    static String ACCEPTED_FRPAIRS_SAVE = "save.acceptedFRPairs.txt";
+
+    // number formats
+    static DecimalFormat percf = new DecimalFormat("0.000%");
+
     // a PangenomicGraph must be supplied to the constructor unless post-processing
     PangenomicGraph graph;
 
@@ -50,12 +59,6 @@ public class FRFinder {
 
     // parameters are stored in a Properties object
     Properties parameters = new Properties();
-
-    // save filename suffixes
-    static String FREQUENTED_REGIONS_SAVE = "save.frs.txt";
-    static String ALL_FREQUENTED_REGIONS_SAVE = "save.allFrequentedRegions.txt";
-    static String REJECTED_NODESETS_SAVE = "save.rejectedNodeSets.txt";
-    static String ACCEPTED_FRPAIRS_SAVE = "save.acceptedFRPairs.txt";
 
     // the output FRs
     ConcurrentHashMap<String,FrequentedRegion> frequentedRegions;
@@ -107,6 +110,7 @@ public class FRFinder {
         parameters.setProperty("excludedNodes", "[]");
         parameters.setProperty("priorityOption", "4");
         parameters.setProperty("keepOption", "null");
+        parameters.setProperty("minMAF", "0.01");
     }
 
     /**
@@ -175,18 +179,22 @@ public class FRFinder {
             printToLog("# Loaded "+frequentedRegions.size()+" frequentedRegions.");
             printToLog("# Now continuing with FR finding...");
         } else {
-            // load the single-node FRs into allFrequentedRegions
+            // load the single-node FRs into allFrequentedRegions, keeping only those that exceed minMAF
             ConcurrentSkipListSet<Node> nodeSet = new ConcurrentSkipListSet<>(graph.getNodes());
             nodeSet.parallelStream().forEach(node -> {
-                    NodeSet c = new NodeSet();
-                    c.add(node);
-                    try {
-                        FrequentedRegion fr = new FrequentedRegion(graph, c, alpha, kappa, priorityOptionKey, priorityOptionLabel);
-                        allFrequentedRegions.put(c.toString(), fr);
-			if (debug()) System.out.println("fr0:"+fr);
-                    } catch (Exception e) {
-                        System.err.println(e);
-                        System.exit(1);
+                    int count = graph.getPathCount(node);
+                    double maf = (double)count/(double)paths.size();
+                    if (maf>getMinMAF()) {
+                        NodeSet c = new NodeSet();
+                        c.add(node);
+                        try {
+                            FrequentedRegion fr = new FrequentedRegion(graph, c, alpha, kappa, priorityOptionKey, priorityOptionLabel);
+                            allFrequentedRegions.put(c.toString(), fr);
+                            if (debug()) System.out.println(percf.format(maf)+":"+fr);
+                        } catch (Exception e) {
+                            System.err.println(e);
+                            System.exit(1);
+                        }
                     }
                 });
             // store interesting single-node FRs in round 0, since we won't hit them in the loop
@@ -457,6 +465,9 @@ public class FRFinder {
     public String getKeepOption() {
         return parameters.getProperty("keepOption");
     }
+    public double getMinMAF() {
+        return Double.parseDouble(parameters.getProperty("minMAF"));
+    }
     
     // parameter setters
     public void setVerbose() {
@@ -514,6 +525,9 @@ public class FRFinder {
     }
     public void setGraphName(String graphName) {
         parameters.setProperty("graphName", graphName);
+    }
+    public void setMinMAF(double minMAF) {
+        parameters.setProperty("minMAF", String.valueOf(minMAF));
     }
 
     /**
@@ -608,6 +622,10 @@ public class FRFinder {
         Option keepOptionOption = new Option("keep", "keepoption", true, "option for keeping FRs in finder loop: subset[:N]|distance[:N] [keep all]");
         keepOptionOption.setRequired(false);
         options.addOption(keepOptionOption);
+        //
+        Option minMAFOption = new Option("minmaf", "minmaf", true, "minimum MAF for nodes included in search [0.01]");
+        minMAFOption.setRequired(false);
+        options.addOption(minMAFOption);
 
         try {
             cmd = parser.parse(options, args);
@@ -688,6 +706,7 @@ public class FRFinder {
             if (cmd.hasOption("debug")) frf.setDebug();
             if (cmd.hasOption("resume")) frf.setResume();
             if (cmd.hasOption("writesavefiles")) frf.setWriteSaveFiles();
+            if (cmd.hasOption("minmaf")) frf.setMinMAF(Double.parseDouble(cmd.getOptionValue("minmaf")));
             // run the requested job
             if (alphaStart==alphaEnd && kappaStart==kappaEnd) {
                 // single run

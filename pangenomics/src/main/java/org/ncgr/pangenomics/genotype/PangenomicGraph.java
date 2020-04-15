@@ -427,7 +427,7 @@ public class PangenomicGraph extends DirectedAcyclicGraph<Node,Edge> {
     public void printNodes(PrintStream out) {
         if (out==System.out) printHeading("NODES");
         for (Node n : getNodes()) {
-            out.println(n.id+"\t"+n.rs+"\t"+n.contig+"\t"+n.start+"\t"+n.end+"\t"+n.genotype);
+            out.println(n.id+"\t"+n.rs+"\t"+n.contig+"\t"+n.start+"\t"+n.end+"\t"+n.genotype+"\t"+n.af);
         }
     }
 

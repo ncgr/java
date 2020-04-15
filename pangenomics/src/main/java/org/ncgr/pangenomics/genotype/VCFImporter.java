@@ -74,7 +74,7 @@ public class VCFImporter {
                 Node n = nodesMap.get(nodeString);
                 if (n==null) {
                     nodeId++;
-                    n = new Node(nodeId, vc.getID(), vc.getContig(), vc.getStart(), vc.getEnd(), g.getGenotypeString());
+                    n = new Node(nodeId, vc.getID(), vc.getContig(), vc.getStart(), vc.getEnd(), g.getGenotypeString(), 0.0); // AF will be updated later
                     nodes.add(n);
                     nodesMap.put(nodeString, n);
                 }
@@ -87,6 +87,11 @@ public class VCFImporter {
                 nodeSamples.add(sampleName);
                 nodeSamplesMap.put(n, nodeSamples);
 	    }
+        }
+        // update the nodes with their allele frequencies
+        for (Node n : nodeSamplesMap.keySet()) {
+            List<String> nodeSamples = nodeSamplesMap.get(n);
+            n.af = (double)nodeSamples.size() / (double)sampleNameList.size();
         }
         if (verbose) System.out.println("done.");
     }

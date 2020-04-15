@@ -13,6 +13,7 @@ public class Node implements Comparable, Serializable {
     public int end;
     public String rs;
     public String genotype;
+    public double af;
 
     /**
      * Minimal constructor.
@@ -24,13 +25,14 @@ public class Node implements Comparable, Serializable {
     /**
      * Construct the full monty.
      */
-    public Node(long id, String rs, String contig, int start, int end, String genotype) {
+    public Node(long id, String rs, String contig, int start, int end, String genotype, double af) {
         this.id = id;
 	this.contig = contig;
 	this.start = start;
         this.end = end;
         this.rs = rs;
 	this.genotype = genotype;
+        this.af = af;
     }
 
     /**

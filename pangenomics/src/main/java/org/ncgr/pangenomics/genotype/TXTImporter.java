@@ -79,8 +79,9 @@ public class TXTImporter {
             int start = Integer.parseInt(parts[3]);
             int end = Integer.parseInt(parts[4]);
             String genotype = parts[5];
+            double af = Double.parseDouble(parts[6]);
             if (rs.equals(".")) rs = null;
-            Node n = new Node(id, rs, contig, start, end, genotype);
+            Node n = new Node(id, rs, contig, start, end, genotype, af);
             nodes.add(n);
             nodeMap.put(id, n);
         }

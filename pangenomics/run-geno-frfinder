@@ -17,16 +17,20 @@
 #                                equal kappaend; -1=infinity)
 #  -m,--minsup <arg>             minimum number of supporting paths for a
 #                                region to be considered interesting [1]
+#  -minmaf,--minmaf <arg>        minimum MAF for nodes included in search
+#                                [0.01]
 #  -mp,--minpriority <arg>       minimum priority for saving an FR [1]
 #  -mr,--maxround <arg>          maximum FR-finding round to run
 #                                [0=unlimited]
 #  -p,--pathlabels <arg>         tab-delimited file with pathname<tab>label
 #  -pri,--priorityoption <arg>   option for priority weighting of FRs:
 #                                0=total support, 1:label=label
-#                                support-other support [case], 2=|case
-#                                support-control support|, 3:label=odds
-#                                ratio in label's favor [case], 4=Fisher's
-#                                exact test double-sided p value
+#                                support-other support [case,ctrl,alt],
+#                                2=|case support-control support|,
+#                                3:label=odds ratio in label's favor
+#                                [case,ctrl,alt], 4:label=Fisher's exact
+#                                test double-sided p value
+#                                [null,case,ctrl,alt]
 #  -r,--resume                   resume from a previous run [false]
 #  -rn,--requirednodes <arg>     require that found FRs contain the given
 #                                nodes []
@@ -39,6 +43,7 @@
 #  -v,--verbose                  verbose output [false]
 #  -wsf,--writesavefiles         write save files after each FR is found
 #                                [false]
+
 
 ## perfect path matching to FR is alpha=1, kappa=0
 
