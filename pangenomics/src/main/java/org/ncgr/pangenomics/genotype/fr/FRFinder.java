@@ -179,18 +179,16 @@ public class FRFinder {
             printToLog("# Loaded "+frequentedRegions.size()+" frequentedRegions.");
             printToLog("# Now continuing with FR finding...");
         } else {
-            // load the single-node FRs into allFrequentedRegions, keeping only those that exceed minMAF
+            // load the single-node FRs into allFrequentedRegions, keeping only those with af>=minMAF
             ConcurrentSkipListSet<Node> nodeSet = new ConcurrentSkipListSet<>(graph.getNodes());
             nodeSet.parallelStream().forEach(node -> {
-                    int count = graph.getPathCount(node);
-                    double maf = (double)count/(double)paths.size();
-                    if (maf>getMinMAF()) {
+                    if (node.af>=getMinMAF()) {
                         NodeSet c = new NodeSet();
                         c.add(node);
                         try {
                             FrequentedRegion fr = new FrequentedRegion(graph, c, alpha, kappa, priorityOptionKey, priorityOptionLabel);
                             allFrequentedRegions.put(c.toString(), fr);
-                            if (debug()) System.out.println(percf.format(maf)+":"+fr);
+                            if (debug()) System.out.println(percf.format(node.af)+":"+fr);
                         } catch (Exception e) {
                             System.err.println(e);
                             System.exit(1);
