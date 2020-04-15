@@ -183,12 +183,13 @@ public class FRFinder {
                     try {
                         FrequentedRegion fr = new FrequentedRegion(graph, c, alpha, kappa, priorityOptionKey, priorityOptionLabel);
                         allFrequentedRegions.put(c.toString(), fr);
+			if (debug()) System.out.println("fr0:"+fr);
                     } catch (Exception e) {
                         System.err.println(e);
                         System.exit(1);
                     }
                 });
-            // add interesting single-node FRs in round 0, since we won't hit them in the loop
+            // store interesting single-node FRs in round 0, since we won't hit them in the loop
             for (FrequentedRegion fr : allFrequentedRegions.values()) {
                 if (isInteresting(fr)) {
                     if (requiredNodes.size()==0) {
@@ -219,7 +220,6 @@ public class FRFinder {
 
         // build the FRs round by round
 	long startTime = System.currentTimeMillis();
-        int oldPriority = 0;
         boolean added = true;
         while (added && (round<getMaxRound() || getMaxRound()==0)) {
             round++;
@@ -318,7 +318,6 @@ public class FRFinder {
                 // add this FR to the mergeable FRs map
                 allFrequentedRegions.put(fr.nodes.toString(), fr);
                 frequentedRegions.put(fr.nodes.toString(), fr);
-                oldPriority = fr.priority;
                 // toggle priorityOptionLabel for next round if so desired
                 if (priorityOptionParameter!=null && priorityOptionParameter.equals("alt")) togglePriorityOptionLabel();
                 // output this FR
