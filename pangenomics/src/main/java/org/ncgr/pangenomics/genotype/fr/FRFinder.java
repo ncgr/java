@@ -105,7 +105,7 @@ public class FRFinder {
         parameters.setProperty("minSize", "1");
         parameters.setProperty("minLen", "1.0");
         parameters.setProperty("maxRound", "0");
-        parameters.setProperty("minPriority", "1");
+        parameters.setProperty("minPriority", "730");
         parameters.setProperty("requiredNodes", "[]");
         parameters.setProperty("excludedNodes", "[]");
         parameters.setProperty("priorityOption", "4");
@@ -188,7 +188,7 @@ public class FRFinder {
                         try {
                             FrequentedRegion fr = new FrequentedRegion(graph, c, alpha, kappa, priorityOptionKey, priorityOptionLabel);
                             allFrequentedRegions.put(c.toString(), fr);
-                            if (debug()) System.out.println(percf.format(node.af)+":"+fr);
+                            if (debug()) System.out.println(fr+"\t"+percf.format(node.af));
                         } catch (Exception e) {
                             System.err.println(e);
                             System.exit(1);
@@ -223,6 +223,7 @@ public class FRFinder {
         for (FrequentedRegion fr : sortedFRs) {
             printToLog("0:"+fr.toString());
         }
+        System.out.println(sortedFRs.size()+" single-node FRs will be used in search.");
 
         // build the FRs round by round
 	long startTime = System.currentTimeMillis();
@@ -320,7 +321,9 @@ public class FRFinder {
             // add our new best merged FR
             if (frpairSet.size()>0) {
                 added = true;
+                if (debug()) System.out.print("Finding best FRPair from this round...");
                 FrequentedRegion fr = frpairSet.last().merged;
+                if (debug()) System.out.println("done");
                 // add this FR to the mergeable FRs map
                 allFrequentedRegions.put(fr.nodes.toString(), fr);
                 frequentedRegions.put(fr.nodes.toString(), fr);
@@ -597,7 +600,7 @@ public class FRFinder {
         maxRoundOption.setRequired(false);
         options.addOption(maxRoundOption);
         //
-        Option minPriorityOption = new Option("mp", "minpriority", true, "minimum priority for saving an FR [1]");
+        Option minPriorityOption = new Option("mp", "minpriority", true, "minimum priority for saving an FR [730]");
         minPriorityOption.setRequired(false);
         options.addOption(minPriorityOption);
         //
