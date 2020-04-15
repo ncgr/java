@@ -105,7 +105,7 @@ public class FRFinder {
         parameters.setProperty("minSize", "1");
         parameters.setProperty("minLen", "1.0");
         parameters.setProperty("maxRound", "0");
-        parameters.setProperty("minPriority", "730");
+        parameters.setProperty("minPriority", "0");
         parameters.setProperty("requiredNodes", "[]");
         parameters.setProperty("excludedNodes", "[]");
         parameters.setProperty("priorityOption", "4");
@@ -196,19 +196,20 @@ public class FRFinder {
                     }
                 });
             // store interesting single-node FRs in round 0, since we won't hit them in the loop
-            for (FrequentedRegion fr : allFrequentedRegions.values()) {
-                if (isInteresting(fr)) {
-                    if (requiredNodes.size()==0) {
-                        frequentedRegions.put(fr.nodes.toString(), fr);
-                    } else {
-                        for (Node n : requiredNodes) {
-                            if (fr.nodes.contains(n)) {
-                                frequentedRegions.put(fr.nodes.toString(), fr);
+            allFrequentedRegions.entrySet().parallelStream().forEach(entry -> {
+                    FrequentedRegion fr = entry.getValue();
+                    if (isInteresting(fr)) {
+                        if (requiredNodes.size()==0) {
+                            frequentedRegions.put(fr.nodes.toString(), fr);
+                        } else {
+                            for (Node n : requiredNodes) {
+                                if (fr.nodes.contains(n)) {
+                                    frequentedRegions.put(fr.nodes.toString(), fr);
+                                }
                             }
                         }
                     }
-                }
-            }
+                });
         }
 
         // add the required nodes to allFrequentedRegions
@@ -223,7 +224,7 @@ public class FRFinder {
         for (FrequentedRegion fr : sortedFRs) {
             printToLog("0:"+fr.toString());
         }
-        System.out.println(sortedFRs.size()+" single-node FRs will be used in search.");
+        System.out.println("# "+allFrequentedRegions.size()+" single-node FRs will be used in search.");
 
         // build the FRs round by round
 	long startTime = System.currentTimeMillis();
@@ -600,7 +601,7 @@ public class FRFinder {
         maxRoundOption.setRequired(false);
         options.addOption(maxRoundOption);
         //
-        Option minPriorityOption = new Option("mp", "minpriority", true, "minimum priority for saving an FR [730]");
+        Option minPriorityOption = new Option("mp", "minpriority", true, "minimum priority for saving an FR [0]");
         minPriorityOption.setRequired(false);
         options.addOption(minPriorityOption);
         //
