@@ -6,6 +6,8 @@ import java.io.FileReader;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 
+import java.text.DecimalFormat;
+
 import java.util.List;
 import java.util.Arrays;
 import java.util.ArrayList;
@@ -13,6 +15,7 @@ import java.util.Map;
 import java.util.HashMap;
 import java.util.Set;
 import java.util.HashSet;
+import java.util.TreeSet;
 
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
@@ -40,7 +43,10 @@ import org.mskcc.cbio.portal.stats.FisherExact;
  * @author Sam Hokin
  */
 public class VCFSegregation {
-
+    static DecimalFormat percf = new DecimalFormat("0.000%");
+    static DecimalFormat countf = new DecimalFormat("00000");
+    static double minMGF = 0.01;
+    
     /**
      * Main class outputs a tab-delimited list of the contingency matrix for each locus, plus Fisher's exact test p value.
      */
@@ -275,16 +281,16 @@ public class VCFSegregation {
         // find the desired sample names as they appear in the VCF file
         VCFHeader vcfHeader = vcfReader.getFileHeader();
         List<String> vcfSampleNames = vcfHeader.getSampleNamesInOrder(); // all subjects in the VCF
-        Set<String> vcfCaseSampleNames = new HashSet<>();                // case subjects in the VCF
-        Set<String> vcfControlSampleNames = new HashSet<>();             // control subjects in the VCF
+        Set<String> caseSampleNames = new HashSet<>();                // case subjects in the VCF
+        Set<String> controlSampleNames = new HashSet<>();             // control subjects in the VCF
         for (String sampleName : subjectStatus.keySet()) {
             boolean found = false;
             if (vcfSampleNames.contains(sampleName)) {
                 found = true;
                 if (subjectStatus.get(sampleName)) {
-                    vcfCaseSampleNames.add(sampleName);
+                    caseSampleNames.add(sampleName);
                 } else {
-                    vcfControlSampleNames.add(sampleName);
+                    controlSampleNames.add(sampleName);
                 }
             } else {
                 // perhaps the VCF uses sample_sample format
@@ -292,48 +298,82 @@ public class VCFSegregation {
                 if (vcfSampleNames.contains(doubleSampleName)) {
                     found = true;
                     if (subjectStatus.get(sampleName)) {
-                        vcfCaseSampleNames.add(doubleSampleName);
+                        caseSampleNames.add(doubleSampleName);
                     } else {
-                        vcfControlSampleNames.add(doubleSampleName);
+                        controlSampleNames.add(doubleSampleName);
                     }
                 }
             }
             if (!found) System.err.println("Subject "+sampleName+" NOT FOUND in VCF.");
 	}
-        Set<String> desiredSampleNames = new HashSet<>();
-        desiredSampleNames.addAll(vcfCaseSampleNames);
-        desiredSampleNames.addAll(vcfControlSampleNames);
-
-        // spin through the VCF records, getting case/control counts from case/control subcontexts
+	
+        // spin through the VCF records, getting case/control genotype counts
         for (VariantContext vc : vcfReader) {
             String id = vc.getID();
             String source = vc.getSource();
             String contig = vc.getContig();
             int start = vc.getStart();
             int end = vc.getEnd();
-            VariantContext caseVC = vc.subContextFromSamples(vcfCaseSampleNames);
-            VariantContext controlVC = vc.subContextFromSamples(vcfControlSampleNames);
+            VariantContext caseVC = vc.subContextFromSamples(caseSampleNames);
+            VariantContext controlVC = vc.subContextFromSamples(controlSampleNames);
             // no-call count criterion
             int caseNoCallCount = caseVC.getNoCallCount();
             int controlNoCallCount = controlVC.getNoCallCount();
             if ((caseNoCallCount+controlNoCallCount)>maxNoCalls) {
                 continue;
             }
-            // get counts for each genotype
-            Map<String,Integer> genotypeCounts = new HashMap<>();
-	    for (String sampleName : desiredSampleNames) {
-		String g = vc.getGenotype(sampleName).toString();
-                if (genotypeCounts.containsKey(g)) {
-                    int count = genotypeCounts.get(g) + 1;
-                    genotypeCounts.put(g, count);
-                } else {
-                    genotypeCounts.put(g, 1);
-                }
+            // get counts for each genotype per case/control
+            Map<String,Integer> caseCounts = new HashMap<>();
+            Map<String,Integer> controlCounts = new HashMap<>();
+	    Map<String,Integer> bothCounts = new HashMap<>();
+	    int totalCount = 0;
+	    String homRef = "";
+	    String hetRef = "";
+	    String homVar = "";
+	    for (Genotype g : vc.getGenotypes()) {
+		if (g.isNoCall()) continue;
+		String gString = g.getGenotypeString();
+		if (!caseCounts.containsKey(gString)) caseCounts.put(gString, 0);
+		if (!controlCounts.containsKey(gString)) controlCounts.put(gString, 0);
+		String sampleName = g.getSampleName();
+		if (g.isHomRef()) homRef = gString;
+		if (g.isHet()) hetRef = gString;
+		if (g.isHomVar()) homVar = gString;
+		totalCount++;
+		int bothCount = 1;
+		if (bothCounts.containsKey(gString)) bothCount = bothCounts.get(gString) + 1;
+		bothCounts.put(gString, bothCount);
+		if (caseSampleNames.contains(sampleName)) {
+		    caseCounts.put(gString, caseCounts.get(gString)+1);
+		} else if (controlSampleNames.contains(sampleName)) {
+		    controlCounts.put(gString, controlCounts.get(gString)+1);
+		}
 	    }
-            // DEBUG
-            System.out.println(contig+":"+start+"-"+end+":"+genotypeCounts);
-            //
+	    // see if we have a minor genotype with MGF>1%.
+	    int numAboveMinMGF = 0;
+	    for (String gString : bothCounts.keySet()) {
+		int bothCount = bothCounts.get(gString);
+		double af = (double)bothCount / (double)totalCount;
+		if (af>=minMGF) numAboveMinMGF++;
+	    }
+	    if (numAboveMinMGF<2) continue;
 
+	    // order genotypes by decreasing control counts by using string sorting
+	    TreeSet<String> countsGenotypes = new TreeSet<>();
+	    for (String gString : controlCounts.keySet()) {
+		countsGenotypes.add(countf.format(controlCounts.get(gString))+"|"+gString);
+	    }
+		
+
+	    // DEBUG
+	    System.out.println(contig+":"+start+"-"+end+"\tCASE\tCONTROL");
+	    for (String cg : countsGenotypes.descendingSet()) {
+		String[] parts = cg.split("\\|");
+		int count = Integer.parseInt(parts[0]);
+		String gString = parts[1];
+		System.out.println(gString+"\t"+caseCounts.get(gString)+"\t"+controlCounts.get(gString));
+	    }
+	    //
             
             // // var counts
             // int caseHomVarCount = caseVC.getHomVarCount();
