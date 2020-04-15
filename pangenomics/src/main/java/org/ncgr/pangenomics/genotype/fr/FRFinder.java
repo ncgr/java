@@ -122,10 +122,19 @@ public class FRFinder {
     public void findFRs(double alpha, int kappa) throws FileNotFoundException, IOException {
         // initialize log file
         logOut = new PrintStream(formOutputPrefix(alpha, kappa)+".log");
-	printToLog("# Starting findFRs: alpha="+alpha+" kappa="+kappa+
-                   " priorityOption="+getPriorityOption()+" minPriority="+getMinPriority()+
-                   " minSup="+getMinSup()+" minSize="+getMinSize()+" minLen="+getMinLen()+
-                   " requiredNodes="+getRequiredNodes()+" excludedNodes="+getExcludedNodes()+" keepOption="+getKeepOption()+" maxRound="+getMaxRound());
+	printToLog("# Starting findFRs: " +
+                   "alpha="+alpha+" " +
+                   "kappa="+kappa+" " +
+                   "priorityOption="+getPriorityOption()+" " +
+                   "minPriority="+getMinPriority()+" " +
+                   "minSup="+getMinSup()+" " +
+                   "minSize="+getMinSize()+" " +
+                   "minLen="+getMinLen()+" " +
+                   "minMAF="+getMinMAF()+" " +
+                   "requiredNodes="+getRequiredNodes()+" " +
+                   "excludedNodes="+getExcludedNodes()+" " +
+                   "keepOption="+getKeepOption()+" " +
+                   "maxRound="+getMaxRound());
 
         // store the saved FRs in a map
         frequentedRegions = new ConcurrentHashMap<>();

@@ -195,7 +195,8 @@ public class VCFSegregation {
 	// # Study accession: phs000473.v2.p2
 	// # Table accession: pht002600.v2.p2.c1
 	// # Consent group: General Research Use
-	// # Citation instructions: The study accession (phs000473.v2.p2) is used to cite the study and its data tables and documents. The data in this file should be cited using the accession pht002600.v2.p2.c1.
+	// # Citation instructions: The study accession (phs000473.v2.p2) is used to cite the study and its data tables and documents.
+        // # The data in this file should be cited using the accession pht002600.v2.p2.c1.
 	// # To cite columns of data within this file, please use the variable (phv#) accessions below:
 	// #
 	// # 1) the table name and the variable (phv#) accessions below; or
