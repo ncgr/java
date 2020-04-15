@@ -33,8 +33,7 @@ import htsjdk.variant.vcf.VCFHeader;
 import org.mskcc.cbio.portal.stats.FisherExact;
 
 /**
- * Loads a VCF file and computes segregation between the case and control samples using Fisher's exact test.
- * You can specify whether to count HET calls, HOM calls or BOTH.
+ * Loads a VCF file and computes the odds ratio and p-value for segregation between genotypes in a case/control experiment.
  *
  * Cases and controls are given by a phenotype file in dbGaP format.
  *
@@ -67,10 +66,6 @@ public class VCFSegregation {
         vcfFileOption.setRequired(true);
         options.addOption(vcfFileOption);
 	//
-	Option zygosityOption = new Option("z", "zygosity", true, "zygosity for VAR call: HET or HOM or BOTH (BOTH)");
-        zygosityOption.setRequired(true);
-        options.addOption(zygosityOption);
-        //
         Option ccVarOption = new Option("ccv", "casecontrolvar", true, "case/control variable in dbGaP phenotype file (e.g. ANALYSIS_CAT)");
 	ccVarOption.setRequired(true);
         options.addOption(ccVarOption);
@@ -123,11 +118,6 @@ public class VCFSegregation {
 	String caseValue = cmd.getOptionValue("caseval");
 	String controlValue = cmd.getOptionValue("controlval");
 	String sampleVar = cmd.getOptionValue("samplevar");
-
-        // call choice
-	boolean countHetOnly = cmd.getOptionValue("zygosity").toUpperCase().equals("HET");
-	boolean countHomOnly = cmd.getOptionValue("zygosity").toUpperCase().equals("HOM");
-	boolean countBoth = cmd.getOptionValue("zygosity").toUpperCase().equals("BOTH");
 
 	int minVars = 0;
 	if (cmd.hasOption("minvars")) {
@@ -310,6 +300,9 @@ public class VCFSegregation {
             }
             if (!found) System.err.println("Subject "+sampleName+" NOT FOUND in VCF.");
 	}
+        Set<String> desiredSampleNames = new HashSet<>();
+        desiredSampleNames.addAll(vcfCaseSampleNames);
+        desiredSampleNames.addAll(vcfControlSampleNames);
 
         // spin through the VCF records, getting case/control counts from case/control subcontexts
         for (VariantContext vc : vcfReader) {
@@ -317,6 +310,7 @@ public class VCFSegregation {
             String source = vc.getSource();
             String contig = vc.getContig();
             int start = vc.getStart();
+            int end = vc.getEnd();
             VariantContext caseVC = vc.subContextFromSamples(vcfCaseSampleNames);
             VariantContext controlVC = vc.subContextFromSamples(vcfControlSampleNames);
             // no-call count criterion
@@ -325,40 +319,56 @@ public class VCFSegregation {
             if ((caseNoCallCount+controlNoCallCount)>maxNoCalls) {
                 continue;
             }
-            // var counts
-            int caseHomVarCount = caseVC.getHomVarCount();
-            int caseHetCount = caseVC.getHetCount();
-            int controlHomVarCount = controlVC.getHomVarCount();
-            int controlHetCount = controlVC.getHetCount();
-            // count according to zygosity choice
-            int caseVars = 0;
-            int controlVars = 0;
-            if (countBoth) {
-                caseVars = caseHetCount + caseHomVarCount;
-                controlVars = controlHetCount + controlHomVarCount;
-            } else if (countHetOnly) {
-                caseVars = caseHetCount;
-                controlVars = controlHetCount;
-            } else if (countHomOnly) {
-                caseVars = caseHomVarCount;
-                controlVars = controlHomVarCount;
-            }
-            // minimum variants criterion
-            if ((caseVars+controlVars)<minVars) {
-                continue;
-            }
-            // get the REF counts
-            int caseRefs = caseVC.getHomRefCount();
-            int controlRefs = controlVC.getHomRefCount();
-            // Fisher's exact test on this contingency table -- always use two-tailed p!!
-            double p = fisherExact.getTwoTailedP(caseVars, controlVars, caseRefs, controlRefs);
-            // Odds ratio
-            double or = (double)(caseVars*controlRefs)/(double)(controlVars*caseRefs);
-            // output the line
-            System.out.println(contig+"\t"+start+"\t"+id+"\t"+
-                               vc.getReference().toString()+"\t"+vc.getAlternateAlleles().toString().replace(" ","")+"\t"+
-                               caseVars+"\t"+controlVars+"\t"+caseRefs+"\t"+controlRefs+"\t"+p+"\t"+or+"\t"+
-                               caseNoCallCount+"\t"+controlNoCallCount);
+            // get counts for each genotype
+            Map<String,Integer> genotypeCounts = new HashMap<>();
+	    for (String sampleName : desiredSampleNames) {
+		String g = vc.getGenotype(sampleName).toString();
+                if (genotypeCounts.containsKey(g)) {
+                    int count = genotypeCounts.get(g) + 1;
+                    genotypeCounts.put(g, count);
+                } else {
+                    genotypeCounts.put(g, 1);
+                }
+	    }
+            // DEBUG
+            System.out.println(contig+":"+start+"-"+end+":"+genotypeCounts);
+            //
+
+            
+            // // var counts
+            // int caseHomVarCount = caseVC.getHomVarCount();
+            // int caseHetCount = caseVC.getHetCount();
+            // int controlHomVarCount = controlVC.getHomVarCount();
+            // int controlHetCount = controlVC.getHetCount();
+            // // count according to zygosity choice
+            // int caseVars = 0;
+            // int controlVars = 0;
+            // if (countBoth) {
+            //     caseVars = caseHetCount + caseHomVarCount;
+            //     controlVars = controlHetCount + controlHomVarCount;
+            // } else if (countHetOnly) {
+            //     caseVars = caseHetCount;
+            //     controlVars = controlHetCount;
+            // } else if (countHomOnly) {
+            //     caseVars = caseHomVarCount;
+            //     controlVars = controlHomVarCount;
+            // }
+            // // minimum variants criterion
+            // if ((caseVars+controlVars)<minVars) {
+            //     continue;
+            // }
+            // // get the REF counts
+            // int caseRefs = caseVC.getHomRefCount();
+            // int controlRefs = controlVC.getHomRefCount();
+            // // Fisher's exact test on this contingency table -- always use two-tailed p!!
+            // double p = fisherExact.getTwoTailedP(caseVars, controlVars, caseRefs, controlRefs);
+            // // Odds ratio
+            // double or = (double)(caseVars*controlRefs)/(double)(controlVars*caseRefs);
+            // // output the line
+            // System.out.println(contig+"\t"+start+"\t"+id+"\t"+
+            //                    vc.getReference().toString()+"\t"+vc.getAlternateAlleles().toString().replace(" ","")+"\t"+
+            //                    caseVars+"\t"+controlVars+"\t"+caseRefs+"\t"+controlRefs+"\t"+p+"\t"+or+"\t"+
+            //                    caseNoCallCount+"\t"+controlNoCallCount);
         }
     }
 }
