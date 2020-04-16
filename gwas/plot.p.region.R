@@ -1,13 +1,13 @@
 source("snpData.R")
-
 ##
 ## plot log Fisher p value of each seg call on a single chromosome in the given start,end range
 ## we focus on loci with positive odds ratio since we're interested in ALTs that lead to the condition
 ##
 ## http://myvariant.info/v1/query?q=rs727503873
 ##
-
-plot.p.region = function(seg=seg, chr="0", start=0, end=0, gene=NULL, label=FALSE, labelSNP=FALSE, minCalls=0, minAlts=0, showGenes=FALSE, ymin=0, ymax=0, caseOnly=FALSE, ctrlOnly=FALSE, pSig=1e-8) {
+## colnames(seg) = c("chr","pos","id","ref","alts","caseString","controlString","caseNoCalls","controlNoCalls","statistic","p")
+##
+plot.p.region = function(seg=seg, chr="0", start=0, end=0, gene=NULL, label=FALSE, labelSNP=FALSE, showGenes=FALSE, ymin=0, ymax=0, pSig=5e-8) {
 
     if (!is.null(gene)) {
         geneRecord = genes[genes$name==gene,]
@@ -19,23 +19,20 @@ plot.p.region = function(seg=seg, chr="0", start=0, end=0, gene=NULL, label=FALS
     if (chr!="0" && start==0) start = min(seg$pos[seg$chr==chr])
     if (chr!="0" && end==0) end = max(seg$pos[seg$chr==chr])
 
-    pts = (seg$caseVars+seg$controlVars+seg$caseRefs+seg$controlRefs)>=minCalls & (seg$caseVars+seg$controlVars)>=minAlts
+    ## collect the points of interest
+    pts = seg$pos>0
     if (chr!="0") {
         pts = pts & seg$chr==chr & seg$pos>=start & seg$pos<=end
     }
-    if (caseOnly) {
-        pts = pts & is.finite(seg$log10OR) & seg$log10OR>0
-    } else if (ctrlOnly) {
-        pts = pts & is.finite(seg$log10OR) & seg$log10OR<0
-    }
-    ptsCase = pts & seg$p<pSig & seg$log10OR>0
-    ptsControl = pts & seg$p<pSig & seg$log10OR<0
-    hasCase = nrow(seg[ptsCase,])>0
-    hasControl = nrow(seg[ptsControl,])>0
 
+    ## significant points
+    ptsSig = pts & seg$p<pSig
+
+    ## limits
     if (ymax==0) ymax = max(seg$mlog10p[pts])
     ylim = c(ymin, ymax)
 
+    ## plot
     if (chr=="0") {
         plot(seg$mlog10p[pts],
              xlab=paste("All Chromosomes"),
@@ -53,7 +50,7 @@ plot.p.region = function(seg=seg, chr="0", start=0, end=0, gene=NULL, label=FALS
              pch=1, cex=0.3, col="black")
     }
 
-    ## chromosome lines if plotting full genome
+    ## vertical chromosome lines if plotting full genome
     if (chr=="0") {
         segpts = seg[pts,]
         currentChr = "0"
@@ -66,82 +63,37 @@ plot.p.region = function(seg=seg, chr="0", start=0, end=0, gene=NULL, label=FALS
         }
     }
     
-    ## ## significance line at 1e-8
-    ## lines(c(1,1e9), rep(8,8), col="gray", lty=2)
-    
     ## highlight highly significant p values
-    if (hasCase) {
-        if (chr=="0") {
-            points(as.numeric(rownames(seg)[ptsCase]), seg$mlog10p[ptsCase], pch=19, cex=0.6, col="darkred")
-        } else {
-            points(seg$pos[ptsCase], seg$mlog10p[ptsCase], pch=19, cex=0.6, col="darkred")
-        }
-    }
-    if (hasControl) {
-        if (chr=="0") {
-            points(as.numeric(rownames(seg)[ptsControl]), seg$mlog10p[ptsControl], pch=19, cex=0.6, col="darkblue")
-        } else {
-            points(seg$pos[ptsControl], seg$mlog10p[ptsControl], pch=19, cex=0.6, col="darkblue")
-        }
+    if (chr=="0") {
+        points(as.numeric(rownames(seg)[ptsSig]), seg$mlog10p[ptsSig], pch=19, cex=0.6, col="darkgreen")
+    } else {
+        points(seg$pos[ptsSig], seg$mlog10p[ptsSig], pch=19, cex=0.6, col="darkgreen")
     }
 
-    ## label them with position if requested
-    if (label) {
-        if (hasControl) {
-            if (labelSNP) {
-                snpInfo = c()
-                for (rsId in seg$id[ptsControl]) {
-                    if (startsWith(rsId, "rs")) {
-                        ## query the SNP API
-                        json = snpData(rsId)
-                        if (is.null(json$hits$clinvar)) {
-                            clinVarSig = "Not in ClinVar"
-                        } else {
-                            clinVar = json$hits$clinvar
-                            clinVarSig = clinVar$rcv$clinical_significance
-                        }
-                        snpInfo = c(snpInfo, clinVarSig)
+    ## label significant points with position if requested
+    if (chr!="0" && label) {
+        snpInfo = ""
+        if (labelSNP) {
+            for (rsId in seg$id[pts]) {
+                if (startsWith(rsId, "rs")) {
+                    ## query the SNP API
+                    json = snpData(rsId)
+                    if (is.null(json$hits$clinvar)) {
+                        clinVarSig = "Not in ClinVar"
                     } else {
-                        snpInfo = c(snpInfo, "")
+                        clinVar = json$hits$clinvar
+                        clinVarSig = clinVar$rcv$clinical_significance
                     }
+                    snpInfo = paste(snpInfo, clinVarSig)
+                } else {
+                    snpInfo = paste(snpInfo, "")
                 }
-            } else {
-                snpInfo = rep("", nrow(seg[ptsControl,]))
             }
-            text(seg$pos[ptsControl], seg$mlog10p[ptsControl], paste(seg$id[ptsControl]," ",seg$ref[ptsControl],seg$alts[ptsControl]," (",
-                                                                     seg$caseVars[ptsControl],"/",seg$caseRefs[ptsControl],"|",
-                                                                     seg$controlVars[ptsControl],"/",seg$controlRefs[ptsControl],
-                                                                     ";OR=",signif(seg$OR[ptsControl],3),") ",snpInfo,sep=""),
-                 col="darkblue", pos=4, cex=0.6, offset=0.2)
         }
-        if (hasCase) {
-            if (labelSNP) {
-                snpInfo = c()
-                for (rsId in seg$id[ptsCase]) {
-                    if (startsWith(rsId, "rs")) {
-                        ## query the SNP API
-                        json = snpData(rsId)
-                        if (is.null(json$hits$clinvar)) {
-                            clinVarSig = "Not in ClinVar"
-                        } else {
-                            clinVar = json$hits$clinvar
-                            clinVarSig = clinVar$rcv$clinical_significance
-                        }
-                        snpInfo = c(snpInfo, clinVarSig)
-                    } else {
-                        snpInfo = c(snpInfo, "")
-                    }
-                }
-            } else {
-                snpInfo = rep("", nrow(seg[ptsCase,]))
-            }
-            text(seg$pos[ptsCase], seg$mlog10p[ptsCase], paste(seg$id[ptsCase]," ",
-                                                               seg$ref[ptsCase],seg$alts[ptsCase]," (",
-                                                               seg$caseVars[ptsCase],"/",seg$caseRefs[ptsCase],"|",
-                                                               seg$controlVars[ptsCase],"/",seg$controlRefs[ptsCase],";OR=",
-                                                               signif(seg$OR[ptsCase],3),") ",snpInfo,sep=""),
-                 col="darkred", pos=4, cex=0.6, offset=0.2)
-        }
+        text(seg$pos[ptsSig], seg$mlog10p[ptsSig],
+             paste(seg$id[ptsSig]," ",seg$ref[ptsSig],seg$alts[ptsSig]," ",
+                   "[",seg$caseString[ptsSig],"][",seg$controlString[ptsSig],"]p=",signif(seg$p[ptsSig],3),snpInfo, sep=""),
+             col="darkgreen", pos=4, cex=0.6, offset=0.2)
     }
 
     ## show gene or genes if requested
