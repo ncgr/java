@@ -36,7 +36,7 @@ import htsjdk.variant.vcf.VCFHeader;
 import org.mskcc.cbio.portal.stats.FisherExact;
 
 /**
- * Loads a VCF file and computes the odds ratio and p-value for segregation between genotypes in a case/control experiment.
+ * Loads a VCF file and computes the Cochran-Armitage Test p-value for segregation between genotypes in a case/control experiment.
  *
  * Cases and controls are given by a phenotype file in dbGaP format.
  *
@@ -365,51 +365,41 @@ public class VCFSegregation {
 		countsGenotypes.add(countf.format(controlCounts.get(gString))+"|"+gString);
 	    }
 		
-
-	    // DEBUG
-	    System.out.println(contig+":"+start+"-"+end+"\tCASE\tCONTROL");
+	    // Cochran-Armitage test
+	    int numRows = 2;
+	    int numCols = countsGenotypes.size();
+	    int[][] countTable = new int[numRows][numCols];
+	    int[] weights = new int[numCols];
+	    // straight allelic association (not additive)
+	    weights[0] = 0;
+	    for (int i=1; i<weights.length; i++) weights[i] = 1;
+	    CochranArmitage ca = new CochranArmitage(weights);
+	    // concatenated representation of counts for output
+	    String caseString = "";
+	    String controlString = "";
+	    // order counts by control descending
+	    int j = 0;
 	    for (String cg : countsGenotypes.descendingSet()) {
 		String[] parts = cg.split("\\|");
-		int count = Integer.parseInt(parts[0]);
 		String gString = parts[1];
-		System.out.println(gString+"\t"+caseCounts.get(gString)+"\t"+controlCounts.get(gString));
+		if (j>0) {
+		    controlString += "|";
+		    caseString += "|";
+		}
+		controlString += controlCounts.get(gString);
+		caseString += caseCounts.get(gString);
+		countTable[0][j] = controlCounts.get(gString);
+		countTable[1][j] = caseCounts.get(gString);
+		j++;
 	    }
-	    //
-            
-            // // var counts
-            // int caseHomVarCount = caseVC.getHomVarCount();
-            // int caseHetCount = caseVC.getHetCount();
-            // int controlHomVarCount = controlVC.getHomVarCount();
-            // int controlHetCount = controlVC.getHetCount();
-            // // count according to zygosity choice
-            // int caseVars = 0;
-            // int controlVars = 0;
-            // if (countBoth) {
-            //     caseVars = caseHetCount + caseHomVarCount;
-            //     controlVars = controlHetCount + controlHomVarCount;
-            // } else if (countHetOnly) {
-            //     caseVars = caseHetCount;
-            //     controlVars = controlHetCount;
-            // } else if (countHomOnly) {
-            //     caseVars = caseHomVarCount;
-            //     controlVars = controlHomVarCount;
-            // }
-            // // minimum variants criterion
-            // if ((caseVars+controlVars)<minVars) {
-            //     continue;
-            // }
-            // // get the REF counts
-            // int caseRefs = caseVC.getHomRefCount();
-            // int controlRefs = controlVC.getHomRefCount();
-            // // Fisher's exact test on this contingency table -- always use two-tailed p!!
-            // double p = fisherExact.getTwoTailedP(caseVars, controlVars, caseRefs, controlRefs);
-            // // Odds ratio
-            // double or = (double)(caseVars*controlRefs)/(double)(controlVars*caseRefs);
-            // // output the line
-            // System.out.println(contig+"\t"+start+"\t"+id+"\t"+
-            //                    vc.getReference().toString()+"\t"+vc.getAlternateAlleles().toString().replace(" ","")+"\t"+
-            //                    caseVars+"\t"+controlVars+"\t"+caseRefs+"\t"+controlRefs+"\t"+p+"\t"+or+"\t"+
-            //                    caseNoCallCount+"\t"+controlNoCallCount);
+	    double pValue = ca.test(countTable);
+
+            // output the line
+            System.out.println(contig+"\t"+start+"\t"+id+"\t"+
+                               vc.getReference().toString()+"\t"+vc.getAlternateAlleles().toString().replace(" ","")+"\t"+
+			       caseString+"\t"+controlString+"\t"+
+			       caseNoCallCount+"\t"+controlNoCallCount+"\t"+
+			       ca.standardStatistic+"\t"+pValue);
         }
     }
 }

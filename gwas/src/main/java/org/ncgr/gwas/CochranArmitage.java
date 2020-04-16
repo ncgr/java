@@ -10,10 +10,10 @@ import org.apache.commons.math3.distribution.NormalDistribution;
 
 /**
  * Class that calculates the Cochran-Armitage test for trend
- * on a 2xnumCols contingency table.  Used to estimate association
+ * on a 2xn contingency table.  Used to estimate association
  * in genetic models of genotype data.
  *
- * Input data should be sorted by decreasing genotype frequency, REF/REF, REF/ALT, ALT/ALT
+ * Input data should be sorted by decreasing control genotype frequency, typically REF/REF, REF/ALT, ALT/ALT.
  * Additive association would then use weights = 0,1,2.
  * Simple allelic association would use weights = 0,1,1.
  *
@@ -32,7 +32,7 @@ public class CochranArmitage {
 
     // variables to hold variance, raw statistic, standardized statistic, and p-value
     double stat = 0.0;
-    double standardStatistics = 0.0;
+    double standardStatistic = 0.0;
     double variance = 0.0;
     double pValue = -1.0; // range is 0.0 to 1.0 (-1.0 means undefined)
 
@@ -52,7 +52,7 @@ public class CochranArmitage {
      * @param countTable = 2xnumCols contingency table.
      * @return the p-value of the Cochran-Armitage statistic of the passed table
      */
-    public double callCochranArmitageTest(int[][] countTable) {
+    public double test(int[][] countTable) {
         if (countTable == null) {
             throw new IllegalArgumentException("Contingency table cannot be null/empty.");
         }
@@ -92,10 +92,10 @@ public class CochranArmitage {
         variance *= rowSum[0]*rowSum[1]/totalSum;
 
         // standardized statistic is stat divided by SD
-        standardStatistics = stat/Math.sqrt(variance);
+        standardStatistic = stat/Math.sqrt(variance);
 
         // use Apache Commons normal distribution to calculate two-tailed p-value
-        pValue = 2*normDist.cumulativeProbability(-Math.abs(standardStatistics));
+        pValue = 2*normDist.cumulativeProbability(-Math.abs(standardStatistic));
 
         // return the p-value
         return pValue;
@@ -115,23 +115,23 @@ public class CochranArmitage {
         String inputFileName = args[0];
 
         int[] weights = { 0, 1, 2 };
-        CochranArmitage catest = new CochranArmitage(weights);    
+        CochranArmitage ca = new CochranArmitage(weights);    
         
         System.out.println("score\tp-value");
         BufferedReader infile = new BufferedReader(new FileReader(inputFileName));
-        int[][] countTable = new int[catest.numRows][catest.numCols];
+        int[][] countTable = new int[ca.numRows][ca.numCols];
         String line = null;
         while ((line=infile.readLine())!=null) {
             String[] tokens = line.split("\t");
             int index=0;
             // populate numRowsxnumCols contingency table
-            for(int i=0; i<catest.numRows; i++) {
-                for(int j=0; j<catest.numCols; j++) {
+            for(int i=0; i<ca.numRows; i++) {
+                for(int j=0; j<ca.numCols; j++) {
                     countTable[i][j] = Integer.parseInt(tokens[index++]);
                 }
             }
-            double pValue = catest.callCochranArmitageTest(countTable);
-            System.out.println(String.format("%f\t%f", catest.standardStatistics, pValue));
+            double pValue = ca.test(countTable);
+            System.out.println(String.format("%f\t%f", ca.standardStatistic, pValue));
         }
         long elapsedTime = System.currentTimeMillis() - startTime;
         System.out.println("run time (in milliseconds): " + elapsedTime);
