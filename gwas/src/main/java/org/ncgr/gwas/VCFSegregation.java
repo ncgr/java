@@ -307,10 +307,8 @@ public class VCFSegregation {
             int end = vc.getEnd();
             // no-call count criterion
 	    int noCallCount = vc.getNoCallCount();
-	    if (noCallCount>maxNoCalls) {
-                continue;
-            }
-	    // minimum MAF criterion
+	    if (noCallCount>maxNoCalls) continue;
+	    // minimum MAF criterion (NOTE: this will pass single-HET-only loci)
 	    int calledCount = vc.getCalledChrCount();
 	    int numAboveMAF = 0;
 	    for (Allele a : vc.getAlleles()) {
@@ -318,14 +316,16 @@ public class VCFSegregation {
 		double maf = (double)count / (double)calledCount;
 		if (maf>minMAF) numAboveMAF++; // includes max allele, usually REF
 	    }
-	    if (numAboveMAF<2) {
-		continue;
-	    }
+	    if (numAboveMAF<2) continue;
+
+	    // require at least two genotpes
+	    List<Genotype> genotypes = vc.getGenotypes();
+	    if (genotypes.size()<2) continue;
 	    
             // get counts for each genotype per case/control
             Map<String,Integer> caseCounts = new HashMap<>();
             Map<String,Integer> controlCounts = new HashMap<>();
-	    for (Genotype g : vc.getGenotypes()) {
+	    for (Genotype g : genotypes) {
 	    	if (g.isNoCall()) continue;
 	    	String gString = g.getGenotypeString();
 	    	if (!caseCounts.containsKey(gString)) caseCounts.put(gString, 0);
