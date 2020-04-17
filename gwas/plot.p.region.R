@@ -27,6 +27,7 @@ plot.p.region = function(seg=seg, chr="0", start=0, end=0, gene=NULL, label=FALS
 
     ## significant points
     ptsSig = pts & seg$p<pSig
+    hasSig = length(seg$p[ptsSig]) > 0
 
     ## limits
     if (ymax==0) ymax = max(seg$mlog10p[pts])
@@ -64,35 +65,33 @@ plot.p.region = function(seg=seg, chr="0", start=0, end=0, gene=NULL, label=FALS
     }
     
     ## highlight highly significant p values
-    if (chr=="0") {
+    if (hasSig && chr=="0") {
         points(as.numeric(rownames(seg)[ptsSig]), seg$mlog10p[ptsSig], pch=19, cex=0.6, col="darkgreen")
-    } else {
+    } else if (hasSig) {
         points(seg$pos[ptsSig], seg$mlog10p[ptsSig], pch=19, cex=0.6, col="darkgreen")
     }
 
     ## label significant points with position if requested
-    if (chr!="0" && label) {
-        snpInfo = ""
-        if (labelSNP) {
-            for (rsId in seg$id[pts]) {
-                if (startsWith(rsId, "rs")) {
-                    ## query the SNP API
-                    json = snpData(rsId)
-                    if (is.null(json$hits$clinvar)) {
-                        clinVarSig = "Not in ClinVar"
-                    } else {
-                        clinVar = json$hits$clinvar
-                        clinVarSig = clinVar$rcv$clinical_significance
+    if (hasSig && chr!="0" && label) {
+        snpInfo = c()
+        for (rsId in seg$id[ptsSig]) {
+            clinvar.clinsig = ""
+            if (labelSNP && startsWith(rsId,"rs")) {
+                ## query the SNP API
+                json = snpData(rsId)
+                for (hit in json$hits) {
+                    if ("clinvar" %in% colnames(hit)) {
+                        clinvar = hit$clinvar
+                        for (clinsig in clinvar$clinsig) {
+                            if (!is.na(clinsig)) clinvar.clinsig = paste(clinvar.clinsig, clinsig)
+                        }
                     }
-                    snpInfo = paste(snpInfo, clinVarSig)
-                } else {
-                    snpInfo = paste(snpInfo, "")
                 }
             }
+            snpInfo = c(snpInfo, clinvar.clinsig)
         }
         text(seg$pos[ptsSig], seg$mlog10p[ptsSig],
-             paste(seg$id[ptsSig]," ",seg$ref[ptsSig],seg$alts[ptsSig]," ",
-                   "[",seg$caseString[ptsSig],"][",seg$controlString[ptsSig],"]p=",signif(seg$p[ptsSig],3),snpInfo, sep=""),
+             paste(seg$id[ptsSig],seg$genotypes[ptsSig],seg$caseString[ptsSig],seg$controlString[ptsSig],snpInfo),
              col="darkgreen", pos=4, cex=0.6, offset=0.2)
     }
 
@@ -100,7 +99,7 @@ plot.p.region = function(seg=seg, chr="0", start=0, end=0, gene=NULL, label=FALS
     ## REQUIRES load-genes!!
     if (!is.null(gene)) {
         ypos = par("yaxp")[1]
-        bar = c(ypos-0.2, ypos+0.2)
+        bar = c(ypos*0.99, ypos*1.01)
         lines(c(start,end), c(ypos,ypos))
         x = (start+end)/2
         text(x, ypos, gene, pos=1, cex=0.6)
@@ -114,7 +113,7 @@ plot.p.region = function(seg=seg, chr="0", start=0, end=0, gene=NULL, label=FALS
     }
     if (showGenes) {
         ypos = par("yaxp")[1]
-        bar = c(ypos-0.2, ypos+0.2)
+        bar = c(ypos*0.99, ypos*1.01)
         within = genes$seqid==chr & genes$end>=start & genes$start<=end
         genesWithin = genes[within,]
         for (i in 1:nrow(genesWithin)) {

@@ -1,5 +1,4 @@
 library(jsonlite)
-
 ##
 ## query SNP data from myvariant.info service
 ##
@@ -8,7 +7,7 @@ library(jsonlite)
 ##
 ## colnames(json$hits$dbsnp):
 ## alleles alt chrom dbsnp_build gene hg19 ref rsid vartype
-
+##
 snpData = function(rsId) {
     url = paste("http://myvariant.info/v1/query?q=", rsId, sep="")
     return(fromJSON(url))
