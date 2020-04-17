@@ -13,10 +13,9 @@
 #                                1)
 #  -dv,--diseasevar <arg>        disease variable in dbGaP phenotype file
 #                                (e.g. PRIMARY_DISEASE; required if -dn)
+#  -maf,--minmaf <arg>           minimum MAF for a locus to be output (0.01)
 #  -mnc,--maxnocalls <arg>       maximum number of no-calls for a locus to
 #                                be output (1000)
-#  -mv,--minvars <arg>           minimum number of VAR calls for a locus to
-#                                be output (0)
 #  -pf,--phenofile <arg>         dbGaP phenotype file
 #  -sf,--samplefile <arg>        dbGaP samples file (needed if contains
 #                                mapping from dbGaP_Subject_ID to sample ID
@@ -73,7 +72,7 @@ DISEASEVAR=PRIMARY_DISEASE
 CASECONTROLVAR=ANALYSIS_CAT
 CASEVAL=Case
 CONTROLVAL=Control
-MINVARS=100
+MINMAF=0.01
 MAXNOCALLS=100
 OUTFILE=SchizophreniaSwedish_Sklar
 
@@ -84,7 +83,7 @@ java -server -Xms1g -Xmx600g -XX:+UseG1GC -XX:+UseStringDeduplication -cp "build
      -sv $SAMPLEVAR \
      -dn $DISEASENAME \
      -dv $DISEASEVAR \
-     -mv $MINVARS \
+     -maf $MINMAF \
      -mnc $MAXNOCALLS \
      -ccv $CASECONTROLVAR -caseval $CASEVAL -controlval $CONTROLVAL \
      > $OUTFILE.seg.txt

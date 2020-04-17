@@ -25,6 +25,7 @@ import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 
+import htsjdk.variant.variantcontext.Allele;
 import htsjdk.variant.variantcontext.Genotype;
 import htsjdk.variant.variantcontext.GenotypeType;
 import htsjdk.variant.variantcontext.GenotypesContext;
@@ -32,8 +33,6 @@ import htsjdk.variant.variantcontext.VariantContext;
 
 import htsjdk.variant.vcf.VCFFileReader;
 import htsjdk.variant.vcf.VCFHeader;
-
-import org.mskcc.cbio.portal.stats.FisherExact;
 
 /**
  * Loads a VCF file and computes the Cochran-Armitage Test p-value for segregation between genotypes in a case/control experiment.
@@ -45,10 +44,11 @@ import org.mskcc.cbio.portal.stats.FisherExact;
 public class VCFSegregation {
     static DecimalFormat percf = new DecimalFormat("0.000%");
     static DecimalFormat countf = new DecimalFormat("00000");
-    static double minMGF = 0.01;
+    static int DEFAULT_MAX_NOCALLS = 1000;
+    static double DEFAULT_MIN_MAF = 0.01;
     
     /**
-     * Main class outputs a tab-delimited list of the contingency matrix for each locus, plus Fisher's exact test p value.
+     * Main class outputs a tab-delimited list of the contingency matrix for each locus, plus the Cochran-Armitage trend test p value.
      */
     public static void main(String[] args) throws FileNotFoundException, IOException {
         Options options = new Options();
@@ -92,11 +92,11 @@ public class VCFSegregation {
         diseaseNameOption.setRequired(false);
         options.addOption(diseaseNameOption);
 	//
-	Option minVarsOption = new Option("mv", "minvars", true, "minimum number of VAR calls for a locus to be output (0)");
-	minVarsOption.setRequired(false);
-	options.addOption(minVarsOption);
+	Option minMAFOption = new Option("maf", "minmaf", true, "minimum MAF for a locus to be output ("+DEFAULT_MIN_MAF+")");
+	minMAFOption.setRequired(false);
+	options.addOption(minMAFOption);
         //
-        Option maxNoCallsOption = new Option("mnc", "maxnocalls", true, "maximum number of no-calls for a locus to be output (1000)");
+        Option maxNoCallsOption = new Option("mnc", "maxnocalls", true, "maximum number of no-calls for a locus to be output ("+DEFAULT_MAX_NOCALLS+")");
         maxNoCallsOption.setRequired(false);
         options.addOption(maxNoCallsOption);
 	//
@@ -125,27 +125,27 @@ public class VCFSegregation {
 	String controlValue = cmd.getOptionValue("controlval");
 	String sampleVar = cmd.getOptionValue("samplevar");
 
-	int minVars = 0;
-	if (cmd.hasOption("minvars")) {
-	    minVars = Integer.parseInt(cmd.getOptionValue("minvars"));
-	}
-
-        int maxNoCalls = 1000;
-        if (cmd.hasOption("maxnocalls")) {
-            maxNoCalls = Integer.parseInt(cmd.getOptionValue("maxnocalls"));
-        }
-
 	String diseaseVar = null;
 	String diseaseName = null;
 	if (cmd.hasOption("diseasevar")) {
 	    diseaseVar = cmd.getOptionValue("diseasevar");
 	    diseaseName = cmd.getOptionValue("diseasename");
 	}
-
+	
 	String desiredSexValue = null;
 	if (cmd.hasOption("desiredsex")) {
 	    desiredSexValue = cmd.getOptionValue("desiredsex");
 	}
+	
+	double minMAF = DEFAULT_MIN_MAF;
+	if (cmd.hasOption("minmaf")) {
+	    minMAF = Double.parseDouble(cmd.getOptionValue("minmaf"));
+	}
+	
+        int maxNoCalls = DEFAULT_MAX_NOCALLS;
+        if (cmd.hasOption("maxnocalls")) {
+            maxNoCalls = Integer.parseInt(cmd.getOptionValue("maxnocalls"));
+        }
 
 	// the optional sample file relates dbGaP_Subject_ID in the phenotypes file to the sample ID used in the VCF file
 	//
@@ -264,16 +264,6 @@ public class VCFSegregation {
             }
         }
 
-        // initialize FisherExact with max a+b+c+d
-        FisherExact fisherExact = new FisherExact(nCases*2+nControls*2);
-
-        // GenotypeType:
-        // HET         The sample is heterozygous, with at least one ref and at least one one alt in any order
-        // HOM_REF     The sample is homozygous reference
-        // HOM_VAR     All alleles are non-reference
-        // MIXED       Some chromosomes are NO_CALL and others are called
-        // NO_CALL     The sample is no-called (all alleles are NO_CALL)
-        // UNAVAILABLE There is no allele data available for this sample (alleles.isEmpty)
         //
         // 1 877558 rs4372192 C T 71.55 PASS AC=1;AF=4.04e-05;AN=24736;BaseQRankSum=-1.369;CCC=24750;... GT:AD:DP:GQ:PL 0/0:7,0:7:21:0,21,281 0/0:7,0:7:21:0,21,218 ...
         //
@@ -315,54 +305,43 @@ public class VCFSegregation {
             String contig = vc.getContig();
             int start = vc.getStart();
             int end = vc.getEnd();
-            VariantContext caseVC = vc.subContextFromSamples(caseSampleNames);
-            VariantContext controlVC = vc.subContextFromSamples(controlSampleNames);
             // no-call count criterion
-            int caseNoCallCount = caseVC.getNoCallCount();
-            int controlNoCallCount = controlVC.getNoCallCount();
-            if ((caseNoCallCount+controlNoCallCount)>maxNoCalls) {
+	    int noCallCount = vc.getNoCallCount();
+	    if (noCallCount>maxNoCalls) {
                 continue;
             }
+	    // minimum MAF criterion
+	    int calledCount = vc.getCalledChrCount();
+	    int numAboveMAF = 0;
+	    for (Allele a : vc.getAlleles()) {
+		int count = vc.getCalledChrCount(a);
+		double maf = (double)count / (double)calledCount;
+		if (maf>minMAF) numAboveMAF++; // includes max allele, usually REF
+	    }
+	    if (numAboveMAF<2) {
+		continue;
+	    }
+	    
             // get counts for each genotype per case/control
             Map<String,Integer> caseCounts = new HashMap<>();
             Map<String,Integer> controlCounts = new HashMap<>();
-	    Map<String,Integer> bothCounts = new HashMap<>();
-	    int totalCount = 0;
-	    String homRef = "";
-	    String hetRef = "";
-	    String homVar = "";
 	    for (Genotype g : vc.getGenotypes()) {
-		if (g.isNoCall()) continue;
-		String gString = g.getGenotypeString();
-		if (!caseCounts.containsKey(gString)) caseCounts.put(gString, 0);
-		if (!controlCounts.containsKey(gString)) controlCounts.put(gString, 0);
-		String sampleName = g.getSampleName();
-		if (g.isHomRef()) homRef = gString;
-		if (g.isHet()) hetRef = gString;
-		if (g.isHomVar()) homVar = gString;
-		totalCount++;
-		int bothCount = 1;
-		if (bothCounts.containsKey(gString)) bothCount = bothCounts.get(gString) + 1;
-		bothCounts.put(gString, bothCount);
-		if (caseSampleNames.contains(sampleName)) {
-		    caseCounts.put(gString, caseCounts.get(gString)+1);
-		} else if (controlSampleNames.contains(sampleName)) {
-		    controlCounts.put(gString, controlCounts.get(gString)+1);
-		}
+	    	if (g.isNoCall()) continue;
+	    	String gString = g.getGenotypeString();
+	    	if (!caseCounts.containsKey(gString)) caseCounts.put(gString, 0);
+	    	if (!controlCounts.containsKey(gString)) controlCounts.put(gString, 0);
+	    	String sampleName = g.getSampleName();
+	    	if (caseSampleNames.contains(sampleName)) {
+	    	    caseCounts.put(gString, caseCounts.get(gString)+1);
+	    	} else if (controlSampleNames.contains(sampleName)) {
+	    	    controlCounts.put(gString, controlCounts.get(gString)+1);
+	    	}
 	    }
-	    // see if we have a minor genotype with MGF>1%.
-	    int numAboveMinMGF = 0;
-	    for (String gString : bothCounts.keySet()) {
-		int bothCount = bothCounts.get(gString);
-		double af = (double)bothCount / (double)totalCount;
-		if (af>=minMGF) numAboveMinMGF++;
-	    }
-	    if (numAboveMinMGF<2) continue;
 
 	    // order genotypes by decreasing control counts by using string sorting
 	    TreeSet<String> countsGenotypes = new TreeSet<>();
 	    for (String gString : controlCounts.keySet()) {
-		countsGenotypes.add(countf.format(controlCounts.get(gString))+"|"+gString);
+	    	countsGenotypes.add(countf.format(controlCounts.get(gString))+"|"+gString);
 	    }
 		
 	    // Cochran-Armitage test
@@ -377,29 +356,32 @@ public class VCFSegregation {
 	    // concatenated representation of counts for output
 	    String caseString = "";
 	    String controlString = "";
+	    String genotypeString = "";
 	    // order counts by control descending
 	    int j = 0;
 	    for (String cg : countsGenotypes.descendingSet()) {
-		String[] parts = cg.split("\\|");
-		String gString = parts[1];
-		if (j>0) {
-		    controlString += "|";
-		    caseString += "|";
-		}
-		controlString += controlCounts.get(gString);
-		caseString += caseCounts.get(gString);
-		countTable[0][j] = controlCounts.get(gString);
-		countTable[1][j] = caseCounts.get(gString);
-		j++;
+	    	String[] parts = cg.split("\\|");
+	    	String gString = parts[1];
+	    	if (j>0) {
+		    genotypeString += "|";
+	    	    controlString += "|";
+	    	    caseString += "|";
+	    	}
+		genotypeString += gString;
+	    	controlString += controlCounts.get(gString);
+	    	caseString += caseCounts.get(gString);
+	    	countTable[0][j] = controlCounts.get(gString);
+	    	countTable[1][j] = caseCounts.get(gString);
+	    	j++;
 	    }
 	    double pValue = ca.test(countTable);
 
             // output the line
             System.out.println(contig+"\t"+start+"\t"+id+"\t"+
-                               vc.getReference().toString()+"\t"+vc.getAlternateAlleles().toString().replace(" ","")+"\t"+
-			       caseString+"\t"+controlString+"\t"+
-			       caseNoCallCount+"\t"+controlNoCallCount+"\t"+
-			       ca.standardStatistic+"\t"+pValue);
+			       genotypeString+"\t"+
+	    		       caseString+"\t"+controlString+"\t"+
+	    		       noCallCount+"\t"+
+	    		       ca.standardStatistic+"\t"+pValue);
         }
     }
 }
