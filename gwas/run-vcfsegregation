@@ -13,9 +13,6 @@
 #                                1)
 #  -dv,--diseasevar <arg>        disease variable in dbGaP phenotype file
 #                                (e.g. PRIMARY_DISEASE; required if -dn)
-#  -maf,--minmaf <arg>           minimum MAF for a locus to be output (0.01)
-#  -mnc,--maxnocalls <arg>       maximum number of no-calls for a locus to
-#                                be output (1000)
 #  -pf,--phenofile <arg>         dbGaP phenotype file
 #  -sf,--samplefile <arg>        dbGaP samples file (needed if contains
 #                                mapping from dbGaP_Subject_ID to sample ID
@@ -24,22 +21,23 @@
 #                                file (e.g. SAMPID; required if -sf)
 #  -vf,--vcffile <arg>           VCF file
 
-## maps to GRCh38
-## /erdos/ncbi/VCF/AREDS/Affy_gru_merge-GRCh38.norm.vcf.gz
-## /erdos/ncbi/VCF/AREDS/Illumina_gru_merge-GRCh38.norm.vcf.gz
-
+# ## maps to GRCh38
+# ## /erdos/ncbi/VCF/AREDS/Affy_gru_merge-GRCh38.norm.vcf.gz
+# ## /erdos/ncbi/VCF/AREDS/Illumina_gru_merge-GRCh38.norm.vcf.gz
 # ## NOTE: no disease name or disease var
 # VCFFILE=/erdos/shokin/ncbi/VCF/AREDS/Affy_gru_merge-GRCh38.norm.vcf.gz
 # PHENODIR=/erdos/shokin/ncbi/dbGaP-22329/PhenoGenotypeFiles/RootStudyConsentSet_phs000001.AREDS.v3.p1.c2.GRU/PhenotypeFiles
 # PHENOFILE=$PHENODIR/phs000001.v3.pht000371.v2.p1.c2.amdlensphenotype.GRU.txt
-# SAMPLEFILE=$PHENODIR/phs000001.v3.pht002478.v1.p1.AREDS_Sample.MULTI.txt
+# SAMPLEFILE=$PHENODIR/phs-000001.v3.pht002478.v1.p1.AREDS_Sample.MULTI.txt
 # SAMPLEVAR=specnum
 # CASECONTROLVAR=AMDSTAT
 # CASEVAL=11
 # CONTROLVAL=1
+# MINMAF=0.01
+# MAXNOCALLS=100
 # OUTFILE=AREDS
 
-# java -server -Xms1g -Xmx600g -XX:+UseG1GC -XX:+UseStringDeduplication -cp "build/install/gwas/lib/*" org.ncgr.gwas.VCFSegregation $1 \
+# java -server -Xms1g -Xmx600g -cp "build/install/gwas/lib/*" org.ncgr.gwas.VCFSegregation $1 \
 #      -vf $VCFFILE \
 #      -pf $PHENOFILE \
 #      -sf $SAMPLEFILE \
@@ -83,7 +81,5 @@ java -server -Xms1g -Xmx600g -XX:+UseG1GC -XX:+UseStringDeduplication -cp "build
      -sv $SAMPLEVAR \
      -dn $DISEASENAME \
      -dv $DISEASEVAR \
-     -maf $MINMAF \
-     -mnc $MAXNOCALLS \
      -ccv $CASECONTROLVAR -caseval $CASEVAL -controlval $CONTROLVAL \
      > $OUTFILE.seg.txt
