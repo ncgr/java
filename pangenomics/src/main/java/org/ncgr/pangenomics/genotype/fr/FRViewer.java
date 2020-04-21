@@ -12,6 +12,7 @@ import java.util.Properties;
 import javax.swing.JFrame;
 import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
+import javax.swing.ToolTipManager;
 import javax.swing.UIManager;
 
 import org.apache.commons.cli.CommandLine;
@@ -30,6 +31,7 @@ import com.mxgraph.layout.hierarchical.mxHierarchicalLayout;
 public class FRViewer {
     private static final long serialVersionUID = 2202072534703043194L;
     private static final Dimension DEFAULT_SIZE = new Dimension(1200, 780);
+    private static final int TOOLTIP_DISMISS_DELAY = 60000;
 
     /**
      * Main application.
@@ -132,6 +134,9 @@ public class FRViewer {
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.pack();
         frame.setVisible(true);
+
+        // set a longer delay for tooltips
+        ToolTipManager.sharedInstance().setDismissDelay(TOOLTIP_DISMISS_DELAY);
 
         // execute the layout
         component.executeLayout();

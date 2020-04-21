@@ -10,6 +10,7 @@ import java.util.ArrayList;
 import javax.swing.JFrame;
 import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
+import javax.swing.ToolTipManager;
 import javax.swing.UIManager;
 
 import org.apache.commons.cli.CommandLine;
@@ -28,6 +29,7 @@ import com.mxgraph.layout.hierarchical.mxHierarchicalLayout;
 public class GraphViewer {
     private static final long serialVersionUID = 2202072534703043194L;
     private static final Dimension DEFAULT_SIZE = new Dimension(1000, 780);
+    private static final int TOOLTIP_DISMISS_DELAY = 60000;
 
     /**
      * Main application.
@@ -110,6 +112,9 @@ public class GraphViewer {
         frame.pack();
         frame.setVisible(true);
 
+        // set a longer delay for tooltips
+        ToolTipManager.sharedInstance().setDismissDelay(TOOLTIP_DISMISS_DELAY);
+
         // mxHierarchicalLayout -- good! WEST orientation is best.
         mxHierarchicalLayout layout = new mxHierarchicalLayout(pgxAdapter, SwingConstants.WEST);
         layout.setFineTuning(true);
@@ -118,5 +123,3 @@ public class GraphViewer {
         layout.execute(pgxAdapter.getDefaultParent());
     }
 }
-
-
