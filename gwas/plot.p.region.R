@@ -30,6 +30,7 @@ plot.p.region = function(seg=seg, chr="0", start=0, end=0, gene=NULL, label=FALS
     hasSig = length(seg$p[ptsSig]) > 0
 
     ## limits
+    xlim = c(start, end)
     if (ymax==0) ymax = max(seg$mlog10p[pts])
     ylim = c(ymin, ymax)
 
@@ -45,7 +46,7 @@ plot.p.region = function(seg=seg, chr="0", start=0, end=0, gene=NULL, label=FALS
         plot(seg$pos[pts], seg$mlog10p[pts],
              xlab=paste("Chr",chr,"position"),
              ylab="-log10(p)",
-             xlim=c(start,end),
+             xlim=xlim,
              ylim=ylim,
              main=paste(deparse(substitute(seg)),chr,":",start,"-",end),
              pch=1, cex=0.3, col="black")
@@ -71,7 +72,10 @@ plot.p.region = function(seg=seg, chr="0", start=0, end=0, gene=NULL, label=FALS
         points(seg$pos[ptsSig], seg$mlog10p[ptsSig], pch=19, cex=0.6, col="darkgreen")
     }
 
-    ## label significant points with position if requested
+    ## line at pSig
+    lines(xlim, -log10(c(pSig,pSig)), col="gray", lty=2)
+
+    ## label significant points if requested
     if (hasSig && chr!="0" && label) {
         snpInfo = c()
         for (rsId in seg$id[ptsSig]) {
@@ -90,19 +94,32 @@ plot.p.region = function(seg=seg, chr="0", start=0, end=0, gene=NULL, label=FALS
             }
             snpInfo = c(snpInfo, clinvar.clinsig)
         }
-        text(seg$pos[ptsSig], seg$mlog10p[ptsSig],
-             paste(seg$id[ptsSig],seg$genotypes[ptsSig],seg$caseString[ptsSig],seg$controlString[ptsSig],snpInfo),
+        textStr = paste(seg$id[ptsSig],seg$genotypes[ptsSig],seg$caseString[ptsSig],seg$controlString[ptsSig])
+        ## add odds ratio if just two genotypes
+        for (i in 1:length(textStr)) {
+            if (seg$ngenotypes[ptsSig][i]==2) {
+                caseCounts = as.numeric(strsplit(schiz$caseString[ptsSig][i], "|", TRUE)[[1]])
+                controlCounts = as.numeric(strsplit(schiz$controlString[ptsSig][i], "|", TRUE)[[1]])
+                caseRatio = caseCounts[2]/caseCounts[1]
+                controlRatio = controlCounts[2]/controlCounts[1]
+                oddsRatio = caseRatio/controlRatio
+                textStr[i] = paste(textStr[i], round(oddsRatio,2))
+            }
+        }
+        if (length(snpInfo)>0) textStr = paste(textStr, snpInfo)
+        text(seg$pos[ptsSig], seg$mlog10p[ptsSig], textStr,
              col="darkgreen", pos=4, cex=0.6, offset=0.2)
     }
 
     ## show gene or genes if requested
     ## REQUIRES load-genes!!
+    ypos = par("yaxp")[1]
+    bar = c(ypos-(ymax-ymin)*0.01, ypos+(ymax-ymin)*0.01)
     if (!is.null(gene)) {
-        ypos = par("yaxp")[1]
-        bar = c(ypos*0.99, ypos*1.01)
-        lines(c(start,end), c(ypos,ypos))
+        lines(xlim, c(ypos,ypos))
         x = (start+end)/2
         text(x, ypos, gene, pos=1, cex=0.6)
+        ## end bars
         lines(rep(start,2), bar)
         lines(rep(end,2), bar)
         if (geneRecord$strand=="-") {
@@ -112,8 +129,6 @@ plot.p.region = function(seg=seg, chr="0", start=0, end=0, gene=NULL, label=FALS
         }
     }
     if (showGenes) {
-        ypos = par("yaxp")[1]
-        bar = c(ypos*0.99, ypos*1.01)
         within = genes$seqid==chr & genes$end>=start & genes$start<=end
         genesWithin = genes[within,]
         for (i in 1:nrow(genesWithin)) {
