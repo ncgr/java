@@ -614,10 +614,6 @@ public class FRFinder {
         minPriorityOption.setRequired(false);
         options.addOption(minPriorityOption);
         //
-        Option skipNodePathsOption = new Option("snp", "skipnodepaths", false, "skip building list of paths per node [false]");
-        skipNodePathsOption.setRequired(false);
-        options.addOption(skipNodePathsOption);
-        //
         Option writeSaveFilesOption = new Option("wsf", "writesavefiles", false, "write save files after each FR is found [false]");
         writeSaveFilesOption.setRequired(false);
         options.addOption(writeSaveFilesOption);
@@ -697,7 +693,6 @@ public class FRFinder {
             System.out.println("# Graph has "+pg.getLabelCounts().get("case")+" case paths and "+pg.getLabelCounts().get("ctrl")+" ctrl paths.");
             // set graph options
             if (cmd.hasOption("verbose")) pg.verbose = true;
-            // if (cmd.hasOption("skipnodepaths")) pg.setSkipNodePaths();
             // instantiate the FRFinder with this PangenomicGraph
             FRFinder frf = new FRFinder(pg);
             frf.setGraphName(graphName);

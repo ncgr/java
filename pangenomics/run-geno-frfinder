@@ -36,8 +36,6 @@
 #                                nodes []
 #  -s,--minsize <arg>            minimum number of nodes that a FR must
 #                                contain to be considered interesting [1]
-#  -snp,--skipnodepaths          skip building list of paths per node
-#                                [false]
 #  -txt,--txt                    load from [graph].nodes.txt and
 #                                [graph].paths.txt
 #  -v,--verbose                  verbose output [false]
@@ -58,7 +56,7 @@ echo "# $graph alpha=$alpha kappa=$kappa priorityOption=$priorityoption $5 $6 $7
 
 ## TXT input
 java -server -Xms1g -Xmx600g -XX:+UseG1GC -XX:+UseStringDeduplication -cp "build/install/fr/lib/*" org.ncgr.pangenomics.genotype.fr.FRFinder \
-     --verbose --skipnodepaths --keepoption=subset $5 $6 $7 $8 $9 \
+     --verbose --keepoption=subset $5 $6 $7 $8 $9 \
      --txt --graph=$graph \
      --alphastart=$alpha --alphaend=$alpha --kappastart=$kappa --kappaend=$kappa --priorityoption=$priorityoption
 
