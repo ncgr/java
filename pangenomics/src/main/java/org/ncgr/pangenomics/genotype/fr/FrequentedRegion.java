@@ -560,34 +560,34 @@ class FrequentedRegion implements Comparable {
         // alpha, kappa
         double alpha = Double.parseDouble(cmd.getOptionValue("alpha"));
         int kappa = Integer.parseInt(cmd.getOptionValue("kappa"));
+        if (kappa==-1) kappa = Integer.MAX_VALUE; // effectively infinity
 
         // parse the priorityOption and impose defaults
-        String priorityOption = cmd.getOptionValue("priorityoption");
-        String[] parts = priorityOption.split(":");
+        String[] parts = cmd.getOptionValue("priorityoption").split(":");
         int priorityOptionKey = Integer.parseInt(parts[0]);
         String priorityOptionLabel = null;
         if (parts.length>1) {
             String priorityOptionParameter = parts[1];
-            if (parts[1].equals("case") || parts[1].equals("ctrl")) {
-                priorityOptionLabel = parts[1];
+            if (priorityOptionParameter.equals("case") || priorityOptionParameter.equals("ctrl")) {
+                priorityOptionLabel = priorityOptionParameter;
             }
         }
+        // impose defaults
         if (priorityOptionKey==1 && priorityOptionLabel==null) priorityOptionLabel = "case";
+        if (priorityOptionKey==3 && priorityOptionLabel==null) priorityOptionLabel = "case";
         
-        // import a PangenomicGraph from the GFA file
-        PangenomicGraph pg = new PangenomicGraph();
+        // import the PangenomicGraph from a pair of TXT files
 	String graphName = cmd.getOptionValue("graph");
-        // NOTE: only can import TXT file
+        PangenomicGraph pg = new PangenomicGraph();
         pg.nodesFile = new File(graphName+".nodes.txt");
         pg.pathsFile = new File(graphName+".paths.txt");
         pg.loadTXT();
+        System.out.println("# Graph has "+pg.vertexSet().size()+" nodes and "+pg.edgeSet().size()+" edges with "+pg.paths.size()+" paths.");
         pg.tallyLabelCounts();
-        System.out.println("# Graph has "+pg.getNodes().size()+" nodes and "+pg.paths.size()+" paths.");
         System.out.println("# Graph has "+pg.getLabelCounts().get("case")+" case paths and "+pg.getLabelCounts().get("ctrl")+" ctrl paths.");
 
         // create the FrequentedRegion with this PangenomicGraph
-        String nodeString = cmd.getOptionValue("nodes");
-        NodeSet nodes = pg.getNodeSet(nodeString);
+        NodeSet nodes = pg.getNodeSet(cmd.getOptionValue("nodes"));
         FrequentedRegion fr = new FrequentedRegion(pg, nodes, alpha, kappa, priorityOptionKey, priorityOptionLabel);
 
         // print it out

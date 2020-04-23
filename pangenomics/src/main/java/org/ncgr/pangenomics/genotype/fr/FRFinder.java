@@ -687,7 +687,7 @@ public class FRFinder {
             frf.postprocess();
         } else {
             String graphName = cmd.getOptionValue("graph");
-            // load graph from TXT file
+            // load graph from a pair of TXT files
             PangenomicGraph pg = new PangenomicGraph();
             pg.name = graphName;
             pg.nodesFile = new File(graphName+".nodes.txt");
