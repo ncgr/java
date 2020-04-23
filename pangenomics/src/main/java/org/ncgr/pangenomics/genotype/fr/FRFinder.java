@@ -72,22 +72,26 @@ public class FRFinder {
     String priorityOptionParameter;  // parameter for priority update emphasis, can be null or "alt" or "case" or "ctrl"
     
     // diagnostics
-    long clockTime;
+    boolean verbose;
+    boolean debug;
     PrintStream logOut;
+    Runtime runtime;
     
     /**
      * Construct with a populated Graph and default parameters.
      */
     public FRFinder(PangenomicGraph graph) {
-        initializeParameters();
         this.graph = graph;
         this.paths = graph.paths;
+	this.runtime = Runtime.getRuntime();
+        initializeParameters();
     }
 
     /**
      * Construct with the output from a previous run. Be sure to set minSup, minSize, minLen filters as needed before running postprocess().
      */
     public FRFinder(String inputPrefix) throws FileNotFoundException, IOException {
+	this.runtime = Runtime.getRuntime();
         initializeParameters();
         parameters = FRUtils.readParameters(inputPrefix); // sets properties from file
         readFrequentedRegions();
@@ -97,8 +101,6 @@ public class FRFinder {
      * Initialize the default parameters.
      */
     void initializeParameters() {
-        parameters.setProperty("verbose", "false");
-        parameters.setProperty("debug", "false");
         parameters.setProperty("resume", "false");
         parameters.setProperty("writeSaveFiles", "false");
         parameters.setProperty("minSup", "1");
@@ -197,7 +199,6 @@ public class FRFinder {
                         try {
                             FrequentedRegion fr = new FrequentedRegion(graph, c, alpha, kappa, priorityOptionKey, priorityOptionLabel);
                             allFrequentedRegions.put(c.toString(), fr);
-                            if (debug()) System.out.println(fr+"\t"+percf.format(node.af));
                         } catch (Exception e) {
                             System.err.println(e);
                             System.exit(1);
@@ -222,18 +223,20 @@ public class FRFinder {
         }
 
         // add the required nodes to allFrequentedRegions
-        FrequentedRegion requiredFR = new FrequentedRegion(graph, requiredNodes, alpha, kappa, priorityOptionKey, priorityOptionLabel);
-        allFrequentedRegions.put(requiredFR.nodes.toString(), requiredFR);
-        if (isInteresting(requiredFR)) {
-            frequentedRegions.put(requiredFR.nodes.toString(), requiredFR);
-        }
+	if (requiredNodes.size()>0) {
+	    FrequentedRegion requiredFR = new FrequentedRegion(graph, requiredNodes, alpha, kappa, priorityOptionKey, priorityOptionLabel);
+	    allFrequentedRegions.put(requiredFR.nodes.toString(), requiredFR);
+	    if (isInteresting(requiredFR)) {
+		frequentedRegions.put(requiredFR.nodes.toString(), requiredFR);
+	    }
+	}
 
         // dump out the pre-search FRs of interest, sorted by priority
         TreeSet<FrequentedRegion> sortedFRs = new TreeSet<>(frequentedRegions.values());
         for (FrequentedRegion fr : sortedFRs) {
             printToLog("0:"+fr.toString());
         }
-        System.out.println("# "+allFrequentedRegions.size()+" single-node FRs will be used in search.");
+        System.out.println("# "+allFrequentedRegions.size()+" single-node FRs will be used to initiate search.");
 
         // build the FRs round by round
 	long startTime = System.currentTimeMillis();
@@ -241,13 +244,21 @@ public class FRFinder {
         while (added && (round<getMaxRound() || getMaxRound()==0)) {
             round++;
             added = false;
+	    long roundStartTime = System.currentTimeMillis();
             // store FRPairs in a map keyed by merged nodes in THIS round for parallel operation and sorting
             ConcurrentSkipListSet<FRPair> frpairSet = new ConcurrentSkipListSet<>();
+	    // trigger a garbage collection because we can
+	    runtime.gc();
             ////////////////////////////////////////////////////////////////////////////////////////////////
             // start parallel streams
             allFrequentedRegions.entrySet().parallelStream().forEach(entry1 -> {
                     FrequentedRegion fr1 = entry1.getValue();
-                    if (debug()) System.out.println("fr1:"+fr1);
+		    long fr1ElapsedTime = System.currentTimeMillis()-roundStartTime;
+		    if (fr1ElapsedTime<600000) {
+		    if (debug) {
+			long usedRAM = runtime.totalMemory()-runtime.freeMemory();
+			System.err.println("fr1:"+fr1+"|"+fr1ElapsedTime/1000+" USED="+(usedRAM)/1e9);
+		    }
                     allFrequentedRegions.entrySet().parallelStream().forEach(entry2 -> {
                             FrequentedRegion fr2 = entry2.getValue();
                             if (fr2.nodes.compareTo(fr1.nodes)>0) {
@@ -314,9 +325,17 @@ public class FRFinder {
                                     if (keep) {
                                         // add this candidate merged pair to acceptedFRPairs
                                         acceptedFRPairs.put(nodesKey, frpair);
-                                        // add this to the current frpairSet if interesting
+                                        // add this to the current frpairSet if interesting and higher priority
                                         if (isInteresting(frpair.merged)) {
-                                            frpairSet.add(frpair);
+					    boolean addit = (frpairSet.size()==0 || frpair.compareTo(frpairSet.last())>0);
+					    if (addit) {
+						frpairSet.add(frpair);
+						if (debug) {
+						    long fr2ElapsedTime = System.currentTimeMillis()-roundStartTime;
+						    long usedRAM = runtime.totalMemory()-runtime.freeMemory();
+						    System.err.println("+"+frpairSet.size()+":"+frpair.merged+"|"+(fr2ElapsedTime)/1000+" USED="+(usedRAM)/1e9);
+						}
+					    }
                                         }
                                     } else {
                                         // add this to the rejected list
@@ -324,16 +343,15 @@ public class FRFinder {
                                     }
                                 }
                             }
-                        });
+			});
+		    }
                 });
             // end parallelStreams
             ////////////////////////////////////////////////////////////////////////////////////////////////
             // add our new best merged FR
             if (frpairSet.size()>0) {
                 added = true;
-                if (debug()) System.out.print("Finding best FRPair from this round...");
                 FrequentedRegion fr = frpairSet.last().merged;
-                if (debug()) System.out.println("done");
                 // add this FR to the mergeable FRs map
                 allFrequentedRegions.put(fr.nodes.toString(), fr);
                 frequentedRegions.put(fr.nodes.toString(), fr);
@@ -350,8 +368,7 @@ public class FRFinder {
             // output current state for continuation if aborted
             if (frequentedRegions.size()>0 && writeSaveFiles()) {
                 // params with current clock time
-                clockTime = System.currentTimeMillis() - startTime;
-                FRUtils.printParameters(parameters, getGraphName()+".save", alpha, kappa, clockTime);
+                FRUtils.printParameters(parameters, getGraphName()+".save", alpha, kappa, System.currentTimeMillis()-startTime);
                 // allFrequentedRegions
                 PrintStream sfrOut = new PrintStream(getGraphName()+"."+ALL_FREQUENTED_REGIONS_SAVE);
                 for (FrequentedRegion fr : allFrequentedRegions.values()) {
@@ -384,16 +401,16 @@ public class FRFinder {
         }
 
         // timing
-	clockTime = System.currentTimeMillis() - startTime;
+	long elapsedTime = System.currentTimeMillis() - startTime;
         System.out.println("Found "+frequentedRegions.size()+" FRs.");
-	System.out.println("Clock time: "+FRUtils.formatTime(clockTime));
+	System.out.println("Clock time: "+FRUtils.formatTime(elapsedTime));
         
 	// final output
 	if (frequentedRegions.size()>0) {
-            FRUtils.printParameters(parameters, formOutputPrefix(alpha, kappa), alpha, kappa, clockTime);
+            FRUtils.printParameters(parameters, formOutputPrefix(alpha, kappa), alpha, kappa, elapsedTime);
             printFrequentedRegions(formOutputPrefix(alpha, kappa));
-            printFRSubpaths(formOutputPrefix(alpha, kappa));
             printPathFRs(formOutputPrefix(alpha, kappa));
+            printFRSubpaths(formOutputPrefix(alpha, kappa));
 	}
     }
 
@@ -418,9 +435,9 @@ public class FRFinder {
                 reason += " SIZE";
             }
             if (passes) filteredFRs.put(fr.nodes.toString(), fr);
-            if (verbose()) System.out.println(fr.toString()+reason);
+            if (verbose) System.out.println(fr.toString()+reason);
         }
-        if (verbose()) System.out.println(filteredFRs.size()+" FRs passed minSup="+getMinSup()+", minSize="+getMinSize()+", minLen="+getMinLen());
+        if (verbose) System.out.println(filteredFRs.size()+" FRs passed minSup="+getMinSup()+", minSize="+getMinSize()+", minLen="+getMinLen());
 	// output the filtered FRs and SVM data
         frequentedRegions = filteredFRs;
 	if (frequentedRegions.size()>0) {
@@ -431,12 +448,6 @@ public class FRFinder {
     }
 
     // parameter getters
-    public boolean verbose() {
-        return Boolean.parseBoolean(parameters.getProperty("verbose"));
-    }
-    public boolean debug() {
-        return Boolean.parseBoolean(parameters.getProperty("debug"));
-    }
     public boolean writeSaveFiles() {
         return Boolean.parseBoolean(parameters.getProperty("writeSaveFiles"));
     }
@@ -481,12 +492,6 @@ public class FRFinder {
     }
     
     // parameter setters
-    public void setVerbose() {
-        parameters.setProperty("verbose", "true");
-    }
-    public void setDebug() {
-        parameters.setProperty("debug", "true");
-    }
     public void setPriorityOption(String priorityOption) {
         parameters.setProperty("priorityOption", priorityOption);
         parsePriorityOption(priorityOption);
@@ -676,9 +681,9 @@ public class FRFinder {
             if (cmd.hasOption("minsup")) frf.setMinSup(Integer.parseInt(cmd.getOptionValue("minsup")));
             if (cmd.hasOption("minsize")) frf.setMinSize(Integer.parseInt(cmd.getOptionValue("minsize")));
             if (cmd.hasOption("minlen")) frf.setMinLen(Double.parseDouble(cmd.getOptionValue("minlen")));
-            if (cmd.hasOption("verbose")) frf.setVerbose();
-            if (cmd.hasOption("debug")) frf.setDebug();
             if (cmd.hasOption("writesavefiles")) frf.setWriteSaveFiles();
+            if (cmd.hasOption("verbose")) frf.verbose = true;
+            if (cmd.hasOption("debug")) frf.debug = true;
             frf.postprocess();
         } else {
             String graphName = cmd.getOptionValue("graph");
@@ -708,11 +713,11 @@ public class FRFinder {
             if (cmd.hasOption("requirednodes")) frf.setRequiredNodes(cmd.getOptionValue("requirednodes"));
             if (cmd.hasOption("excludednodes")) frf.setExcludedNodes(cmd.getOptionValue("excludednodes"));
             if (cmd.hasOption("keepoption")) frf.setKeepOption(cmd.getOptionValue("keepoption"));
-            if (cmd.hasOption("verbose")) frf.setVerbose();
-            if (cmd.hasOption("debug")) frf.setDebug();
             if (cmd.hasOption("resume")) frf.setResume();
             if (cmd.hasOption("writesavefiles")) frf.setWriteSaveFiles();
             if (cmd.hasOption("minmaf")) frf.setMinMAF(Double.parseDouble(cmd.getOptionValue("minmaf")));
+            if (cmd.hasOption("verbose")) frf.verbose = true;
+            if (cmd.hasOption("debug")) frf.debug = true;
             // run the requested job
             if (alphaStart==alphaEnd && kappaStart==kappaEnd) {
                 // single run
@@ -898,7 +903,7 @@ public class FRFinder {
         TreeSet<FrequentedRegion> sortedFRs = new TreeSet<>(frequentedRegions.values());
         for (FrequentedRegion fr : sortedFRs) {
             out.println(fr.toString());
-            out.println(fr.subpathsString());
+            out.print(fr.subpathsString()); // contains \n at end of every line
         }
         out.close();
     }

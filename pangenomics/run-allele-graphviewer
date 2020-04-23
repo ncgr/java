@@ -7,4 +7,4 @@
 
 graph=$1
 
-java -server -cp "build/install/fr/lib/*" org.ncgr.pangenomics.allele.GraphViewer --graph $1
+java -cp "build/install/fr/lib/*" org.ncgr.pangenomics.allele.GraphViewer --graph $1

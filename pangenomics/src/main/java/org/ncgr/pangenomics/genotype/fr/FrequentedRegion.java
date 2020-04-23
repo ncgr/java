@@ -392,17 +392,12 @@ class FrequentedRegion implements Comparable {
      * Return a string with the subpaths.
      */
     public String subpathsString() {
-        String s = "";
-        boolean first = true;
+        StringBuilder sb = new StringBuilder();
         for (Path sp : subpaths) {
-            if (first) {
-                first = false;
-            } else {
-                s += "\n";
-            }
-            s += sp.toString();
+            sb.append(sp.toString());
+	    sb.append("\n");
         }
-        return s;
+	return sb.toString();
     }
 
     /**
