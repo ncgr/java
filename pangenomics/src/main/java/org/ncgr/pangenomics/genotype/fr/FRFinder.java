@@ -254,96 +254,97 @@ public class FRFinder {
             allFrequentedRegions.entrySet().parallelStream().forEach(entry1 -> {
                     FrequentedRegion fr1 = entry1.getValue();
 		    long fr1ElapsedTime = System.currentTimeMillis()-roundStartTime;
+                    // limit to 10 minutes elapsed time per fr1 round
 		    if (fr1ElapsedTime<600000) {
-		    if (debug) {
-			long usedRAM = runtime.totalMemory()-runtime.freeMemory();
-			System.err.println("fr1:"+fr1+"|"+fr1ElapsedTime/1000+" USED="+(usedRAM)/1e9);
-		    }
-                    allFrequentedRegions.entrySet().parallelStream().forEach(entry2 -> {
-                            FrequentedRegion fr2 = entry2.getValue();
-                            if (fr2.nodes.compareTo(fr1.nodes)>0) {
-                                FRPair frpair = new FRPair(fr1, fr2, priorityOptionKey, priorityOptionLabel);
-                                String nodesKey = frpair.nodes.toString();
-                                boolean rejected = false;
-                                if (frequentedRegions.containsKey(nodesKey)) {
-                                    // if already found, bail
-                                    rejected = true;
-                                } else if (acceptedFRPairs.containsKey(nodesKey)) {
-                                    // get stored FRPair since already accepted and merged in a previous round
-                                    frpair = acceptedFRPairs.get(nodesKey);
-                                } else if (rejectedNodeSets.contains(nodesKey)) {
-                                    // already rejected, bail
-                                    rejected = true;
-                                }
-                                // reject if not all the required nodes are present
-                                if (!rejected && requiredNodes.size()>0) {
-                                    for (Node n : requiredNodes) {
-                                        if (!frpair.nodes.contains(n)) {
-                                            rejected = true; // lacking a required node
-                                            break;
-                                        }
+                        if (debug) {
+                            long usedRAM = runtime.totalMemory()-runtime.freeMemory();
+                            System.err.println("fr1:"+fr1.toString()+"|"+fr1ElapsedTime/1000+" USED="+(usedRAM)/1e9);
+                        }
+                        allFrequentedRegions.entrySet().parallelStream().forEach(entry2 -> {
+                                FrequentedRegion fr2 = entry2.getValue();
+                                if (fr2.nodes.compareTo(fr1.nodes)>0) {
+                                    FRPair frpair = new FRPair(fr1, fr2, priorityOptionKey, priorityOptionLabel);
+                                    String nodesKey = frpair.nodes.toString();
+                                    boolean rejected = false;
+                                    if (frequentedRegions.containsKey(nodesKey)) {
+                                        // if already found, bail
+                                        rejected = true;
+                                    } else if (acceptedFRPairs.containsKey(nodesKey)) {
+                                        // get stored FRPair since already accepted and merged in a previous round
+                                        frpair = acceptedFRPairs.get(nodesKey);
+                                    } else if (rejectedNodeSets.contains(nodesKey)) {
+                                        // already rejected, bail
+                                        rejected = true;
                                     }
-                                }
-                                // reject if one of the excluded nodes is present
-                                if (!rejected && excludedNodes.size()>0) {
-                                    for (Node n : excludedNodes) {
-                                        if (frpair.nodes.contains(n)) {
-                                            rejected = true; // containing an excluded node
-                                            break;
-                                        }
-                                    }
-                                }
-                                if (rejected) {
-                                    // add this rejected NodeSet to the rejected list
-                                    rejectedNodeSets.add(nodesKey);
-                                } else {
-                                    // merge this FRPair if not already merged
-                                    if (frpair.merged==null) {
-                                        if (frpair.merged==null) {
-                                            frpair.merge();
-                                        }
-                                    }
-                                    // should we keep this merged FR according to keepOption?
-                                    boolean keep = true; // default if keepOption not set
-                                    if (getKeepOption().startsWith("subset") && frpair.merged.nodes.size()>=keepOptionKey) {
-                                        // keep FRs that are subsets of others or have higher priority
-                                        for (FrequentedRegion frOld : frequentedRegions.values()) {
-                                            if (frpair.merged.nodes.isSupersetOf(frOld.nodes) && frpair.merged.priority<=frOld.priority) {
-                                                keep = false;
-                                                break;
-                                            }
-                                        }
-                                    } else if (getKeepOption().startsWith("distance")) {
-                                        // keep FRs that are at least a distance of keepOptionKey away from others or have higher priority
-                                        for (FrequentedRegion frOld : frequentedRegions.values()) {
-                                            if (frpair.merged.nodes.distanceFrom(frOld.nodes)<keepOptionKey && frpair.merged.priority<=frOld.priority) {
-                                                keep = false;
+                                    // reject if not all the required nodes are present
+                                    if (!rejected && requiredNodes.size()>0) {
+                                        for (Node n : requiredNodes) {
+                                            if (!frpair.nodes.contains(n)) {
+                                                rejected = true; // lacking a required node
                                                 break;
                                             }
                                         }
                                     }
-                                    if (keep) {
-                                        // add this candidate merged pair to acceptedFRPairs
-                                        acceptedFRPairs.put(nodesKey, frpair);
-                                        // add this to the current frpairSet if interesting and higher priority
-                                        if (isInteresting(frpair.merged)) {
-					    boolean addit = (frpairSet.size()==0 || frpair.compareTo(frpairSet.last())>0);
-					    if (addit) {
-						frpairSet.add(frpair);
-						if (debug) {
-						    long fr2ElapsedTime = System.currentTimeMillis()-roundStartTime;
-						    long usedRAM = runtime.totalMemory()-runtime.freeMemory();
-						    System.err.println("+"+frpairSet.size()+":"+frpair.merged+"|"+(fr2ElapsedTime)/1000+" USED="+(usedRAM)/1e9);
-						}
-					    }
+                                    // reject if one of the excluded nodes is present
+                                    if (!rejected && excludedNodes.size()>0) {
+                                        for (Node n : excludedNodes) {
+                                            if (frpair.nodes.contains(n)) {
+                                                rejected = true; // containing an excluded node
+                                                break;
+                                            }
                                         }
-                                    } else {
-                                        // add this to the rejected list
+                                    }
+                                    if (rejected) {
+                                        // add this rejected NodeSet to the rejected list
                                         rejectedNodeSets.add(nodesKey);
+                                    } else {
+                                        // merge this FRPair if not already merged
+                                        if (frpair.merged==null) {
+                                            if (frpair.merged==null) {
+                                                frpair.merge();
+                                            }
+                                        }
+                                        // should we keep this merged FR according to keepOption?
+                                        boolean keep = true; // default if keepOption not set
+                                        if (getKeepOption().startsWith("subset") && frpair.merged.nodes.size()>=keepOptionKey) {
+                                            // keep FRs that are subsets of others or have higher priority
+                                            for (FrequentedRegion frOld : frequentedRegions.values()) {
+                                                if (frpair.merged.nodes.isSupersetOf(frOld.nodes) && frpair.merged.priority<=frOld.priority) {
+                                                    keep = false;
+                                                    break;
+                                                }
+                                            }
+                                        } else if (getKeepOption().startsWith("distance")) {
+                                            // keep FRs that are at least a distance of keepOptionKey away from others or have higher priority
+                                            for (FrequentedRegion frOld : frequentedRegions.values()) {
+                                                if (frpair.merged.nodes.distanceFrom(frOld.nodes)<keepOptionKey && frpair.merged.priority<=frOld.priority) {
+                                                    keep = false;
+                                                    break;
+                                                }
+                                            }
+                                        }
+                                        if (keep) {
+                                            // add this candidate merged pair to acceptedFRPairs
+                                            acceptedFRPairs.put(nodesKey, frpair);
+                                            // add this to the current frpairSet if interesting and higher priority
+                                            if (isInteresting(frpair.merged)) {
+                                                boolean addit = (frpairSet.size()==0 || frpair.compareTo(frpairSet.last())>0);
+                                                if (addit) {
+                                                    frpairSet.add(frpair);
+                                                    if (debug) {
+                                                        long fr2ElapsedTime = System.currentTimeMillis()-roundStartTime;
+                                                        long usedRAM = runtime.totalMemory()-runtime.freeMemory();
+                                                        System.err.println("+"+frpairSet.size()+":"+frpair.merged.toString()+"|"+(fr2ElapsedTime)/1000+" USED="+(usedRAM)/1e9);
+                                                    }
+                                                }
+                                            }
+                                        } else {
+                                            // add this to the rejected list
+                                            rejectedNodeSets.add(nodesKey);
+                                        }
                                     }
                                 }
-                            }
-			});
+                            });
 		    }
                 });
             // end parallelStreams
@@ -358,12 +359,12 @@ public class FRFinder {
                 // toggle priorityOptionLabel for next round if so desired
                 if (priorityOptionParameter!=null && priorityOptionParameter.equals("alt")) togglePriorityOptionLabel();
                 // output this FR
-                printToLog(round+":"+fr);
+                printToLog(round+":"+fr.toString());
             } else {
                 // show the top remaining FR that wasn't added
                 TreeSet<FRPair> remainingFRPairs = new TreeSet<>(acceptedFRPairs.values());
                 printToLog("-------------------------------------------------------------------------------------------------------");
-                printToLog("TR:"+remainingFRPairs.last().merged);
+                printToLog("TR:"+remainingFRPairs.last().merged.toString());
             }
             // output current state for continuation if aborted
             if (frequentedRegions.size()>0 && writeSaveFiles()) {
@@ -378,7 +379,7 @@ public class FRFinder {
                 // acceptedFRPairs
                 PrintStream afrpOut = new PrintStream(getGraphName()+"."+ACCEPTED_FRPAIRS_SAVE);
                 for (FRPair frpair : acceptedFRPairs.values()) {
-                    afrpOut.println(frpair);
+                    afrpOut.println(frpair.toString());
                 }
                 // rejectedNodeSets
                 PrintStream rnsOut = new PrintStream(getGraphName()+"."+REJECTED_NODESETS_SAVE);
