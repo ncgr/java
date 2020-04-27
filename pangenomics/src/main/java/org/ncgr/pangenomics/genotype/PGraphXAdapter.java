@@ -65,7 +65,7 @@ class PGraphXAdapter extends JGraphXAdapter<Node,Edge> {
         setAutoSizeCells(true);
 
         // logical to do case/control ops
-        hasCaseControlLabels = graph.getLabelCounts().containsKey("case") && graph.getLabelCounts().containsKey("ctrl");
+        hasCaseControlLabels = graph.labelCounts.containsKey("case") && graph.labelCounts.containsKey("ctrl");
 
         // color the nodes, plus other decoration
         selectAll();
@@ -175,7 +175,7 @@ class PGraphXAdapter extends JGraphXAdapter<Node,Edge> {
             if (hasCaseControlLabels) {
                 double lOR = Math.log10(graph.oddsRatio(n));
                 double p = graph.fisherExactP(n);
-                Map<String,Integer> graphLabelCounts = graph.getLabelCounts();
+                Map<String,Integer> graphLabelCounts = graph.labelCounts;
                 Map<String,Integer> nodeLabelCounts = graph.getLabelCounts(n);
                 int nodeCaseCounts = 0;
                 int nodeCtrlCounts = 0;
@@ -197,7 +197,7 @@ class PGraphXAdapter extends JGraphXAdapter<Node,Edge> {
             int edgePathCount = graph.getPathCount(e);
             String tip = percf.format((double)edgePathCount/(double)graphPathCount);
             if (hasCaseControlLabels) {
-                Map<String,Integer> graphLabelCounts = graph.getLabelCounts();
+                Map<String,Integer> graphLabelCounts = graph.labelCounts;
                 Map<String,Integer> edgeLabelCounts = graph.getLabelCounts(e);
                 int edgeCaseCounts = 0;
                 int edgeCtrlCounts = 0;

@@ -742,7 +742,7 @@ public class FRFinder {
             pg.loadTXT();
             System.out.println("# Graph has "+pg.vertexSet().size()+" nodes and "+pg.edgeSet().size()+" edges with "+pg.paths.size()+" paths.");
             pg.tallyLabelCounts();
-            System.out.println("# Graph has "+pg.getLabelCounts().get("case")+" case paths and "+pg.getLabelCounts().get("ctrl")+" ctrl paths.");
+            System.out.println("# Graph has "+pg.labelCounts.get("case")+" case paths and "+pg.labelCounts.get("ctrl")+" ctrl paths.");
             // set graph options
             if (cmd.hasOption("verbose")) pg.verbose = true;
             // instantiate the FRFinder with this PangenomicGraph

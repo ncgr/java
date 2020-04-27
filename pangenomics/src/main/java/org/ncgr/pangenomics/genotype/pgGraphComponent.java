@@ -133,8 +133,8 @@ class pgGraphComponent extends mxGraphComponent implements ActionListener, ListS
         topPanel.add(zoomInButton);
         // graph info
         String infoLabelString = graph.getNodes().size()+" nodes "+graph.paths.size()+" paths";
-        if (graph.getLabelCounts().get("case")!=null && graph.getLabelCounts().get("ctrl")!=null) {
-            infoLabelString += " ("+graph.getLabelCounts().get("case")+" cases / "+graph.getLabelCounts().get("ctrl")+" controls)";
+        if (graph.labelCounts.get("case")!=null && graph.labelCounts.get("ctrl")!=null) {
+            infoLabelString += " ("+graph.labelCounts.get("case")+" cases / "+graph.labelCounts.get("ctrl")+" controls)";
         }
         JLabel infoLabel = new JLabel(infoLabelString);
         topPanel.add(infoLabel);

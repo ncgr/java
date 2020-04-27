@@ -232,8 +232,8 @@ class FrequentedRegion implements Comparable {
      */
     public String columnHeading() {
         String s = "nodes\tsize\tsupport";
-        if (graph!=null && graph.getLabelCounts().size()>0) {
-            for (String label : graph.getLabelCounts().keySet()) {
+        if (graph!=null && graph.labelCounts.size()>0) {
+            for (String label : graph.labelCounts.keySet()) {
                 s += "\t"+label;
             }
             // odds ratio and p value
@@ -360,7 +360,7 @@ class FrequentedRegion implements Comparable {
         String s = nodes.toString()+"\t"+nodes.size()+"\t"+support;
         if (support>0) {
             // show label support if available
-            if (graph!=null && graph.getLabelCounts().size()>0) {
+            if (graph!=null && graph.labelCounts.size()>0) {
                 // count the support per label
                 Map<String,Integer> labelCounts = new TreeMap<>();
                 for (Path subpath : subpaths) {
@@ -370,7 +370,7 @@ class FrequentedRegion implements Comparable {
                         }
                     }
                 }
-                for (String label : graph.getLabelCounts().keySet()) {
+                for (String label : graph.labelCounts.keySet()) {
                     if (labelCounts.containsKey(label)) {
                         s += "\t"+labelCounts.get(label);
                     } else {
@@ -584,7 +584,7 @@ class FrequentedRegion implements Comparable {
         pg.loadTXT();
         System.out.println("# Graph has "+pg.vertexSet().size()+" nodes and "+pg.edgeSet().size()+" edges with "+pg.paths.size()+" paths.");
         pg.tallyLabelCounts();
-        System.out.println("# Graph has "+pg.getLabelCounts().get("case")+" case paths and "+pg.getLabelCounts().get("ctrl")+" ctrl paths.");
+        System.out.println("# Graph has "+pg.labelCounts.get("case")+" case paths and "+pg.labelCounts.get("ctrl")+" ctrl paths.");
 
         // create the FrequentedRegion with this PangenomicGraph
         NodeSet nodes = pg.getNodeSet(cmd.getOptionValue("nodes"));

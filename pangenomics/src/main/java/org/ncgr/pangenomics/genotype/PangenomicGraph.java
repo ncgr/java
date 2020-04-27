@@ -311,13 +311,6 @@ public class PangenomicGraph extends DirectedAcyclicGraph<Node,Edge> {
     }
 
     /**
-     * Get this graph's label counts map.
-     */
-    public Map<String,Integer> getLabelCounts() {
-        return labelCounts;
-    }
-
-    /**
      * Get the label counts map for paths that traverse the given node.
      */
     public Map<String,Integer> getLabelCounts(Node n) {
@@ -448,6 +441,16 @@ public class PangenomicGraph extends DirectedAcyclicGraph<Node,Edge> {
     }
 
     /**
+     * Print the counts of paths per label.
+     */
+    public void printLabelCounts(PrintStream out) {
+        if (out==System.out) printHeading("LABEL COUNTS");
+        for (String label : labelCounts.keySet()) {
+            out.println(label+"\t"+labelCounts.get(label));
+        }
+    }
+
+    /**
      * Print a delineating heading, for general use.
      */
     static void printHeading(String heading) {
@@ -461,20 +464,16 @@ public class PangenomicGraph extends DirectedAcyclicGraph<Node,Edge> {
      */
     public void printAll() throws FileNotFoundException, IOException {
         if (name==null) return;
-        // if (labelCounts!=null && labelCounts.size()>0) {
-        //     PrintStream labelCountsOut = new PrintStream(name+".labelcounts.txt");
-        //     printLabelCounts(labelCountsOut);
-        // }
+
+        if (labelCounts!=null && labelCounts.size()>0) {
+            PrintStream labelCountsOut = new PrintStream(name+".labelcounts.txt");
+            printLabelCounts(labelCountsOut);
+        }
 
         if (verbose) System.out.print("Writing nodes file...");
         PrintStream nodesOut = new PrintStream(name+".nodes.txt");
         printNodes(nodesOut);
         if (verbose) System.out.println("done.");
-
-        // if (verbose) System.out.print("Writing nodes histogram...");
-        // PrintStream nodeHistogramOut = new PrintStream(name+".nodehistogram.txt");
-        // printNodeHistogram(nodeHistogramOut);
-        // if (verbose) System.out.println("done.");
 
         if (verbose) System.out.print("Writing paths file...");
         PrintStream pathsOut = new PrintStream(name+".paths.txt");

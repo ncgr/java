@@ -12,9 +12,10 @@ isSaveSet = grepl("save", prefix, fixed=TRUE)
 frFilename = paste(prefix, ".frs.txt", sep="")
 
 ## read the FRs table, either a save file or a proper output file
+## nodes	size	support	case	ctrl	OR	p	pri
 frs = read.table(frFilename, header=TRUE, stringsAsFactors=FALSE)
-rownames(frs) = frs$FR
-frs$FR = NULL
+rownames(frs) = frs$nodes
+frs$nodes = NULL
 
 ## divine alpha, kappa from filename like HTT.400-0.8-3
 if (isSaveSet) {
@@ -46,5 +47,7 @@ if (labelsExist) {
 }
 
 ## nodes
-nodes = read.table(file=paste(graphName,"nodes","txt",sep="."), row.names=1, col.names=c("node","sequence"))
+## 1	rs114039523	6	29910286	29910286	T/T	0.6643768400392541
+## 4	rs114039523	6	29910286	29910286	./.	8.92140244446427E-5
+nodes = read.table(file=paste(graphName,"nodes","txt",sep="."), row.names=1, col.names=c("node","rs","chr","start","end","genotype","p"))
 
