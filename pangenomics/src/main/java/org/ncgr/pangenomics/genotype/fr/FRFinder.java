@@ -61,21 +61,36 @@ public class FRFinder {
     Properties parameters = new Properties();
 
     // the output FRs
-    ConcurrentHashMap<String,FrequentedRegion> frequentedRegions;
+    Map<String,FrequentedRegion> frequentedRegions;
 
     // the keepoption value, if there is one after the colon
-    int keepOptionKey;
+    int keepOptionKey = 0;
 
     // priority option
-    int priorityOptionKey;           // 0, 1, 2, etc.
-    String priorityOptionLabel;      // the current label for priority update emphasis: "case" or "ctrl"
-    String priorityOptionParameter;  // parameter for priority update emphasis, can be null or "alt" or "case" or "ctrl"
+    String priorityOption = "4";    // default
+    int priorityOptionKey;          // 0, 1, 2, etc.
+    String priorityOptionLabel;     // the current label for priority update emphasis: "case" or "ctrl"
+    String priorityOptionParameter; // parameter for priority update emphasis, can be null or "alt" or "case" or "ctrl"
     
     // diagnostics
-    boolean verbose;
-    boolean debug;
+    boolean verbose = false;
+    boolean debug = false;
     PrintStream logOut;
-    Runtime runtime;
+
+    // parameters, with defaults
+    boolean resume = false;
+    boolean writeSaveFiles = false;
+    String graphName = null;
+    int minSize = 0;
+    double minLength = 0.0;
+    int maxRound = 0;
+    int minPriority = 0;
+    int minSupport = 1;
+    double minMAF = 0.01;
+    boolean requireBestNodeSet = false;
+    String requiredNodeString = "[]";
+    String excludedNodeString = "[]";
+    
     
     /**
      * Construct with a populated Graph and default parameters.
@@ -83,15 +98,13 @@ public class FRFinder {
     public FRFinder(PangenomicGraph graph) {
         this.graph = graph;
         this.paths = graph.paths;
-	this.runtime = Runtime.getRuntime();
         initializeParameters();
     }
 
     /**
-     * Construct with the output from a previous run. Be sure to set minSup, minSize, minLen filters as needed before running postprocess().
+     * Construct with the output from a previous run. Be sure to set minSupport, minSize, minLength filters as needed before running postprocess().
      */
     public FRFinder(String inputPrefix) throws FileNotFoundException, IOException {
-	this.runtime = Runtime.getRuntime();
         initializeParameters();
         parameters = FRUtils.readParameters(inputPrefix); // sets properties from file
         readFrequentedRegions();
@@ -101,18 +114,19 @@ public class FRFinder {
      * Initialize the default parameters.
      */
     void initializeParameters() {
-        parameters.setProperty("resume", "false");
-        parameters.setProperty("writeSaveFiles", "false");
-        parameters.setProperty("minSup", "1");
-        parameters.setProperty("minSize", "1");
-        parameters.setProperty("minLen", "1.0");
-        parameters.setProperty("maxRound", "0");
-        parameters.setProperty("minPriority", "0");
-        parameters.setProperty("requiredNodes", "[]");
-        parameters.setProperty("excludedNodes", "[]");
-        parameters.setProperty("priorityOption", "4");
+        parameters.setProperty("resume", String.valueOf(resume));
+        parameters.setProperty("writeSaveFiles", String.valueOf(writeSaveFiles));
+        parameters.setProperty("minSupport", String.valueOf(minSupport));
+        parameters.setProperty("minSize", String.valueOf(minSize));
+        parameters.setProperty("minLength", String.valueOf(minLength));
+        parameters.setProperty("maxRound", String.valueOf(maxRound));
+        parameters.setProperty("minPriority", String.valueOf(minPriority));
+        parameters.setProperty("requiredNodeString", requiredNodeString);
+        parameters.setProperty("excludedNodeString", excludedNodeString);
+        parameters.setProperty("priorityOption", String.valueOf(priorityOption));
         parameters.setProperty("keepOption", "null");
-        parameters.setProperty("minMAF", "0.01");
+        parameters.setProperty("minMAF", String.valueOf(minMAF));
+	parameters.setProperty("requireBestNodeSet", String.valueOf(requireBestNodeSet));
     }
 
     /**
@@ -128,21 +142,22 @@ public class FRFinder {
                    "alpha="+alpha+" " +
                    "kappa="+kappa+" " +
                    "priorityOption="+getPriorityOption()+" " +
-                   "minPriority="+getMinPriority()+" " +
-                   "minSup="+getMinSup()+" " +
-                   "minSize="+getMinSize()+" " +
-                   "minLen="+getMinLen()+" " +
-                   "minMAF="+getMinMAF()+" " +
-                   "requiredNodes="+getRequiredNodes()+" " +
-                   "excludedNodes="+getExcludedNodes()+" " +
+                   "minPriority="+minPriority+" " +
+                   "minSupport="+minSupport+" " +
+                   "minSize="+minSize+" " +
+                   "minLength="+minLength+" " +
+                   "minMAF="+minMAF+" " +
+                   "maxRound="+maxRound+" " +
                    "keepOption="+getKeepOption()+" " +
-                   "maxRound="+getMaxRound());
+		   "requireBestNodeSet="+requireBestNodeSet+" " +
+                   "requiredNodes="+requiredNodeString+" " +
+                   "excludedNodes="+excludedNodeString);
 
         // store the saved FRs in a map
-        frequentedRegions = new ConcurrentHashMap<>();
+        frequentedRegions = new HashMap<>();
 
-        // store the studied FRs in a ConcurrentHashMap for thread-safe ops
-        ConcurrentHashMap<String,FrequentedRegion> allFrequentedRegions = new ConcurrentHashMap<>();
+        // store all interesting FRs in a Map
+	Map<String,FrequentedRegion> allFrequentedRegions = new HashMap<>();
 
         // rejected NodeSets (strings), so we don't bother scanning them more than once
         ConcurrentSkipListSet<String> rejectedNodeSets = new ConcurrentSkipListSet<>();
@@ -151,13 +166,13 @@ public class FRFinder {
         ConcurrentHashMap<String,FRPair> acceptedFRPairs = new ConcurrentHashMap<>();
 
         // optional required and excluded nodes; must be final since used in the parallel stream loop
-        final NodeSet requiredNodes = graph.getNodeSet(getRequiredNodes());
-        final NodeSet excludedNodes = graph.getNodeSet(getExcludedNodes());
+        NodeSet requiredNodes = graph.getNodeSet(requiredNodeString);
+        NodeSet excludedNodes = graph.getNodeSet(excludedNodeString);
 
         // FR-finding round counter
         int round = 0;
 
-        if (resume()) {
+        if (resume) {
             // resume from a previous run
             printToLog("# Resuming from previous run");
             String line = null;
@@ -190,39 +205,40 @@ public class FRFinder {
             printToLog("# Loaded "+frequentedRegions.size()+" frequentedRegions.");
             printToLog("# Now continuing with FR finding...");
         } else {
-            // load the single-node FRs into allFrequentedRegions, keeping only those with af>=minMAF
-            ConcurrentSkipListSet<Node> nodeSet = new ConcurrentSkipListSet<>(graph.getNodes());
-            nodeSet.parallelStream().forEach(node -> {
-                    if (node.af>=getMinMAF()) {
-                        NodeSet c = new NodeSet();
-                        c.add(node);
-                        try {
-                            FrequentedRegion fr = new FrequentedRegion(graph, c, alpha, kappa, priorityOptionKey, priorityOptionLabel);
-                            allFrequentedRegions.put(c.toString(), fr);
-                        } catch (Exception e) {
-                            System.err.println(e);
-                            System.exit(1);
-                        }
-                    }
-                });
+            // load the single-node FRs into allFrequentedRegions, keeping only those with af>=minMAF and support>=minsupport
+	    for (Node node : graph.getNodes()) {
+		boolean added = false;
+		NodeSet c = new NodeSet(node);
+		if (node.af>=minMAF) {
+		    FrequentedRegion fr = new FrequentedRegion(graph, c, alpha, kappa, priorityOptionKey, priorityOptionLabel);
+		    if (fr.support>=minSupport) {
+			allFrequentedRegions.put(fr.nodes.toString(), fr);
+			added = true;
+			System.err.println("ADD:"+fr);
+		    } else if (debug) {
+			System.err.println("SUP:"+fr);
+		    }
+		} else if (debug) {
+		    System.err.println("MAF:"+c+" "+percf.format(node.af));
+		}
+	    }
             // store interesting single-node FRs in round 0, since we won't hit them in the loop
-            allFrequentedRegions.entrySet().parallelStream().forEach(entry -> {
-                    FrequentedRegion fr = entry.getValue();
-                    if (isInteresting(fr)) {
-                        if (requiredNodes.size()==0) {
-                            frequentedRegions.put(fr.nodes.toString(), fr);
-                        } else {
-                            for (Node n : requiredNodes) {
-                                if (fr.nodes.contains(n)) {
-                                    frequentedRegions.put(fr.nodes.toString(), fr);
-                                }
-                            }
-                        }
-                    }
-                });
+	    for (FrequentedRegion fr : allFrequentedRegions.values()) {
+		if (isInteresting(fr)) {
+		    if (requiredNodes.size()==0) {
+			frequentedRegions.put(fr.nodes.toString(), fr);
+		    } else {
+			for (Node n : requiredNodes) {
+			    if (fr.nodes.contains(n)) {
+				frequentedRegions.put(fr.nodes.toString(), fr);
+			    }
+			}
+		    }
+		}
+	    }
         }
 
-        // add the required nodes to allFrequentedRegions
+        // add the required nodes to allFrequentedRegions, and frequentedRegions if interesting
 	if (requiredNodes.size()>0) {
 	    FrequentedRegion requiredFR = new FrequentedRegion(graph, requiredNodes, alpha, kappa, priorityOptionKey, priorityOptionLabel);
 	    allFrequentedRegions.put(requiredFR.nodes.toString(), requiredFR);
@@ -241,130 +257,138 @@ public class FRFinder {
         // build the FRs round by round
 	long startTime = System.currentTimeMillis();
         boolean added = true;
-        while (added && (round<getMaxRound() || getMaxRound()==0)) {
+        while (added && (round<maxRound || maxRound==0)) {
             round++;
             added = false;
 	    long roundStartTime = System.currentTimeMillis();
+	    final NodeSet finalRequiredNodes = requiredNodes;
             // store FRPairs in a map keyed by merged nodes in THIS round for parallel operation and sorting
             ConcurrentSkipListSet<FRPair> frpairSet = new ConcurrentSkipListSet<>();
-	    // trigger a garbage collection because we can
-	    runtime.gc();
-            ////////////////////////////////////////////////////////////////////////////////////////////////
-            // start parallel streams
-            allFrequentedRegions.entrySet().parallelStream().forEach(entry1 -> {
-                    FrequentedRegion fr1 = entry1.getValue();
-		    long fr1ElapsedTime = System.currentTimeMillis()-roundStartTime;
-                    // limit to 10 minutes elapsed time per fr1 round
-		    if (fr1ElapsedTime<600000) {
-                        if (debug) {
-                            long usedRAM = runtime.totalMemory()-runtime.freeMemory();
-                            System.err.println("fr1:"+fr1.toString()+"|"+fr1ElapsedTime/1000+" USED="+(usedRAM)/1e9);
-                        }
-                        allFrequentedRegions.entrySet().parallelStream().forEach(entry2 -> {
-                                FrequentedRegion fr2 = entry2.getValue();
-                                if (fr2.nodes.compareTo(fr1.nodes)>0) {
-                                    FRPair frpair = new FRPair(fr1, fr2, priorityOptionKey, priorityOptionLabel);
-                                    String nodesKey = frpair.nodes.toString();
-                                    boolean rejected = false;
-                                    if (frequentedRegions.containsKey(nodesKey)) {
-                                        // if already found, bail
-                                        rejected = true;
-                                    } else if (acceptedFRPairs.containsKey(nodesKey)) {
-                                        // get stored FRPair since already accepted and merged in a previous round
-                                        frpair = acceptedFRPairs.get(nodesKey);
-                                    } else if (rejectedNodeSets.contains(nodesKey)) {
-                                        // already rejected, bail
-                                        rejected = true;
-                                    }
-                                    // reject if not all the required nodes are present
-                                    if (!rejected && requiredNodes.size()>0) {
-                                        for (Node n : requiredNodes) {
-                                            if (!frpair.nodes.contains(n)) {
-                                                rejected = true; // lacking a required node
-                                                break;
-                                            }
-                                        }
-                                    }
-                                    // reject if one of the excluded nodes is present
-                                    if (!rejected && excludedNodes.size()>0) {
-                                        for (Node n : excludedNodes) {
-                                            if (frpair.nodes.contains(n)) {
-                                                rejected = true; // containing an excluded node
-                                                break;
-                                            }
-                                        }
-                                    }
-                                    if (rejected) {
-                                        // add this rejected NodeSet to the rejected list
-                                        rejectedNodeSets.add(nodesKey);
-                                    } else {
-                                        // merge this FRPair if not already merged
-                                        if (frpair.merged==null) {
-                                            if (frpair.merged==null) {
-                                                frpair.merge();
-                                            }
-                                        }
-                                        // should we keep this merged FR according to keepOption?
-                                        boolean keep = true; // default if keepOption not set
-                                        if (getKeepOption().startsWith("subset") && frpair.merged.nodes.size()>=keepOptionKey) {
-                                            // keep FRs that are subsets of others or have higher priority
-                                            for (FrequentedRegion frOld : frequentedRegions.values()) {
-                                                if (frpair.merged.nodes.isSupersetOf(frOld.nodes) && frpair.merged.priority<=frOld.priority) {
-                                                    keep = false;
-                                                    break;
-                                                }
-                                            }
-                                        } else if (getKeepOption().startsWith("distance")) {
-                                            // keep FRs that are at least a distance of keepOptionKey away from others or have higher priority
-                                            for (FrequentedRegion frOld : frequentedRegions.values()) {
-                                                if (frpair.merged.nodes.distanceFrom(frOld.nodes)<keepOptionKey && frpair.merged.priority<=frOld.priority) {
-                                                    keep = false;
-                                                    break;
-                                                }
-                                            }
-                                        }
-                                        if (keep) {
-                                            // add this candidate merged pair to acceptedFRPairs
-                                            acceptedFRPairs.put(nodesKey, frpair);
-                                            // add this to the current frpairSet if interesting and higher priority
-                                            if (isInteresting(frpair.merged)) {
-                                                boolean addit = (frpairSet.size()==0 || frpair.compareTo(frpairSet.last())>0);
-                                                if (addit) {
-                                                    frpairSet.add(frpair);
-                                                    if (debug) {
-                                                        long fr2ElapsedTime = System.currentTimeMillis()-roundStartTime;
-                                                        long usedRAM = runtime.totalMemory()-runtime.freeMemory();
-                                                        System.err.println("+"+frpairSet.size()+":"+frpair.merged.toString()+"|"+(fr2ElapsedTime)/1000+" USED="+(usedRAM)/1e9);
-                                                    }
-                                                }
-                                            }
-                                        } else {
-                                            // add this to the rejected list
-                                            rejectedNodeSets.add(nodesKey);
-                                        }
-                                    }
-                                }
-                            });
+	    // NOTE: the fr1 loop need not be parallel since the fr2 loop will consume all the CPUs anyway;
+	    // by running the fr1 loop in series we ensure that the fr2 loop cycles use the same fr1 loop data.
+	    for (FrequentedRegion fr1 : allFrequentedRegions.values()) {
+		if (finalRequiredNodes.size()>0) {
+		    boolean contains = true;
+		    for (Node n : finalRequiredNodes) {
+			if (!fr1.nodes.contains(n)) {
+			    contains = false;
+			    break;
+			}
 		    }
-                });
-            // end parallelStreams
-            ////////////////////////////////////////////////////////////////////////////////////////////////
-            // add our new best merged FR
+		    if (!contains) continue;
+		}
+		if (debug) {
+		    System.err.println("fr1:"+fr1.toString()+"|"+(System.currentTimeMillis()-roundStartTime)/1000);
+		}
+		////////////////////////////////////////////////////////////////////////////////////////////////
+		// start fr2 parallel stream
+		allFrequentedRegions.entrySet().parallelStream().forEach(entry2 -> {
+			FrequentedRegion fr2 = entry2.getValue();
+			FRPair frpair = new FRPair(fr1, fr2, priorityOptionKey, priorityOptionLabel);
+			String nodesKey = frpair.nodes.toString();
+			boolean rejected = false;
+			if (frequentedRegions.containsKey(nodesKey)) {
+			    // if already found, bail
+			    rejected = true;
+			} else if (acceptedFRPairs.containsKey(nodesKey)) {
+			    // get stored FRPair since already accepted and merged in a previous round
+			    frpair = acceptedFRPairs.get(nodesKey);
+			} else if (rejectedNodeSets.contains(nodesKey)) {
+			    // already rejected, bail
+			    rejected = true;
+			}
+			// reject if not all the required nodes are present
+			if (!rejected && finalRequiredNodes.size()>0) {
+			    for (Node n : finalRequiredNodes) {
+				if (!frpair.nodes.contains(n)) {
+				    rejected = true; // lacking a required node
+				    break;
+				}
+			    }
+			}
+			// reject if one of the excluded nodes is present
+			if (!rejected && excludedNodes.size()>0) {
+			    for (Node n : excludedNodes) {
+				if (frpair.nodes.contains(n)) {
+				    rejected = true; // containing an excluded node
+				    break;
+				}
+			    }
+			}
+			if (rejected) {
+			    // add this rejected NodeSet to the rejected list
+			    rejectedNodeSets.add(nodesKey);
+			} else {
+			    // merge this FRPair if not already merged
+			    if (frpair.merged==null) {
+				frpair.merge();
+			    }
+			    // should we keep this merged FR according to keepOption?
+			    boolean keep = true; // default if keepOption not set
+			    if (getKeepOption().startsWith("subset") && frpair.merged.nodes.size()>=keepOptionKey) {
+				// keep FRs that are subsets of others or have higher priority
+				for (FrequentedRegion frOld : frequentedRegions.values()) {
+				    if (frpair.merged.nodes.isSupersetOf(frOld.nodes) && frpair.merged.priority<=frOld.priority) {
+					keep = false;
+					break;
+				    }
+				}
+			    } else if (getKeepOption().startsWith("distance")) {
+				// keep FRs that are at least a distance of keepOptionKey away from others or have higher priority
+				for (FrequentedRegion frOld : frequentedRegions.values()) {
+				    if (frpair.merged.nodes.distanceFrom(frOld.nodes)<keepOptionKey && frpair.merged.priority<=frOld.priority) {
+					keep = false;
+					break;
+				    }
+				}
+			    }
+			    if (keep) {
+				// add this keeper pair to acceptedFRPairs
+				acceptedFRPairs.put(nodesKey, frpair);
+				// add this pair to the current frpairSet if interesting
+				if (isInteresting(frpair.merged)) {
+				    frpairSet.add(frpair);
+				    if (debug) {
+					System.err.println("+"+frpairSet.size()+":"+frpair.merged.toString()+"|"+(System.currentTimeMillis()-roundStartTime)/1000);
+				    }
+				}
+			    } else {
+				// add this to the rejected list
+				rejectedNodeSets.add(nodesKey);
+			    }
+			}
+		    });
+		// end fr2 parallelStream
+		////////////////////////////////////////////////////////////////////////////////////////////////
+	    }
+	    // add our new best merged FR
             if (frpairSet.size()>0) {
                 added = true;
+		// add all of this round's interesting FRs to allFrequentedRegions OUTSIDE of the fr2 loop
+		for (FRPair pair : frpairSet) {
+		    allFrequentedRegions.put(pair.merged.nodes.toString(), pair.merged);
+		}
+		// add the best FR to the output FRs map
                 FrequentedRegion fr = frpairSet.last().merged;
-                // add this FR to the mergeable FRs map
-                allFrequentedRegions.put(fr.nodes.toString(), fr);
                 frequentedRegions.put(fr.nodes.toString(), fr);
                 // toggle priorityOptionLabel for next round if so desired
                 if (priorityOptionParameter!=null && priorityOptionParameter.equals("alt")) togglePriorityOptionLabel();
-                // output this FR
+                // output the best FR from this round
                 printToLog(round+":"+fr.toString());
+		// update requiredNodes if requireBestNodeSet
+		if (requireBestNodeSet) {
+		    requiredNodes = fr.nodes;
+		}
             } else {
                 // show the top remaining FR that wasn't added
                 TreeSet<FRPair> remainingFRPairs = new TreeSet<>(acceptedFRPairs.values());
-                printToLog("-------------------------------------------------------------------------------------------------------");
-                printToLog("TR:"+remainingFRPairs.last().merged.toString());
+		for (FRPair pair : remainingFRPairs.descendingSet()) {
+		    if (!frequentedRegions.containsKey(pair.merged.nodes.toString())) {
+			printToLog("-------------------------------------------------------------------------------------------------------");
+			printToLog("TR:"+pair.merged.toString());
+			break;
+		    }
+		}
             }
             // output current state for continuation if aborted
             if (frequentedRegions.size()>0 && writeSaveFiles()) {
@@ -416,20 +440,20 @@ public class FRFinder {
     }
 
     /**
-     * Post-process a set of FRs for given minSup, minLen and minSize.
+     * Post-process a set of FRs for given minSupport, minLength and minSize.
      */
     public void postprocess() throws FileNotFoundException, IOException {
         ConcurrentHashMap<String,FrequentedRegion> filteredFRs = new ConcurrentHashMap<>();
         for (FrequentedRegion fr : frequentedRegions.values()) {
             boolean passes = true;
             String reason = "";
-            if (fr.support<getMinSup()) {
+            if (fr.support<minSupport) {
                 passes = false;
                 reason += " support";
             } else {
                 reason += " SUPPORT";
             }
-            if (fr.nodes.size()<getMinSize()) {
+            if (fr.nodes.size()<minSize) {
                 passes = false;
                 reason += " size";
             } else {
@@ -438,7 +462,7 @@ public class FRFinder {
             if (passes) filteredFRs.put(fr.nodes.toString(), fr);
             if (verbose) System.out.println(fr.toString()+reason);
         }
-        if (verbose) System.out.println(filteredFRs.size()+" FRs passed minSup="+getMinSup()+", minSize="+getMinSize()+", minLen="+getMinLen());
+        if (verbose) System.out.println(filteredFRs.size()+" FRs passed minSupport="+minSupport+", minSize="+minSize+", minLength="+minLength);
 	// output the filtered FRs and SVM data
         frequentedRegions = filteredFRs;
 	if (frequentedRegions.size()>0) {
@@ -448,21 +472,21 @@ public class FRFinder {
 	}
     }
 
-    // parameter getters
+    // parameters file value getters
     public boolean writeSaveFiles() {
         return Boolean.parseBoolean(parameters.getProperty("writeSaveFiles"));
     }
     public boolean resume() {
         return Boolean.parseBoolean(parameters.getProperty("resume"));
     }
-    public int getMinSup() {
-        return Integer.parseInt(parameters.getProperty("minSup"));
+    public int getMinSupport() {
+        return Integer.parseInt(parameters.getProperty("minSupport"));
     }
     public int getMinSize() {
         return Integer.parseInt(parameters.getProperty("minSize"));
     }
     public double getMinLen() {
-        return Double.parseDouble(parameters.getProperty("minLen"));
+        return Double.parseDouble(parameters.getProperty("minLength"));
     }
     public String getPriorityOption() {
         return parameters.getProperty("priorityOption");
@@ -480,10 +504,10 @@ public class FRFinder {
         return Integer.parseInt(parameters.getProperty("minPriority"));
     }
     public String getRequiredNodes() {
-        return parameters.getProperty("requiredNodes");
+        return parameters.getProperty("requiredNodeString");
     }
     public String getExcludedNodes() {
-        return parameters.getProperty("excludedNodes");
+        return parameters.getProperty("excludedNodeString");
     }
     public String getKeepOption() {
         return parameters.getProperty("keepOption");
@@ -491,41 +515,52 @@ public class FRFinder {
     public double getMinMAF() {
         return Double.parseDouble(parameters.getProperty("minMAF"));
     }
+    public boolean getRequireBestNodeSet() {
+	return Boolean.parseBoolean(parameters.getProperty("requireBestNodeSet"));
+    }
     
-    // parameter setters
+    // parameter setters - set instance vars as well as value in parameters
     public void setPriorityOption(String priorityOption) {
-        parameters.setProperty("priorityOption", priorityOption);
         parsePriorityOption(priorityOption);
+        parameters.setProperty("priorityOption", priorityOption);
     }
     public void setResume() {
+	this.resume = true;
         parameters.setProperty("resume", "true");
     }
     public void setWriteSaveFiles() {
+	this.writeSaveFiles = true;
         parameters.setProperty("writeSaveFiles", "true");
     }
-    public void setMinSup(int minSup) {
-        parameters.setProperty("minSup", String.valueOf(minSup));
+    public void setMinSupport(int minSupport) {
+	this.minSupport = minSupport;
+        parameters.setProperty("minSupport", String.valueOf(minSupport));
     }
     public void setMinSize(int minSize) {
+	this.minSize = minSize;
         parameters.setProperty("minSize", String.valueOf(minSize));
     }
-    public void setMinLen(double minLen) {
-        parameters.setProperty("minLen", String.valueOf(minLen));
+    public void setMinLen(double minLength) {
+	this.minLength = minLength;
+        parameters.setProperty("minLength", String.valueOf(minLength));
     }
     public void setMaxRound(int maxRound) {
+	this.maxRound = maxRound;
         parameters.setProperty("maxRound", String.valueOf(maxRound));
     }
     public void setMinPriority(int minPriority) {
+	this.minPriority = minPriority;
         parameters.setProperty("minPriority", String.valueOf(minPriority));
     }
-    public void setRequiredNodes(String requiredNodes) {
-        parameters.setProperty("requiredNodes", requiredNodes);
+    public void setRequiredNodes(String requiredNodeString) {
+	this.requiredNodeString = requiredNodeString;
+        parameters.setProperty("requiredNodeString", requiredNodeString);
     }
-    public void setExcludedNodes(String excludedNodes) {
-        parameters.setProperty("excludedNodes", excludedNodes);
+    public void setExcludedNodes(String excludedNodeString) {
+	this.excludedNodeString = excludedNodeString;
+        parameters.setProperty("excludedNodeString", excludedNodeString);
     }
     public void setKeepOption(String keepOption) {
-        parameters.setProperty("keepOption", keepOption);
         if (keepOption.startsWith("subset") || keepOption.startsWith("distance")) {
             String[] parts = keepOption.split(":");
             if (parts.length==2) {
@@ -535,16 +570,23 @@ public class FRFinder {
             } else if (keepOption.equals("distance")) {
                 keepOptionKey = 2; // default
             }
+	    parameters.setProperty("keepOption", keepOption);
         } else {
             System.err.println("ERROR: allowed keepoption values are: subset[:N]|distance[:N]");
             System.exit(1);
         }
     }
     public void setGraphName(String graphName) {
+	this.graphName = graphName;
         parameters.setProperty("graphName", graphName);
     }
     public void setMinMAF(double minMAF) {
+	this.minMAF = minMAF;
         parameters.setProperty("minMAF", String.valueOf(minMAF));
+    }
+    public void setRequireBestNodeSet() {
+	this.requireBestNodeSet = true;
+	parameters.setProperty("requireBestNodeSet", "true");
     }
 
     /**
@@ -580,9 +622,9 @@ public class FRFinder {
         txtOption.setRequired(false);
         options.addOption(txtOption);
         //
-        Option minSupOption = new Option("m", "minsup", true, "minimum number of supporting paths for a region to be considered interesting [1]");
-        minSupOption.setRequired(false);
-        options.addOption(minSupOption);
+        Option minSupportOption = new Option("m", "minsupport", true, "minimum number of supporting paths for a region to be considered interesting [1]");
+        minSupportOption.setRequired(false);
+        options.addOption(minSupportOption);
         //
         Option minSizeOption = new Option("s", "minsize", true, "minimum number of nodes that a FR must contain to be considered interesting [1]");
         minSizeOption.setRequired(false);
@@ -639,6 +681,10 @@ public class FRFinder {
         Option minMAFOption = new Option("minmaf", "minmaf", true, "minimum MAF for nodes included in search [0.01]");
         minMAFOption.setRequired(false);
         options.addOption(minMAFOption);
+	//
+	Option requireBestNodeSetOption = new Option("rbns", "requirebestnodeset", false, "require the best NodeSet from the previous round in the next round [false]");
+	requireBestNodeSetOption.setRequired(false);
+	options.addOption(requireBestNodeSetOption);
 
         try {
             cmd = parser.parse(options, args);
@@ -679,7 +725,7 @@ public class FRFinder {
             // instantiate the FRFinder from the saved files
             FRFinder frf = new FRFinder(inputPrefix);
             // set optional FRFinder parameters
-            if (cmd.hasOption("minsup")) frf.setMinSup(Integer.parseInt(cmd.getOptionValue("minsup")));
+            if (cmd.hasOption("minsupport")) frf.setMinSupport(Integer.parseInt(cmd.getOptionValue("minsupport")));
             if (cmd.hasOption("minsize")) frf.setMinSize(Integer.parseInt(cmd.getOptionValue("minsize")));
             if (cmd.hasOption("minlen")) frf.setMinLen(Double.parseDouble(cmd.getOptionValue("minlen")));
             if (cmd.hasOption("writesavefiles")) frf.setWriteSaveFiles();
@@ -706,7 +752,7 @@ public class FRFinder {
                 frf.setPriorityOption(cmd.getOptionValue("priorityoption"));
             }
             // set optional FRFinder parameters
-            if (cmd.hasOption("minsup")) frf.setMinSup(Integer.parseInt(cmd.getOptionValue("minsup")));
+            if (cmd.hasOption("minsupport")) frf.setMinSupport(Integer.parseInt(cmd.getOptionValue("minsupport")));
             if (cmd.hasOption("minsize")) frf.setMinSize(Integer.parseInt(cmd.getOptionValue("minsize")));
             if (cmd.hasOption("minlen")) frf.setMinLen(Double.parseDouble(cmd.getOptionValue("minlen")));
             if (cmd.hasOption("maxround")) frf.setMaxRound(Integer.parseInt(cmd.getOptionValue("maxround")));
@@ -717,6 +763,8 @@ public class FRFinder {
             if (cmd.hasOption("resume")) frf.setResume();
             if (cmd.hasOption("writesavefiles")) frf.setWriteSaveFiles();
             if (cmd.hasOption("minmaf")) frf.setMinMAF(Double.parseDouble(cmd.getOptionValue("minmaf")));
+	    if (cmd.hasOption("requirebestnodeset")) frf.setRequireBestNodeSet();
+	    // these are not stored in parameters
             if (cmd.hasOption("verbose")) frf.verbose = true;
             if (cmd.hasOption("debug")) frf.debug = true;
             // run the requested job
@@ -997,18 +1045,18 @@ public class FRFinder {
     }
 
     /**
-     * Form an outputPrefix from inputPrefix, minSup, minSize, minLen.
+     * Form an outputPrefix from inputPrefix, minSupport, minSize, minLength.
      */
     String formOutputPrefix() {
-        return getInputPrefix()+"-"+getMinSup()+"."+getMinSize()+"."+(int)getMinLen();
+        return getInputPrefix()+"-"+minSupport+"."+minSize+"."+(int)minLength;
     }
 
     /**
-     * Return true if the given FR is "interesting". (Note that the alpha, kappa requirements are enforced by fr.support>=minSup.)
+     * Return true if the given FR is "interesting". (Note that the alpha, kappa requirements are enforced by fr.support>=minSupport.)
      * This also uses priorityOptionLabel for the O.R- and p-based priorities.
      */
     boolean isInteresting(FrequentedRegion fr) {
-        boolean interesting = fr.support>=getMinSup() && fr.nodes.size()>=getMinSize() && fr.priority>=getMinPriority();
+        boolean interesting = fr.support>=minSupport && fr.nodes.size()>=minSize && fr.priority>=minPriority;
         if (priorityOptionKey==3 || priorityOptionKey==4) {
             if (priorityOptionLabel!=null && priorityOptionLabel.equals("case")) {
                 interesting = interesting && fr.oddsRatio()>1.0;

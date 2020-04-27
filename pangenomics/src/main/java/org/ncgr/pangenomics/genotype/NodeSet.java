@@ -34,6 +34,13 @@ public class NodeSet extends TreeSet<Node> implements Comparable {
     }
 
     /**
+     * Construct given a single Node.
+     */
+    public NodeSet(Node node) {
+	this.add(node);
+    }
+
+    /**
      * Construct given a string representation but no underlying graph.
      */
     public NodeSet(String str) {

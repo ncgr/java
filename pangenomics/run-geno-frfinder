@@ -15,11 +15,11 @@
 #                                subset[:N]|distance[:N] [keep all]
 #  -ks,--kappastart <arg>        starting value of kappa for a scan (can
 #                                equal kappaend; -1=infinity)
-#  -m,--minsup <arg>             minimum number of supporting paths for a
+#  -m,--minsupport <arg>         minimum number of supporting paths for a
 #                                region to be considered interesting [1]
 #  -minmaf,--minmaf <arg>        minimum MAF for nodes included in search
 #                                [0.01]
-#  -mp,--minpriority <arg>       minimum priority for saving an FR [1]
+#  -mp,--minpriority <arg>       minimum priority for saving an FR [0]
 #  -mr,--maxround <arg>          maximum FR-finding round to run
 #                                [0=unlimited]
 #  -p,--pathlabels <arg>         tab-delimited file with pathname<tab>label
@@ -32,6 +32,8 @@
 #                                test double-sided p value
 #                                [null,case,ctrl,alt]
 #  -r,--resume                   resume from a previous run [false]
+#  -rbns,--requirebestnodeset    require the best NodeSet from the previous
+#                                round in the next round [false]
 #  -rn,--requirednodes <arg>     require that found FRs contain the given
 #                                nodes []
 #  -s,--minsize <arg>            minimum number of nodes that a FR must
@@ -42,7 +44,6 @@
 #  -wsf,--writesavefiles         write save files after each FR is found
 #                                [false]
 
-
 ## perfect path matching to FR is alpha=1, kappa=0
 
 graph=$1
@@ -52,12 +53,12 @@ priorityoption=$4
 
 ## use $5-$9 for extra parameters
 
-echo "# $graph alpha=$alpha kappa=$kappa priorityOption=$priorityoption $5 $6 $7 $8 $9"
+echo "# $graph alpha=$alpha kappa=$kappa priorityOption=$priorityoption $5 $6 $7 $8 $9 ${10} ${11} ${12} ${13} ${14} ${15}"
 
 ## TXT input
 ## DO NOT USE -XX:+UseG1GC!!! Causes hang at certain RAM limit.
 java -server -Xms10g -Xmx600g -XX:+UseParallelGC -XX:MinHeapFreeRatio=10 -XX:MaxHeapFreeRatio=20 -cp "build/install/fr/lib/*" org.ncgr.pangenomics.genotype.fr.FRFinder \
-     --verbose --keepoption=subset $5 $6 $7 $8 $9 \
+     --verbose --keepoption=subset $5 $6 $7 $8 $9 ${10} ${11} ${12} ${13} ${14} ${15} \
      --txt --graph=$graph \
      --alphastart=$alpha --alphaend=$alpha --kappastart=$kappa --kappaend=$kappa --priorityoption=$priorityoption
 
