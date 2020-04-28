@@ -272,6 +272,22 @@ public class frGraphComponent extends mxGraphComponent implements ActionListener
 
     /**
      * Update the info label on the sidePanel with currentFR run parameters and graph info.
+     * #alpha=1.0
+     * #kappa=2147483647
+     * #clocktime=02:06:49
+     * #Mon Apr 27 11:47:37 MDT 2020
+     * graphName=SchizophreniaSwedish_Sklar/HLAA
+     * minSize=0
+     * minLength=0.0
+     * minSupport=2500
+     * minPriority=700
+     * minMAF=0.01
+     * maxRound=50
+     * priorityOption=4
+     * requiredNodeString=[757]
+     * excludedNodeString=[]
+     * keepOption=subset
+     * requireBestNodeSet=true
      */
     public void updateSidePanel() {
         double p = currentFR.fisherExactP();
@@ -279,34 +295,37 @@ public class frGraphComponent extends mxGraphComponent implements ActionListener
         String kappaString = String.valueOf(currentFR.kappa);
         if (currentFR.kappa==Integer.MAX_VALUE) kappaString = INFINITY;
         // info text
-        String infoLabelString = "<html>"+
-            "<b>"+graph.name+"</b><br/>" +
-            graph.getNodes().size()+" nodes<br/>" +
-            graph.paths.size()+" paths<br/>" +
-            graph.labelCounts.get("case")+"/"+graph.labelCounts.get("ctrl") +
-            "<hr/>" +
-            "alpha="+currentFR.alpha+"<br/>" +
-            "kappa="+kappaString+"<br/>" +
-            "minSup="+parameters.getProperty("minSup")+"<br/>" +
-            "minLen="+parameters.getProperty("minLen")+"<br/>" +
-            "minSize="+parameters.getProperty("minSize")+"<br/>" +
-            "minPriority="+parameters.getProperty("minPriority")+"<br/>" +
-            "maxRound="+parameters.getProperty("maxRound")+"<br/>" +
-            "priorityOption="+parameters.getProperty("priorityOption")+"<br/>" +
-            "keepOption="+parameters.getProperty("keepOption")+"<br/>";
-        if (parameters.getProperty("requiredNode")!=null) {
-            infoLabelString += "requiredNode="+parameters.getProperty("requiredNode")+"<br/>";
+        String infoLabelString = "<html>";
+        infoLabelString += "<b>"+graph.name+"</b>";
+        infoLabelString += "<br/>"+graph.getNodes().size()+" nodes, "+graph.paths.size()+" paths";
+        infoLabelString += "<br/>"+graph.labelCounts.get("case")+" cases / "+graph.labelCounts.get("ctrl")+" controls";
+        infoLabelString += "<hr/>";
+        infoLabelString += "alpha="+currentFR.alpha;
+        infoLabelString += "<br/>kappa="+kappaString;
+        infoLabelString += "<br/>minSupport="+parameters.getProperty("minSupport");
+        infoLabelString += "<br/>minLength="+parameters.getProperty("minLength");
+        infoLabelString += "<br/>minSize="+parameters.getProperty("minSize");
+        infoLabelString += "<br/>minPriority="+parameters.getProperty("minPriority");
+        infoLabelString += "<br/>minMAF="+parameters.getProperty("minMAF");
+        infoLabelString += "<br/>maxRound="+parameters.getProperty("maxRound");
+        infoLabelString += "<br/>priorityOption="+parameters.getProperty("priorityOption");
+        infoLabelString += "<br/>keepOption="+parameters.getProperty("keepOption");
+        infoLabelString += "<br/>requireBestNodeSet="+parameters.getProperty("requireBestNodeSet");
+        if (!parameters.getProperty("requiredNodeString").equals("[]")) {
+            infoLabelString += "<br/>requiredNodes="+parameters.getProperty("requiredNodeString");
         }
-        infoLabelString +=
-            "<hr/>" +
-            "FR "+(currentFRIndex+1)+":<br/>" +
-            "size="+currentFR.nodes.size()+"<br/>" +
-            "support="+currentFR.caseSubpathSupport+"/"+currentFR.ctrlSubpathSupport+"<br/>" +
-            "p="+pf.format(p)+"<br/>" +
-            "log10(OR)="+orf.format(Math.log10(or))+"<br/>" +
-            "priority="+currentFR.priority +
-            "<hr/>"+
-            "</html>";
+        if (!parameters.getProperty("excludedNodeString").equals("[]")) {
+            infoLabelString += "<br/>excludedNodes="+parameters.getProperty("excludedNodeString");
+        }
+        infoLabelString += "<hr/>";
+        infoLabelString += "FR "+(currentFRIndex+1)+":";
+        infoLabelString += "<br/>size="+currentFR.nodes.size();
+        infoLabelString += "<br/>support="+currentFR.caseSubpathSupport+"/"+currentFR.ctrlSubpathSupport;
+        infoLabelString += "<br/>p="+pf.format(p);
+        infoLabelString += "<br/>log10(OR)="+orf.format(Math.log10(or));
+        infoLabelString += "<br/>priority="+currentFR.priority;
+        infoLabelString += "<hr/>";
+        infoLabelString += "</html>";
         infoLabel.setText(infoLabelString);
         // thermometer
         if (or>1.0) {

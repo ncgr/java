@@ -10,6 +10,7 @@ import org.jgrapht.ext.JGraphXAdapter;
 import org.jgrapht.graph.DefaultListenableGraph;
 
 import com.mxgraph.model.mxCell;
+import com.mxgraph.model.mxGeometry;
 import com.mxgraph.util.mxConstants;
 import com.mxgraph.view.mxStylesheet;
 
@@ -20,7 +21,8 @@ import com.mxgraph.view.mxStylesheet;
 public class FGraphXAdapter extends JGraphXAdapter<Node,Edge> {
 
     static final double P_THRESHOLD = 5e-8; // GWAS standard
-    static int COLOR_FACTOR = 16;
+    static final int COLOR_FACTOR = 16;
+    static final double FR_CELL_RESIZE = 1.5;
 
     static String LABEL_COLOR_SIG = "white";
     static String LABEL_COLOR_NONSIG = "black";
@@ -57,6 +59,7 @@ public class FGraphXAdapter extends JGraphXAdapter<Node,Edge> {
         defaultEdgeStyle.put(mxConstants.STYLE_NOLABEL, "1");
         defaultStylesheet.setDefaultEdgeStyle(defaultEdgeStyle);
         Map<String,Object> defaultVertexStyle = defaultStylesheet.getDefaultVertexStyle();
+        defaultVertexStyle.put(mxConstants.STYLE_RESIZABLE, "0");
         defaultVertexStyle.put("fillColor", "white");
         defaultVertexStyle.put("fontColor", "black");
         defaultVertexStyle.put("shape", mxConstants.SHAPE_ELLIPSE);
@@ -83,6 +86,11 @@ public class FGraphXAdapter extends JGraphXAdapter<Node,Edge> {
                     // special base style for FR nodes
                     if (fr.containsNode(n)) {
                         setCellStyle(baseFRStyle, cells);
+                        mxGeometry geom = c.getGeometry();
+                        double height = geom.getHeight();
+                        double width = geom.getWidth();
+                        geom.setHeight(height*FR_CELL_RESIZE);
+                        geom.setWidth(width*FR_CELL_RESIZE);
                     }
                     // color cell based on O.R. and p-value
                     if (!genotypeCalled) {
