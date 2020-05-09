@@ -1,0 +1,3 @@
+#!/bin/sh
+java -server -cp "build/install/datastore/lib/*" org.ncgr.datastore.MarkerConverter /data/legfed-intermine-data/soybean-sources/soybase/snp_sequence_position_table.txt \
+	SoyBase Glyma2.0 glyma.Wm82.gnm2 glyma.Wm82.gnm2.ann1 > /data/datastore/Glycine_max/Wm82.gnm2.ann1.RVB6/glyma.Wm82.gnm2.ann1.RVB6.markers.gff3

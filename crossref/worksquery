@@ -1,0 +1,2 @@
+#!/bin/sh
+java -cp "build/install/ncgr-crossref/lib/*" org.ncgr.crossref.WorksQuery $1 $2

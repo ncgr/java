@@ -52,7 +52,7 @@ public class WorksQuery {
             this.worksUrl = new URL(WORKS_URL_ROOT+
                                     "?rows=1" +
                                     "&query.author="+URLEncoder.encode(queryAuthor,"UTF-8") +
-                                    "&query.title="+URLEncoder.encode(queryTitle,"UTF-8")
+                                    "&query.bibliographic="+URLEncoder.encode(queryTitle,"UTF-8")
                                     );
         } else if (queryAuthor!=null) {
             this.worksUrl = new URL(WORKS_URL_ROOT+
@@ -62,7 +62,7 @@ public class WorksQuery {
         } else if (queryTitle!=null) {
             this.worksUrl = new URL(WORKS_URL_ROOT+
                                     "?rows=1" +
-                                    "&query.title="+URLEncoder.encode(queryTitle,"UTF-8")
+                                    "&query.bibliographic="+URLEncoder.encode(queryTitle,"UTF-8")
                                     );
         }
         query();
@@ -145,11 +145,13 @@ public class WorksQuery {
             System.out.println("");
             if (wq.isTitleMatched()) System.out.println("******************************* TITLE MATCH! *******************************");
             System.out.println(wq.getTitle());
-            
-            for (Object authorObject : wq.getAuthors())  {
-                JSONObject author = (JSONObject) authorObject;
-                System.out.println(author.get("family")+","+author.get("given"));
-            }
+
+	    if (wq.getAuthors()!=null) {
+		for (Object authorObject : wq.getAuthors())  {
+		    JSONObject author = (JSONObject) authorObject;
+		    System.out.println(author.get("family")+","+author.get("given"));
+		}
+	    }
             
             System.out.println(wq.getDOI());
             System.out.println(wq.getPublisher());
@@ -245,7 +247,11 @@ public class WorksQuery {
     public String getTitle() {
         if (item.get("title")!=null) {
             JSONArray titles = (JSONArray) item.get("title");
-            return stringOrNull(titles.get(0));
+	    if (titles.size()==0) {
+		return null;
+	    } else {
+		return stringOrNull(titles.get(0));
+	    }
         } else {
             return null;
         }
@@ -255,18 +261,19 @@ public class WorksQuery {
      * Use Levenshtein distance to determine title similarity
      */
     public boolean isTitleMatched() {
+	if (queryTitle==null || queryTitle.trim().length()==0) return false;
         LevenshteinDistance distance = new LevenshteinDistance();
         int dist = distance.apply(queryTitle.toLowerCase(), getTitle().toLowerCase());
         return dist<=MAX_LEVENSHTEIN_DISTANCE;
     }
     
     public JSONArray getAuthors() {
-        if (item.get("author")!=null) {
-            JSONArray authors = (JSONArray) item.get("authors");
-            return (JSONArray) item.get("author");
-        } else {
-            return null;
-        }
+	Object authors = item.get("author");
+	if (authors==null) {
+	    return null;
+	} else {
+	    return (JSONArray) authors;
+	}
     }
     
     public String getDOI() {
@@ -353,17 +360,23 @@ public class WorksQuery {
     }
 
     public int getIssueYear() {
-        if (item.get("issued")!=null) {
-            JSONObject issued = (JSONObject) item.get("issued");
-            JSONArray dateParts = (JSONArray) issued.get("date-parts");
+	Object issuedObj = item.get("issued");
+	Object datePartsObj = item.get("date-parts");
+	if (issuedObj==null || datePartsObj==null) {
+	    return 0;
+	} else {
+            JSONObject issued = (JSONObject) issuedObj;
+            JSONArray dateParts = (JSONArray) datePartsObj;
             JSONArray parts = (JSONArray) dateParts.get(0);
             return (int)(long)(Long) parts.get(0);
-        } else {
-            return 0;
         }
     }
     public int getIssueMonth() {
-        if (item.get("issued")!=null) {
+	Object issuedObj = item.get("issued");
+	Object datePartsObj = item.get("date-parts");
+	if (issuedObj==null || datePartsObj==null) {
+	    return 0;
+	} else {
             JSONObject issued = (JSONObject) item.get("issued");
             JSONArray dateParts = (JSONArray) issued.get("date-parts");
             JSONArray parts = (JSONArray) dateParts.get(0);
@@ -372,12 +385,14 @@ public class WorksQuery {
             } else {
                 return 0;
             }
-        } else {
-            return 0;
         }
     }
     public int getIssueDay() {
-        if (item.get("issued")!=null)  {
+	Object issuedObj = item.get("issued");
+	Object datePartsObj = item.get("date-parts");
+	if (issuedObj==null || datePartsObj==null) {
+	    return 0;
+	} else {
             JSONObject issued = (JSONObject) item.get("issued");
             JSONArray dateParts = (JSONArray) issued.get("date-parts");
             JSONArray parts = (JSONArray) dateParts.get(0);
@@ -386,8 +401,6 @@ public class WorksQuery {
             } else {
                 return 0;
             }
-        } else {
-            return 0;
         }
     }
 

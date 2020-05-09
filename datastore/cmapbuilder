@@ -1,0 +1,4 @@
+#!/bin/sh
+java -server -cp "build/install/datastore/lib/*" org.ncgr.datastore.CmapBuilder \
+	/data/legfed-intermine-data/soybase-linkagegroups/GmComposite2003.tsv \
+	/data/legfed-intermine-data/soybase-markers-linkagegroups/markers-maps.tsv
