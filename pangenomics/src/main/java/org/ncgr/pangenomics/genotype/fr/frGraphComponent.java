@@ -55,12 +55,19 @@ public class frGraphComponent extends mxGraphComponent implements ActionListener
     static String INFINITY = "\u221e";
     static String MATH_MINUS = "\u2212";
     static String CHECKMARK = "\u2713";
+
+    static boolean DEBUG = false;
     
     // constructor parameters
     PangenomicGraph graph;
     FGraphXAdapter fgxAdapter;
     TreeMap<String,FrequentedRegion> frequentedRegions;
     Properties parameters;
+
+    // FGraphXAdapter parameters stored here
+    Path highlightedPath;
+    boolean decorateEdges;
+    double minorNodeFrac;
 
     // the JList of FRs
     JList<String> frList;
@@ -74,9 +81,6 @@ public class frGraphComponent extends mxGraphComponent implements ActionListener
     String[] sampleNames;
     int currentSampleIndex;
     JScrollPane sampleScrollPane;
-
-    Path highlightedPath;
-    boolean decorateEdges;
     
     JButton zoomInButton, zoomOutButton;
     JLabel currentLabel;
@@ -88,20 +92,23 @@ public class frGraphComponent extends mxGraphComponent implements ActionListener
     /**
      * Constructor takes a FGraphXAdapter
      */
-    frGraphComponent(PangenomicGraph graph, FGraphXAdapter fgxAdapter, boolean decorateEdges,
-                     TreeMap<String,FrequentedRegion> frequentedRegions, Properties parameters) {
+    frGraphComponent(PangenomicGraph graph, FGraphXAdapter fgxAdapter, TreeMap<String,FrequentedRegion> frequentedRegions, Properties parameters) {
         super(fgxAdapter);
-        this.fgxAdapter = fgxAdapter;
         this.graph = graph;
-        this.decorateEdges = decorateEdges;
+        this.fgxAdapter = fgxAdapter;
         this.frequentedRegions = frequentedRegions;
         this.parameters = parameters;
+
+        highlightedPath = fgxAdapter.highlightedPath;
+        decorateEdges = fgxAdapter.decorateEdges;
+        minorNodeFrac = fgxAdapter.minorNodeFrac;
         
         // housekeeping
         setConnectable(false);
         getGraph().setAllowDanglingEdges(false);
         setToolTips(true);
         setViewportBorder(new LineBorder(Color.BLACK));
+        if (DEBUG) System.err.println("setViewPortBorder done.");
 
         // load the FR keys into an array to select the chosen FR with an int on action events
         frKeys = frequentedRegions.keySet().toArray();
@@ -109,6 +116,7 @@ public class frGraphComponent extends mxGraphComponent implements ActionListener
         // set the current FR to the first one
         currentFR = frequentedRegions.get((String)frKeys[0]);
         currentFR.updateSupport();
+        if (DEBUG) System.err.println("currentFR.updateSupport() done.");
 
         // zoom in button -- plus is equals plus shift
         getInputMap().put(KeyStroke.getKeyStroke(KeyEvent.VK_EQUALS,KeyEvent.SHIFT_DOWN_MASK), "zoomIn");
@@ -138,6 +146,7 @@ public class frGraphComponent extends mxGraphComponent implements ActionListener
                     System.exit(0);
                 }
             });
+        if (DEBUG) System.err.println("button actions created.");
 
         // add a column header with navigation/zoom buttons
         JPanel topPanel = new JPanel();
@@ -167,6 +176,7 @@ public class frGraphComponent extends mxGraphComponent implements ActionListener
         c.insets = new Insets(1, 4, 1, 4); // top, left, bottom, right
         gridbag.setConstraints(frScrollPane, c);
         topPanel.add(frScrollPane);
+        if (DEBUG) System.err.println("FR selector built.");
 
         // sample/path selector
         sampleNames = graph.getPathNames();
@@ -180,6 +190,7 @@ public class frGraphComponent extends mxGraphComponent implements ActionListener
         c.insets = new Insets(1, 4, 1, 4); // top, left, bottom, right
         gridbag.setConstraints(sampleScrollPane, c);
         topPanel.add(sampleScrollPane);
+        if (DEBUG) System.err.println("sample/path selector built.");
         
         // zoom out button
         zoomOutButton = new JButton(MATH_MINUS);
@@ -197,6 +208,7 @@ public class frGraphComponent extends mxGraphComponent implements ActionListener
         zoomInButton.addActionListener(this);
         gridbag.setConstraints(zoomInButton, c);
         topPanel.add(zoomInButton);
+        if (DEBUG) System.err.println("zoom buttons built.");
 
         // put the top panel on the graph
         setColumnHeaderView(topPanel);
@@ -208,6 +220,7 @@ public class frGraphComponent extends mxGraphComponent implements ActionListener
         infoLabel = new JLabel();
         infoLabel.setVerticalAlignment(SwingConstants.TOP);
         sidePanel.add(infoLabel);
+        if (DEBUG) System.err.println("side panel info label added.");
 
         // priority-value thermometer
         thermPlot = new ThermometerPlot();
@@ -220,19 +233,22 @@ public class frGraphComponent extends mxGraphComponent implements ActionListener
         thermPlot.setLowerBound(0.0);
         thermPlot.setUpperBound(currentFR.priority);
         thermPlot.setSubrange(ThermometerPlot.NORMAL, 0.0, 200.0);
-        thermPlot.setSubrange(ThermometerPlot.WARNING, 200.0, 400.0);
-        thermPlot.setSubrange(ThermometerPlot.CRITICAL, 400.0, currentFR.priority);
+        thermPlot.setSubrange(ThermometerPlot.WARNING, 200.0, 730.0);
+        thermPlot.setSubrange(ThermometerPlot.CRITICAL, 730.0, currentFR.priority);
         // thermPlot.setValueFormat(df);
         ChartPanel thermPanel = new ChartPanel(new JFreeChart(thermPlot));
         thermPanel.setPreferredSize(new Dimension(100,200));
         thermPanel.setMaximumSize(new Dimension(1000,200));
         sidePanel.add(thermPanel);
-
+        if (DEBUG) System.err.println("side panel therm panel added.");
+        
         // update for the current FR
         updateSidePanel();
+        if (DEBUG) System.err.println("side panel updated.");
         
         // put the side panel on the graph
         setRowHeaderView(sidePanel);
+        if (DEBUG) System.err.println("side panel added to graph.");
     }
 
     /**
@@ -355,7 +371,7 @@ public class frGraphComponent extends mxGraphComponent implements ActionListener
                 }
                 currentFR = frequentedRegions.get((String)frKeys[currentFRIndex]);
                 if (currentFR.subpaths==null) currentFR.updateSupport();
-                fgxAdapter = new FGraphXAdapter(graph, currentFR, highlightedPath, decorateEdges);
+                fgxAdapter = new FGraphXAdapter(graph, currentFR, highlightedPath, decorateEdges, minorNodeFrac);
                 setGraph(fgxAdapter);
                 updateSidePanel();
                 updateSampleScrollPane();
@@ -369,7 +385,7 @@ public class frGraphComponent extends mxGraphComponent implements ActionListener
                 sampleList.ensureIndexIsVisible(currentSampleIndex);
                 String sampleName = sampleNames[currentSampleIndex];
                 highlightedPath = graph.getPath(sampleName);
-                fgxAdapter = new FGraphXAdapter(graph, currentFR, highlightedPath, decorateEdges);
+                fgxAdapter = new FGraphXAdapter(graph, currentFR, highlightedPath, decorateEdges, minorNodeFrac);
                 setGraph(fgxAdapter);
                 executeLayout();
             }

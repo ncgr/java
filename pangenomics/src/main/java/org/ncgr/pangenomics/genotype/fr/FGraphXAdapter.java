@@ -15,7 +15,7 @@ import com.mxgraph.util.mxConstants;
 import com.mxgraph.view.mxStylesheet;
 
 /**
- * Extend JGraphXAdapter to support overriden methods for tooltips and such.
+ * Extend JGraphXAdapter to support overridden methods for tooltips and such.
  * JGraphXAdapter in turn extends mxGraph.
  */
 public class FGraphXAdapter extends JGraphXAdapter<Node,Edge> {
@@ -37,14 +37,22 @@ public class FGraphXAdapter extends JGraphXAdapter<Node,Edge> {
 
     PangenomicGraph graph;
     FrequentedRegion fr;
+    Path highlightedPath;
+    boolean decorateEdges;
+    double minorNodeFrac;
 
-    Path highlightedPath = null;
+    int numPaths;
     List<Edge> highlightedPathEdges;
 
-    public FGraphXAdapter(PangenomicGraph graph, FrequentedRegion fr, Path highlightedPath, boolean decorateEdges) {
+    public FGraphXAdapter(PangenomicGraph graph, FrequentedRegion fr, Path highlightedPath, boolean decorateEdges, double minorNodeFrac) {
         super(new DefaultListenableGraph<Node,Edge>(graph));
         this.graph = graph;
         this.fr = fr;
+        this.highlightedPath = highlightedPath;
+        this.decorateEdges = decorateEdges;
+        this.minorNodeFrac = minorNodeFrac;
+        
+        numPaths = graph.getPathCount();
 
         // get the highlighted path edges
         if (highlightedPath!=null) {
@@ -70,8 +78,10 @@ public class FGraphXAdapter extends JGraphXAdapter<Node,Edge> {
         
         // base style for FR nodes
         String baseFRStyle = "shape=rectangle;fontColor=black;fillColor=#808080;strokeColor=black;strokeWidth=2.0;gradientColor=none;spacingTop=2";
-
-        // color the nodes
+        // style for minor nodes
+        String minorStyle = "shape=ellipse;fontColor=#A0A0A0;fillColor=white;strokeColor=gray;strokeWidth=1.0;gradientColor=none;spacingTop=2";
+        
+        // color the nodes and edges
         selectAll();
         Object[] allCells = getSelectionCells();
         for (Object o : allCells) {
@@ -79,7 +89,11 @@ public class FGraphXAdapter extends JGraphXAdapter<Node,Edge> {
             mxCell c = (mxCell) o;
             if (c.isVertex()) {
                 Node n = (Node) c.getValue();
-                if (c.getEdgeCount()>0) {
+                int pathCount = graph.getPathCount(n);
+                double pathFrac = (double)pathCount / (double)numPaths;
+                if (pathCount>0 && pathFrac<minorNodeFrac) {
+                    setCellStyle(minorStyle, cells);
+                } else if (pathCount>0) {
                     double or = graph.oddsRatio(n);
                     double p = graph.fisherExactP(n);
                     boolean genotypeCalled = !n.genotype.equals("./.");

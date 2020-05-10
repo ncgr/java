@@ -2,9 +2,10 @@
 # usage: FRViewer
 #  -d,--decorateedges         decorate edges according to the number of
 #                             paths [false]
-#  -h,--highlightpath <arg>   path to highlight
+#  -m,--minornodefrac <arg>   fraction of paths defining minor
+#                             (uninteresting) nodes (0.0)
 #  -p,--prefix <arg>          prefix of FR files, e.g. HLAB.601-1.0-0
  
 prefix=$1
 
-java -cp "build/install/fr/lib/*" org.ncgr.pangenomics.genotype.fr.FRViewer -p $prefix $2 $3 $4 $5 $6
+java -cp "build/install/fr/lib/*" org.ncgr.pangenomics.genotype.fr.FRViewer -m 0.01 -p $prefix $2 $3 $4 $5 $6

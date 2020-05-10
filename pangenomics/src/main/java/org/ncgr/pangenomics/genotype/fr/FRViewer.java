@@ -32,7 +32,8 @@ public class FRViewer {
     private static final long serialVersionUID = 2202072534703043194L;
     private static final Dimension DEFAULT_SIZE = new Dimension(1200, 780);
     private static final int TOOLTIP_DISMISS_DELAY = 60000;
-
+    private static final double DEFAULT_MINOR_NODE_FRAC = 0.0;
+    
     /**
      * Main application.
      */
@@ -50,6 +51,10 @@ public class FRViewer {
         Option decorateEdgesOption = new Option("d", "decorateedges", false, "decorate edges according to the number of paths [false]");
         decorateEdgesOption.setRequired(false);
         options.addOption(decorateEdgesOption);
+        //
+        Option minorNodeFracOption = new Option("m", "minornodefrac", true, "fraction of paths defining minor (uninteresting) nodes ("+DEFAULT_MINOR_NODE_FRAC+")");
+        minorNodeFracOption.setRequired(false);
+        options.addOption(minorNodeFracOption);
 
         try {
             cmd = parser.parse(options, args);
@@ -60,8 +65,11 @@ public class FRViewer {
             return;
         }
 
-        String prefix = cmd.getOptionValue("p");
-        boolean decorateEdges = cmd.hasOption("d");
+        final String prefix = cmd.getOptionValue("p");
+        final boolean decorateEdges = cmd.hasOption("d");
+        double mOptionValue = DEFAULT_MINOR_NODE_FRAC;
+        if (cmd.hasOption("m")) mOptionValue = Double.parseDouble(cmd.getOptionValue("m"));
+        final double minorNodeFrac = mOptionValue;
         
         // schedule a job for the event dispatch thread: creating and showing this application's GUI.
         SwingUtilities.invokeLater(new Runnable() {
@@ -69,7 +77,8 @@ public class FRViewer {
                     // turn off metal's use of bold fonts
                     UIManager.put("swing.boldMetal", Boolean.FALSE);
                     try {
-                        createAndShowGUI(prefix, decorateEdges);
+                        // these parameters must be final or effectively final
+                        createAndShowGUI(prefix, decorateEdges, minorNodeFrac);
                     } catch (Exception e) {
                         System.err.println(e);
                         System.exit(1);
@@ -83,7 +92,7 @@ public class FRViewer {
      *
      * @param prefix the FRFinder run prefix, e.g. HTT-0.1-100
      */
-    public static void createAndShowGUI(String prefix, boolean decorateEdges) throws IOException {
+    public static void createAndShowGUI(String prefix, boolean decorateEdges, double minorNodeFrac) throws IOException {
         String[] pieces = prefix.split("-");
         String graphName = pieces[0];
         double alpha = Double.parseDouble(pieces[1]);
@@ -121,11 +130,10 @@ public class FRViewer {
 
         // the FGraphXAdapter is an mxGraph; instantiate with the first FR in the list
         Object[] frKeys = frequentedRegions.keySet().toArray();
-        FGraphXAdapter fgxAdapter = new FGraphXAdapter(graph, frequentedRegions.get((String)frKeys[0]), null, decorateEdges);
+        FGraphXAdapter fgxAdapter = new FGraphXAdapter(graph, frequentedRegions.get((String)frKeys[0]), null, decorateEdges, minorNodeFrac);
 
         // frGraphComponent extends mxGraphComponent which extends JScrollPane (implements Printable)
-        frGraphComponent component = new frGraphComponent(graph, fgxAdapter, decorateEdges,
-                                                          frequentedRegions, parameters);
+        frGraphComponent component = new frGraphComponent(graph, fgxAdapter, frequentedRegions, parameters);
         component.setBackground(Color.LIGHT_GRAY);
 
         // add the component to the frame, clean up frame and show
