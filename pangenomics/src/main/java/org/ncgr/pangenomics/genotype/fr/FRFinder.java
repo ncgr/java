@@ -206,22 +206,24 @@ public class FRFinder {
             printToLog("# Now continuing with FR finding...");
         } else {
             // load the single-node FRs into allFrequentedRegions, keeping only those with af>=minMAF and support>=minsupport
-	    for (Node node : graph.getNodes()) {
-		boolean added = false;
-		NodeSet c = new NodeSet(node);
-		if (node.af>=minMAF) {
-		    FrequentedRegion fr = new FrequentedRegion(graph, c, alpha, kappa, priorityOptionKey, priorityOptionLabel);
-		    if (fr.support>=minSupport) {
-			allFrequentedRegions.put(fr.nodes.toString(), fr);
-			added = true;
-			System.err.println("ADD:"+fr);
+	    // locally parallelized for your expedience
+	    ConcurrentSkipListSet<Node> nodes = new ConcurrentSkipListSet<>(graph.getNodes());
+	    nodes.parallelStream().forEach(node -> {
+		    boolean added = false;
+		    NodeSet c = new NodeSet(node);
+		    if (node.af>=minMAF) {
+			FrequentedRegion fr = new FrequentedRegion(graph, c, alpha, kappa, priorityOptionKey, priorityOptionLabel);
+			if (fr.support>=minSupport) {
+			    allFrequentedRegions.put(fr.nodes.toString(), fr);
+			    added = true;
+			    System.err.println("ADD:"+fr);
+			} else if (debug) {
+			    System.err.println("SUP:"+fr);
+			}
 		    } else if (debug) {
-			System.err.println("SUP:"+fr);
+			System.err.println("MAF:"+c+" "+percf.format(node.af));
 		    }
-		} else if (debug) {
-		    System.err.println("MAF:"+c+" "+percf.format(node.af));
-		}
-	    }
+		});
             // store interesting single-node FRs in round 0, since we won't hit them in the loop
 	    for (FrequentedRegion fr : allFrequentedRegions.values()) {
 		if (isInteresting(fr)) {
