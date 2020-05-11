@@ -90,7 +90,8 @@ public class FRFinder {
     boolean requireBestNodeSet = false;
     String requiredNodeString = "[]";
     String excludedNodeString = "[]";
-    
+    String excludedPathNodeString = "[]";
+    String includedPathNodeString = "[]";
     
     /**
      * Construct with a populated Graph and default parameters.
@@ -123,6 +124,8 @@ public class FRFinder {
         parameters.setProperty("minPriority", String.valueOf(minPriority));
         parameters.setProperty("requiredNodeString", requiredNodeString);
         parameters.setProperty("excludedNodeString", excludedNodeString);
+	parameters.setProperty("excludedPathNodeString", excludedPathNodeString);
+	parameters.setProperty("includedPathNodeString", includedPathNodeString);
         parameters.setProperty("priorityOption", String.valueOf(priorityOption));
         parameters.setProperty("keepOption", "null");
         parameters.setProperty("minMAF", String.valueOf(minMAF));
@@ -151,8 +154,10 @@ public class FRFinder {
                    "keepOption="+getKeepOption()+" " +
 		   "requireBestNodeSet="+requireBestNodeSet+" " +
                    "requiredNodes="+requiredNodeString+" " +
-                   "excludedNodes="+excludedNodeString);
-
+                   "excludedNodes="+excludedNodeString+" " +
+		   "excludedPathNodes="+excludedPathNodeString+" " +
+		   "includedPathNodes="+includedPathNodeString);
+	
         // store the saved FRs in a map
         frequentedRegions = new HashMap<>();
 
@@ -220,7 +225,9 @@ public class FRFinder {
 			    if (fr.support>=minSupport) {
 				allFrequentedRegions.put(fr.nodes.toString(), fr);
 				added = true;
-				System.err.println("ADD:"+fr);
+				if (debug) {
+				    System.err.println("ADD:"+fr);
+				}
 			    } else if (debug) {
 				System.err.println("SUP:"+fr);
 			    }
@@ -518,6 +525,12 @@ public class FRFinder {
     public String getExcludedNodes() {
         return parameters.getProperty("excludedNodeString");
     }
+    public String getExcludedPathNodes() {
+	return parameters.getProperty("excludedPathNodeString");
+    }
+    public String getIncludedPathNodes() {
+	return parameters.getProperty("includedPathNodeString");
+    }
     public String getKeepOption() {
         return parameters.getProperty("keepOption");
     }
@@ -568,6 +581,14 @@ public class FRFinder {
     public void setExcludedNodes(String excludedNodeString) {
 	this.excludedNodeString = excludedNodeString;
         parameters.setProperty("excludedNodeString", excludedNodeString);
+    }
+    public void setExcludedPathNodes(String excludedPathNodeString) {
+	this.excludedPathNodeString = excludedPathNodeString;
+	parameters.setProperty("excludedPathNodeString", excludedPathNodeString);
+    }
+    public void setIncludedPathNodes(String includedPathNodeString) {
+	this.includedPathNodeString = includedPathNodeString;
+	parameters.setProperty("includedPathNodeString", includedPathNodeString);
     }
     public void setKeepOption(String keepOption) {
         if (keepOption.startsWith("subset") || keepOption.startsWith("distance")) {
@@ -683,6 +704,14 @@ public class FRFinder {
         excludedNodesOption.setRequired(false);
         options.addOption(excludedNodesOption);
         //
+        Option excludedPathNodesOption = new Option("ep", "excludedpathnodes", true, "exclude paths that include any of the given nodes []");
+        excludedPathNodesOption.setRequired(false);
+        options.addOption(excludedPathNodesOption);
+        //
+        Option includedPathNodesOption = new Option("ip", "includedpathnodes", true, "include only paths that include at least one of the given nodes []");
+        includedPathNodesOption.setRequired(false);
+        options.addOption(includedPathNodesOption);
+        //
         Option keepOptionOption = new Option("keep", "keepoption", true, "option for keeping FRs in finder loop: subset[:N]|distance[:N] [keep all]");
         keepOptionOption.setRequired(false);
         options.addOption(keepOptionOption);
@@ -749,8 +778,49 @@ public class FRFinder {
             pg.nodesFile = new File(graphName+".nodes.txt");
             pg.pathsFile = new File(graphName+".paths.txt");
             pg.loadTXT();
-            System.out.println("# Graph has "+pg.vertexSet().size()+" nodes and "+pg.edgeSet().size()+" edges with "+pg.paths.size()+" paths.");
+	    // remove paths that contain an excluded path node, if there are any
+	    String excludedPathNodeString = "[]";
+	    if (cmd.hasOption("excludedpathnodes")) {
+		excludedPathNodeString = cmd.getOptionValue("excludedpathnodes");
+	    }
+	    NodeSet excludedPathNodes = pg.getNodeSet(excludedPathNodeString);
+	    if (excludedPathNodes.size()>0) {
+		List<Path> pathsToRemove = new ArrayList<>();
+		for (Path path : pg.paths) {
+		    for (Node node : excludedPathNodes) {
+			if (path.getNodes().contains(node)) {
+			    pathsToRemove.add(path);
+			    break;
+			}
+		    }
+		}
+		pg.paths.removeAll(pathsToRemove);
+		System.out.println("# Graph has had "+pathsToRemove.size()+" paths removed which contained excluded nodes.");
+	    }
+	    // limit to paths that contain an included node, if given
+	    String includedPathNodeString = "[]";
+	    if (cmd.hasOption("includedpathnodes")) {
+		includedPathNodeString = cmd.getOptionValue("includedpathnodes");
+	    }
+	    NodeSet includedPathNodes = pg.getNodeSet(includedPathNodeString);
+	    int formerPathCount = pg.paths.size();
+	    if (includedPathNodes.size()>0) {
+		List<Path> pathsToKeep = new ArrayList<>();
+		for (Path path : pg.paths) {
+		    for (Node node : includedPathNodes) {
+			if (path.contains(node)) {
+			    pathsToKeep.add(path);
+			    break;
+			}
+		    }
+		}
+		pg.paths = pathsToKeep;
+		int removedCount = formerPathCount - pg.paths.size();
+		System.out.println("# Graph has had "+removedCount+" paths removed which did not contain one of the included nodes.");
+	    }
+	    // other stuff
             pg.tallyLabelCounts();
+            System.out.println("# Graph has "+pg.vertexSet().size()+" nodes and "+pg.edgeSet().size()+" edges with "+pg.paths.size()+" paths.");
             System.out.println("# Graph has "+pg.labelCounts.get("case")+" case paths and "+pg.labelCounts.get("ctrl")+" ctrl paths.");
             // set graph options
             if (cmd.hasOption("verbose")) pg.verbose = true;
@@ -768,6 +838,8 @@ public class FRFinder {
             if (cmd.hasOption("minpriority")) frf.setMinPriority(Integer.parseInt(cmd.getOptionValue("minpriority")));
             if (cmd.hasOption("requirednodes")) frf.setRequiredNodes(cmd.getOptionValue("requirednodes"));
             if (cmd.hasOption("excludednodes")) frf.setExcludedNodes(cmd.getOptionValue("excludednodes"));
+            if (cmd.hasOption("excludedpathnodes")) frf.setExcludedPathNodes(cmd.getOptionValue("excludedpathnodes"));
+            if (cmd.hasOption("includedpathnodes")) frf.setIncludedPathNodes(cmd.getOptionValue("includedpathnodes"));
             if (cmd.hasOption("keepoption")) frf.setKeepOption(cmd.getOptionValue("keepoption"));
             if (cmd.hasOption("resume")) frf.setResume();
             if (cmd.hasOption("writesavefiles")) frf.setWriteSaveFiles();

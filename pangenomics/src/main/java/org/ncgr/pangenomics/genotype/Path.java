@@ -131,4 +131,13 @@ public class Path extends GraphWalk<Node,Edge> implements Comparable {
         }
         return match;
     }
+
+    /**
+     * Return true if this path traverses the given node.
+     * @param node the node
+     * @return true if this path traverses the node
+     */
+    public boolean contains(Node node) {
+	return getNodes().contains(node);
+    }
 }

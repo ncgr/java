@@ -535,9 +535,13 @@ class FrequentedRegion implements Comparable {
         nodesOption.setRequired(true);
         options.addOption(nodesOption);
         //
-        Option excludedNodesOption = new Option("en", "excludednodes", true, "disallow paths that include any of the given nodes []");
-        excludedNodesOption.setRequired(false);
-        options.addOption(excludedNodesOption);
+        Option excludedPathNodesOption = new Option("ep", "excludedpathnodes", true, "exclude paths that include any of the given nodes []");
+        excludedPathNodesOption.setRequired(false);
+        options.addOption(excludedPathNodesOption);
+        //
+        Option includedPathNodesOption = new Option("ip", "includedpathnodes", true, "include only paths that include at least one of the given nodes []");
+        includedPathNodesOption.setRequired(false);
+        options.addOption(includedPathNodesOption);
         
         CommandLine cmd;
         HelpFormatter formatter = new HelpFormatter();
@@ -580,32 +584,53 @@ class FrequentedRegion implements Comparable {
         if (priorityOptionKey==1 && priorityOptionLabel==null) priorityOptionLabel = "case";
         if (priorityOptionKey==3 && priorityOptionLabel==null) priorityOptionLabel = "case";
 
-	// excluded nodes
-	String excludedNodeString = "[]";
-	if (cmd.hasOption("excludednodes")) {
-	    excludedNodeString = cmd.getOptionValue("excludednodes");
-	}
-        
         // import the PangenomicGraph from a pair of TXT files
 	String graphName = cmd.getOptionValue("graph");
         PangenomicGraph pg = new PangenomicGraph();
         pg.nodesFile = new File(graphName+".nodes.txt");
         pg.pathsFile = new File(graphName+".paths.txt");
         pg.loadTXT();
-	// remove paths that contain an excluded node, if any
-	NodeSet excludedNodes = pg.getNodeSet(excludedNodeString);
-	if (excludedNodes.size()>0) {
+	// remove paths that contain an excluded node, if given
+	String excludedPathNodeString = "[]";
+	if (cmd.hasOption("excludedpathnodes")) {
+	    excludedPathNodeString = cmd.getOptionValue("excludedpathnodes");
+	}
+	NodeSet excludedPathNodes = pg.getNodeSet(excludedPathNodeString);
+	if (excludedPathNodes.size()>0) {
 	    List<Path> pathsToRemove = new ArrayList<>();
 	    for (Path path : pg.paths) {
-		for (Node node : excludedNodes) {
-		    if (path.getNodes().contains(node)) {
+		for (Node node : excludedPathNodes) {
+		    if (path.contains(node)) {
 			pathsToRemove.add(path);
-			continue;
+			break;
 		    }
 		}
 	    }
 	    pg.paths.removeAll(pathsToRemove);
-	} 
+	    System.out.println("# Graph has had "+pathsToRemove.size()+" paths removed which contained excluded nodes.");
+	}
+	// limit to paths that contain an included node, if given
+	String includedPathNodeString = "[]";
+	if (cmd.hasOption("includedpathnodes")) {
+	    includedPathNodeString = cmd.getOptionValue("includedpathnodes");
+	}
+	NodeSet includedPathNodes = pg.getNodeSet(includedPathNodeString);
+	int formerPathCount = pg.paths.size();
+	if (includedPathNodes.size()>0) {
+	    List<Path> pathsToKeep = new ArrayList<>();
+	    for (Path path : pg.paths) {
+		for (Node node : includedPathNodes) {
+		    if (path.contains(node)) {
+			pathsToKeep.add(path);
+			break;
+		    }
+		}
+	    }
+	    pg.paths = pathsToKeep;
+	    int removedCount = formerPathCount - pg.paths.size();
+	    System.out.println("# Graph has had "+removedCount+" paths removed which did not contain one of the included nodes.");
+	}
+	// other stuff
         pg.tallyLabelCounts();
 	System.out.println("# Graph has "+pg.vertexSet().size()+" nodes and "+pg.edgeSet().size()+" edges with "+pg.paths.size()+" paths.");
         System.out.println("# Graph has "+pg.labelCounts.get("case")+" case paths and "+pg.labelCounts.get("ctrl")+" ctrl paths.");

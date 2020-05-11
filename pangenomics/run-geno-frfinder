@@ -1,57 +1,63 @@
 #!/bin/sh
 # usage: FRFinder
-#  -ae,--alphaend <arg>          ending value of alpha for a scan (can equal
-#                                alphastart)
-#  -as,--alphastart <arg>        starting value of alpha for a scan (can
-#                                equal alphaend)
-#  -do,--debug                   debug output [false]
-#  -en,--excludednodes <arg>     require that found FRs NOT contain the
-#                                given nodes []
-#  -graph,--graph <arg>          graph name
-#  -i,--inputprefix <arg>        input file prefix for post-processing
-#  -ke,--kappaend <arg>          ending value of kappa for a scan (can equal
-#                                kappastart; -1=infinity)
-#  -keep,--keepoption <arg>      option for keeping FRs in finder loop:
-#                                subset[:N]|distance[:N] [keep all]
-#  -ks,--kappastart <arg>        starting value of kappa for a scan (can
-#                                equal kappaend; -1=infinity)
-#  -m,--minsupport <arg>         minimum number of supporting paths for a
-#                                region to be considered interesting [1]
-#  -minmaf,--minmaf <arg>        minimum MAF for nodes included in search
-#                                [0.01]
-#  -mp,--minpriority <arg>       minimum priority for saving an FR [0]
-#  -mr,--maxround <arg>          maximum FR-finding round to run
-#                                [0=unlimited]
-#  -p,--pathlabels <arg>         tab-delimited file with pathname<tab>label
-#  -pri,--priorityoption <arg>   option for priority weighting of FRs:
-#                                0=total support, 1:label=label
-#                                support-other support [case,ctrl,alt],
-#                                2=|case support-control support|,
-#                                3:label=odds ratio in label's favor
-#                                [case,ctrl,alt], 4:label=Fisher's exact
-#                                test double-sided p value
-#                                [null,case,ctrl,alt]
-#  -r,--resume                   resume from a previous run [false]
-#  -rbns,--requirebestnodeset    require the best NodeSet from the previous
-#                                round in the next round [false]
-#  -rn,--requirednodes <arg>     require that found FRs contain the given
-#                                nodes []
-#  -s,--minsize <arg>            minimum number of nodes that a FR must
-#                                contain to be considered interesting [1]
-#  -txt,--txt                    load from [graph].nodes.txt and
-#                                [graph].paths.txt
-#  -v,--verbose                  verbose output [false]
-#  -wsf,--writesavefiles         write save files after each FR is found
-#                                [false]
+#  -ae,--alphaend <arg>            ending value of alpha for a scan (can
+#                                  equal alphastart)
+#  -as,--alphastart <arg>          starting value of alpha for a scan (can
+#                                  equal alphaend)
+#  -do,--debug                     debug output [false]
+#  -en,--excludednodes <arg>       require that found FRs NOT contain the
+#                                  given nodes []
+#  -ep,--excludedpathnodes <arg>   exclude paths that include any of the
+#                                  given nodes []
+#  -graph,--graph <arg>            graph name
+#  -i,--inputprefix <arg>          input file prefix for post-processing
+#  -ip,--includedpathnodes <arg>   include only paths that include at least
+#                                  one of the given nodes []
+#  -ke,--kappaend <arg>            ending value of kappa for a scan (can
+#                                  equal kappastart; -1=infinity)
+#  -keep,--keepoption <arg>        option for keeping FRs in finder loop:
+#                                  subset[:N]|distance[:N] [keep all]
+#  -ks,--kappastart <arg>          starting value of kappa for a scan (can
+#                                  equal kappaend; -1=infinity)
+#  -m,--minsupport <arg>           minimum number of supporting paths for a
+#                                  region to be considered interesting [1]
+#  -minmaf,--minmaf <arg>          minimum MAF for nodes included in search
+#                                  [0.01]
+#  -mp,--minpriority <arg>         minimum priority for saving an FR [0]
+#  -mr,--maxround <arg>            maximum FR-finding round to run
+#                                  [0=unlimited]
+#  -p,--pathlabels <arg>           tab-delimited file with
+#                                  pathname<tab>label
+#  -pri,--priorityoption <arg>     option for priority weighting of FRs:
+#                                  0=total support, 1:label=label
+#                                  support-other support [case,ctrl,alt],
+#                                  2=|case support-control support|,
+#                                  3:label=odds ratio in label's favor
+#                                  [case,ctrl,alt], 4:label=Fisher's exact
+#                                  test double-sided p value
+#                                  [null,case,ctrl,alt]
+#  -r,--resume                     resume from a previous run [false]
+#  -rbns,--requirebestnodeset      require the best NodeSet from the
+#                                  previous round in the next round [false]
+#  -rn,--requirednodes <arg>       require that found FRs contain the given
+#                                  nodes []
+#  -s,--minsize <arg>              minimum number of nodes that a FR must
+#                                  contain to be considered interesting [1]
+#  -txt,--txt                      load from [graph].nodes.txt and
+#                                  [graph].paths.txt
+#  -v,--verbose                    verbose output [false]
+#  -wsf,--writesavefiles           write save files after each FR is found
+#                                  [false]
 
 ## perfect path matching to FR is alpha=1, kappa=0
+## use kappa=-1 to represent kappa=infinity (unlimited extra nodes between FR nodes on a path)
 
 graph=$1
 alpha=$2
 kappa=$3
 priorityoption=$4
 
-## use $5-$9 for extra parameters
+## use $5-$15 for extra parameters
 
 echo "# $graph alpha=$alpha kappa=$kappa priorityOption=$priorityoption $5 $6 $7 $8 $9 ${10} ${11} ${12} ${13} ${14} ${15}"
 

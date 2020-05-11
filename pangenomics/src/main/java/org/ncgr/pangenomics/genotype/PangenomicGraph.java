@@ -190,17 +190,16 @@ public class PangenomicGraph extends DirectedAcyclicGraph<Node,Edge> {
     }
 
     /**
-     * Tally the label counts.
+     * Tally the label counts for the paths in this graph (can be a subset of all samples/paths).
      */
     public void tallyLabelCounts() {
         labelCounts = new TreeMap<>();
-        for (String sampleName : sampleLabels.keySet()) {
-            String label = sampleLabels.get(sampleName);
-            if (labelCounts.containsKey(label)) {
-                int count = labelCounts.get(label);
-                labelCounts.put(label, count+1);
+        for (Path path : paths) {
+            if (labelCounts.containsKey(path.label)) {
+                int count = labelCounts.get(path.label);
+                labelCounts.put(path.label, count+1);
             } else {
-                labelCounts.put(label, 1);
+                labelCounts.put(path.label, 1);
             }
         }
     }

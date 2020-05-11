@@ -194,18 +194,16 @@ public class PangenomicGraph extends DirectedAcyclicGraph<Node,Edge> {
     }
 
     /**
-     * Tally the label counts from the labeled paths.
-     * NOTE: this has to be done serially since it's an increasing tally.
+     * Tally the label counts for the paths in this graph (can be a subset of all samples/paths).
      */
     public void tallyLabelCounts() {
         labelCounts = new TreeMap<>();
         for (Path path : paths) {
-            String label = path.label;
-            if (labelCounts.containsKey(label)) {
-                int count = labelCounts.get(label);
-                labelCounts.put(label, count+1);
+            if (labelCounts.containsKey(path.label)) {
+                int count = labelCounts.get(path.label);
+                labelCounts.put(path.label, count+1);
             } else {
-                labelCounts.put(label, 1);
+                labelCounts.put(path.label, 1);
             }
         }
     }
@@ -554,13 +552,13 @@ public class PangenomicGraph extends DirectedAcyclicGraph<Node,Edge> {
     public Map<String,Integer> getLabelCounts(Node n) {
         Map<String,Integer> nLabelCounts = new HashMap<>();
         for (Path p : nodePaths.get(n.id)) {
-            if (nLabelCounts.containsKey(p.label)) {
-                int count = nLabelCounts.get(p.label) + 1;
-                nLabelCounts.put(p.label, count);
-            } else {
-                nLabelCounts.put(p.label, 1);
-            }
-        }
+	    if (nLabelCounts.containsKey(p.label)) {
+		int count = nLabelCounts.get(p.label) + 1;
+		nLabelCounts.put(p.label, count);
+	    } else {
+		nLabelCounts.put(p.label, 1);
+	    }
+	}
         return nLabelCounts;
     }
 
