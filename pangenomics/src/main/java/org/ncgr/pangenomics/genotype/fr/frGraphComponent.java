@@ -49,10 +49,10 @@ import javax.swing.border.*;
  * mxGraphComponent in turn extends JScrollPane.
  */
 public class frGraphComponent extends mxGraphComponent implements ActionListener, ListSelectionListener {
-    static DecimalFormat df = new DecimalFormat("0.0");
-    static DecimalFormat pf = new DecimalFormat("0.0E0");
-    static DecimalFormat orf = new DecimalFormat("0.000");
-    static DecimalFormat prif = new DecimalFormat("000");
+    static DecimalFormat pf = new DecimalFormat("0.00E0"); // p-values
+    static DecimalFormat orf = new DecimalFormat("0.000"); // odds ratio
+    static DecimalFormat prif = new DecimalFormat("000");  // priority
+    
     static String INFINITY = "\u221e";
     static String MATH_MINUS = "\u2212";
     static String CHECKMARK = "\u2713";
@@ -334,9 +334,9 @@ public class frGraphComponent extends mxGraphComponent implements ActionListener
         infoLabelString += "<hr/>";
         infoLabelString += "FR "+(currentFRIndex+1)+":";
         infoLabelString += "<br/>size="+currentFR.nodes.size();
-        infoLabelString += "<br/>support="+currentFR.caseSubpathSupport+"/"+currentFR.ctrlSubpathSupport;
+        infoLabelString += "<br/>support="+currentFR.support+":"+currentFR.caseSubpathSupport+"/"+currentFR.ctrlSubpathSupport;
         infoLabelString += "<br/>p="+pf.format(p);
-        infoLabelString += "<br/>log10(OR)="+orf.format(Math.log10(or));
+        infoLabelString += "<br/>O.R.(log10)="+orf.format(or)+"("+orf.format(Math.log10(or))+")";
         infoLabelString += "<br/>priority="+currentFR.priority;
         infoLabelString += "<hr/>";
         infoLabelString += "</html>";

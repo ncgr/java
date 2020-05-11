@@ -80,6 +80,8 @@ public class FRFinder {
     // parameters, with defaults
     boolean resume = false;
     boolean writeSaveFiles = false;
+    boolean writePathFRs = false;
+    boolean writeFRSubpaths = false;
     String graphName = null;
     int minSize = 0;
     double minLength = 0.0;
@@ -117,6 +119,8 @@ public class FRFinder {
     void initializeParameters() {
         parameters.setProperty("resume", String.valueOf(resume));
         parameters.setProperty("writeSaveFiles", String.valueOf(writeSaveFiles));
+        parameters.setProperty("writePathFRs", String.valueOf(writePathFRs));
+        parameters.setProperty("writeFRSubpaths", String.valueOf(writeFRSubpaths));
         parameters.setProperty("minSupport", String.valueOf(minSupport));
         parameters.setProperty("minSize", String.valueOf(minSize));
         parameters.setProperty("minLength", String.valueOf(minLength));
@@ -450,8 +454,8 @@ public class FRFinder {
 	if (frequentedRegions.size()>0) {
             FRUtils.printParameters(parameters, formOutputPrefix(alpha, kappa), alpha, kappa, elapsedTime);
             printFrequentedRegions(formOutputPrefix(alpha, kappa));
-            printPathFRs(formOutputPrefix(alpha, kappa));
-            printFRSubpaths(formOutputPrefix(alpha, kappa));
+            if (writePathFRs) printPathFRs(formOutputPrefix(alpha, kappa));
+            if (writeFRSubpaths) printFRSubpaths(formOutputPrefix(alpha, kappa));
 	}
     }
 
@@ -491,6 +495,12 @@ public class FRFinder {
     // parameters file value getters
     public boolean writeSaveFiles() {
         return Boolean.parseBoolean(parameters.getProperty("writeSaveFiles"));
+    }
+    public boolean writePathFRs() {
+        return Boolean.parseBoolean(parameters.getProperty("writePathFRs"));
+    }
+    public boolean writeFRSubpaths() {
+        return Boolean.parseBoolean(parameters.getProperty("writeFRSubpaths"));
     }
     public boolean resume() {
         return Boolean.parseBoolean(parameters.getProperty("resume"));
@@ -553,6 +563,14 @@ public class FRFinder {
     public void setWriteSaveFiles() {
 	this.writeSaveFiles = true;
         parameters.setProperty("writeSaveFiles", "true");
+    }
+    public void setWritePathFRs() {
+	this.writePathFRs = true;
+        parameters.setProperty("writePathFRs", "true");
+    }
+    public void setWriteFRSubpaths() {
+	this.writeFRSubpaths = true;
+        parameters.setProperty("writeFRSubpaths", "true");
     }
     public void setMinSupport(int minSupport) {
 	this.minSupport = minSupport;
@@ -696,6 +714,14 @@ public class FRFinder {
         writeSaveFilesOption.setRequired(false);
         options.addOption(writeSaveFilesOption);
         //
+        Option writePathFRsOption = new Option("wpfr", "writepathfrs", false, "write the path FR file at end [false]");
+        writePathFRsOption.setRequired(false);
+        options.addOption(writePathFRsOption);
+        //
+        Option writeFRSubpathsOption = new Option("wfrs", "writefrsubpaths", false, "write the FR subpaths file at end [false]");
+        writeFRSubpathsOption.setRequired(false);
+        options.addOption(writeFRSubpathsOption);
+        //
         Option requiredNodesOption = new Option("rn", "requirednodes", true, "require that found FRs contain the given nodes []");
         requiredNodesOption.setRequired(false);
         options.addOption(requiredNodesOption);
@@ -767,6 +793,8 @@ public class FRFinder {
             if (cmd.hasOption("minsize")) frf.setMinSize(Integer.parseInt(cmd.getOptionValue("minsize")));
             if (cmd.hasOption("minlen")) frf.setMinLen(Double.parseDouble(cmd.getOptionValue("minlen")));
             if (cmd.hasOption("writesavefiles")) frf.setWriteSaveFiles();
+            if (cmd.hasOption("writepathfrs")) frf.setWritePathFRs();
+            if (cmd.hasOption("writefrsubpaths")) frf.setWriteFRSubpaths();
             if (cmd.hasOption("verbose")) frf.verbose = true;
             if (cmd.hasOption("debug")) frf.debug = true;
             frf.postprocess();
@@ -843,6 +871,8 @@ public class FRFinder {
             if (cmd.hasOption("keepoption")) frf.setKeepOption(cmd.getOptionValue("keepoption"));
             if (cmd.hasOption("resume")) frf.setResume();
             if (cmd.hasOption("writesavefiles")) frf.setWriteSaveFiles();
+            if (cmd.hasOption("writepathfrs")) frf.setWritePathFRs();
+            if (cmd.hasOption("writefrsubpaths")) frf.setWriteFRSubpaths();
             if (cmd.hasOption("minmaf")) frf.setMinMAF(Double.parseDouble(cmd.getOptionValue("minmaf")));
 	    if (cmd.hasOption("requirebestnodeset")) frf.setRequireBestNodeSet();
 	    // these are not stored in parameters
