@@ -25,4 +25,4 @@ priorityoption=$4
 nodes=$5
 
 java -cp "build/install/fr/lib/*" org.ncgr.pangenomics.genotype.fr.FrequentedRegion \
-     --txt --graph=$graph --alpha=$alpha --kappa=$kappa --priorityoption=$priorityoption --nodes=$nodes
+     --txt --graph=$graph --alpha=$alpha --kappa=$kappa --priorityoption=$priorityoption --nodes=$nodes $6 $7 $8 $9

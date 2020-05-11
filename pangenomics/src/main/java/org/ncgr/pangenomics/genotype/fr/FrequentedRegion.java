@@ -534,6 +534,10 @@ class FrequentedRegion implements Comparable {
         Option nodesOption = new Option("n", "nodes", true, "set of nodes to calculate FR e.g. [1,2,3,4,5]");
         nodesOption.setRequired(true);
         options.addOption(nodesOption);
+        //
+        Option excludedNodesOption = new Option("en", "excludednodes", true, "disallow paths that include any of the given nodes []");
+        excludedNodesOption.setRequired(false);
+        options.addOption(excludedNodesOption);
         
         CommandLine cmd;
         HelpFormatter formatter = new HelpFormatter();
@@ -575,6 +579,12 @@ class FrequentedRegion implements Comparable {
         // impose defaults
         if (priorityOptionKey==1 && priorityOptionLabel==null) priorityOptionLabel = "case";
         if (priorityOptionKey==3 && priorityOptionLabel==null) priorityOptionLabel = "case";
+
+	// excluded nodes
+	String excludedNodeString = "[]";
+	if (cmd.hasOption("excludednodes")) {
+	    excludedNodeString = cmd.getOptionValue("excludednodes");
+	}
         
         // import the PangenomicGraph from a pair of TXT files
 	String graphName = cmd.getOptionValue("graph");
@@ -582,8 +592,22 @@ class FrequentedRegion implements Comparable {
         pg.nodesFile = new File(graphName+".nodes.txt");
         pg.pathsFile = new File(graphName+".paths.txt");
         pg.loadTXT();
-        System.out.println("# Graph has "+pg.vertexSet().size()+" nodes and "+pg.edgeSet().size()+" edges with "+pg.paths.size()+" paths.");
+	// remove paths that contain an excluded node, if any
+	NodeSet excludedNodes = pg.getNodeSet(excludedNodeString);
+	if (excludedNodes.size()>0) {
+	    List<Path> pathsToRemove = new ArrayList<>();
+	    for (Path path : pg.paths) {
+		for (Node node : excludedNodes) {
+		    if (path.getNodes().contains(node)) {
+			pathsToRemove.add(path);
+			continue;
+		    }
+		}
+	    }
+	    pg.paths.removeAll(pathsToRemove);
+	} 
         pg.tallyLabelCounts();
+	System.out.println("# Graph has "+pg.vertexSet().size()+" nodes and "+pg.edgeSet().size()+" edges with "+pg.paths.size()+" paths.");
         System.out.println("# Graph has "+pg.labelCounts.get("case")+" case paths and "+pg.labelCounts.get("ctrl")+" ctrl paths.");
 
         // create the FrequentedRegion with this PangenomicGraph
