@@ -33,12 +33,18 @@ class PGraphXAdapter extends JGraphXAdapter<Node,Edge> {
     PangenomicGraph graph;
     boolean hasCaseControlLabels;
 
+    int numPaths;
+    double minorNodeFrac;
+
     Path highlightedPath = null;
     List<Edge> highlightedPathEdges;
 
-    public PGraphXAdapter(PangenomicGraph graph, boolean decorateEdges, Path highlightedPath) {
+    public PGraphXAdapter(PangenomicGraph graph, boolean decorateEdges, Path highlightedPath, double minorNodeFrac) {
         super(new DefaultListenableGraph<Node,Edge>(graph));
         this.graph = graph;
+        this.minorNodeFrac = minorNodeFrac;
+
+        numPaths = graph.getPathCount();
         
         // get the highlighted path edges
         if (highlightedPath!=null) {
@@ -64,6 +70,11 @@ class PGraphXAdapter extends JGraphXAdapter<Node,Edge> {
         setStylesheet(defaultStylesheet);
         setAutoSizeCells(true);
 
+        // style for minor nodes
+        String minorStyle = "shape=ellipse;fontColor=#A0A0A0;fillColor=white;strokeColor=gray;strokeWidth=1.0;gradientColor=none;spacingTop=2";
+        // style for no-call nodes
+        String noCallStyle = "shape=hexagon;fontColor=#A0A0A0;fillColor=white;strokeColor=gray;strokeWidth=1.0;gradientColor=none;spacingTop=2";
+
         // logical to do case/control ops
         hasCaseControlLabels = graph.labelCounts.containsKey("case") && graph.labelCounts.containsKey("ctrl");
 
@@ -75,8 +86,14 @@ class PGraphXAdapter extends JGraphXAdapter<Node,Edge> {
             mxCell c = (mxCell) o;
             if (c.isVertex()) {
                 Node n = (Node) c.getValue();
+                int pathCount = graph.getPathCount(n);
+                double pathFrac = (double)pathCount / (double)numPaths;
                 if (hasCaseControlLabels) {
-                    if (c.getEdgeCount()>0) {
+                    if (pathCount>0 && n.genotype.equals("./.")) {
+                        setCellStyle(noCallStyle, cells);
+                    } else if (pathCount>0 && pathFrac<minorNodeFrac) {
+                        setCellStyle(minorStyle, cells);
+                    } else if (pathCount>0) {
                         double or = graph.oddsRatio(n);
                         double p = graph.fisherExactP(n);
                         boolean genotypeCalled = !n.genotype.equals("./.");

@@ -30,6 +30,7 @@ public class GraphViewer {
     private static final long serialVersionUID = 2202072534703043194L;
     private static final Dimension DEFAULT_SIZE = new Dimension(1000, 780);
     private static final int TOOLTIP_DISMISS_DELAY = 60000;
+    private static final double DEFAULT_MINOR_NODE_FRAC = 0.0;
 
     /**
      * Main application.
@@ -48,6 +49,10 @@ public class GraphViewer {
         Option decorateEdgesOption = new Option("d", "decorateedges", false, "decorate edges according to the number of paths [false]");
         decorateEdgesOption.setRequired(false);
         options.addOption(decorateEdgesOption);
+        //
+        Option minorNodeFracOption = new Option("m", "minornodefrac", true, "fraction of paths defining minor (uninteresting) nodes ("+DEFAULT_MINOR_NODE_FRAC+")");
+        minorNodeFracOption.setRequired(false);
+        options.addOption(minorNodeFracOption);
 
         try {
             cmd = parser.parse(options, args);
@@ -60,6 +65,9 @@ public class GraphViewer {
 
         String graphName = cmd.getOptionValue("g");
         boolean decorateEdges = cmd.hasOption("d");
+        double mOptionValue = DEFAULT_MINOR_NODE_FRAC;
+        if (cmd.hasOption("m")) mOptionValue = Double.parseDouble(cmd.getOptionValue("m"));
+        final double minorNodeFrac = mOptionValue;
 
         // schedule a job for the event dispatch thread: creating and showing this application's GUI.
         SwingUtilities.invokeLater(new Runnable() {
@@ -67,7 +75,7 @@ public class GraphViewer {
                     // turn off metal's use of bold fonts
                     UIManager.put("swing.boldMetal", Boolean.FALSE);
                     try {
-                        createAndShowGUI(graphName, decorateEdges);
+                        createAndShowGUI(graphName, decorateEdges, minorNodeFrac);
                     } catch (Exception e) {
                         System.err.println(e);
                         System.exit(1);
@@ -81,7 +89,7 @@ public class GraphViewer {
      * @param graphName the name of the graph, from which the nodes and paths files will be formed
      * @param decorateEdges decorate edges to indicate the number of paths that traverse them
      */
-    private static void createAndShowGUI(String graphName, boolean decorateEdges) throws IOException {
+    private static void createAndShowGUI(String graphName, boolean decorateEdges, double minorNodeFrac) throws IOException {
         String nodesFilename = graphName+".nodes.txt";
         String pathsFilename = graphName+".paths.txt";
         File nodesFile = new File(nodesFilename);
@@ -98,7 +106,7 @@ public class GraphViewer {
         graph.buildNodePaths();
 
         // PGraphXAdapter extends JGraphXAdapter which extends mxGraph
-        PGraphXAdapter pgxAdapter = new PGraphXAdapter(graph, decorateEdges, null);
+        PGraphXAdapter pgxAdapter = new PGraphXAdapter(graph, decorateEdges, null, minorNodeFrac);
 
         // pgGraphComponent extends mxGraphComponent
         pgGraphComponent component = new pgGraphComponent(graph, pgxAdapter, decorateEdges);

@@ -41,6 +41,7 @@ class pgGraphComponent extends mxGraphComponent implements ActionListener, ListS
     Path highlightedPath;
 
     boolean decorateEdges;
+    double minorNodeFrac;
     
     // starting scale
     double scale = 1.0;
@@ -53,6 +54,8 @@ class pgGraphComponent extends mxGraphComponent implements ActionListener, ListS
         this.pgxAdapter = pgxAdapter;
         this.graph = graph;
         this.decorateEdges = decorateEdges;
+
+        minorNodeFrac = pgxAdapter.minorNodeFrac;
 
         // housekeeping
         setConnectable(false);
@@ -173,7 +176,7 @@ class pgGraphComponent extends mxGraphComponent implements ActionListener, ListS
             sampleList.ensureIndexIsVisible(currentIndex);
             String sampleName = sampleNames[currentIndex];
             highlightedPath = graph.getPath(sampleName);
-            pgxAdapter = new PGraphXAdapter(graph, decorateEdges, highlightedPath);
+            pgxAdapter = new PGraphXAdapter(graph, decorateEdges, highlightedPath, minorNodeFrac);
             setGraph(pgxAdapter);
             executeLayout();
         }
