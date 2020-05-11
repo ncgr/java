@@ -47,7 +47,7 @@ public class frGraphComponent extends mxGraphComponent implements ActionListener
     
     // constructor parameters
     PangenomicGraph graph;
-    Map<String,FrequentedRegion> frequentedRegions;
+    FrequentedRegion[] frequentedRegions;
     FGraphXAdapter fgxAdapter;
     Properties parameters;
     Path highlightPath;
@@ -63,13 +63,13 @@ public class frGraphComponent extends mxGraphComponent implements ActionListener
     Object[] frKeys;            // the FR map keys for navigating through the FRs
 
     double scale = 1.0;         // starting zoom scale
-    int current = 0;            // key index of current FR being shown
+    int currentFRIndex = 0;     // index of current FR being shown
     FrequentedRegion currentFR; // the current FR being shown
     
     /**
      * Constructor takes a FGraphXAdapter
      */
-    frGraphComponent(PangenomicGraph graph, Map<String,FrequentedRegion> frequentedRegions, FGraphXAdapter fgxAdapter,
+    frGraphComponent(PangenomicGraph graph, FrequentedRegion[] frequentedRegions, FGraphXAdapter fgxAdapter,
                      Properties parameters, Path highlightPath, boolean decorateEdges) {
         super(fgxAdapter);
         
@@ -86,8 +86,9 @@ public class frGraphComponent extends mxGraphComponent implements ActionListener
         setToolTips(true);
         setViewportBorder(new LineBorder(Color.BLACK));
 
-        // load the FR keys into an array to select the chosen FR with an int on action events
-        frKeys = frequentedRegions.keySet().toArray();
+        // set the current FR to the first one
+        currentFRIndex = 0;
+        currentFR = frequentedRegions[currentFRIndex];
 
         // zoom in button -- plus is equals plus shift
         getInputMap().put(KeyStroke.getKeyStroke(KeyEvent.VK_EQUALS,KeyEvent.SHIFT_DOWN_MASK), "zoomIn");
@@ -114,7 +115,7 @@ public class frGraphComponent extends mxGraphComponent implements ActionListener
         getInputMap().put(KeyStroke.getKeyStroke(KeyEvent.VK_LEFT,0), "previous");
         getActionMap().put("previous", new AbstractAction() {
                 public void actionPerformed(ActionEvent e) {
-                    if (current>0) {
+                    if (currentFRIndex>0) {
                         prevButton.doClick();
                     }
                 }
@@ -123,7 +124,7 @@ public class frGraphComponent extends mxGraphComponent implements ActionListener
         getInputMap().put(KeyStroke.getKeyStroke(KeyEvent.VK_RIGHT,0), "next");
         getActionMap().put("next", new AbstractAction() {
                 public void actionPerformed(ActionEvent e) {
-                    if (current<(frKeys.length-1)) {
+                    if (currentFRIndex<(frKeys.length-1)) {
                         nextButton.doClick();
                     }
                 }
@@ -158,7 +159,7 @@ public class frGraphComponent extends mxGraphComponent implements ActionListener
         c.insets = new Insets(1, 4, 1, 4); // top, left, bottom, right
         gridbag.setConstraints(prevButton, c);
         topPanel.add(prevButton);
-        currentLabel = new JLabel("FR 1 / "+frequentedRegions.size());
+        currentLabel = new JLabel("FR 1 / "+frequentedRegions.length);
         currentLabel.setFont(currentLabel.getFont().deriveFont(Font.BOLD));
         topPanel.add(currentLabel);
         nextButton = new JButton("FR 2");
@@ -203,7 +204,7 @@ public class frGraphComponent extends mxGraphComponent implements ActionListener
         updateButtonStates();
 
         // set the current FR to the first one
-        currentFR = frequentedRegions.get((String)frKeys[0]);
+        currentFR = frequentedRegions[0];
         
         // the side panel for information
         JPanel sidePanel = new JPanel();
@@ -243,11 +244,11 @@ public class frGraphComponent extends mxGraphComponent implements ActionListener
         String command = e.getActionCommand();
         if (command.equals("next") || command.equals("previous")) {
             if (command.equals("next")) {
-                current++;
+                currentFRIndex++;
             } else if (command.equals("previous")) {
-                current--;
+                currentFRIndex--;
             }
-            currentFR = frequentedRegions.get((String)frKeys[current]);
+            currentFR = frequentedRegions[currentFRIndex];
             fgxAdapter = new FGraphXAdapter(graph, currentFR, highlightPath, decorateEdges);
             setGraph(fgxAdapter);
             updateSidePanel(currentFR, parameters);
@@ -266,22 +267,22 @@ public class frGraphComponent extends mxGraphComponent implements ActionListener
     }
 
     /**
-     * Update the button states. current is zero-based, we'll list FRs as one-based.
+     * Update the button states. currentFRIndex is zero-based, we'll list FRs as one-based.
      */
     public void updateButtonStates() {
-        currentLabel.setText("FR "+(current+1)+" / "+frequentedRegions.size());
-        if (current==0) {
+        currentLabel.setText("FR "+(currentFRIndex+1)+" / "+frequentedRegions.length);
+        if (currentFRIndex==0) {
             prevButton.setText("FR");
             prevButton.setEnabled(false);
         } else {
-            prevButton.setText("FR "+current);
+            prevButton.setText("FR "+currentFRIndex);
             prevButton.setEnabled(true);
         }
-        if (current==(frKeys.length-1)) {
+        if (currentFRIndex==(frKeys.length-1)) {
             nextButton.setText("FR");
             nextButton.setEnabled(false);
         } else {
-            nextButton.setText("FR "+(current+2));
+            nextButton.setText("FR "+(currentFRIndex+2));
             nextButton.setEnabled(true);
         }
     }
@@ -332,7 +333,7 @@ public class frGraphComponent extends mxGraphComponent implements ActionListener
         }
         infoLabelString +=
             "<hr/>" +
-            "FR "+(current+1)+":<br/>" +
+            "FR "+(currentFRIndex+1)+":<br/>" +
             "size="+fr.nodes.size()+"<br/>" +
             "avgLen="+df.format(fr.avgLength)+"<br/>" +
             "support="+fr.caseSubpathSupport+"/"+fr.ctrlSubpathSupport+"<br/>" +

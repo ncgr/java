@@ -80,6 +80,8 @@ public class FGraphXAdapter extends JGraphXAdapter<Node,Edge> {
         String baseFRStyle = "shape=rectangle;fontColor=black;fillColor=#808080;strokeColor=black;strokeWidth=2.0;gradientColor=none;spacingTop=2";
         // style for minor nodes
         String minorStyle = "shape=ellipse;fontColor=#A0A0A0;fillColor=white;strokeColor=gray;strokeWidth=1.0;gradientColor=none;spacingTop=2";
+        // style for no-call nodes
+        String noCallStyle = "shape=hexagon;fontColor=#A0A0A0;fillColor=white;strokeColor=gray;strokeWidth=1.0;gradientColor=none;spacingTop=2";
         
         // color the nodes and edges
         selectAll();
@@ -91,7 +93,9 @@ public class FGraphXAdapter extends JGraphXAdapter<Node,Edge> {
                 Node n = (Node) c.getValue();
                 int pathCount = graph.getPathCount(n);
                 double pathFrac = (double)pathCount / (double)numPaths;
-                if (pathCount>0 && pathFrac<minorNodeFrac) {
+                if (pathCount>0 && n.genotype.equals("./.")) {
+                    setCellStyle(noCallStyle, cells);
+                } else if (pathCount>0 && pathFrac<minorNodeFrac) {
                     setCellStyle(minorStyle, cells);
                 } else if (pathCount>0) {
                     double or = graph.oddsRatio(n);

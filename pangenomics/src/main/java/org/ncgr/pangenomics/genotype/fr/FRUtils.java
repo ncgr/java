@@ -18,6 +18,7 @@ import java.util.ArrayList;
 import java.util.Map;
 import java.util.HashMap;
 import java.util.TreeMap;
+import java.util.TreeSet;
 import java.util.Properties;
 
 /**
@@ -37,7 +38,7 @@ public class FRUtils {
      * 628863.case:[18,20,21,23,24,26,27,29,30,33,34]
      * etc.
      */
-    public static TreeMap<String,FrequentedRegion> readFrequentedRegions(String inputPrefix, PangenomicGraph graph) throws FileNotFoundException, IOException {
+    public static TreeSet<FrequentedRegion> readFrequentedRegions(String inputPrefix, PangenomicGraph graph) throws FileNotFoundException, IOException {
         // get alpha, kappa from the input prefix
         double alpha = readAlpha(inputPrefix);
         int kappa = readKappa(inputPrefix);
@@ -63,7 +64,7 @@ public class FRUtils {
             nodeMap.put(n.id, n);
         }
         // build the FRs
-        Map<String,FrequentedRegion> unsortedFRs = new HashMap<>();
+        TreeSet<FrequentedRegion> sortedFRs = new TreeSet<>();
         String subpathsFilename = getFRSubpathsFilename(inputPrefix);
         BufferedReader reader = new BufferedReader(new FileReader(subpathsFilename));
         String line = null;
@@ -109,13 +110,9 @@ public class FRUtils {
                 subpaths.add(new Path(graph, subNodes, name, label));
             }
             FrequentedRegion fr = new FrequentedRegion(graph, nodes, subpaths, alpha, kappa, priorityOptionKey, priorityOptionLabel, support);
-            unsortedFRs.put(fr.nodes.toString(), fr);
+            sortedFRs.add(fr);
         }
-        // now sort them in a TreeMap
-        FRpriorityComparator frComparator = new FRpriorityComparator(unsortedFRs);
-        TreeMap<String,FrequentedRegion> frequentedRegions = new TreeMap<>(frComparator);
-        frequentedRegions.putAll(unsortedFRs);
-        return frequentedRegions;
+        return sortedFRs;
     }
 
     /**
@@ -125,17 +122,17 @@ public class FRUtils {
      * nodes   size    support case    ctrl    OR      p       pri
      * [1341]  1       21      19      2       9.500   9.48E-3 202
      */
-    public static TreeMap<String,FrequentedRegion> readFrequentedRegions(String inputPrefix) throws FileNotFoundException, IOException {
+    public static TreeSet<FrequentedRegion> readFrequentedRegions(String inputPrefix) throws FileNotFoundException, IOException {
         // get alpha, kappa from the input prefix
         double alpha = readAlpha(inputPrefix);
         int kappa = readKappa(inputPrefix);
         // read the FRs
-        Map<String,FrequentedRegion> unsortedFRs = new HashMap<>();
+        TreeSet<FrequentedRegion> sortedFRs = new TreeSet<>();
         String frFilename = getFRsFilename(inputPrefix);
         BufferedReader reader = new BufferedReader(new FileReader(frFilename));
         String line = null;
         while ((line=reader.readLine())!=null) {
-            if (line.startsWith("nodes")) continue; // heading
+            if (!line.startsWith("[")) continue; // heading
             String[] fields = line.split("\t");
             NodeSet nodes = new NodeSet(fields[0]);
             int size = Integer.parseInt(fields[1]);
@@ -151,13 +148,9 @@ public class FRUtils {
             double pValue = Double.parseDouble(fields[6]);
             int priority = Integer.parseInt(fields[7]);
             FrequentedRegion fr = new FrequentedRegion(nodes, alpha, kappa, support, caseSupport, ctrlSupport, orValue, pValue, priority);
-            unsortedFRs.put(fr.nodes.toString(), fr);
+            sortedFRs.add(fr);
         }
-        // now sort them in a TreeMap
-        FRpriorityComparator frComparator = new FRpriorityComparator(unsortedFRs);
-        TreeMap<String,FrequentedRegion> frequentedRegions = new TreeMap<>(frComparator);
-        frequentedRegions.putAll(unsortedFRs);
-        return frequentedRegions;
+        return sortedFRs;
     }
 
     /**

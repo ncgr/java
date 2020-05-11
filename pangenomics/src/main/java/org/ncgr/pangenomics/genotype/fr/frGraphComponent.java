@@ -18,6 +18,7 @@ import java.text.DecimalFormat;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.TreeMap;
+import java.util.TreeSet;
 import java.util.Properties;
 
 import javax.swing.AbstractAction;
@@ -61,7 +62,7 @@ public class frGraphComponent extends mxGraphComponent implements ActionListener
     // constructor parameters
     PangenomicGraph graph;
     FGraphXAdapter fgxAdapter;
-    TreeMap<String,FrequentedRegion> frequentedRegions;
+    FrequentedRegion[] frequentedRegions;
     Properties parameters;
 
     // FGraphXAdapter parameters stored here
@@ -71,7 +72,6 @@ public class frGraphComponent extends mxGraphComponent implements ActionListener
 
     // the JList of FRs
     JList<String> frList;
-    Object[] frKeys;            // the FR map keys for navigating through the FRs
     String[] frLabels;
     int currentFRIndex;
     FrequentedRegion currentFR; // the current FR being shown
@@ -92,7 +92,7 @@ public class frGraphComponent extends mxGraphComponent implements ActionListener
     /**
      * Constructor takes a FGraphXAdapter
      */
-    frGraphComponent(PangenomicGraph graph, FGraphXAdapter fgxAdapter, TreeMap<String,FrequentedRegion> frequentedRegions, Properties parameters) {
+    frGraphComponent(PangenomicGraph graph, FGraphXAdapter fgxAdapter, FrequentedRegion[] frequentedRegions, Properties parameters) {
         super(fgxAdapter);
         this.graph = graph;
         this.fgxAdapter = fgxAdapter;
@@ -110,11 +110,9 @@ public class frGraphComponent extends mxGraphComponent implements ActionListener
         setViewportBorder(new LineBorder(Color.BLACK));
         if (DEBUG) System.err.println("setViewPortBorder done.");
 
-        // load the FR keys into an array to select the chosen FR with an int on action events
-        frKeys = frequentedRegions.keySet().toArray();
-
         // set the current FR to the first one
-        currentFR = frequentedRegions.get((String)frKeys[0]);
+        currentFRIndex = 0;
+        currentFR = frequentedRegions[currentFRIndex];
         currentFR.updateSupport();
         if (DEBUG) System.err.println("currentFR.updateSupport() done.");
 
@@ -159,9 +157,9 @@ public class frGraphComponent extends mxGraphComponent implements ActionListener
         
         // FR selector
         int maxFRLabelLength = 0;
-        frLabels = new String[frKeys.length];
-        for (int i=0; i<frKeys.length; i++) {
-            FrequentedRegion fr = frequentedRegions.get((String)frKeys[i]);
+        frLabels = new String[frequentedRegions.length];
+        for (int i=0; i<frequentedRegions.length; i++) {
+            FrequentedRegion fr = frequentedRegions[i];
             frLabels[i] = (i+1)+":"+fr.nodes.toString()+" "+fr.support+"  "+orf.format(Math.log10(fr.oddsRatio()))+"  "+fr.priority;
             if (frLabels[i].length()>maxFRLabelLength) maxFRLabelLength = frLabels[i].length();
         }
@@ -346,11 +344,11 @@ public class frGraphComponent extends mxGraphComponent implements ActionListener
         // thermometer
         if (or>1.0) {
             thermPlot.setSubrangePaint(ThermometerPlot.NORMAL, Color.GRAY);
-            thermPlot.setSubrangePaint(ThermometerPlot.WARNING, Color.RED);
+            thermPlot.setSubrangePaint(ThermometerPlot.WARNING, Color.MAGENTA);
             thermPlot.setSubrangePaint(ThermometerPlot.CRITICAL, Color.RED);
         } else {
             thermPlot.setSubrangePaint(ThermometerPlot.NORMAL, Color.GRAY);
-            thermPlot.setSubrangePaint(ThermometerPlot.WARNING, Color.BLUE);
+            thermPlot.setSubrangePaint(ThermometerPlot.WARNING, Color.CYAN);
             thermPlot.setSubrangePaint(ThermometerPlot.CRITICAL, Color.BLUE);
         }
         thermPlot.setDataset(new DefaultValueDataset(currentFR.priority));
@@ -369,7 +367,7 @@ public class frGraphComponent extends mxGraphComponent implements ActionListener
                 } else  {
                     currentFRIndex = firstIndex;
                 }
-                currentFR = frequentedRegions.get((String)frKeys[currentFRIndex]);
+                currentFR = frequentedRegions[currentFRIndex];
                 if (currentFR.subpaths==null) currentFR.updateSupport();
                 fgxAdapter = new FGraphXAdapter(graph, currentFR, highlightedPath, decorateEdges, minorNodeFrac);
                 setGraph(fgxAdapter);

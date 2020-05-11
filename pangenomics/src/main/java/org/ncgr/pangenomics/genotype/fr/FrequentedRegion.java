@@ -182,7 +182,7 @@ class FrequentedRegion implements Comparable {
     }
 
     /**
-     * Comparison is based on priority, then support, then size, then the nodes themselves.
+     * Comparison is based on higher priority, then higher support, then smaller size, then the nodes themselves.
      */
     @Override
     public int compareTo(Object o) {
@@ -192,7 +192,7 @@ class FrequentedRegion implements Comparable {
         } else if (this.support!=that.support) {
             return this.support - that.support;
         } else if (this.nodes.size()!=that.nodes.size()) {
-            return this.nodes.size() - that.nodes.size();
+            return -(this.nodes.size() - that.nodes.size());
         } else {
             return this.nodes.compareTo(that.nodes);
         }

@@ -6,8 +6,7 @@ import java.awt.Color;
 import java.awt.Dimension;
 import java.io.File;
 import java.io.IOException;
-import java.util.Map;
-import java.util.TreeMap;
+import java.util.TreeSet;
 import java.util.Properties;
 import javax.swing.JFrame;
 import javax.swing.SwingConstants;
@@ -117,20 +116,21 @@ public class FRViewer {
         graph.buildNodePaths();
         graph.tallyLabelCounts();
 
-        // load the TreeMap of FRs so we see the juicy ones first
-        TreeMap<String,FrequentedRegion> frequentedRegions = FRUtils.readFrequentedRegions(prefix);
-        // set the graph without doing all the other stuff
-        for (FrequentedRegion fr : frequentedRegions.values()) {
+        // load the FRs into an array, first is best
+        TreeSet<FrequentedRegion> sortedFRs = FRUtils.readFrequentedRegions(prefix);
+        FrequentedRegion[] frequentedRegions = new FrequentedRegion[sortedFRs.size()];
+        int i = 0;
+        for (FrequentedRegion fr : sortedFRs.descendingSet()) {
             fr.graph = graph;
+            frequentedRegions[i++] = fr;
         }
 
         // create the JFrame
         JFrame frame = new JFrame(prefix);
         frame.setPreferredSize(DEFAULT_SIZE);
 
-        // the FGraphXAdapter is an mxGraph; instantiate with the first FR in the list
-        Object[] frKeys = frequentedRegions.keySet().toArray();
-        FGraphXAdapter fgxAdapter = new FGraphXAdapter(graph, frequentedRegions.get((String)frKeys[0]), null, decorateEdges, minorNodeFrac);
+        // the FGraphXAdapter is an mxGraph; instantiate with the last FR in the list
+        FGraphXAdapter fgxAdapter = new FGraphXAdapter(graph, frequentedRegions[0], null, decorateEdges, minorNodeFrac);
 
         // frGraphComponent extends mxGraphComponent which extends JScrollPane (implements Printable)
         frGraphComponent component = new frGraphComponent(graph, fgxAdapter, frequentedRegions, parameters);
