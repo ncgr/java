@@ -192,7 +192,7 @@ public class FGraphXAdapter extends JGraphXAdapter<Node,Edge> {
             tip += n.contig+":"+n.start+"-"+n.end+"<br/>";
             tip += n.genotype+"<br/>";
             tip += pathCount+" paths<br/>";
-            tip += percf.format(frac);
+            tip += percf.format(frac)+"<br/>";
             Map<String,Integer> labelCounts = graph.getLabelCounts(n);
             if (labelCounts.containsKey("case") || labelCounts.containsKey("ctrl")) {
                 int caseCounts = 0;
@@ -201,9 +201,9 @@ public class FGraphXAdapter extends JGraphXAdapter<Node,Edge> {
                 double or = graph.oddsRatio(n);
                 if (labelCounts.containsKey("case")) caseCounts = labelCounts.get("case");
                 if (labelCounts.containsKey("ctrl")) ctrlCounts = labelCounts.get("ctrl");
-                tip += "<br/>"+caseCounts+"/"+ctrlCounts+"<br/>" +
-                    "lOR="+orf.format(Math.log10(or))+"<br/>" +
-                    "p="+pf.format(p);
+                tip += caseCounts+"/"+ctrlCounts+"<br/>";
+                tip += "OR="+orf.format(or)+"("+orf.format(Math.log10(or))+")<br/>";
+                tip += "p="+pf.format(p)+"<br/>";
             }
             tip += "</html>";
             return tip;

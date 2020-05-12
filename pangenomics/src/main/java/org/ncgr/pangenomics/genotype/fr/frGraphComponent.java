@@ -49,15 +49,15 @@ import javax.swing.border.*;
  * mxGraphComponent in turn extends JScrollPane.
  */
 public class frGraphComponent extends mxGraphComponent implements ActionListener, ListSelectionListener {
-    static DecimalFormat pf = new DecimalFormat("0.00E0"); // p-values
-    static DecimalFormat orf = new DecimalFormat("0.000"); // odds ratio
-    static DecimalFormat prif = new DecimalFormat("000");  // priority
-    
     static String INFINITY = "\u221e";
     static String MATH_MINUS = "\u2212";
     static String CHECKMARK = "\u2713";
-
     static boolean DEBUG = false;
+
+    static DecimalFormat pf = new DecimalFormat("0.00E0"); // p-values
+    static DecimalFormat orf = new DecimalFormat("0.000"); // odds ratio
+    static DecimalFormat prif = new DecimalFormat("000");  // priority
+    static DecimalFormat percf = new DecimalFormat("0.0%");
     
     // constructor parameters
     PangenomicGraph graph;
@@ -335,6 +335,9 @@ public class frGraphComponent extends mxGraphComponent implements ActionListener
         infoLabelString += "FR "+(currentFRIndex+1)+":";
         infoLabelString += "<br/>size="+currentFR.nodes.size();
         infoLabelString += "<br/>support="+currentFR.support+":"+currentFR.caseSubpathSupport+"/"+currentFR.ctrlSubpathSupport;
+        infoLabelString += "<br/>support="+percf.format((double)currentFR.support/(double)graph.paths.size())+":"+
+            percf.format((double)currentFR.caseSubpathSupport/(double)graph.labelCounts.get("case"))+"/"+
+            percf.format((double)currentFR.ctrlSubpathSupport/(double)graph.labelCounts.get("ctrl"));
         infoLabelString += "<br/>p="+pf.format(p);
         infoLabelString += "<br/>O.R.(log10)="+orf.format(or)+"("+orf.format(Math.log10(or))+")";
         infoLabelString += "<br/>priority="+currentFR.priority;
