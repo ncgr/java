@@ -93,14 +93,13 @@ public class FGraphXAdapter extends JGraphXAdapter<Node,Edge> {
                 Node n = (Node) c.getValue();
                 int pathCount = graph.getPathCount(n);
                 double pathFrac = (double)pathCount / (double)numPaths;
-                if (pathCount>0 && n.genotype.equals("./.")) {
+                if (pathCount>0 && !n.isCalled) {
                     setCellStyle(noCallStyle, cells);
                 } else if (pathCount>0 && pathFrac<minorNodeFrac) {
                     setCellStyle(minorStyle, cells);
                 } else if (pathCount>0) {
                     double or = graph.oddsRatio(n);
                     double p = graph.fisherExactP(n);
-                    boolean genotypeCalled = !n.genotype.equals("./.");
                     // special base style for FR nodes
                     if (fr.containsNode(n)) {
                         setCellStyle(baseFRStyle, cells);
@@ -111,7 +110,7 @@ public class FGraphXAdapter extends JGraphXAdapter<Node,Edge> {
                         geom.setWidth(width*FR_CELL_RESIZE);
                     }
                     // color cell based on O.R. and p-value
-                    if (!genotypeCalled) {
+                    if (!n.isCalled) {
                         // no call
                         setCellStyles("fillColor", "white", cells);
                     } else if (Double.isInfinite(or)) {
@@ -138,14 +137,14 @@ public class FGraphXAdapter extends JGraphXAdapter<Node,Edge> {
                         setCellStyles("fillColor", fillColor, cells);
                     }
                     // use bold white letters if significant
-                    if (genotypeCalled && p<P_THRESHOLD) {
+                    if (n.isCalled && p<P_THRESHOLD) {
                         setCellStyles("fontColor", LABEL_COLOR_SIG, cells);
                         setCellStyles("fontStyle", String.valueOf(mxConstants.FONT_BOLD), cells);
                     } else {
                         setCellStyles("fontColor", LABEL_COLOR_NONSIG, cells);
                     }
                     // set border color based on HOM/HET genotype
-                    if (genotypeCalled) {
+                    if (n.isCalled) {
                         String[] genotypes = n.genotype.split("/");
                         if (genotypes[0].equals(genotypes[1])) {
                             setCellStyles("strokeColor", STROKE_COLOR_HOM, cells);

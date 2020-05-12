@@ -1,4 +1,4 @@
-package org.ncgr.pangenomics.genotype.fr;
+ package org.ncgr.pangenomics.genotype.fr;
 
 import org.ncgr.pangenomics.genotype.*;
 
@@ -83,14 +83,15 @@ public class FRFinder {
     boolean writeSaveFiles = false;
     boolean writePathFRs = false;
     boolean writeFRSubpaths = false;
-    String graphName = null;
-    int minSize = 0;
+    boolean requireBestNodeSet = false;
+    boolean requireGenotypeCall = false;
     double minLength = 0.0;
+    double minMAF = 0.01;
+    int minSize = 0;
     int maxRound = 0;
     int minPriority = 0;
     int minSupport = 1;
-    double minMAF = 0.01;
-    boolean requireBestNodeSet = false;
+    String graphName = null;
     String requiredNodeString = "[]";
     String excludedNodeString = "[]";
     String excludedPathNodeString = "[]";
@@ -135,6 +136,7 @@ public class FRFinder {
         parameters.setProperty("keepOption", keepOption);
         parameters.setProperty("keepOption", "null");
         parameters.setProperty("minMAF", String.valueOf(minMAF));
+	parameters.setProperty("requireGenotypeCall", String.valueOf(requireGenotypeCall));
 	parameters.setProperty("requireBestNodeSet", String.valueOf(requireBestNodeSet));
     }
 
@@ -158,6 +160,7 @@ public class FRFinder {
                    "minMAF="+minMAF+" " +
                    "maxRound="+maxRound+" " +
 		   "keepOption="+keepOption+" " +
+		   "requireGenotypeCall="+requireGenotypeCall+" " +
 		   "requireBestNodeSet="+requireBestNodeSet+" " +
                    "requiredNodes="+requiredNodeString+" " +
                    "excludedNodes="+excludedNodeString+" " +
@@ -168,7 +171,7 @@ public class FRFinder {
         frequentedRegions = new HashMap<>();
 
         // store all interesting FRs in a Map
-	Map<String,FrequentedRegion> allFrequentedRegions = new HashMap<>();
+	ConcurrentHashMap<String,FrequentedRegion> allFrequentedRegions = new ConcurrentHashMap<>();
 
         // rejected NodeSets (strings), so we don't bother scanning them more than once
         ConcurrentSkipListSet<String> rejectedNodeSets = new ConcurrentSkipListSet<>();
@@ -217,13 +220,20 @@ public class FRFinder {
             printToLog("# Now continuing with FR finding...");
         } else {
 	    ////////////////////////////////////////////////////////////////////////////////////////////////
-            // load the single-node FRs into allFrequentedRegions, keeping only those with af>=minMAF and support>=minsupport
+	    // load the single-node FRs into allFrequentedRegions
+	    // keep those with af>=minMAF, support>=minsupport and genotype call if requireGenotypeCall
 	    // locally parallelized for your expedience
 	    ConcurrentSkipListSet<Node> nodes = new ConcurrentSkipListSet<>(graph.getNodes());
 	    nodes.parallelStream().forEach(node -> {
 		    boolean added = false;
 		    if (excludedNodes.contains(node)) {
-			System.err.println("EXC:"+node.toString());
+			if (debug) {
+			    System.err.println("EXC:"+node.toString());
+			}
+		    } else if (requireGenotypeCall && !node.isCalled) {
+			if (debug) {
+			    System.err.println("NGC:"+node.toString());
+			}
 		    } else {
 			NodeSet c = new NodeSet(node);
 			if (node.af>=minMAF) {
@@ -244,7 +254,7 @@ public class FRFinder {
 		});
 	    // end nodes parallelStream
 	    ////////////////////////////////////////////////////////////////////////////////////////////////
-            // store interesting single-node FRs in round 0, since we won't hit them in the loop
+            // store qualified interesting single-node FRs in round 0, since we won't hit them in the loop
 	    for (FrequentedRegion fr : allFrequentedRegions.values()) {
 		if (isInteresting(fr)) {
 		    if (requiredNodes.size()==0) {
@@ -552,6 +562,9 @@ public class FRFinder {
     public boolean getRequireBestNodeSet() {
 	return Boolean.parseBoolean(parameters.getProperty("requireBestNodeSet"));
     }
+    public boolean getRequireGenotypeCall() {
+	return Boolean.parseBoolean(parameters.getProperty("requireBestNodeSet"));
+    }
     
     // parameter setters - set instance vars as well as value in parameters
     public void setPriorityOption(String priorityOption) {
@@ -639,7 +652,11 @@ public class FRFinder {
 	this.requireBestNodeSet = true;
 	parameters.setProperty("requireBestNodeSet", "true");
     }
-
+    public void setRequireGenotypeCall() {
+	this.requireGenotypeCall = true;
+	parameters.setProperty("requireGenotypeCall", "true)");
+    }
+    
     /**
      * Command-line utility
      */
@@ -752,6 +769,10 @@ public class FRFinder {
 	Option requireBestNodeSetOption = new Option("rbns", "requirebestnodeset", false, "require the best NodeSet from the previous round in the next round [false]");
 	requireBestNodeSetOption.setRequired(false);
 	options.addOption(requireBestNodeSetOption);
+	//
+	Option requireGenotypeCallOption = new Option("rgc", "requiregenotypecall", false, "require that FR nodes have genotype calls (not ./.) [false]");
+	requireGenotypeCallOption.setRequired(false);
+	options.addOption(requireGenotypeCallOption);
 
         try {
             cmd = parser.parse(options, args);
@@ -878,6 +899,7 @@ public class FRFinder {
             if (cmd.hasOption("writefrsubpaths")) frf.setWriteFRSubpaths();
             if (cmd.hasOption("minmaf")) frf.setMinMAF(Double.parseDouble(cmd.getOptionValue("minmaf")));
 	    if (cmd.hasOption("requirebestnodeset")) frf.setRequireBestNodeSet();
+	    if (cmd.hasOption("requiregenotypecall")) frf.setRequireGenotypeCall();
 	    // these are not stored in parameters
             if (cmd.hasOption("verbose")) frf.verbose = true;
             if (cmd.hasOption("debug")) frf.debug = true;

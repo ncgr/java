@@ -14,6 +14,7 @@ public class Node implements Comparable, Serializable {
     public String rs;
     public String genotype;
     public double af;
+    public boolean isCalled;
 
     /**
      * Minimal constructor.
@@ -23,7 +24,7 @@ public class Node implements Comparable, Serializable {
     }
 
     /**
-     * Construct the full monty.
+     * Construct the full Monty.
      */
     public Node(long id, String rs, String contig, int start, int end, String genotype, double af) {
         this.id = id;
@@ -33,6 +34,7 @@ public class Node implements Comparable, Serializable {
         this.rs = rs;
 	this.genotype = genotype;
         this.af = af;
+	isCalled = !genotype.equals("./.");
     }
 
     /**

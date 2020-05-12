@@ -39,6 +39,8 @@
 #  -r,--resume                     resume from a previous run [false]
 #  -rbns,--requirebestnodeset      require the best NodeSet from the
 #                                  previous round in the next round [false]
+#  -rgc,--requiregenotypecall      require that FR nodes have genotype calls
+#                                  (not ./.) [false]
 #  -rn,--requirednodes <arg>       require that found FRs contain the given
 #                                  nodes []
 #  -s,--minsize <arg>              minimum number of nodes that a FR must
@@ -46,6 +48,8 @@
 #  -txt,--txt                      load from [graph].nodes.txt and
 #                                  [graph].paths.txt
 #  -v,--verbose                    verbose output [false]
+#  -wfrs,--writefrsubpaths         write the FR subpaths file at end [false]
+#  -wpfr,--writepathfrs            write the path FR file at end [false]
 #  -wsf,--writesavefiles           write save files after each FR is found
 #                                  [false]
 
@@ -64,7 +68,7 @@ echo "# $graph alpha=$alpha kappa=$kappa priorityOption=$priorityoption $5 $6 $7
 ## TXT input
 ## DO NOT USE -XX:+UseG1GC!!! Causes hang at certain RAM limit.
 java -server -Xms10g -Xmx600g -XX:+UseParallelGC -XX:MinHeapFreeRatio=10 -XX:MaxHeapFreeRatio=20 -cp "build/install/fr/lib/*" org.ncgr.pangenomics.genotype.fr.FRFinder \
-     --verbose $5 $6 $7 $8 $9 ${10} ${11} ${12} ${13} ${14} ${15} \
+     --verbose --requiregenotypecall $5 $6 $7 $8 $9 ${10} ${11} ${12} ${13} ${14} ${15} \
      --txt --graph=$graph \
      --alphastart=$alpha --alphaend=$alpha --kappastart=$kappa --kappaend=$kappa --priorityoption=$priorityoption
 
