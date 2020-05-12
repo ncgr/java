@@ -698,8 +698,8 @@ class FrequentedRegion implements Comparable {
                 System.err.println("ERROR: subpath.getNodes().size()=0; path="+this.toString()+" nl="+nl+" nr="+nr);
                 ignore = true;
             }
-            // alpha test on maximal subpath
-            if (!ignore && num>=alpha*nodes.size()) s.add(subpath);
+            // alpha test on maximal subpath; use num>0 to allow alpha=0
+            if (!ignore && num>0 && num>=alpha*nodes.size()) s.add(subpath);
         }
         return s;
     }

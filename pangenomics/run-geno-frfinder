@@ -64,7 +64,7 @@ echo "# $graph alpha=$alpha kappa=$kappa priorityOption=$priorityoption $5 $6 $7
 ## TXT input
 ## DO NOT USE -XX:+UseG1GC!!! Causes hang at certain RAM limit.
 java -server -Xms10g -Xmx600g -XX:+UseParallelGC -XX:MinHeapFreeRatio=10 -XX:MaxHeapFreeRatio=20 -cp "build/install/fr/lib/*" org.ncgr.pangenomics.genotype.fr.FRFinder \
-     --verbose --keepoption=subset $5 $6 $7 $8 $9 ${10} ${11} ${12} ${13} ${14} ${15} \
+     --verbose $5 $6 $7 $8 $9 ${10} ${11} ${12} ${13} ${14} ${15} \
      --txt --graph=$graph \
      --alphastart=$alpha --alphaend=$alpha --kappastart=$kappa --kappaend=$kappa --priorityoption=$priorityoption
 

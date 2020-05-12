@@ -63,14 +63,15 @@ public class FRFinder {
     // the output FRs
     Map<String,FrequentedRegion> frequentedRegions;
 
-    // the keepoption value, if there is one after the colon
-    int keepOptionKey = 0;
-
     // priority option
     String priorityOption = "4";    // default
     int priorityOptionKey;          // 0, 1, 2, etc.
     String priorityOptionLabel;     // the current label for priority update emphasis: "case" or "ctrl"
     String priorityOptionParameter; // parameter for priority update emphasis, can be null or "alt" or "case" or "ctrl"
+
+    // keep option
+    String keepOption = "0";        // default
+    int keepOptionKey;
     
     // diagnostics
     boolean verbose = false;
@@ -130,7 +131,8 @@ public class FRFinder {
         parameters.setProperty("excludedNodeString", excludedNodeString);
 	parameters.setProperty("excludedPathNodeString", excludedPathNodeString);
 	parameters.setProperty("includedPathNodeString", includedPathNodeString);
-        parameters.setProperty("priorityOption", String.valueOf(priorityOption));
+        parameters.setProperty("priorityOption", priorityOption);
+        parameters.setProperty("keepOption", keepOption);
         parameters.setProperty("keepOption", "null");
         parameters.setProperty("minMAF", String.valueOf(minMAF));
 	parameters.setProperty("requireBestNodeSet", String.valueOf(requireBestNodeSet));
@@ -148,14 +150,14 @@ public class FRFinder {
 	printToLog("# Starting findFRs: " +
                    "alpha="+alpha+" " +
                    "kappa="+kappa+" " +
-                   "priorityOption="+getPriorityOption()+" " +
+		   "priorityOption="+priorityOption+" " +
                    "minPriority="+minPriority+" " +
                    "minSupport="+minSupport+" " +
                    "minSize="+minSize+" " +
                    "minLength="+minLength+" " +
                    "minMAF="+minMAF+" " +
                    "maxRound="+maxRound+" " +
-                   "keepOption="+getKeepOption()+" " +
+		   "keepOption="+keepOption+" " +
 		   "requireBestNodeSet="+requireBestNodeSet+" " +
                    "requiredNodes="+requiredNodeString+" " +
                    "excludedNodes="+excludedNodeString+" " +
@@ -345,7 +347,7 @@ public class FRFinder {
 			    }
 			    // should we keep this merged FR according to keepOption?
 			    boolean keep = true; // default if keepOption not set
-			    if (getKeepOption().startsWith("subset") && frpair.merged.nodes.size()>=keepOptionKey) {
+			    if (keepOption.startsWith("subset") && frpair.merged.nodes.size()>=keepOptionKey) {
 				// keep FRs that are subsets of others or have higher priority
 				for (FrequentedRegion frOld : frequentedRegions.values()) {
 				    if (frpair.merged.nodes.isSupersetOf(frOld.nodes) && frpair.merged.priority<=frOld.priority) {
@@ -353,7 +355,7 @@ public class FRFinder {
 					break;
 				    }
 				}
-			    } else if (getKeepOption().startsWith("distance")) {
+			    } else if (keepOption.startsWith("distance")) {
 				// keep FRs that are at least a distance of keepOptionKey away from others or have higher priority
 				for (FrequentedRegion frOld : frequentedRegions.values()) {
 				    if (frpair.merged.nodes.distanceFrom(frOld.nodes)<keepOptionKey && frpair.merged.priority<=frOld.priority) {
@@ -609,6 +611,7 @@ public class FRFinder {
 	parameters.setProperty("includedPathNodeString", includedPathNodeString);
     }
     public void setKeepOption(String keepOption) {
+	this.keepOption = keepOption;
         if (keepOption.startsWith("subset") || keepOption.startsWith("distance")) {
             String[] parts = keepOption.split(":");
             if (parts.length==2) {
