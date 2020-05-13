@@ -161,4 +161,23 @@ public class NodeSet extends TreeSet<Node> implements Comparable {
         }
         return p[n];
     }
+
+    /**
+     * Return true if the nodes in this nodeset all have the same contig:start value.
+     */
+    public boolean haveSamePosition() {
+	String contig = "";
+	int start = 0;
+	boolean sameStart = true;
+	for (Node node : this) {
+	    if (start==0) {
+		start = node.start;
+		contig = node.contig;
+	    } else if (node.start!=start || !node.contig.equals(contig)) {
+		sameStart = false;
+		break;
+	    }
+	}
+	return sameStart;
+    }
 }

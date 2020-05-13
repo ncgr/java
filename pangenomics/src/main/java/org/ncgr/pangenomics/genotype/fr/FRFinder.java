@@ -85,6 +85,7 @@ public class FRFinder {
     boolean writeFRSubpaths = false;
     boolean requireBestNodeSet = false;
     boolean requireGenotypeCall = false;
+    boolean requireSamePosition = false;
     double minLength = 0.0;
     double minMAF = 0.01;
     int minSize = 0;
@@ -138,6 +139,7 @@ public class FRFinder {
         parameters.setProperty("minMAF", String.valueOf(minMAF));
 	parameters.setProperty("requireGenotypeCall", String.valueOf(requireGenotypeCall));
 	parameters.setProperty("requireBestNodeSet", String.valueOf(requireBestNodeSet));
+	parameters.setProperty("requireSamePosition", String.valueOf(requireSamePosition));
     }
 
     /**
@@ -162,6 +164,7 @@ public class FRFinder {
 		   "keepOption="+keepOption+" " +
 		   "requireGenotypeCall="+requireGenotypeCall+" " +
 		   "requireBestNodeSet="+requireBestNodeSet+" " +
+		   "requireSamePosition="+requireSamePosition+" " +
                    "requiredNodes="+requiredNodeString+" " +
                    "excludedNodes="+excludedNodeString+" " +
 		   "excludedPathNodes="+excludedPathNodeString+" " +
@@ -182,6 +185,12 @@ public class FRFinder {
         // optional required and excluded nodes; must be final since used in the parallel stream loop
         NodeSet requiredNodes = graph.getNodeSet(requiredNodeString);
         NodeSet excludedNodes = graph.getNodeSet(excludedNodeString);
+
+	// validate if requireSamePosition
+	if (requireSamePosition && requiredNodes.size()>0 && !requiredNodes.haveSamePosition()) {
+	    System.err.println("ERROR: requireSamePosition=true but required nodes do not have same position.");
+	    System.exit(1);
+	}
 
         // FR-finding round counter
         int round = 0;
@@ -327,6 +336,9 @@ public class FRFinder {
 			    frpair = acceptedFRPairs.get(nodesKey);
 			} else if (rejectedNodeSets.contains(nodesKey)) {
 			    // already rejected, bail
+			    rejected = true;
+			} else if (requireSamePosition && !frpair.nodes.haveSamePosition()) {
+			    // can't have an FR with nodes at different positions
 			    rejected = true;
 			}
 			// reject if not all the required nodes are present
@@ -565,6 +577,9 @@ public class FRFinder {
     public boolean getRequireGenotypeCall() {
 	return Boolean.parseBoolean(parameters.getProperty("requireBestNodeSet"));
     }
+    public boolean getRequireSamePosition() {
+	return Boolean.parseBoolean(parameters.getProperty("requireSamePosition"));
+    }
     
     // parameter setters - set instance vars as well as value in parameters
     public void setPriorityOption(String priorityOption) {
@@ -654,7 +669,11 @@ public class FRFinder {
     }
     public void setRequireGenotypeCall() {
 	this.requireGenotypeCall = true;
-	parameters.setProperty("requireGenotypeCall", "true)");
+	parameters.setProperty("requireGenotypeCall", "true");
+    }
+    public void setRequireSamePosition() {
+	this.requireSamePosition = true;
+	parameters.setProperty("requireSamePosition", "true");
     }
     
     /**
@@ -773,6 +792,10 @@ public class FRFinder {
 	Option requireGenotypeCallOption = new Option("rgc", "requiregenotypecall", false, "require that FR nodes have genotype calls (not ./.) [false]");
 	requireGenotypeCallOption.setRequired(false);
 	options.addOption(requireGenotypeCallOption);
+	//
+	Option requireSamePositionOption = new Option("rsp", "requiresameposition", false, "require that FRs consist of nodes at same genomic position [false]");
+	requireSamePositionOption.setRequired(false);
+	options.addOption(requireSamePositionOption);
 
         try {
             cmd = parser.parse(options, args);
@@ -798,14 +821,16 @@ public class FRFinder {
         double alphaEnd = 0.0;
         int kappaStart = 0;
         int kappaEnd = 0;
-        if (cmd.hasOption("alphastart")) alphaStart = Double.parseDouble(cmd.getOptionValue("alphastart"));
-        if (cmd.hasOption("alphaend")) alphaEnd = Double.parseDouble(cmd.getOptionValue("alphaend"));
-        if (cmd.hasOption("kappastart")) kappaStart = Integer.parseInt(cmd.getOptionValue("kappastart"));
-        if (cmd.hasOption("kappaend")) kappaEnd = Integer.parseInt(cmd.getOptionValue("kappaend"));
-        if (kappaStart==-1 || kappaEnd==-1) {
-            kappaStart = Integer.MAX_VALUE; // effectively infinity
-            kappaEnd = Integer.MAX_VALUE;
-        }
+	if (!cmd.hasOption("requiresameposition")) {
+	    if (cmd.hasOption("alphastart")) alphaStart = Double.parseDouble(cmd.getOptionValue("alphastart"));
+	    if (cmd.hasOption("alphaend")) alphaEnd = Double.parseDouble(cmd.getOptionValue("alphaend"));
+	    if (cmd.hasOption("kappastart")) kappaStart = Integer.parseInt(cmd.getOptionValue("kappastart"));
+	    if (cmd.hasOption("kappaend")) kappaEnd = Integer.parseInt(cmd.getOptionValue("kappaend"));
+	    if (kappaStart==-1 || kappaEnd==-1) {
+		kappaStart = Integer.MAX_VALUE; // effectively infinity
+		kappaEnd = Integer.MAX_VALUE;
+	    }
+	}
         
         if (cmd.hasOption("inputprefix")) {
             // post-process an existing run
@@ -900,6 +925,7 @@ public class FRFinder {
             if (cmd.hasOption("minmaf")) frf.setMinMAF(Double.parseDouble(cmd.getOptionValue("minmaf")));
 	    if (cmd.hasOption("requirebestnodeset")) frf.setRequireBestNodeSet();
 	    if (cmd.hasOption("requiregenotypecall")) frf.setRequireGenotypeCall();
+	    if (cmd.hasOption("requiresameposition")) frf.setRequireSamePosition();
 	    // these are not stored in parameters
             if (cmd.hasOption("verbose")) frf.verbose = true;
             if (cmd.hasOption("debug")) frf.debug = true;
