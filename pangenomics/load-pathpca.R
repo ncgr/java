@@ -23,7 +23,7 @@ pathpca = read.table(paste(prefix,"pathpca.txt", sep="."))
 
 ## paths data frame from pathpca data frame (rather than paths file)
 paths = as.data.frame(t(pathpca))
-pca = prcomp(paths, center=TRUE)
+pca = prcomp(pathpca, center=TRUE)
 
 ## get the results for variables (nodes)
 ## res.var$coord          # Coordinates
@@ -39,11 +39,7 @@ pca.ind = get_pca_ind(pca)
 
 ## which are cases and which are controls
 cases = endsWith(rownames(paths), "case")
-cases.0 = endsWith(rownames(paths), "0.case")
-cases.1 = endsWith(rownames(paths), "1.case")
 controls = endsWith(rownames(paths), "ctrl")
-controls.0 = endsWith(rownames(paths), "0.ctrl")
-controls.1 = endsWith(rownames(paths), "1.ctrl")
 
 ## append case/control label to paths
 paths$Label[cases] = "case"
