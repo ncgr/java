@@ -59,8 +59,8 @@ public class GridSearcher {
     public GridSearcher(String dataFile) throws FileNotFoundException, IOException {
         this.samples = SvmUtil.readSamples(dataFile);
         // initialize svm_param with defaults
-        param = SvmUtil.getDefaultParam();
-        // build the problem
+        param = SvmUtil.getDefaultParam(); 
+	// build the problem
         createProblem();
     }
 
@@ -70,23 +70,24 @@ public class GridSearcher {
     public void run() {
         // cycle through C and gamma
         for (int c=c_begin; c<=c_end; c+=c_step) {
-            for (int g=g_begin; g>=g_end; g+=g_step) {
+            for (int g=g_begin; g<=g_end; g+=g_step) {
                 param.C = Math.pow(2.0,c);
                 param.gamma = Math.pow(2.0,g);
+		if (verbose) {
+		    System.err.println("log2C="+c+" log2gamma="+g);
+		    System.err.println("C="+param.C+" gamma="+param.gamma);
+		}
                 SvmCrossValidator svc = new SvmCrossValidator(param, nrFold, prob);
-                SvmUtil.setQuiet();
+		SvmUtil.setQuiet();
                 svc.run();
-                if (verbose) System.out.print("TotalCorrect,Accuracy="+svc.totalCorrect+","+svc.accuracy);
-                if (verbose) System.out.print("\tC,gamma:"+param.C+","+param.gamma);
-                if (svc.totalCorrect>bestTotalCorrect) {
+                if (verbose) System.err.println("totalCorrect="+svc.totalCorrect+" accuracy="+svc.accuracy);
+		if (svc.totalCorrect>bestTotalCorrect) {
                     bestC = param.C;
                     bestGamma = param.gamma;
                     totalSamples = svc.totalSamples;
                     bestTotalCorrect = svc.totalCorrect;
                     bestAccuracy = svc.accuracy;
-                    if (verbose) System.out.print("***");
                 }
-                if (verbose) System.out.println("");
             }
         }
     }
@@ -122,9 +123,8 @@ public class GridSearcher {
         }
 
         // bail if we've got nothing
-        if (maxIndex==0) {
-            System.exit(1);
-        }
+	System.err.println("GridSearcher.createProblem(): maxIndex="+maxIndex);
+        if (maxIndex==0) System.exit(1);
 
         // create and populate the svm_problem
         prob = new svm_problem();
@@ -139,24 +139,24 @@ public class GridSearcher {
         }
 
         // set param.gamma = 1/N if zero
-        if (param.gamma==0 && maxIndex>0) param.gamma = 1.0/maxIndex;
+        if (param.gamma==0) param.gamma = 1.0/maxIndex;
 
         // validation
         if (param.kernel_type == svm_parameter.PRECOMPUTED) {
             for (int i=0;i<prob.l;i++) {
                 if (prob.x[i][0].index != 0) {
-                    System.err.println("Wrong kernel matrix: first column must be 0:sample_serial_number");
+                    System.err.println("GridSearcher: Wrong kernel matrix: first column must be 0:sample_serial_number");
                     System.exit(1);
                 }
                 if ((int)prob.x[i][0].value <= 0 || (int)prob.x[i][0].value > maxIndex) {
-                    System.err.println("Wrong input format: sample_serial_number out of range");
+                    System.err.println("GridSearcher: Wrong input format: sample_serial_number out of range");
                     System.exit(1);
                 }
             }
         }
         String errorMsg = svm.svm_check_parameter(prob,param);
         if (errorMsg!=null) {
-            System.err.println("ERROR: "+errorMsg);
+            System.err.println("GridSearcher ERROR: "+errorMsg);
             System.exit(1);
         }
     }
@@ -175,13 +175,7 @@ public class GridSearcher {
         Options options = new Options();
         CommandLineParser parser = new DefaultParser();
         HelpFormatter formatter = new HelpFormatter();
-        CommandLine cmd;
-
-        if (args.length==0) {
-            System.out.println("Usage:");
-            System.out.println("GridSearcher [options]");
-            System.exit(1);
-        }
+        CommandLine cmd = null;
 
         Option log2cOption = new Option("log2c", true, "set range/step of C [-5,15,2]");
         log2cOption.setRequired(false);
@@ -199,18 +193,22 @@ public class GridSearcher {
         vOption.setRequired(false);
         options.addOption(vOption);
 
+        if (args.length==0) {
+            formatter.printHelp("GridSearcher [options]", options);
+            System.exit(1);
+        }
+	
         try {
             cmd = parser.parse(options, args);
         } catch (ParseException e) {
-            System.out.println(e.getMessage());
+            System.err.println(e.getMessage());
             formatter.printHelp("GridSearcher", options);
             System.exit(1);
-            return;
         }
 
         // data file is last argument
         String datafile = args[args.length-1];
-        
+
         // initialize with default parameters
         GridSearcher gs = new GridSearcher(datafile);
 
@@ -220,11 +218,10 @@ public class GridSearcher {
             gs.setVerbose();
         }
 
-        if (verbose) System.out.println("data:"+datafile);
+        if (verbose) System.err.println("data:"+datafile);
 
         if (cmd.hasOption("log2c")) {
             String log2cValues = cmd.getOptionValue("log2c");
-            if (verbose) System.out.println("C:["+log2cValues+"]");
             String[] parts = log2cValues.split(",");
             gs.c_begin = Integer.parseInt(parts[0]);
             gs.c_end = Integer.parseInt(parts[1]);
@@ -233,7 +230,6 @@ public class GridSearcher {
 
         if (cmd.hasOption("log2g")) {
             String log2gValues = cmd.getOptionValue("log2g");
-            if (verbose) System.out.println("gamma:["+log2gValues+"]");
             String[] parts = log2gValues.split(",");
             gs.g_begin = Integer.parseInt(parts[0]);
             gs.g_end = Integer.parseInt(parts[1]);
@@ -242,12 +238,13 @@ public class GridSearcher {
 
         if (cmd.hasOption("k")) {
             gs.nrFold = Integer.parseInt(cmd.getOptionValue("k"));
-            if (verbose) System.out.println("cross-validation:"+gs.nrFold+"-fold");
+            if (verbose) System.err.println("cross-validation:"+gs.nrFold+"-fold");
         }
 
         // run the search
         gs.run();
 
+	// output
         System.out.println("BEST VALUES:");
         System.out.println("correct/samples="+gs.bestTotalCorrect+"/"+gs.totalSamples);
         System.out.println("C\tgamma\t\taccuracy");

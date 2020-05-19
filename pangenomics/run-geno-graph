@@ -11,5 +11,6 @@
 GRAPH=$1
 LABELSFILE=$2
 FILECMD=$3
+VCFFILE=$4
 
-java -cp "build/install/fr/lib/*" -XX:+UseParallelGC org.ncgr.pangenomics.genotype.PangenomicGraph -v -g $GRAPH $FILECMD -l $LABELSFILE
+java -cp "build/install/fr/lib/*" -XX:+UseParallelGC org.ncgr.pangenomics.genotype.PangenomicGraph -v -g $GRAPH -l $LABELSFILE $FILECMD $VCFFILE

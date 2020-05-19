@@ -417,7 +417,10 @@ class FrequentedRegion implements Comparable {
      */
     public int countSubpathsOf(Path path) {
         int count = 0;
-        if (subpaths!=null) {
+	if (subpaths==null || subpaths.size()==0) {
+	    System.err.println("ERROR: countSubpathsOf("+path.name+") called but subpaths is empty.");
+	    System.exit(1);
+	} else {
             for (Path sp : subpaths) {
                 if (sp.name.equals(path.name)) count++;
             }

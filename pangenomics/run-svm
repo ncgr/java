@@ -1,34 +1,49 @@
-#!/bin/sh
+#!/bin/bash
 
 k=10
 
-SVMROOT=$1
+INPUTPREFIX=$1
 
-FULL="$SVMROOT.svm.txt"
-RANGE="$SVMROOT.svm.range.txt"
-FULLSCALE="$SVMROOT.svm.scale.txt"
-GRIDOUT="$SVMROOT.svm.grid.txt"
+SVMFILE="$INPUTPREFIX.svm.txt"
+RANGE="$INPUTPREFIX.svm.range.txt"
+FULLSCALE="$INPUTPREFIX.svm.scale.txt"
+GRIDOUT="$INPUTPREFIX.svm.grid.txt"
 
-## scale the full data (if exists)
-if [ -s $FULL ]
+if [ ! -s $SVMFILE ]
 then
-    java -cp "build/install/fr/lib/*" org.ncgr.svm.SvmScaler -s $RANGE $FULL > $FULLSCALE
+    echo "Writing $SVMFILE"
+    java -server -cp "build/install/fr/lib/*" org.ncgr.pangenomics.genotype.fr.FRUtils -svm -i $INPUTPREFIX
 fi
-
-## run GridSearcher on the full scaled data (if exists) to find optimum SVM parameters
-if [ -s $FULLSCALE ]
+    
+if [ ! -s $FULLSCALE ]
 then
-    ARGS="-log2c -5,15,2 -log2g 3,-15,-2 -k $k"
-    java -cp "build/install/fr/lib/*" org.ncgr.svm.GridSearcher $ARGS $FULLSCALE > $GRIDOUT
+    ## scale the SVM data
+    echo "Scaling $SVMFILE"
+    java -cp "build/install/fr/lib/*" org.ncgr.svm.SvmScaler -s $RANGE $SVMFILE > $FULLSCALE
 fi
-
-## cross validate on full dataset with the above parameters
+    
+if [ ! -s $GRIDOUT ]
+then
+    ## run GridSearcher on the full scaled data to find optimum SVM parameters
+    ARGS="-log2c -5,15,5 -log2g 5,-15,-5 -k $k"
+    echo "Running GridSearcher on $FULLSCALE with ARGS=$ARGS"
+    java -cp "build/install/fr/lib/*" org.ncgr.svm.GridSearcher -v $ARGS $FULLSCALE > $GRIDOUT
+fi
+    
 if [ -s $GRIDOUT ]
 then
+    ## cross validate on full dataset with the above parameters TO STDOUT!
     C=`tail -1 $GRIDOUT | awk '{ print $1; }'`
     gamma=`tail -1 $GRIDOUT | awk '{ print $2; }'`
     perc=`tail -1 $GRIDOUT | awk '{ print $3; }'`
-
     ARGS="-c $C -g $gamma -k $k"
-    java -cp "build/install/fr/lib/*" org.ncgr.svm.SvmCrossValidator $ARGS $FULLSCALE
+    echo "Running SvmCrossValidator on $FULLSCALE 3 times with ARGS=$ARGS"
+    for i in 1 2 3
+    do
+	echo "$INPUTPREFIX-$i.crossvalidation.txt"
+	java -cp "build/install/fr/lib/*" org.ncgr.svm.SvmCrossValidator $ARGS $FULLSCALE > "$INPUTPREFIX-$i.crossvalidation.txt"
+    done
 fi
+
+
+

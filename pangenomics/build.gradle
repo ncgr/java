@@ -75,6 +75,7 @@ dependencies {
 
     // https://mvnrepository.com/artifact/com.github.samtools/htsjdk
     implementation group: 'com.github.samtools', name: 'htsjdk', version: '2.16.1'
+
 }
 
 // In this section you declare where to find the dependencies of your project

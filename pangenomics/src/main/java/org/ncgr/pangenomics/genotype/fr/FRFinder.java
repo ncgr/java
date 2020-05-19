@@ -1,4 +1,4 @@
- package org.ncgr.pangenomics.genotype.fr;
+package org.ncgr.pangenomics.genotype.fr;
 
 import org.ncgr.pangenomics.genotype.*;
 
@@ -51,7 +51,7 @@ public class FRFinder {
     // number formats
     static DecimalFormat percf = new DecimalFormat("0.000%");
 
-    // a PangenomicGraph must be supplied to the constructor unless post-processing
+    // a PangenomicGraph must be supplied to the constructor
     PangenomicGraph graph;
 
     // store paths locally since post-processing doesn't build a graph
@@ -107,14 +107,6 @@ public class FRFinder {
         initializeParameters();
     }
 
-    /**
-     * Construct with the output from a previous run. Be sure to set minSupport, minSize, minLength filters as needed before running postprocess().
-     */
-    public FRFinder(String inputPrefix) throws FileNotFoundException, IOException {
-        initializeParameters();
-        parameters = FRUtils.readParameters(inputPrefix); // sets properties from file
-        readFrequentedRegions();
-    }
 
     /**
      * Initialize the default parameters.
@@ -483,39 +475,6 @@ public class FRFinder {
 	}
     }
 
-    /**
-     * Post-process a set of FRs for given minSupport, minLength and minSize.
-     */
-    public void postprocess() throws FileNotFoundException, IOException {
-        ConcurrentHashMap<String,FrequentedRegion> filteredFRs = new ConcurrentHashMap<>();
-        for (FrequentedRegion fr : frequentedRegions.values()) {
-            boolean passes = true;
-            String reason = "";
-            if (fr.support<minSupport) {
-                passes = false;
-                reason += " support";
-            } else {
-                reason += " SUPPORT";
-            }
-            if (fr.nodes.size()<minSize) {
-                passes = false;
-                reason += " size";
-            } else {
-                reason += " SIZE";
-            }
-            if (passes) filteredFRs.put(fr.nodes.toString(), fr);
-            if (verbose) System.out.println(fr.toString()+reason);
-        }
-        if (verbose) System.out.println(filteredFRs.size()+" FRs passed minSupport="+minSupport+", minSize="+minSize+", minLength="+minLength);
-	// output the filtered FRs and SVM data
-        frequentedRegions = filteredFRs;
-	if (frequentedRegions.size()>0) {
-	    printFrequentedRegions(formOutputPrefix());
-	    printPathFRsSVM(formOutputPrefix());
-            printPathFRsARFF(formOutputPrefix());
-	}
-    }
-
     // parameters file value getters
     public boolean writeSaveFiles() {
         return Boolean.parseBoolean(parameters.getProperty("writeSaveFiles"));
@@ -540,9 +499,6 @@ public class FRFinder {
     }
     public String getPriorityOption() {
         return parameters.getProperty("priorityOption");
-    }
-    public String getInputPrefix() {
-        return parameters.getProperty("inputPrefix");
     }
     public String getGraphName() {
         return parameters.getProperty("graphName");
@@ -716,11 +672,7 @@ public class FRFinder {
         Option minSizeOption = new Option("s", "minsize", true, "minimum number of nodes that a FR must contain to be considered interesting [1]");
         minSizeOption.setRequired(false);
         options.addOption(minSizeOption);
-        //
-        Option inputprefixOption = new Option("i", "inputprefix", true, "input file prefix for post-processing");
-        inputprefixOption.setRequired(false);
-        options.addOption(inputprefixOption);
-        //
+	//
         Option labelsOption = new Option("p", "pathlabels", true, "tab-delimited file with pathname<tab>label");
         labelsOption.setRequired(false);
         options.addOption(labelsOption);
@@ -831,131 +783,111 @@ public class FRFinder {
 		kappaEnd = Integer.MAX_VALUE;
 	    }
 	}
-        
-        if (cmd.hasOption("inputprefix")) {
-            // post-process an existing run
-            String inputPrefix = cmd.getOptionValue("inputprefix");
-            // instantiate the FRFinder from the saved files
-            FRFinder frf = new FRFinder(inputPrefix);
-            // set optional FRFinder parameters
-            if (cmd.hasOption("minsupport")) frf.setMinSupport(Integer.parseInt(cmd.getOptionValue("minsupport")));
-            if (cmd.hasOption("minsize")) frf.setMinSize(Integer.parseInt(cmd.getOptionValue("minsize")));
-            if (cmd.hasOption("minlen")) frf.setMinLen(Double.parseDouble(cmd.getOptionValue("minlen")));
-            if (cmd.hasOption("writesavefiles")) frf.setWriteSaveFiles();
-            if (cmd.hasOption("writepathfrs")) frf.setWritePathFRs();
-            if (cmd.hasOption("writefrsubpaths")) frf.setWriteFRSubpaths();
-            if (cmd.hasOption("verbose")) frf.verbose = true;
-            if (cmd.hasOption("debug")) frf.debug = true;
-            frf.postprocess();
-        } else {
-            String graphName = cmd.getOptionValue("graph");
-            // load graph from a pair of TXT files
-            PangenomicGraph pg = new PangenomicGraph();
-            pg.name = graphName;
-            pg.nodesFile = new File(graphName+".nodes.txt");
-            pg.pathsFile = new File(graphName+".paths.txt");
-            pg.loadTXT();
-	    // remove paths that contain an excluded path node, if there are any
-	    String excludedPathNodeString = "[]";
-	    if (cmd.hasOption("excludedpathnodes")) {
-		excludedPathNodeString = cmd.getOptionValue("excludedpathnodes");
-	    }
-	    NodeSet excludedPathNodes = pg.getNodeSet(excludedPathNodeString);
-	    if (excludedPathNodes.size()>0) {
-		List<Path> pathsToRemove = new ArrayList<>();
-		for (Path path : pg.paths) {
-		    for (Node node : excludedPathNodes) {
-			if (path.getNodes().contains(node)) {
-			    pathsToRemove.add(path);
-			    break;
-			}
+
+	// load graph from a pair of TXT files
+	String graphName = cmd.getOptionValue("graph");
+	PangenomicGraph pg = new PangenomicGraph();
+	pg.name = graphName;
+	pg.nodesFile = new File(graphName+".nodes.txt");
+	pg.pathsFile = new File(graphName+".paths.txt");
+	if (cmd.hasOption("verbose")) pg.verbose = true;
+	pg.loadTXT();
+	// remove paths that contain an excluded path node, if there are any
+	String excludedPathNodeString = "[]";
+	if (cmd.hasOption("excludedpathnodes")) {
+	    excludedPathNodeString = cmd.getOptionValue("excludedpathnodes");
+	}
+	NodeSet excludedPathNodes = pg.getNodeSet(excludedPathNodeString);
+	if (excludedPathNodes.size()>0) {
+	    List<Path> pathsToRemove = new ArrayList<>();
+	    for (Path path : pg.paths) {
+		for (Node node : excludedPathNodes) {
+		    if (path.getNodes().contains(node)) {
+			pathsToRemove.add(path);
+			break;
 		    }
 		}
-		pg.paths.removeAll(pathsToRemove);
-		System.out.println("# Graph has had "+pathsToRemove.size()+" paths removed which contained excluded nodes.");
 	    }
-	    // limit to paths that contain an included node, if given
-	    String includedPathNodeString = "[]";
-	    if (cmd.hasOption("includedpathnodes")) {
-		includedPathNodeString = cmd.getOptionValue("includedpathnodes");
-	    }
-	    NodeSet includedPathNodes = pg.getNodeSet(includedPathNodeString);
-	    int formerPathCount = pg.paths.size();
-	    if (includedPathNodes.size()>0) {
-		List<Path> pathsToKeep = new ArrayList<>();
-		for (Path path : pg.paths) {
-		    for (Node node : includedPathNodes) {
-			if (path.contains(node)) {
-			    pathsToKeep.add(path);
-			    break;
-			}
+	    pg.paths.removeAll(pathsToRemove);
+	    System.out.println("# Graph has had "+pathsToRemove.size()+" paths removed which contained excluded nodes.");
+	}
+	// limit to paths that contain an included node, if given
+	String includedPathNodeString = "[]";
+	if (cmd.hasOption("includedpathnodes")) {
+	    includedPathNodeString = cmd.getOptionValue("includedpathnodes");
+	}
+	NodeSet includedPathNodes = pg.getNodeSet(includedPathNodeString);
+	int formerPathCount = pg.paths.size();
+	if (includedPathNodes.size()>0) {
+	    List<Path> pathsToKeep = new ArrayList<>();
+	    for (Path path : pg.paths) {
+		for (Node node : includedPathNodes) {
+		    if (path.contains(node)) {
+			pathsToKeep.add(path);
+			break;
 		    }
 		}
-		pg.paths = pathsToKeep;
-		int removedCount = formerPathCount - pg.paths.size();
-		System.out.println("# Graph has had "+removedCount+" paths removed which did not contain one of the included nodes.");
 	    }
-	    // other stuff
-            pg.tallyLabelCounts();
-            System.out.println("# Graph has "+pg.vertexSet().size()+" nodes and "+pg.edgeSet().size()+" edges with "+pg.paths.size()+" paths.");
-            System.out.println("# Graph has "+pg.labelCounts.get("case")+" case paths and "+pg.labelCounts.get("ctrl")+" ctrl paths.");
-            // set graph options
-            if (cmd.hasOption("verbose")) pg.verbose = true;
-            // instantiate the FRFinder with this PangenomicGraph
-            FRFinder frf = new FRFinder(pg);
-            frf.setGraphName(graphName);
-            if (cmd.hasOption("priorityoption")) {
-                frf.setPriorityOption(cmd.getOptionValue("priorityoption"));
-            }
-            // set optional FRFinder parameters
-            if (cmd.hasOption("minsupport")) frf.setMinSupport(Integer.parseInt(cmd.getOptionValue("minsupport")));
-            if (cmd.hasOption("minsize")) frf.setMinSize(Integer.parseInt(cmd.getOptionValue("minsize")));
-            if (cmd.hasOption("minlen")) frf.setMinLen(Double.parseDouble(cmd.getOptionValue("minlen")));
-            if (cmd.hasOption("maxround")) frf.setMaxRound(Integer.parseInt(cmd.getOptionValue("maxround")));
-            if (cmd.hasOption("minpriority")) frf.setMinPriority(Integer.parseInt(cmd.getOptionValue("minpriority")));
-            if (cmd.hasOption("requirednodes")) frf.setRequiredNodes(cmd.getOptionValue("requirednodes"));
-            if (cmd.hasOption("excludednodes")) frf.setExcludedNodes(cmd.getOptionValue("excludednodes"));
-            if (cmd.hasOption("excludedpathnodes")) frf.setExcludedPathNodes(cmd.getOptionValue("excludedpathnodes"));
-            if (cmd.hasOption("includedpathnodes")) frf.setIncludedPathNodes(cmd.getOptionValue("includedpathnodes"));
-            if (cmd.hasOption("keepoption")) frf.setKeepOption(cmd.getOptionValue("keepoption"));
-            if (cmd.hasOption("resume")) frf.setResume();
-            if (cmd.hasOption("writesavefiles")) frf.setWriteSaveFiles();
-            if (cmd.hasOption("writepathfrs")) frf.setWritePathFRs();
-            if (cmd.hasOption("writefrsubpaths")) frf.setWriteFRSubpaths();
-            if (cmd.hasOption("minmaf")) frf.setMinMAF(Double.parseDouble(cmd.getOptionValue("minmaf")));
-	    if (cmd.hasOption("requirebestnodeset")) frf.setRequireBestNodeSet();
-	    if (cmd.hasOption("requiregenotypecall")) frf.setRequireGenotypeCall();
-	    if (cmd.hasOption("requiresameposition")) frf.setRequireSamePosition();
-	    // these are not stored in parameters
-            if (cmd.hasOption("verbose")) frf.verbose = true;
-            if (cmd.hasOption("debug")) frf.debug = true;
-            // run the requested job
-            if (alphaStart==alphaEnd && kappaStart==kappaEnd) {
-                // single run
-                double alpha = alphaStart;
-                int kappa = kappaStart;
-                frf.findFRs(alpha, kappa);
-            } else if (alphaStart!=alphaEnd && kappaStart==kappaEnd) {
-                // scan alpha at fixed kappa
-                int kappa = kappaStart;
-                for (double a=alphaStart; a<=alphaEnd; a+=0.1000) {
-                    frf.findFRs(a, kappa);
-                }
-            } else if (alphaStart==alphaEnd && kappaStart!=kappaEnd) {
-                // scan kappa at fixed alpha
-                double alpha = alphaStart;
-                for (int k=kappaStart; k<=kappaEnd; k+=1) {
-                    frf.findFRs(alpha, k);
-                }
-            } else {
-                // scan both alpha and kappa
-                for (double a=alphaStart; a<=alphaEnd; a+=0.1) {
-                    for (int k=kappaStart; k<=kappaEnd; k+=1) {
-                        frf.findFRs(a, k);
-                    }
-                }
-            }
-        }
+	    pg.paths = pathsToKeep;
+	    int removedCount = formerPathCount - pg.paths.size();
+	    System.out.println("# Graph has had "+removedCount+" paths removed which did not contain one of the included nodes.");
+	}
+	// other stuff
+	pg.tallyLabelCounts();
+	System.out.println("# Graph has "+pg.vertexSet().size()+" nodes and "+pg.edgeSet().size()+" edges with "+pg.paths.size()+" paths.");
+	System.out.println("# Graph has "+pg.labelCounts.get("case")+" case paths and "+pg.labelCounts.get("ctrl")+" ctrl paths.");
+	// instantiate the FRFinder with this PangenomicGraph
+	FRFinder frf = new FRFinder(pg);
+	frf.setGraphName(graphName);
+	// set optional FRFinder parameters
+	if (cmd.hasOption("priorityoption")) frf.setPriorityOption(cmd.getOptionValue("priorityoption"));
+	if (cmd.hasOption("minsupport")) frf.setMinSupport(Integer.parseInt(cmd.getOptionValue("minsupport")));
+	if (cmd.hasOption("minsize")) frf.setMinSize(Integer.parseInt(cmd.getOptionValue("minsize")));
+	if (cmd.hasOption("minlen")) frf.setMinLen(Double.parseDouble(cmd.getOptionValue("minlen")));
+	if (cmd.hasOption("maxround")) frf.setMaxRound(Integer.parseInt(cmd.getOptionValue("maxround")));
+	if (cmd.hasOption("minpriority")) frf.setMinPriority(Integer.parseInt(cmd.getOptionValue("minpriority")));
+	if (cmd.hasOption("requirednodes")) frf.setRequiredNodes(cmd.getOptionValue("requirednodes"));
+	if (cmd.hasOption("excludednodes")) frf.setExcludedNodes(cmd.getOptionValue("excludednodes"));
+	if (cmd.hasOption("excludedpathnodes")) frf.setExcludedPathNodes(cmd.getOptionValue("excludedpathnodes"));
+	if (cmd.hasOption("includedpathnodes")) frf.setIncludedPathNodes(cmd.getOptionValue("includedpathnodes"));
+	if (cmd.hasOption("keepoption")) frf.setKeepOption(cmd.getOptionValue("keepoption"));
+	if (cmd.hasOption("resume")) frf.setResume();
+	if (cmd.hasOption("writesavefiles")) frf.setWriteSaveFiles();
+	if (cmd.hasOption("writepathfrs")) frf.setWritePathFRs();
+	if (cmd.hasOption("writefrsubpaths")) frf.setWriteFRSubpaths();
+	if (cmd.hasOption("minmaf")) frf.setMinMAF(Double.parseDouble(cmd.getOptionValue("minmaf")));
+	if (cmd.hasOption("requirebestnodeset")) frf.setRequireBestNodeSet();
+	if (cmd.hasOption("requiregenotypecall")) frf.setRequireGenotypeCall();
+	if (cmd.hasOption("requiresameposition")) frf.setRequireSamePosition();
+	// these are not stored in parameters
+	if (cmd.hasOption("verbose")) frf.verbose = true;
+	if (cmd.hasOption("debug")) frf.debug = true;
+	// run the requested job
+	if (alphaStart==alphaEnd && kappaStart==kappaEnd) {
+	    // single run
+	    double alpha = alphaStart;
+	    int kappa = kappaStart;
+	    frf.findFRs(alpha, kappa);
+	} else if (alphaStart!=alphaEnd && kappaStart==kappaEnd) {
+	    // scan alpha at fixed kappa
+	    int kappa = kappaStart;
+	    for (double a=alphaStart; a<=alphaEnd; a+=0.1000) {
+		frf.findFRs(a, kappa);
+	    }
+	} else if (alphaStart==alphaEnd && kappaStart!=kappaEnd) {
+	    // scan kappa at fixed alpha
+	    double alpha = alphaStart;
+	    for (int k=kappaStart; k<=kappaEnd; k+=1) {
+		frf.findFRs(alpha, k);
+	    }
+	} else {
+	    // scan both alpha and kappa
+	    for (double a=alphaStart; a<=alphaEnd; a+=0.1) {
+		for (int k=kappaStart; k<=kappaEnd; k+=1) {
+		    frf.findFRs(a, k);
+		}
+	    }
+	}
     }
 
     /**
@@ -1000,83 +932,6 @@ public class FRFinder {
                 out.print("\t"+fr.countSubpathsOf(path));
             }
             out.println("");
-        }
-        out.close();
-    }
-
-    /**
-     * Print the labeled path FR support for SVM analysis. Lines are like:
-     *
-     * path1.0 case 1:1 2:1 3:1 4:0 ...
-     * path1.1 case 1:0 2:0 3:0 4:1 ...
-     * path2.0 ctrl 1:0 2:1 3:0 4:2 ...
-     *
-     * which is similar, but not identical to, the SVMlight format.
-     */
-    void printPathFRsSVM(String outputPrefix) throws IOException {
-        PrintStream out = new PrintStream(FRUtils.getPathFRsSVMFilename(outputPrefix));
-        // only rows, one per path
-        for (Path path : paths) {
-            out.print(path.name+"."+path.label);
-            // TODO: update these to strings along with fixing the SVM code to handle strings
-            String group = "";
-            if (path.label!=null) group = path.label;
-            out.print("\t"+group);
-            int c = 0;
-            for (FrequentedRegion fr : frequentedRegions.values()) {
-                c++;
-                out.print("\t"+c+":"+fr.countSubpathsOf(path));
-            }
-            out.println("");
-        }
-        out.close();
-    }
-
-    /**
-     * Print the (unlabeled) path FR support in ARFF format.
-     *
-     * @RELATION iris
-     *
-     * @ATTRIBUTE ID           STRING
-     * @ATTRIBUTE sepallength  NUMERIC
-     * @ATTRIBUTE sepalwidth   NUMERIC
-     * @ATTRIBUTE petallength  NUMERIC
-     * @ATTRIBUTE petalwidth   NUMERIC
-     * @ATTRIBUTE class        {Iris-setosa,Iris-versicolor,Iris-virginica}
-     
-     * @DATA
-     * 5.1,3.5,1.4,0.2,Iris-setosa
-     * 4.9,3.0,1.4,0.2,Iris-virginica
-     * 4.7,3.2,1.3,0.2,Iris-versicolor
-     * 4.6,3.1,1.5,0.2,Iris-setosa
-     * 5.0,3.6,1.4,0.2,Iris-viginica
-     */
-    void printPathFRsARFF(String outputPrefix) throws IOException {
-        PrintStream out = new PrintStream(FRUtils.getPathFRsARFFFilename(outputPrefix));
-        out.println("@RELATION "+outputPrefix);
-        out.println("");
-        // attributes: path ID
-        out.println("@ATTRIBUTE ID STRING");
-        // attributes: each FR is a numeric labeled FRn
-        int c = 0;
-        for (FrequentedRegion fr : frequentedRegions.values()) {
-            c++;
-            String frLabel = "FR"+c;
-            out.println("@ATTRIBUTE "+frLabel+" NUMERIC");
-        }
-        // add the class attribute
-        out.println("@ATTRIBUTE class {case,ctrl}");
-        out.println("");
-        // data
-        out.println("@DATA");
-        for (Path path : paths) {
-            out.print(path.name+"."+path.label);
-            c = 0;
-            for (FrequentedRegion fr : frequentedRegions.values()) {
-                c++;
-                out.print(fr.countSubpathsOf(path)+",");
-            }
-            out.println(path.label);
         }
         out.close();
     }
@@ -1140,59 +995,6 @@ public class FRFinder {
         }
     }
 
-    /**
-     * Read FRs from the output from a previous run.
-     * [18,34]	70	299	54	16
-     * 509678.0.ctrl:[18,20,21,23,24,26,27,29,30,33,34]
-     * 628863.1.case:[18,20,21,23,24,26,27,29,30,33,34]
-     * etc.
-     */
-    void readFrequentedRegions() throws FileNotFoundException, IOException {
-        // get alpha, kappa from the input prefix
-        double alpha = FRUtils.readAlpha(getInputPrefix());
-        int kappa = FRUtils.readKappa(getInputPrefix());
-        // get the graph from the nodes and paths files
-        graph = new PangenomicGraph();
-        graph.nodesFile = new File(FRUtils.getNodesFilename(getInputPrefix()));
-        graph.pathsFile = new File(FRUtils.getPathsFilename(getInputPrefix()));
-        graph.loadTXT();
-        // create a node map for building subpaths
-        Map<Long,Node> nodeMap = new HashMap<>();
-        for (Node n : graph.getNodes()) {
-            nodeMap.put(n.id, n);
-        }
-	// build the FRs
-        frequentedRegions = new ConcurrentHashMap<>();
-        String frFilename = FRUtils.getFRSubpathsFilename(getInputPrefix());
-        BufferedReader reader = new BufferedReader(new FileReader(frFilename));
-        String line = null;
-        while ((line=reader.readLine())!=null) {
-            String[] fields = line.split("\t");
-            NodeSet nodes = graph.getNodeSet(fields[0]);
-            int support = Integer.parseInt(fields[1]);
-            List<Path> subpaths = new ArrayList<>();
-            for (int i=0; i<support; i++) {
-                line = reader.readLine();
-                String[] parts = line.split(":");
-                String pathFull = parts[0];
-                String nodeString = parts[1];
-                // split out the name, label, nodes
-                String[] nameParts = pathFull.split("\\.");
-                String name = nameParts[0];
-                String label = label = nameParts[2];
-                List<Node> subNodes = new ArrayList<>();
-                String[] nodesAsStrings = nodeString.replace("[","").replace("]","").split(",");
-                for (String nodeAsString : nodesAsStrings) {
-		    long nodeId = Long.parseLong(nodeAsString);
-                    subNodes.add(nodeMap.get(nodeId));
-                }
-                // add to the subpaths
-                subpaths.add(new Path(graph, subNodes, name, label));
-            }
-            FrequentedRegion fr = new FrequentedRegion(nodes, subpaths, alpha, kappa, priorityOptionKey, priorityOptionLabel, support);
-            frequentedRegions.put(fr.nodes.toString(), fr);
-        }
-    }
 
     /**
      * Form an outputPrefix with given alpha and kappa.
@@ -1204,13 +1006,6 @@ public class FRFinder {
         } else {
             return getGraphName()+"-"+af.format(alpha)+"-"+kappa;
         }
-    }
-
-    /**
-     * Form an outputPrefix from inputPrefix, minSupport, minSize, minLength.
-     */
-    String formOutputPrefix() {
-        return getInputPrefix()+"-"+minSupport+"."+minSize+"."+(int)minLength;
     }
 
     /**

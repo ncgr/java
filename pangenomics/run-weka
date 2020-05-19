@@ -1,0 +1,20 @@
+#!/bin/bash
+
+INPUTPREFIX=$1
+
+ARFFFILE=$INPUTPREFIX.arff
+
+if [ ! -s $ARFFFILE ]
+then
+    echo "Writing $ARFFFILE"
+    java -server -cp "build/install/fr/lib/*" org.ncgr.pangenomics.genotype.fr.FRUtils -arff -i $INPUTPREFIX
+fi
+    
+if [ -s $ARFFFILE ]
+then
+    java -server -cp "build/install/fr/lib/*" WekaTest $ARFFFILE
+fi
+
+
+
+

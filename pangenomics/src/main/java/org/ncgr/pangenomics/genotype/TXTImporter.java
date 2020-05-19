@@ -46,7 +46,7 @@ public class TXTImporter {
     public Map<String,String> sampleLabels;
     
     /**
-     * Import a Graph from a pair of nodes and paths text files.
+     * Import instance values from a nodes text file and a paths text file.
      *
      * node line:
      * 0id    1rs     2contig 3start  4end    5genotype  

@@ -1,23 +1,20 @@
 #!/bin/sh
-#
-# -log2c range/step of C [-5,15,2]
-# -log2g range/step of gamma [3,-15,-2]
-# -v n-fold cross validation [5]
+# usage: GridSearcher [options]
+#  -k <arg>       k-fold for cross validation [10]
+#  -log2c <arg>   set range/step of C [-5,15,2]
+#  -log2g <arg>   set range/step of gamma [3,-15,-2]
+#  -v             toggle verbose output
 
-MEM=30
+INPUTPREFIX=$1
 
-FASTA="HDStudy+1kG.HTT"
-DOT="HDStudy+1kG.HTT.$MEM"
+LOG2C=$2
+LOG2G=$3
+K=10
 
-FRDIR="FR-$DOT.dot-$FASTA.fasta"
+FULLSCALE="$INPUTPREFIX.svm.scale.txt"
 
-# SVM files
-BOTH="$FRDIR/$DOT.both"
+ARGS="-log2c $LOG2C -log2g $LOG2G -k $K"
 
-BOTHSCALE="$BOTH.scale"
-
-ARGS="-log2c -5,15,2 -log2g 3,-15,-2 -n 5 $BOTHSCALE"
-
-# run Grid
-echo "GridSearcher $ARGS"
-java -cp build/install/fr/lib/fr.jar:build/install/fr/lib/commons-cli-1.4.jar org.ncgr.svm.GridSearcher $ARGS
+## run GridSearcher on the full scaled data to find optimum SVM parameters
+echo "Running GridSearcher on $FULLSCALE with ARGS=$ARGS"
+java -cp "build/install/fr/lib/*" org.ncgr.svm.GridSearcher -v $ARGS $FULLSCALE

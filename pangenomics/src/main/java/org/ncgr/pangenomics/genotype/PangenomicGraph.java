@@ -41,9 +41,6 @@ public class PangenomicGraph extends DirectedAcyclicGraph<Node,Edge> {
     // the file holding the labels for each path (typically "case" and "control")
     public File labelsFile;
 
-    // the VCF file holding the graph data
-    public File vcfFile;
-
     // the TXT files holding the nodes and paths
     public File nodesFile;
     public File pathsFile;
@@ -80,10 +77,13 @@ public class PangenomicGraph extends DirectedAcyclicGraph<Node,Edge> {
     }
 
     /**
-     * Build this graph from the provided Nodes and sample name collections.
+     * Build this graph from the provided Nodes and and maps. sampleLabels must already be populated.
      */
-    public void buildGraph(Map<String,String> sampleLabels, List<Node> nodes, Map<String,List<Node>> sampleNodesMap, Map<Node,List<String>> nodeSamplesMap) {
-        this.sampleLabels = sampleLabels;
+    public void buildGraph(List<Node> nodes, Map<String,List<Node>> sampleNodesMap, Map<Node,List<String>> nodeSamplesMap) {
+	if (sampleLabels.size()==0) {
+	    System.err.println("ERROR in PangenomicGraph.buildGraph: sampleLabels has not been populated.");
+	    System.exit(1);
+	}
         paths = new ArrayList<Path>();
         pathNameMap = new HashMap<>();
         nodeIdMap = new HashMap<>();
@@ -94,30 +94,34 @@ public class PangenomicGraph extends DirectedAcyclicGraph<Node,Edge> {
             nodeIdMap.put(n.id, n);
         }
         if (verbose) System.out.println("done.");
-        // build the paths and path-labeled graph edges from the sample-nodes map
+        // build the paths and path-labeled graph edges from the sampleLabels and sample-nodes map
+	// NOTE: sampleLabels may contain some samples not in sampleNodesMap and vice-versa
         if (verbose) System.out.print("Creating paths and adding edges to graph...");
-        for (String sampleName : sampleNodesMap.keySet()) {
-            List<Node> sampleNodes = sampleNodesMap.get(sampleName);
-            Path path = new Path(this, sampleNodes, sampleName, sampleLabels.get(sampleName));
-            paths.add(path);
-            pathNameMap.put(sampleName, path);
-            // add edges
-            Node lastNode = null;
-            for (Node node : sampleNodesMap.get(sampleName)) {
-                if (lastNode!=null) {
-                    if (!containsEdge(lastNode, node)) {
-                        try {
-                            addEdge(lastNode, node);
-                        } catch (Exception e) {
-                            System.err.println("ERROR adding edge from "+lastNode+" to "+node);
-                            System.err.println(e);
-                            System.exit(1);
-                        }
-                    }
-                }
-                lastNode = node;
-            }
+        for (String sampleName : sampleLabels.keySet()) {
+	    if (sampleNodesMap.containsKey(sampleName)) {
+		List<Node> sampleNodes = sampleNodesMap.get(sampleName);
+		Path path = new Path(this, sampleNodes, sampleName, sampleLabels.get(sampleName));
+		paths.add(path);
+		pathNameMap.put(sampleName, path);
+		// add edges
+		Node lastNode = null;
+		for (Node node : sampleNodesMap.get(sampleName)) {
+		    if (lastNode!=null) {
+			if (!containsEdge(lastNode, node)) {
+			    try {
+				addEdge(lastNode, node);
+			    } catch (Exception e) {
+				System.err.println("ERROR adding edge from "+lastNode+" to "+node);
+				System.err.println(e);
+				System.exit(1);
+			    }
+			}
+		    }
+		    lastNode = node;
+		}
+	    }
         }
+	// initialize FisherExact for later use
         fisherExact = new FisherExact(paths.size());
         if (verbose) System.out.println("done.");
     }
@@ -173,7 +177,7 @@ public class PangenomicGraph extends DirectedAcyclicGraph<Node,Edge> {
             System.err.println("ERROR: graph.labelsFile is not set!");
             System.exit(1);
         }
-	if (verbose) System.out.print("Reading sample labels...");
+	if (verbose) System.out.println("Reading sample labels from "+labelsFile);
         sampleLabels = new HashMap<>();
         BufferedReader reader = new BufferedReader(new FileReader(labelsFile));
         String line = null;
@@ -186,7 +190,6 @@ public class PangenomicGraph extends DirectedAcyclicGraph<Node,Edge> {
             }
         }
         reader.close();
-        if (verbose) System.out.println("done.");
     }
 
     /**
@@ -214,15 +217,24 @@ public class PangenomicGraph extends DirectedAcyclicGraph<Node,Edge> {
         for (Node n : getNodes()) {
             nodePaths.put(n, new ArrayList<Path>());
         }
-        // now load the paths in parallel
-        ConcurrentSkipListSet<Path> concurrentPaths = new ConcurrentSkipListSet<Path>(paths);
-        concurrentPaths.parallelStream().forEach(path -> {
-                ConcurrentSkipListSet<Node> concurrentNodes = new ConcurrentSkipListSet<Node>((List<Node>) path.getNodes());
-                concurrentNodes.parallelStream().forEach(n -> {
-                        nodePaths.get(n).add(path);
-                    });
-            });
+        // now load the paths
+	for (Path path : paths) {
+	    List<Node> nodes = path.getNodes();
+	    for (Node n : nodes) {
+		nodePaths.get(n).add(path);
+	    }
+	}
 	if (verbose) System.out.println("done.");
+	// DEBUG
+	for (Node n : nodePaths.keySet()) {
+	    List<Path> pathList = nodePaths.get(n);
+	    for (Path p : pathList) {
+		if (p==null) {
+		    System.err.println("ERROR: p==null for node "+n.toString());
+		    System.exit(1);
+		}
+	    }
+	}
     }
 
     /**
@@ -459,6 +471,64 @@ public class PangenomicGraph extends DirectedAcyclicGraph<Node,Edge> {
     }
 
     /**
+     * Print out the node paths along with counts.
+     */
+    public void printNodePaths(PrintStream out) {
+        if (out==System.out) printHeading("NODE PATHS");
+        for (Node node : nodePaths.keySet()) {
+            List<Path> pathList = nodePaths.get(node);
+            StringBuilder builder = new StringBuilder();
+            builder.append(node.id);
+            for (Path path : pathList) {
+		// DEBUG
+		if (path==null) {
+		    System.err.println("node "+node.toString()+" has a null path.");
+		    System.err.println(builder.toString());
+		    System.exit(1);
+		}
+		//
+                builder.append("\t"+path.name);
+            }
+            out.println(builder.toString());
+        }
+    }
+
+    /**
+     * Print node participation by path, appropriate for PCA analysis.
+     */
+    public void printPcaData(PrintStream out) throws FileNotFoundException, IOException {
+        StringBuilder builder = new StringBuilder();
+        // header is paths
+        boolean first = true;
+        for (Path path : paths) {
+            if (first) {
+                builder.append(path.name);
+                first = false;
+            } else {
+                builder.append("\t"+path.name);
+            }
+            if (path.label!=null) builder.append("."+path.label);
+        }
+        out.println(builder.toString());
+        // rows are nodes and counts of path support of each node
+        for (Node node : vertexSet()) {
+            builder = new StringBuilder();
+            builder.append("N"+node.id);
+            List<Path> nPaths = nodePaths.get(node.id);
+            for (Path path : paths) {
+		// spin through the path, counting occurrences of this node
+		List<Node> nodeList = path.getNodes();
+		int count = 0;
+		for (Node n : nodeList) {
+		    if (n.equals(node)) count++;
+		}
+		builder.append("\t"+count);
+            }
+            out.println(builder.toString());
+        }
+    }
+
+    /**
      * Run all the PangenomicGraph printing methods to files.
      */
     public void printAll() throws FileNotFoundException, IOException {
@@ -479,37 +549,24 @@ public class PangenomicGraph extends DirectedAcyclicGraph<Node,Edge> {
         printPaths(pathsOut);
         if (verbose) System.out.println("done.");
 
-        // if (!skipNodePaths) {
-        //     if (verbose) System.out.print("Writing node paths file...");
-        //     PrintStream nodePathsOut = new PrintStream(name+".nodepaths.txt");
-        //     printNodePaths(nodePathsOut);
-        //     if (verbose) System.out.println("done.");
-        //     if (verbose) System.out.print("Writing path PCA file...");
-        //     PrintStream pcaDataOut = new PrintStream(name+".pathpca.txt");
-        //     printPcaData(pcaDataOut);
-        //     if (verbose) System.out.println("done.");
-        // }
-        
-        // if (!skipSequences) {
-        //     if (verbose) System.out.print("Writing path sequences file...");
-        //     PrintStream pathSequencesOut = new PrintStream(name+".pathsequences.fasta");
-        //     printPathSequences(pathSequencesOut);
-        //     if (verbose) System.out.println("done.");
-        // }
+	if (verbose) System.out.print("Writing node paths file...");
+	PrintStream nodePathsOut = new PrintStream(name+".nodepaths.txt");
+	printNodePaths(nodePathsOut);
+	if (verbose) System.out.println("done.");
+
+	if (verbose) System.out.print("Writing path PCA file...");
+	PrintStream pcaDataOut = new PrintStream(name+".pathpca.txt");
+	printPcaData(pcaDataOut);
+	if (verbose) System.out.println("done.");
     }
 
     /**
      * Load the graph from a VCF file.
-     * NOTE: vcfFile must be instantiated!
      */
-    public void loadVCF() throws FileNotFoundException, IOException {
-        if (vcfFile==null) {
-            System.err.println("ERROR: graph.vcfFile has not been set!");
-            System.exit(1);
-        }
+    public void loadVCF(File vcfFile) throws IOException {
         VCFImporter vcfImporter = new VCFImporter();
         vcfImporter.read(vcfFile);
-        buildGraph(sampleLabels, vcfImporter.nodes, vcfImporter.sampleNodesMap, vcfImporter.nodeSamplesMap);
+        buildGraph(vcfImporter.nodes, vcfImporter.sampleNodesMap, vcfImporter.nodeSamplesMap);
     }
 
     /**
@@ -523,7 +580,8 @@ public class PangenomicGraph extends DirectedAcyclicGraph<Node,Edge> {
         }
         TXTImporter txtImporter = new TXTImporter();
         txtImporter.read(nodesFile, pathsFile);
-        buildGraph(txtImporter.sampleLabels, txtImporter.nodes, txtImporter.sampleNodesMap, txtImporter.nodeSamplesMap);
+	this.sampleLabels = txtImporter.sampleLabels;
+        buildGraph(txtImporter.nodes, txtImporter.sampleNodesMap, txtImporter.nodeSamplesMap);
     }
 
 
@@ -540,17 +598,17 @@ public class PangenomicGraph extends DirectedAcyclicGraph<Node,Edge> {
         Option graphOption = new Option("g", "graph", true, "name of graph");
         graphOption.setRequired(true);
         options.addOption(graphOption);
-        //
+
+        // if vcf then labelfile is required
+        Option vcfFileOption = new Option("vcf", "vcffile", true, "load graph from <graph>.vcf.gz");
+        vcfFileOption.setRequired(false);
+        options.addOption(vcfFileOption);
+        // 
         Option labelsOption = new Option("l", "labelfile", true, "tab-delimited file containing one sample<tab>label per line");
         labelsOption.setRequired(true);
         options.addOption(labelsOption);
-
-        // OPTIONAL parameters
-        Option vcfFileOption = new Option("vcf", "vcffile", false, "load graph from <graph>.vcf.gz");
-        vcfFileOption.setRequired(false);
-        options.addOption(vcfFileOption);
-        //
-        Option txtFileOption = new Option("txt", "txtfile", false, "load graph from <graph>.nodes.txt and <graph>.paths.txt");
+        // txt does not require labelfile
+        Option txtFileOption = new Option("txt", "txtfile", true, "mult-sample VCF file from which to load graph along with --labelfile");
         txtFileOption.setRequired(false);
         options.addOption(txtFileOption);
         //
@@ -576,7 +634,7 @@ public class PangenomicGraph extends DirectedAcyclicGraph<Node,Edge> {
         boolean loadVCF = cmd.hasOption("vcffile");
         boolean loadTXT = cmd.hasOption("txtfile");
         if (!loadVCF && !loadTXT) {
-            System.err.println("ERROR: You must specify loading from either a VCF or pair of TXT files using --vcffile or --txtfile.");
+            System.err.println("ERROR: You must specify loading from either a VCF with --vcffile [filename] or a pair of TXT files with --txtfile.");
             System.exit(1);
         }
 
@@ -587,12 +645,15 @@ public class PangenomicGraph extends DirectedAcyclicGraph<Node,Edge> {
         // populate graph instance vars from parameters
         graph.name = cmd.getOptionValue("graph");
         if (loadVCF) {
+	    if (!cmd.hasOption("labelfile")) {
+		System.err.println("ERROR: --labelfile is required if --vcffile is specified.");
+		System.exit(1);
+	    }
             // VCF load needs separate sample labels load
-            graph.vcfFile = new File(graph.name+".vcf.gz");
             graph.labelsFile = new File(cmd.getOptionValue("labelfile"));
             graph.readSampleLabels();
-            graph.loadVCF();
-            graph.tallyLabelCounts();
+            graph.loadVCF(new File(cmd.getOptionValue("vcffile")));
+	    graph.tallyLabelCounts();
         }
         if (loadTXT) {
             // TXT load pulls sample labels from paths file
