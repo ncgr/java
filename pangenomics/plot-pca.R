@@ -33,7 +33,7 @@ for (i in 1:length(rownames(pca$rotation))) {
     }
 }
 
-for (i in (num-1):1) {
+for (i in 1:(num-1)) {
     xlabel = paste("PC",i,  " ",round(summary(pca)$importance["Proportion of Variance",i]*100,1),"% of variance", sep="")
     ylabel = paste("PC",i+1," ",round(summary(pca)$importance["Proportion of Variance",i+1]*100,1),"% of variance", sep="")
     plot(pca$rotation[,i], pca$rotation[,i+1], xlab=xlabel, ylab=ylabel, pch=20, cex=0.5, col=colors)
