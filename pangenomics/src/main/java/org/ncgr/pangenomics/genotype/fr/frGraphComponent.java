@@ -22,6 +22,7 @@ import java.util.TreeSet;
 import java.util.Properties;
 
 import javax.swing.AbstractAction;
+import javax.swing.BorderFactory;
 import javax.swing.JButton;
 import javax.swing.JLabel;
 import javax.swing.JList;
@@ -107,8 +108,9 @@ public class frGraphComponent extends mxGraphComponent implements ActionListener
         setConnectable(false);
         getGraph().setAllowDanglingEdges(false);
         setToolTips(true);
-        setViewportBorder(new LineBorder(Color.BLACK));
-        if (DEBUG) System.err.println("setViewPortBorder done.");
+        // border can stomp on vertex on resize, redraw
+        // setViewportBorder(new LineBorder(getBackground(), 3));
+        // if (DEBUG) System.err.println("setViewPortBorder done.");
 
         // set the current FR to the first one
         currentFRIndex = 0;

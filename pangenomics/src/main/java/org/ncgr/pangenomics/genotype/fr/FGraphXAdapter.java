@@ -51,6 +51,9 @@ public class FGraphXAdapter extends JGraphXAdapter<Node,Edge> {
         this.highlightedPath = highlightedPath;
         this.decorateEdges = decorateEdges;
         this.minorNodeFrac = minorNodeFrac;
+
+        // design tweaks
+
         
         numPaths = graph.getPathCount();
 
@@ -59,19 +62,24 @@ public class FGraphXAdapter extends JGraphXAdapter<Node,Edge> {
             highlightedPathEdges = highlightedPath.getEdges();
         }
 
-        // set default styles
+        // default edge style
         mxStylesheet defaultStylesheet = getStylesheet();
         Map<String,Object> defaultEdgeStyle = defaultStylesheet.getDefaultEdgeStyle();
         defaultEdgeStyle.put("strokeColor", "gray");
         defaultEdgeStyle.put("fontColor", "gray");
         defaultEdgeStyle.put(mxConstants.STYLE_NOLABEL, "1");
-        defaultStylesheet.setDefaultEdgeStyle(defaultEdgeStyle);
+
+        // default vertex style
         Map<String,Object> defaultVertexStyle = defaultStylesheet.getDefaultVertexStyle();
         defaultVertexStyle.put(mxConstants.STYLE_RESIZABLE, "0");
+        defaultVertexStyle.put(mxConstants.STYLE_SHADOW, "0");
         defaultVertexStyle.put("fillColor", "white");
         defaultVertexStyle.put("fontColor", "black");
         defaultVertexStyle.put("shape", mxConstants.SHAPE_ELLIPSE);
         defaultVertexStyle.put("spacingTop", "2");
+        
+
+        defaultStylesheet.setDefaultEdgeStyle(defaultEdgeStyle);
         defaultStylesheet.setDefaultVertexStyle(defaultVertexStyle);
         setStylesheet(defaultStylesheet);
         setAutoSizeCells(true);

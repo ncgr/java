@@ -7,6 +7,7 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.Reader;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -14,6 +15,7 @@ import java.util.Map;
 import java.util.HashMap;
 import java.util.TreeSet;
 
+import htsjdk.variant.variantcontext.Allele;
 import htsjdk.variant.variantcontext.Genotype;
 import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.vcf.VCFFileReader;
@@ -65,23 +67,23 @@ public class VCFImporter {
 	for (VariantContext vc : vcfReader) {
 	    for (String sampleName : sampleNameList) {
 		Genotype g = vc.getGenotype(sampleName);
-                String genotypeString = g.getGenotypeString();
+                List<Allele> alleles = g.getAlleles();
+                String genotypeString = "";
                 if (ignorePhase) {
-                    genotypeString = genotypeString.replace("|","/");
-                    String[] alleles = genotypeString.split("/");
-                    if (alleles.length>1 && !alleles[0].equals(alleles[1])) {
-                        TreeSet<String> sortedAlleles = new TreeSet<>(Arrays.asList(alleles));
-                        boolean first = true;
-                        genotypeString = "";
-                        for (String allele : sortedAlleles) {
-                            if (first) {
-                                first = false;
-                            } else {
-                                genotypeString += "/";
-                            }
-                            genotypeString += allele;
+                    Collections.sort(alleles);
+                    boolean first = true;
+                    for (Allele allele : alleles) {
+                        String a = allele.toString();
+                        a = a.replace("<","").replace(">",""); // these mess up HTML
+                        if (first) {
+                            first = false;
+                        } else {
+                            genotypeString += "/";
                         }
+                        genotypeString += a;
                     }
+                } else {
+                    genotypeString = g.getGenotypeString(); // NOTE: this will leave off <CN0> etc.!
                 }
                 String nodeString = vc.getContig()+"_"+vc.getStart()+"_"+vc.getEnd()+"_"+genotypeString;
                 Node n = nodesMap.get(nodeString);
