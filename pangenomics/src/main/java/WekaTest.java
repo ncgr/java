@@ -1,7 +1,13 @@
 import java.io.BufferedReader;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
+
 import java.util.ArrayList;
+import java.util.Enumeration;
+import java.util.Map;
+import java.util.HashMap;
+
+import java.text.DecimalFormat;
 
 import weka.classifiers.Classifier;
 import weka.classifiers.evaluation.Evaluation;
@@ -12,60 +18,58 @@ import weka.classifiers.rules.PART;
 import weka.classifiers.trees.DecisionStump;
 import weka.classifiers.trees.J48;
 import weka.classifiers.trees.RandomTree;
+import weka.core.Attribute;
+import weka.core.Instance;
 import weka.core.Instances;
  
 public class WekaTest {
 
+    public static int KFOLD = 10;
+    public static DecimalFormat pf = new DecimalFormat("0.0%");
+
     public static BufferedReader readDataFile(String filename) {
         BufferedReader inputReader = null;
- 
         try {
             inputReader = new BufferedReader(new FileReader(filename));
         } catch (FileNotFoundException ex) {
             System.err.println("File not found: " + filename);
         }
- 
         return inputReader;
     }
  
     public static Evaluation classify(Classifier model, Instances trainingSet, Instances testingSet) throws Exception {
         Evaluation evaluation = new Evaluation(trainingSet);
- 
         model.buildClassifier(trainingSet);
         evaluation.evaluateModel(model, testingSet);
- 
         return evaluation;
     }
- 
-    public static double calculateAccuracy(ArrayList predictions) {
-        double correct = 0;
- 
-        for (int i = 0; i < predictions.size(); i++) {
+ 	
+    public static Map<Double,Integer> calculateCorrect(ArrayList predictions) {
+	Map<Double,Integer> correct = new HashMap<>();
+	correct.put(0.0, 0);
+	correct.put(1.0, 0);
+        for (int i=0; i<predictions.size(); i++) {
             NominalPrediction np = (NominalPrediction) predictions.get(i);
-            if (np.predicted() == np.actual()) {
-                correct++;
-            }
+            if (np.predicted()==np.actual()) {
+		correct.put(np.actual(), correct.get(np.actual())+1);
+	    }
         }
- 
-        return 100 * correct / predictions.size();
+        return correct;
     }
- 
+    
     public static Instances[][] crossValidationSplit(Instances data, int numberOfFolds) {
         Instances[][] split = new Instances[2][numberOfFolds];
- 
         for (int i = 0; i < numberOfFolds; i++) {
             split[0][i] = data.trainCV(numberOfFolds, i);
             split[1][i] = data.testCV(numberOfFolds, i);
         }
- 
         return split;
     }
  
     public static void main(String[] args) throws Exception {
-
         if (args.length!=1) {
-            System.out.println("Usage: WekaTest <arff filename>");
-            System.exit(0);
+            System.err.println("Usage: WekaTest <arff filename>");
+            System.exit(1);
         }
 
         String arffFile = args[0];
@@ -76,9 +80,24 @@ public class WekaTest {
         data.deleteAttributeAt(0);
         // set the class attribute index
         data.setClassIndex(data.numAttributes() - 1);
+
+	// store case/control attributes
+	Attribute classAttribute = data.classAttribute();
+	Map<String,Integer> classAttributes = new HashMap<>();
+	classAttributes.put(classAttribute.value(0),0);
+	classAttributes.put(classAttribute.value(1),1);
+
+	// get totals per case/control
+	Map<Double,Integer> classTotals = new HashMap<>();
+	classTotals.put(0.0, 0);
+	classTotals.put(1.0, 0);
+	for (Enumeration<Instance> e = data.enumerateInstances(); e.hasMoreElements();) {
+	    double classValue = e.nextElement().classValue();
+	    classTotals.put(classValue, classTotals.get(classValue)+1);
+	}
  
-        // Do 10-split cross validation
-        Instances[][] split = crossValidationSplit(data, 10);
+        // Do KFOLD-split cross validation
+        Instances[][] split = crossValidationSplit(data, KFOLD);
  
         // Separate split into training and testing arrays
         Instances[] trainingSplits = split[0];
@@ -92,35 +111,47 @@ public class WekaTest {
             new DecisionStump(), // one-level decision tree
             new RandomTree()     // random tree
         };
- 
+
         // Run for each model
 	boolean first = true;
         for (int j = 0; j < models.length; j++) {
-
             // Collect every group of predictions for current model in a ArrayList
             ArrayList<Prediction> predictions = new ArrayList<>();
- 
             // For each training-testing split pair, train and test the classifier
             for (int i = 0; i < trainingSplits.length; i++) {
                 Evaluation validation = classify(models[j], trainingSplits[i], testingSplits[i]);
- 
                 predictions.addAll(validation.predictions());
- 
                 // Uncomment to see the summary for each training-testing pair.
-                // System.out.println(models[j].toString());
+                // System.err.println(models[j].toString());
             }
- 
-            // Calculate overall accuracy of current classifier on all splits
-            double accuracy = calculateAccuracy(predictions);
- 
-            // Print current classifier's name and accuracy in a complicated, but nice-looking way.
+            // calculate overall correct of current classifier on all splits
+            Map<Double,Integer> correct = calculateCorrect(predictions);
+            // Print current classifier's name and correct in a complicated, but nice-looking way.
+	    double caseKey = classAttributes.get("case");
+	    double ctrlKey = classAttributes.get("ctrl");
+	    int caseCorrect = correct.get(caseKey);
+	    int ctrlCorrect = correct.get(ctrlKey);
+	    int caseTotal = classTotals.get(caseKey);
+	    int ctrlTotal = classTotals.get(ctrlKey);
+	    double caseFraction = (double)caseCorrect / (double)caseTotal;
+	    double ctrlFraction = (double)ctrlCorrect / (double)ctrlTotal;
+	    int totalCorrect = caseCorrect + ctrlCorrect;
+	    int totalTotal = caseTotal + ctrlTotal;
+	    double totalFraction = (double)totalCorrect / (double)totalTotal;
+	    String modelName = models[j].getClass().getSimpleName();
 	    if (first) {
-		System.out.println("---------------------------------");
+		// header
+		System.out.println("WekaTest\ttotal\tcase\tcontrol\ttotal\tcase\tcontrol");
 		first = false;
 	    }
-            System.out.println("Accuracy of " + models[j].getClass().getSimpleName() + ": " + String.format("%.2f%%", accuracy));
-	    System.out.println("---------------------------------");
-        }
- 
+	    if (modelName.length()<6) modelName += "\t";
+            System.out.println(modelName+"\t"+
+			       totalCorrect+"/"+totalTotal+"\t"+
+			       caseCorrect+"/"+caseTotal+"\t"+
+			       ctrlCorrect+"/"+ctrlTotal+"\t"+
+			       pf.format(totalFraction)+"\t"+
+			       pf.format(caseFraction)+"\t"+
+			       pf.format(ctrlFraction));
+	}
     }
 }

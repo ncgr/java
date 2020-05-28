@@ -36,9 +36,16 @@ public class Path extends GraphWalk<Node,Edge> implements Comparable {
     }
 
     /**
-     * Compare based on name.
+     * Must override hashCode() for Map keys.
      */
     @Override
+    public int hashCode() {
+	return this.name.hashCode();
+    }
+
+    /**
+     * Compare based on name.
+     */
     public int compareTo(Object o) {
         Path that = (Path) o;
         return this.name.compareTo(that.name);

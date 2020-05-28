@@ -17,9 +17,14 @@ import java.util.List;
 import java.util.ArrayList;
 import java.util.Map;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.TreeMap;
+import java.util.Optional;
+import java.util.Properties;
 import java.util.Set;
 import java.util.TreeSet;
-import java.util.Properties;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentSkipListSet;
 
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
@@ -71,8 +76,12 @@ public class FRUtils {
         for (Node n : graph.getNodes()) {
             nodeMap.put(n.id, n);
         }
-        // build the FRs
-        TreeSet<FrequentedRegion> sortedFRs = new TreeSet<>();
+        // build the FRs, only reading subpaths for those in the FR text file (which may have been trimmed)
+	Map<NodeSet,FrequentedRegion> inputFRMap = new HashMap<>();
+	for (FrequentedRegion fr : readFrequentedRegions(inputPrefix)) {
+	    inputFRMap.put(fr.nodes, fr);
+	}
+	TreeSet<FrequentedRegion> sortedFRs = new TreeSet<>();
         String subpathsFilename = getFRSubpathsFilename(inputPrefix);
         BufferedReader reader = new BufferedReader(new FileReader(subpathsFilename));
         String line = null;
@@ -85,40 +94,45 @@ public class FRUtils {
             // ...
             String[] fields = line.split("\t");
             NodeSet nodes = graph.getNodeSet(fields[0]);
-            int size = Integer.parseInt(fields[1]);
-            int support = Integer.parseInt(fields[2]);
-            int caseSupport = Integer.parseInt(fields[3]);
-            int ctrlSupport = Integer.parseInt(fields[4]);
-            double or = Double.POSITIVE_INFINITY;
-            try {
-                or = Double.parseDouble(fields[5]);
-            } catch (NumberFormatException e) {
-                // do nothing, it's an infinity symbol
-            }
-            double p = Double.parseDouble(fields[6]);
-            int priority = Integer.parseInt(fields[7]);
-            List<Path> subpaths = new ArrayList<>();
-            for (int i=0; i<support; i++) {
-                line = reader.readLine();
-                String[] parts = line.split(":");
-                String pathFull = parts[0];
-                String nodeString = parts[1];
-                // split out the name, label, nodes
-                String[] nameParts = pathFull.split("\\.");
-                String name = nameParts[0];
-                String label = null;
-                if (nameParts.length>1) label = nameParts[1];
-                List<Node> subNodes = new ArrayList<>();
-                String[] nodesAsStrings = nodeString.replace("[","").replace("]","").split(",");
-                for (String nodeAsString : nodesAsStrings) {
-		    long nodeId = Long.parseLong(nodeAsString);
-                    subNodes.add(nodeMap.get(nodeId));
-                }
-                // add to the subpaths
-                subpaths.add(new Path(graph, subNodes, name, label));
-            }
-            FrequentedRegion fr = new FrequentedRegion(graph, nodes, subpaths, alpha, kappa, priorityOptionKey, priorityOptionLabel, support);
-            sortedFRs.add(fr);
+	    int size = Integer.parseInt(fields[1]);
+	    int support = Integer.parseInt(fields[2]);
+	    int caseSupport = Integer.parseInt(fields[3]);
+	    int ctrlSupport = Integer.parseInt(fields[4]);
+	    double or = Double.POSITIVE_INFINITY;
+	    try {
+		or = Double.parseDouble(fields[5]);
+	    } catch (NumberFormatException e) {
+		// do nothing, it's an infinity symbol
+	    }
+	    double p = Double.parseDouble(fields[6]);
+	    int priority = Integer.parseInt(fields[7]);
+	    List<Path> subpaths = new ArrayList<>();
+	    for (int i=0; i<support; i++) {
+		// have to read lines to run through the file even if skipping this FR
+		line = reader.readLine();
+		if (inputFRMap.containsKey(nodes)) {
+		    String[] parts = line.split(":");
+		    String pathFull = parts[0];
+		    String nodeString = parts[1];
+		    // split out the name, label, nodes
+		    String[] nameParts = pathFull.split("\\.");
+		    String name = nameParts[0];
+		    String label = null;
+		    if (nameParts.length>1) label = nameParts[1];
+		    List<Node> subNodes = new ArrayList<>();
+		    String[] nodesAsStrings = nodeString.replace("[","").replace("]","").split(",");
+		    for (String nodeAsString : nodesAsStrings) {
+			long nodeId = Long.parseLong(nodeAsString);
+			subNodes.add(nodeMap.get(nodeId));
+		    }
+		    // add to the subpaths
+		    subpaths.add(new Path(graph, subNodes, name, label));
+		}
+	    }
+	    if (inputFRMap.containsKey(nodes)) {
+		FrequentedRegion fr = new FrequentedRegion(graph, nodes, subpaths, alpha, kappa, priorityOptionKey, priorityOptionLabel, support);
+		sortedFRs.add(fr);
+	    }
         }
         return sortedFRs;
     }
@@ -403,41 +417,103 @@ public class FRUtils {
      * path2.0 ctrl 1:0 2:1 3:0 4:2 ...
      *
      * which is similar, but not identical to, the SVMlight format.
+     *
+     * If numCasePaths>0 or numCtrlPaths>0, randomly select numCasePaths cases and/or numCtrlPaths controls.
      */
-    public static void printPathFRsSVM(String inputPrefix) throws IOException {
+    public static void printPathFRsSVM(String inputPrefix, int numCasePaths, int numCtrlPaths) throws IOException {
 	// load the graph
 	PangenomicGraph graph = new PangenomicGraph();
 	graph.nodesFile = new File(getNodesFilename(inputPrefix));
 	graph.pathsFile = new File(getPathsFilename(inputPrefix)); 
 	graph.loadTXT();
 	graph.tallyLabelCounts();
-	// load the frequented regions and update support
-	Set<FrequentedRegion> frequentedRegions = readFrequentedRegions(inputPrefix, graph);
-	for (FrequentedRegion fr : frequentedRegions) {
-	    fr.updateSupport();
+	// check on numCasePaths, numCtrlPaths if nonzero
+	if (numCasePaths>graph.labelCounts.get("case")) {
+	    System.err.println("FRUtils.printPathFRsSVM ERROR: numCasePaths > "+graph.labelCounts.get("case")+" cases.");
+	    System.exit(1);
 	}
-	// output path by path
+	if (numCtrlPaths>graph.labelCounts.get("ctrl")) {
+	    System.err.println("FRUtils.printPathFRsSVM ERROR: numCtrlPaths > "+graph.labelCounts.get("ctrl")+" controls.");
+	    System.exit(1);
+	}
+	// load the frequented regions with stored support from text file
+	TreeSet<FrequentedRegion> frequentedRegions = readFrequentedRegions(inputPrefix, graph);
+	System.err.println("FRUtils.printPathFRsSVM: "+frequentedRegions.size()+" FRs loaded.");
+	// collect the paths, cases and controls
+	ConcurrentHashMap<String,String> pathSVM = new ConcurrentHashMap<>();
+	ConcurrentSkipListSet<Path> concurrentPaths = new ConcurrentSkipListSet<>();
+	int nCases = 0;
+	if (numCasePaths==0) {
+	    // select all case paths
+	    for (Path path : graph.paths) {
+		if (path.isCase()) {
+		    nCases++;
+		    concurrentPaths.add(path);
+		}
+	    }
+	} else {
+	    // randomly select case paths
+	    while (nCases<numCasePaths) {
+		Optional<Path> optional = graph.paths.stream().skip((int)(graph.paths.size()*Math.random())).findFirst();
+		if (optional.isPresent()) {
+		    Path path = optional.get();
+		    if (path.isCase() && !concurrentPaths.contains(path)) {
+			nCases++;
+			concurrentPaths.add(path);
+		    }
+		}
+	    }
+	}
+	int nControls = 0;
+	if (numCtrlPaths==0) {
+	    // select all control paths
+	    for (Path path : graph.paths) {
+		if (path.isControl()) {
+		    nControls++;
+		    concurrentPaths.add(path);
+		}
+	    }
+	} else {
+	    // randomly select control paths
+	    while (nControls<numCtrlPaths) {
+		Optional<Path> optional = graph.paths.stream().skip((int)(graph.paths.size()*Math.random())).findFirst();
+		if (optional.isPresent()) {
+		    Path path = optional.get();
+		    if (path.isControl() && !concurrentPaths.contains(path)) {
+			nControls++;
+			concurrentPaths.add(path);
+		    }
+		}
+	    }
+	}
+	///////////////////////////////////////////////////////
+	// build the SVM strings in parallel
+	concurrentPaths.parallelStream().forEach(path -> {
+		String svm = path.label;
+		int c  = 0;
+		for (FrequentedRegion fr : frequentedRegions) {
+		    c++;
+		    svm += "\t"+c+":"+fr.countSubpathsOf(path);
+		}
+		pathSVM.put(path.name,svm);
+	    });
+	///////////////////////////////////////////////////////
+	// sort by SVM string
+	LinkedHashMap<String,String> sortedPathSVM = new LinkedHashMap<>();
+	pathSVM.entrySet().stream().sorted(Map.Entry.comparingByValue()).forEachOrdered(x->sortedPathSVM.put(x.getKey(),x.getValue()));
+	// output: no header, one path per row
         PrintStream out = new PrintStream(getPathFRsSVMFilename(inputPrefix));
-        // no header, one path per row
-        for (Path path : graph.paths) {
-            out.print(path.name+"."+path.label);
-            // TODO: update these to strings along with fixing the SVM code to handle strings
-            String group = "";
-            if (path.label!=null) group = path.label;
-            out.print("\t"+group);
-            int c = 0;
-            for (FrequentedRegion fr : frequentedRegions) {
-                c++;
-		int subpathCount = fr.countSubpathsOf(path);
-                out.print("\t"+c+":"+subpathCount);
-            }
-            out.println("");
+        for (String name : sortedPathSVM.keySet()) {
+	    String paddedName = name;
+	    if (name.length()<6) paddedName = "0" + name; // special hack for 6-digit samples
+            out.println(paddedName+"\t"+sortedPathSVM.get(name));
         }
         out.close();
     }
     
     /**
-     * Print the (unlabeled) path FR support in ARFF format.
+     * Print the (unlabeled) path FR support in ARFF format for the given number of case and control paths (0 for all).
+     * The rows are sorted by case/control and then FR support vector.
      *
      * @RELATION iris
      *
@@ -455,25 +531,93 @@ public class FRUtils {
      * 4.6,3.1,1.5,0.2,Iris-setosa
      * 5.0,3.6,1.4,0.2,Iris-viginica
      */
-    public static void printPathFRsARFF(String inputPrefix) throws IOException {
+    public static void printPathFRsARFF(String inputPrefix, int numCasePaths, int numCtrlPaths) throws IOException {
         // load the graph
 	PangenomicGraph graph = new PangenomicGraph();
         graph.nodesFile = new File(getNodesFilename(inputPrefix));
         graph.pathsFile = new File(getPathsFilename(inputPrefix));
         graph.loadTXT();
 	graph.tallyLabelCounts();
-	// load the frequented regions and update support
-	Set<FrequentedRegion> frequentedRegions = readFrequentedRegions(inputPrefix, graph);
-	for (FrequentedRegion fr : frequentedRegions) {
-	    fr.updateSupport();
+	// check on numCasePaths, numCtrlPaths if nonzero
+	if (numCasePaths>graph.labelCounts.get("case")) {
+	    System.err.println("FRUtils.printPathFRsSVM ERROR: numCasePaths > "+graph.labelCounts.get("case")+" cases.");
+	    System.exit(1);
 	}
+	if (numCtrlPaths>graph.labelCounts.get("ctrl")) {
+	    System.err.println("FRUtils.printPathFRsSVM ERROR: numCtrlPaths > "+graph.labelCounts.get("ctrl")+" controls.");
+	    System.exit(1);
+	}
+	// load the frequented regions and update support in parallel
+	TreeSet<FrequentedRegion> frequentedRegions = readFrequentedRegions(inputPrefix, graph);
+	System.err.println("FRUtils.printPathFRsARFF: "+frequentedRegions.size()+" FRs loaded.");
+	// collect the paths, cases and controls
+	ConcurrentHashMap<String,String> pathARFF = new ConcurrentHashMap<>();
+	ConcurrentSkipListSet<Path> concurrentPaths = new ConcurrentSkipListSet<>();
+	int nCases = 0;
+	if (numCasePaths==0) {
+	    // select all case paths
+	    for (Path path : graph.paths) {
+		if (path.isCase()) {
+		    nCases++;
+		    concurrentPaths.add(path);
+		}
+	    }
+	} else {
+	    // randomly select case paths
+	    while (nCases<numCasePaths) {
+		Optional<Path> optional = graph.paths.stream().skip((int)(graph.paths.size()*Math.random())).findFirst();
+		if (optional.isPresent()) {
+		    Path path = optional.get();
+		    if (path.isCase() && !concurrentPaths.contains(path)) {
+			nCases++;
+			concurrentPaths.add(path);
+		    }
+		}
+	    }
+	}
+	int nControls = 0;
+	if (numCtrlPaths==0) {
+	    // select all control paths
+	    for (Path path : graph.paths) {
+		if (path.isControl()) {
+		    nControls++;
+		    concurrentPaths.add(path);
+		}
+	    }
+	} else {
+	    // randomly select control paths
+	    while (nControls<numCtrlPaths) {
+		Optional<Path> optional = graph.paths.stream().skip((int)(graph.paths.size()*Math.random())).findFirst();
+		if (optional.isPresent()) {
+		    Path path = optional.get();
+		    if (path.isControl() && !concurrentPaths.contains(path)) {
+			nControls++;
+			concurrentPaths.add(path);
+		    }
+		}
+	    }
+	}
+	/////////////////////////////////////////////////////////
+	// now load pathARFF for selected paths in parallel
+	concurrentPaths.parallelStream().forEach(path -> {
+		String arff = "";
+		for (FrequentedRegion fr : frequentedRegions) {
+		    arff += fr.countSubpathsOf(path)+",";
+		}
+		arff += path.label;
+		pathARFF.put(path.name, arff);
+	    });
+	/////////////////////////////////////////////////////////
+	// sort by ARFF string
+	LinkedHashMap<String,String> sortedPathARFF = new LinkedHashMap<>();
+	pathARFF.entrySet().stream().sorted(Map.Entry.comparingByValue()).forEachOrdered(x->sortedPathARFF.put(x.getKey(),x.getValue()));
 	// ARFF output	
         PrintStream out = new PrintStream(FRUtils.getPathFRsARFFFilename(inputPrefix));
         out.println("@RELATION "+inputPrefix);
         out.println("");
         // attributes: path ID
         out.println("@ATTRIBUTE ID STRING");
-        // attributes: each FR is a numeric labeled FRn
+        // attributes: each FR is labeled FRn
         int c = 0;
         for (FrequentedRegion fr : frequentedRegions) {
             c++;
@@ -485,14 +629,10 @@ public class FRUtils {
         out.println("");
         // data
         out.println("@DATA");
-        for (Path path : graph.paths) {
-            out.print(path.name+"."+path.label+",");
-            c = 0;
-            for (FrequentedRegion fr : frequentedRegions) {
-                c++;
-                out.print(fr.countSubpathsOf(path)+",");
-            }
-            out.println(path.label);
+        for (String name : sortedPathARFF.keySet()) {
+	    String paddedName = name;
+	    if (name.length()<6) paddedName = "0" + name; // special hack for 6-digit samples
+            out.println(paddedName+","+sortedPathARFF.get(name));
         }
         out.close();
     }
@@ -529,6 +669,14 @@ public class FRUtils {
 	Option printPathFRsARFFOption = new Option("arff", "arff", false, "print out an ARFF style file from the data given by inputprefix");
 	printPathFRsARFFOption.setRequired(false);
 	options.addOption(printPathFRsARFFOption);
+	//
+	Option numCasePathsOption = new Option("ncase", "numcasepaths", true, "number of case paths to include in SVM or ARFF output");
+	numCasePathsOption.setRequired(false);
+	options.addOption(numCasePathsOption);
+	//
+	Option numCtrlPathsOption = new Option("nctrl", "numcontrolpaths", true, "number of control paths to include in SVM or ARFF output");
+	numCtrlPathsOption.setRequired(false);
+	options.addOption(numCtrlPathsOption);
 
         try {
             cmd = parser.parse(options, args);
@@ -554,11 +702,19 @@ public class FRUtils {
 	}
 
 	if (cmd.hasOption("svm")) {
-	    printPathFRsSVM(inputPrefix);
+	    int numCasePaths = 0;
+	    int numCtrlPaths = 0;
+	    if (cmd.hasOption("ncase")) numCasePaths = Integer.parseInt(cmd.getOptionValue("ncase"));
+	    if (cmd.hasOption("nctrl")) numCtrlPaths = Integer.parseInt(cmd.getOptionValue("nctrl"));
+	    printPathFRsSVM(inputPrefix, numCasePaths, numCtrlPaths);
 	}
 
 	if (cmd.hasOption("arff")) {
-	    printPathFRsARFF(inputPrefix);
+	    int numCasePaths = 0;
+	    int numCtrlPaths = 0;
+	    if (cmd.hasOption("ncase")) numCasePaths = Integer.parseInt(cmd.getOptionValue("ncase"));
+	    if (cmd.hasOption("nctrl")) numCtrlPaths = Integer.parseInt(cmd.getOptionValue("nctrl"));
+	    printPathFRsARFF(inputPrefix, numCasePaths, numCtrlPaths);
 	}
     }
 

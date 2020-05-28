@@ -40,6 +40,7 @@ public class Node implements Comparable, Serializable {
     /**
      * Return the id as a string.
      */
+    @Override
     public String toString() {
 	return String.valueOf(id);
     }
@@ -47,9 +48,18 @@ public class Node implements Comparable, Serializable {
     /**
      * Nodes are equal if they have the same id.
      */
+    @Override
     public boolean equals(Object o) {
 	Node that = (Node) o;
         return this.id==that.id;
+    }
+
+    /**
+     * Have to override hashCode() for Map keys.
+     */
+    @Override
+    public int hashCode() {
+	return (int) this.id;
     }
 
     /**

@@ -33,9 +33,6 @@ public class SvmScaler {
     double yUpper;
     boolean yScaling = false;
 
-    // file I/O
-    // BufferedReader fpRestore;
-
     double[] featureMax;
     double[] featureMin;
     double yMax = +1; // case=+1
@@ -68,26 +65,6 @@ public class SvmScaler {
     void findMaxIndex() {
         max_index = 0;
         numNonzeroes = 0;
-        // // restore file
-        // int idx;
-        // int c;
-        // int index;
-        // if (fpRestore!=null) {
-        //     if ((c = fpRestore.read()) == 'y') {
-        //         fpRestore.readLine();
-        //         fpRestore.readLine();
-        //         fpRestore.readLine();
-        //     }
-        //     fpRestore.readLine();
-        //     fpRestore.readLine();
-        //     String restore_line = null;
-        //     while ((restore_line=fpRestore.readLine())!=null) {
-        //         StringTokenizer st2 = new StringTokenizer(restore_line);
-        //         idx = Integer.parseInt(st2.nextToken());
-        //         max_index = Math.max(max_index, idx);
-        //     }
-        //     fpRestore = rewind(fpRestore, restoreFilename);
-        // }
         // samples data
         for (Sample sample : samples) {
             for (int i : sample.values.keySet()) {
@@ -116,44 +93,6 @@ public class SvmScaler {
             }
         }
     }
-
-    /**
-     * Pass 2.5: save/restore featureMin/featureMax from restore file.
-     */
-    // void restoreMinMaxValuesFromFiles() throws IOException {
-    //     int idx, c;
-    //     double fmin, fmax;
-    //     fpRestore.mark(2);				// for reset
-    //     if ((c = fpRestore.read()) == 'y') {
-    //         fpRestore.readLine();		// pass the '\n' after 'y'
-    //         StringTokenizer st = new StringTokenizer(fpRestore.readLine());
-    //         yLower = Double.parseDouble(st.nextToken());
-    //         yUpper = Double.parseDouble(st.nextToken());
-    //         st = new StringTokenizer(fpRestore.readLine());
-    //         yMin = Double.parseDouble(st.nextToken());
-    //         yMax = Double.parseDouble(st.nextToken());
-    //         yScaling = true;
-    //     } else {
-    //         fpRestore.reset();
-    //     }
-    //     if (fpRestore.read() == 'x') {
-    //         fpRestore.readLine();		// pass the '\n' after 'x'
-    //         StringTokenizer st = new StringTokenizer(fpRestore.readLine());
-    //         lower = Double.parseDouble(st.nextToken());
-    //         upper = Double.parseDouble(st.nextToken());
-    //         String restore_line = null;
-    //         while ((restore_line = fpRestore.readLine())!=null) {
-    //             StringTokenizer st2 = new StringTokenizer(restore_line);
-    //             idx = Integer.parseInt(st2.nextToken());
-    //             fmin = Double.parseDouble(st2.nextToken());
-    //             fmax = Double.parseDouble(st2.nextToken());
-    //             if (idx<max_index) {
-    //                 featureMin[idx] = fmin;
-    //                 featureMax[idx] = fmax;
-    //             }
-    //         }
-    //     }
-    // }
 
     /**
      * Pass 3: scale to an output file.
@@ -186,15 +125,8 @@ public class SvmScaler {
         // if (restoreFilename!=null) ...
         findMaxIndex();
         findMinMaxValues();
-        // if (fpRestore!=null) {
-        //     restoreMinMaxValuesFromFiles();
-        // }
         // scale to stdout
         scaleToOutput(System.out);
-        // close the files
-        // if (fpRestore!=null) {
-        //     fpRestore.close();
-        // }
     }
 
     /**
@@ -226,51 +158,47 @@ public class SvmScaler {
         Options options = new Options();
         CommandLineParser parser = new DefaultParser();
         HelpFormatter formatter = new HelpFormatter();
-        CommandLine cmd;
+        CommandLine cmd = null;
 
-        Option lowerOption = new Option("l", true, "x scaling lower limit [-1]");
-        lowerOption.setRequired(false);
-        options.addOption(lowerOption);
+	Option dataFileOption = new Option("d", "datafile", true, "SVM data file");
+	dataFileOption.setRequired(true);
+	options.addOption(dataFileOption);
 
-        Option upperOption = new Option("u", true, "x scaling upper limit [+1]");
-        upperOption.setRequired(false);
-        options.addOption(upperOption);
-
-        Option yScalingOption = new Option("y", true, "y scaling limits yLower,yUpper [no y scaling]");
-        yScalingOption.setRequired(false);
-        options.addOption(yScalingOption);
-
-        Option saveFileOption = new Option("s", true, "filename to save scaling parameters to");
+        Option saveFileOption = new Option("s", "savefile", true, "file to save scaling parameters to");
         saveFileOption.setRequired(false);
         options.addOption(saveFileOption);
 
-        // Option restoreFileOption = new Option("r", true, "filename to read scaling parameters from");
-        // restoreFileOption.setRequired(false);
-        // options.addOption(restoreFileOption);
+        Option lowerOption = new Option("l", "xlowerlimit", true, "x scaling lower limit [-1]");
+        lowerOption.setRequired(false);
+        options.addOption(lowerOption);
+
+        Option upperOption = new Option("u", "xupperlimit", true, "x scaling upper limit [+1]");
+        upperOption.setRequired(false);
+        options.addOption(upperOption);
+
+        Option yScalingOption = new Option("y", "ylimits", true, "y scaling limits yLower,yUpper [no y scaling]");
+        yScalingOption.setRequired(false);
+        options.addOption(yScalingOption);
 
         if (args.length==0) {
-            formatter.printHelp("SvmScaler", options);
+            formatter.printHelp("SvmScaler [options]", options);
             System.exit(1);
         }
+        
         try {
             cmd = parser.parse(options, args);
         } catch (ParseException e) {
             System.err.println(e.getMessage());
-            formatter.printHelp("SvmScaler", options);
+            formatter.printHelp("SvmScaler [options]", options);
             System.exit(1);
-            return;
         }
 
-        // file names
-        String dataFilename = args[args.length-1];  // data file is required and last argument
-        // String restoreFilename = null;
+        String dataFilename = cmd.getOptionValue("datafile");
+
         String saveFilename = null;
         if (cmd.hasOption("s")) {
             saveFilename = cmd.getOptionValue("s");
         }
-        // if (cmd.hasOption("r")) {
-        //     restoreFilename = cmd.getOptionValue("r");
-        // }
 
         // instantiate default instance from data file
         SvmScaler scaler = new SvmScaler(dataFilename);
@@ -291,7 +219,6 @@ public class SvmScaler {
 
         // validate
         scaler.validateParameters();
-        // validateFiles(dataFilename, saveFilename);
     
         // run scaling
         scaler.run();
@@ -310,10 +237,6 @@ public class SvmScaler {
             System.err.println("You have not provided a data file to scale.");
             System.exit(1);
         }
-        // if (saveFilename!=null && restoreFilename!=null) {
-        //     System.err.println("The -s and -r options are mutually exclusive: you may save scaling parameters XOR restore parameters for application to data.");
-        //     System.exit(1);
-        // }
     }
 
     /**

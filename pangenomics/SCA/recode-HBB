@@ -7,5 +7,8 @@ START=5246696
 END=5248301
 KEEPLIST="keeplist-500"
 
-vcftools --gzvcf $VCF --keep $KEEPLIST --recode --recode-INFO-all --chr $CHR --from-bp $START --to-bp $END --out $REGION
-vcf2tbi $REGION.recode.vcf
+# vcftools --gzvcf $VCF --keep $KEEPLIST --recode --recode-INFO-all --chr $CHR --from-bp $START --to-bp $END --out $REGION
+
+vcftools --gzvcf $VCF --recode --recode-INFO-all --chr $CHR --from-bp $START --to-bp $END --out $REGION
+mv $REGION.recode.vcf $REGION.vcf
+vcf2tbi $REGION.vcf

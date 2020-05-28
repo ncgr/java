@@ -6,6 +6,7 @@ import org.jgrapht.graph.DefaultEdge;
  * Graph edge with equals implemented using Node.equals().
  */
 public class Edge extends DefaultEdge {
+
     /**
      * Two edges are equal if they connect the same nodes.
      */
@@ -17,6 +18,15 @@ public class Edge extends DefaultEdge {
         Node thisTargetNode = this.getTargetNode();
         Node thatTargetNode = that.getTargetNode();
         return thisSourceNode.equals(thatSourceNode) && thisTargetNode.equals(thatTargetNode);
+    }
+
+    /**
+     * Must override hashCode() for Map keys.
+     */
+    @Override
+    public int hashCode() {
+	String sourceTarget = this.getSourceNode().toString()+":"+this.getTargetNode().toString();
+	return sourceTarget.hashCode();
     }
 
     /**

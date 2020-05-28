@@ -384,9 +384,6 @@ public class FRFinder {
 				// add this pair to the current frpairSet if interesting
 				if (isInteresting(frpair.merged)) {
 				    frpairSet.add(frpair);
-				    if (debug) {
-					System.err.println("+"+frpairSet.size()+":"+frpair.merged.toString()+"|"+(System.currentTimeMillis()-roundStartTime)/1000);
-				    }
 				}
 			    } else {
 				// add this to the rejected list

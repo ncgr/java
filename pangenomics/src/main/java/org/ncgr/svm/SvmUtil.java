@@ -24,7 +24,7 @@ public class SvmUtil {
     static svm_print_interface svm_print_null = new svm_print_interface() { public void print(String s) {} };
 
     // stdout
-    static svm_print_interface svm_print_stdout = new svm_print_interface() { public void print(String s) { System.out.print(s); } };
+    static svm_print_interface svm_print_stdout = new svm_print_interface() { public void print(String s) { System.err.print(s); } };
     
     public static svm_parameter getDefaultParam() {
         svm_parameter param = new svm_parameter();

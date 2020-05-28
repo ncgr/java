@@ -73,12 +73,21 @@ public class NodeSet extends TreeSet<Node> implements Comparable {
         return merged;
     }
 
-        /**
+    /**
      * Equality if exactly the same nodes, meaning the same string.
      */
+    @Override
     public boolean equals(Object o) {
 	NodeSet that = (NodeSet) o;
-        return this.toString().equals(that.toString());
+	return this.toString().equals(that.toString());
+    }
+
+    /**
+     * Must override hashCode() for Map keys.
+     */
+    @Override
+    public int hashCode() {
+	return this.toString().hashCode();
     }
 
     /**
@@ -92,6 +101,7 @@ public class NodeSet extends TreeSet<Node> implements Comparable {
     /**
      * Return a readable summary string.
      */
+    @Override
     public String toString() {
         String s = "[";
         StringJoiner joiner = new StringJoiner(",");

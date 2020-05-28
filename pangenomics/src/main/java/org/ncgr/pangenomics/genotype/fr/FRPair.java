@@ -78,15 +78,24 @@ public class FRPair implements Comparable {
     /**
      * Two FRPairs are equal if their components are equal.
      */
+    @Override
     public boolean equals(Object o) {
 	FRPair that = (FRPair) o;
         return (this.fr1.equals(that.fr1) && this.fr2.equals(that.fr2)) || (this.fr1.equals(that.fr2) && this.fr2.equals(that.fr1));
     }
 
     /**
-     * Compare the merged FR.
+     * Must override hashCode() for Map keys.
      */
     @Override
+    public int hashCode() {
+	String fr1fr2 = fr1.nodes.toString()+":"+fr2.nodes.toString();
+	return fr1fr2.hashCode();
+    }
+
+    /**
+     * Compare the merged FR.
+     */
     public int compareTo(Object o) {
 	FRPair that = (FRPair) o;
         return this.merged.compareTo(that.merged);
@@ -95,6 +104,7 @@ public class FRPair implements Comparable {
     /**
      * Reader-friendly string summary, just three FRs separated by semicolons.
      */
+    @Override
     public String toString() {
         return fr1.toString()+";" +
             fr2.toString()+";" +

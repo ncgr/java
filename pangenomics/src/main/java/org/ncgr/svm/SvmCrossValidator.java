@@ -47,7 +47,8 @@ public class SvmCrossValidator {
 
     // the input samples
     public List<Sample> samples;
-    public Vector<String> sampleNames; // for alignment with libsvm vectors
+    // for alignment with libsvm vectors
+    public Vector<String> sampleNames;
     
     /**
      * Construct with default svm_parameter object, default-fold cross-validation and the given input file name.
@@ -153,6 +154,7 @@ public class SvmCrossValidator {
         Vector<svm_node[]> vx = new Vector<>();
         for (Sample sample : samples) {
             sampleNames.addElement(sample.name);
+	    // cases are "plus", controls are "minus"
             double dlabel = 0;
             if (sample.label.equals("case") || sample.label.equals("1") || sample.label.equals("+1")) {
                 dlabel = 1.0;
@@ -227,39 +229,41 @@ public class SvmCrossValidator {
         Options options = new Options();
         CommandLineParser parser = new DefaultParser();
         HelpFormatter formatter = new HelpFormatter();
-        CommandLine cmd;
+        CommandLine cmd = null;
+	//
+	Option inputFileOption = new Option("i", "inputfile", true, "input file containing feature vectors in SVM format");
+	inputFileOption.setRequired(true);
+	options.addOption(inputFileOption);
         //
-        Option svmTypeOption = new Option("s", "svm-type", true,
-                                          "set type of SVM [0]: 0=C-SVC; 1=nu-SVC; 2=one-class SVM; 3=epsilon-SVR; 4=nu-SVR");
+        Option svmTypeOption = new Option("s", "svm-type", true, "type of SVM: 0=C-SVC 1=nu-SVC 2=one-class SVM 3=epsilon-SVR 4=nu-SVR [0]");
         svmTypeOption.setRequired(false);
         options.addOption(svmTypeOption);
         //
-        Option kernelTypeOption = new Option("t", "kernel-type", true,
-                                             "set type of kernel function [2]: 0=linear; 1=polynomial; 2=radial basis function; 3=sigmoid; 4=precomputed kernel");
+        Option kernelTypeOption = new Option("t", "kernel-type", true, "type of kernel function: 0=linear 1=polynomial 2=radial basis function 3=sigmoid 4=precomputed kernel [2]");
         kernelTypeOption.setRequired(false);
         options.addOption(kernelTypeOption);
         //
-        Option kernelDegreeOption = new Option("d", "kernel-degree", true, "set degree in kernel function [3]");
+        Option kernelDegreeOption = new Option("d", "kernel-degree", true, "degree parameter in kernel function [3]");
         kernelDegreeOption.setRequired(false);
         options.addOption(kernelDegreeOption);
         //
-        Option kernelGammaOption = new Option("g", "kernel-gamma", true, "set gamma in kernel function [1/#features]");
+        Option kernelGammaOption = new Option("gamma", "kernel-gamma", true, "gamma parameter in kernel function [1/#features]");
         kernelGammaOption.setRequired(false);
         options.addOption(kernelGammaOption);
         //
-        Option kernelCoef0Option = new Option("r", "kernel-coef0", true, "set coef0 in kernel function [0]");
+        Option kernelCoef0Option = new Option("coef0", "kernel-coef0", true, "coef0 parameter in kernel function [0]");
         kernelCoef0Option.setRequired(false);
         options.addOption(kernelCoef0Option);
         //
-        Option costOption = new Option("c", "cost", true, "set the cost parameter C in C-SVC, epsilon-SVR and nu-SVR [1]");
+        Option costOption = new Option("C", "cost", true, "cost parameter C in C-SVC, epsilon-SVR and nu-SVR [1]");
         costOption.setRequired(false);
         options.addOption(costOption);
         //
-        Option nuOption = new Option("n", "nu", true, "set the parameter nu of nu-SVC, one-class SVM, and nu-SVR [0.5]");
+        Option nuOption = new Option("nu", "nu", true, "nu parameter of nu-SVC, one-class SVM, and nu-SVR [0.5]");
         nuOption.setRequired(false);
         options.addOption(nuOption);
         //
-        Option epsilonLossOption = new Option("p", "epsilon-loss", true, "set the epsilon value in loss function of epsilon-SVR [0.1]");
+        Option epsilonLossOption = new Option("ep", "epsilon-loss", true, "epsilon value in loss function of epsilon-SVR [0.1]");
         epsilonLossOption.setRequired(false);
         options.addOption(epsilonLossOption);
         //
@@ -271,19 +275,19 @@ public class SvmCrossValidator {
         epsilonOption.setRequired(false);
         options.addOption(epsilonOption);
         //
-        Option shrinkingOption = new Option("h", "shrinking", true, "0/1 toggle whether to use the shrinking heuristics [1]");
+        Option shrinkingOption = new Option("h", "shrinking", true, "toggle whether to use the shrinking heuristics (0/1) [1]");
         shrinkingOption.setRequired(false);
         options.addOption(shrinkingOption);
         //
-        Option probabilityEstimatesOption = new Option("b", "probability-estimates", true, "0/1 toggle whether to train a SVC or SVR model for probability estimates [0]");
+        Option probabilityEstimatesOption = new Option("prob", "probability-estimates", true, "toggle whether to train a SVC or SVR model for probability estimates (0/1) [0]");
         probabilityEstimatesOption.setRequired(false);
         options.addOption(probabilityEstimatesOption);
         //
-        Option weightOption = new Option("w", "weight", true, "set the parameter C of class i to weight*C, for C-SVC [1]");
+        Option weightOption = new Option("w", "weight", true, "multiply parameter C of class i by weight, for C-SVC [1]");
         weightOption.setRequired(false);
         options.addOption(weightOption);
         //
-        Option nrFoldOption = new Option("k", "nrfold", true, "k value for k-fold cross-validation");
+        Option nrFoldOption = new Option("k", "nrfold", true, "k value for k-fold cross-validation ["+SvmUtil.NRFOLD+"]");
         nrFoldOption.setRequired(false);
         options.addOption(nrFoldOption);
         //
@@ -295,57 +299,55 @@ public class SvmCrossValidator {
             formatter.printHelp("SvmCrossValidator [options]", options);
             System.exit(1);
         }
-        
         try {
             cmd = parser.parse(options, args);
         } catch (ParseException e) {
-            System.out.println(e.getMessage());
+            System.err.println(e.getMessage());
             formatter.printHelp("SvmCrossValidator [options]", options);
             System.exit(1);
-            return;
         }
 
         // start with default param values
         svm_parameter param = SvmUtil.getDefaultParam();
 
-        // update values based on options
-        if (cmd.hasOption("s")) {
-            param.svm_type = Integer.parseInt(cmd.getOptionValue("s"));
+        // update svm_parameter values from options
+        if (cmd.hasOption("svm-type")) {
+            param.svm_type = Integer.parseInt(cmd.getOptionValue("svm-type"));
         }
-        if (cmd.hasOption("t")) {
-            param.kernel_type = Integer.parseInt(cmd.getOptionValue("t"));
+        if (cmd.hasOption("kernel-type")) {
+            param.kernel_type = Integer.parseInt(cmd.getOptionValue("kernel-type"));
         }
-        if (cmd.hasOption("d")) {
-            param.degree = Integer.parseInt(cmd.getOptionValue("d"));
+        if (cmd.hasOption("kernel-degree")) {
+            param.degree = Integer.parseInt(cmd.getOptionValue("kernel-degree"));
         }
-        if (cmd.hasOption("g")) {
-            param.gamma = Double.parseDouble(cmd.getOptionValue("g"));
+        if (cmd.hasOption("kernel-gamma")) {
+            param.gamma = Double.parseDouble(cmd.getOptionValue("kernel-gamma"));
         }
-        if (cmd.hasOption("n")) {
-            param.nu = Double.parseDouble(cmd.getOptionValue("n"));
+        if (cmd.hasOption("nu")) {
+            param.nu = Double.parseDouble(cmd.getOptionValue("nu"));
         }
-        if (cmd.hasOption("m")) {
-            param.cache_size = Double.parseDouble(cmd.getOptionValue("m"));
+        if (cmd.hasOption("cachesize")) {
+            param.cache_size = Double.parseDouble(cmd.getOptionValue("cachesize"));
         }
-        if (cmd.hasOption("c")) {
-            param.C = Double.parseDouble(cmd.getOptionValue("c"));
+        if (cmd.hasOption("cost")) {
+            param.C = Double.parseDouble(cmd.getOptionValue("cost"));
         }
-        if (cmd.hasOption("e")) {
-            param.eps = Double.parseDouble(cmd.getOptionValue("e"));
+        if (cmd.hasOption("epsilon")) {
+            param.eps = Double.parseDouble(cmd.getOptionValue("epsilon"));
         }
-        if (cmd.hasOption("p")) {
-            param.p = Double.parseDouble(cmd.getOptionValue("p"));
+        if (cmd.hasOption("epsilon-loss")) {
+            param.p = Double.parseDouble(cmd.getOptionValue("epsilon-loss"));
         }
-        if (cmd.hasOption("h")) {
-            param.shrinking = Integer.parseInt(cmd.getOptionValue("h"));
+        if (cmd.hasOption("shrinking")) {
+            param.shrinking = Integer.parseInt(cmd.getOptionValue("shrinking"));
         }
-        if (cmd.hasOption("b")) {
-            param.probability = Integer.parseInt(cmd.getOptionValue("b"));
+        if (cmd.hasOption("probability-estimates")) {
+            param.probability = Integer.parseInt(cmd.getOptionValue("probability-estimates"));
         }
-
-        int nrFold = SvmUtil.NRFOLD; // default
-        if (cmd.hasOption("k")) {
-            nrFold = Integer.parseInt(cmd.getOptionValue("k"));
+	
+        int nrFold = SvmUtil.NRFOLD;
+        if (cmd.hasOption("nrfold")) {
+            nrFold = Integer.parseInt(cmd.getOptionValue("nrfold"));
         }
 
         // this is weird, setting a static function in svm
@@ -355,10 +357,8 @@ public class SvmCrossValidator {
             SvmUtil.setQuiet();
         }
 
-        // get input file from last parameter
-        String inputFilename = args[args.length-1];
-
         // instantiate from a samples file
+	String inputFilename = cmd.getOptionValue("i");
         SvmCrossValidator scv = new SvmCrossValidator(param, nrFold, inputFilename);
 
         // run
@@ -372,18 +372,13 @@ public class SvmCrossValidator {
             // total up fails
             int plusFails = 0;
             int minusFails = 0;
-            // System.out.print("Fails (0-based):");
 	    for (int i : scv.errorIndices) {
                 if (scv.prob.y[i]==+1) {
                     plusFails++;
-		    // System.out.print(" "+i+"(+1)");
                 } else if (scv.prob.y[i]==-1) {
 		    minusFails++;
-		    // System.out.print(" "+i+"(-1)");
                 }
 	    }
-	    // System.out.println("");
-            // System.out.println("+1/-1 fails: "+plusFails+"/"+minusFails);
             // CVA, TPR, FPR
             int plusTotal = 0;
             int minusTotal = 0;
@@ -391,11 +386,14 @@ public class SvmCrossValidator {
                 if (y==+1) plusTotal++;
                 if (y==-1) minusTotal++;
             }
-            // System.out.println("CVA="+pf.format(scv.accuracy)+" ("+scv.totalCorrect+"/"+scv.totalSamples+")");
-            // System.out.println("TPR="+pf.format(1.0 - (double)plusFails/(double)plusTotal)+" ("+(plusTotal-plusFails)+"/"+plusTotal+")");
-            // System.out.println("FPR="+pf.format((double)minusFails/(double)minusTotal)+" ("+minusFails+"/"+minusTotal+")");
-            //
             // summary line
+	    System.err.println("Correct, CaseCorrect, ControlCorrect: "+
+			       (plusTotal+minusTotal-plusFails-minusFails)+"/"+(plusTotal+minusTotal)+", "+
+			       (plusTotal-plusFails)+"/"+plusTotal+", "+
+			       (minusTotal-minusFails)+"/"+minusTotal+"   " +
+			       pf.format((double)(plusTotal+minusTotal-plusFails-minusFails)/(double)(plusTotal+minusTotal))+", "+
+			       pf.format((double)(plusTotal-plusFails)/(double)plusTotal)+", "+
+			       pf.format((double)(minusTotal-minusFails)/(double)minusTotal));
             System.out.println(inputFilename+"\t"+scv.maxIndex+"\t"+param.C+"\t"+param.gamma+"\t"+nrFold+
                                "\t"+plusTotal+"\t"+minusTotal+"\t"+plusFails+"\t"+minusFails);
             // predictions by sample

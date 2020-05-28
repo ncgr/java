@@ -176,15 +176,23 @@ class FrequentedRegion implements Comparable {
     /**
      * Equality is based on nodes.
      */
+    @Override
     public boolean equals(Object o) {
 	FrequentedRegion that = (FrequentedRegion) o;
         return this.nodes.equals(that.nodes);
     }
 
     /**
-     * Comparison is based on higher priority, then higher support, then smaller size, then the nodes themselves.
+     * Must override hashCode() for Map keys.
      */
     @Override
+    public int hashCode() {
+	return this.nodes.toString().hashCode();
+    }
+
+    /**
+     * Comparison is based on higher priority, then higher support, then smaller size, then the nodes themselves.
+     */
     public int compareTo(Object o) {
 	FrequentedRegion that = (FrequentedRegion) o;
         if (this.priority!=that.priority) {
@@ -356,6 +364,7 @@ class FrequentedRegion implements Comparable {
     /**
      * Return a string summary of this frequented region.
      */
+    @Override
     public String toString() {
         String s = nodes.toString()+"\t"+nodes.size()+"\t"+support;
         if (support>0) {

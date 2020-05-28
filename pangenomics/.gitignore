@@ -17,3 +17,4 @@ buildOutputCleanup
 *.txt
 *.fasta
 *.arff
+scan-*
