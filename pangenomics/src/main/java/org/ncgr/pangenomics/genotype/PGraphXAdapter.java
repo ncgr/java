@@ -87,6 +87,11 @@ class PGraphXAdapter extends JGraphXAdapter<Node,Edge> {
             if (c.isVertex()) {
                 Node n = (Node) c.getValue();
                 int pathCount = graph.getPathCount(n);
+                // remove orphaned nodes
+                if (pathCount==0) {
+                    removeCells(cells);
+                    continue;
+                }
                 double pathFrac = (double)pathCount / (double)numPaths;
                 if (hasCaseControlLabels) {
                     if (pathCount>0 && n.genotype.equals("./.")) {
