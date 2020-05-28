@@ -8,7 +8,7 @@ read.seg = function(file="seg.txt.gz") {
     ## store the number of genotypes, 2=SNP without ALT HOM so we can compute odds ratio
     ## NOTE: there should be a way of doing this without a slow loop!!!
     seg$ngenotypes = 0
-    foo = strsplit(seg$genotypes, "|", TRUE)
+    foo = strsplit(seg$genotypes, ":", TRUE)
     for (i in 1:nrow(seg)) {
         seg$ngenotypes[i] = length(foo[[i]])
     }

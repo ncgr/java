@@ -48,7 +48,7 @@ public class VCFImporter {
      *
      * NOTE: non-calls (./.) are treated as a true lack of sequence, i.e. no node is created for that sample at that location.
      */
-    public void read(File vcfFile, boolean ignorePhasing) throws FileNotFoundException, IOException {
+    public void read(File vcfFile, boolean ignorePhase) throws FileNotFoundException, IOException {
         if (verbose) System.out.print("Reading samples and nodes from VCF...");
         // initiate the class collections
         nodes = new ArrayList<>();
@@ -66,7 +66,7 @@ public class VCFImporter {
 	    for (String sampleName : sampleNameList) {
 		Genotype g = vc.getGenotype(sampleName);
                 String genotypeString = g.getGenotypeString();
-                if (ignorePhasing) {
+                if (ignorePhase) {
                     genotypeString = genotypeString.replace("|","/");
                     String[] alleles = genotypeString.split("/");
                     if (alleles.length>1 && !alleles[0].equals(alleles[1])) {

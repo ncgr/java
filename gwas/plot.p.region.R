@@ -31,7 +31,10 @@ plot.p.region = function(seg=seg, chr="0", start=0, end=0, gene=NULL, label=FALS
 
     ## limits
     xlim = c(start, end)
-    if (ymax==0) ymax = max(seg$mlog10p[pts])
+    if (ymax==0) ymax = max(seg$mlog10p[pts & is.finite(seg$mlog10p)])
+    ## set infinite values to ymax*2
+    ymax = ymax*2
+    seg$mlog10p[is.infinite(seg$mlog10p)] = ymax
     ylim = c(ymin, ymax)
 
     ## plot
@@ -48,8 +51,9 @@ plot.p.region = function(seg=seg, chr="0", start=0, end=0, gene=NULL, label=FALS
              ylab="-log10(p)",
              xlim=xlim,
              ylim=ylim,
-             main=paste(deparse(substitute(seg)),chr,":",start,"-",end),
-             pch=1, cex=0.3, col="black")
+             ## main=paste(deparse(substitute(seg)),chr,":",start,"-",end),
+             main=paste(chr,":",start,"-",end),
+             pch=1, cex=0.7, col="black")
     }
 
     ## vertical chromosome lines if plotting full genome
@@ -67,9 +71,9 @@ plot.p.region = function(seg=seg, chr="0", start=0, end=0, gene=NULL, label=FALS
     
     ## highlight highly significant p values
     if (hasSig && chr=="0") {
-        points(as.numeric(rownames(seg)[ptsSig]), seg$mlog10p[ptsSig], pch=19, cex=0.6, col="darkgreen")
+        points(as.numeric(rownames(seg)[ptsSig]), seg$mlog10p[ptsSig], pch=19, cex=0.8, col="darkgreen")
     } else if (hasSig) {
-        points(seg$pos[ptsSig], seg$mlog10p[ptsSig], pch=19, cex=0.6, col="darkgreen")
+        points(seg$pos[ptsSig], seg$mlog10p[ptsSig], pch=19, cex=0.8, col="darkgreen")
     }
 
     ## line at pSig
@@ -94,21 +98,20 @@ plot.p.region = function(seg=seg, chr="0", start=0, end=0, gene=NULL, label=FALS
             }
             snpInfo = c(snpInfo, clinvar.clinsig)
         }
-        textStr = paste(seg$id[ptsSig],seg$genotypes[ptsSig],seg$caseString[ptsSig],seg$controlString[ptsSig])
-        ## add odds ratio if just two genotypes
-        for (i in 1:length(textStr)) {
-            if (seg$ngenotypes[ptsSig][i]==2) {
-                caseCounts = as.numeric(strsplit(schiz$caseString[ptsSig][i], "|", TRUE)[[1]])
-                controlCounts = as.numeric(strsplit(schiz$controlString[ptsSig][i], "|", TRUE)[[1]])
-                caseRatio = caseCounts[2]/caseCounts[1]
-                controlRatio = controlCounts[2]/controlCounts[1]
-                oddsRatio = caseRatio/controlRatio
-                textStr[i] = paste(textStr[i], round(oddsRatio,2))
-            }
-        }
+        textStr = paste(seg$id[ptsSig], seg$genotypes[ptsSig], seg$caseString[ptsSig], seg$controlString[ptsSig])
+        ## ## add odds ratio if just two genotypes
+        ## for (i in 1:length(textStr)) {
+        ##     if (seg$ngenotypes[ptsSig][i]==2) {
+        ##         caseCounts = as.numeric(strsplit(schiz$caseString[ptsSig][i], "|", TRUE)[[1]])
+        ##         controlCounts = as.numeric(strsplit(schiz$controlString[ptsSig][i], "|", TRUE)[[1]])
+        ##         caseRatio = caseCounts[2]/caseCounts[1]
+        ##         controlRatio = controlCounts[2]/controlCounts[1]
+        ##         oddsRatio = caseRatio/controlRatio
+        ##         textStr[i] = paste(textStr[i], round(oddsRatio,2))
+        ##     }
+        ## }
         if (length(snpInfo)>0) textStr = paste(textStr, snpInfo)
-        text(seg$pos[ptsSig], seg$mlog10p[ptsSig], textStr,
-             col="darkgreen", pos=4, cex=0.6, offset=0.2)
+        text(seg$pos[ptsSig], seg$mlog10p[ptsSig], textStr, col="darkgreen", pos=4, cex=0.7, offset=0.3)
     }
 
     ## show gene or genes if requested

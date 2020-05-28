@@ -10,6 +10,7 @@ import java.text.DecimalFormat;
 
 import java.util.List;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Map;
 import java.util.HashMap;
 import java.util.Set;
@@ -36,7 +37,7 @@ import htsjdk.variant.vcf.VCFHeader;
 /**
  * Loads a VCF file and computes the Cochran-Armitage Test p-value for segregation between genotypes in a case/control experiment.
  *
- * Cases and controls are given by a phenotype file in dbGaP format.
+ * Cases and controls are given by a phenotype file in dbGaP format, or by a labels file.
  *
  * @author Sam Hokin
  */
@@ -65,7 +66,7 @@ public class VCFSegregation {
 	options.addOption(sampleVarOption);
 	//
         Option phenoFileOption = new Option("pf", "phenofile", true, "dbGaP phenotype file");
-        phenoFileOption.setRequired(true);
+        phenoFileOption.setRequired(false);
         options.addOption(phenoFileOption);
 	//
         Option vcfFileOption = new Option("vf", "vcffile", true, "VCF file");
@@ -73,15 +74,15 @@ public class VCFSegregation {
         options.addOption(vcfFileOption);
 	//
         Option ccVarOption = new Option("ccv", "casecontrolvar", true, "case/control variable in dbGaP phenotype file (e.g. ANALYSIS_CAT)");
-	ccVarOption.setRequired(true);
+	ccVarOption.setRequired(false);
         options.addOption(ccVarOption);
         // NOTE: this only allows a single value of case or control in the segregating variable! (Some files have control=1, say, and several case values.)
         Option caseValueOption = new Option("caseval", true, "case value in dbGaP phenotype file (e.g. Case)");
-        caseValueOption.setRequired(true);
+        caseValueOption.setRequired(false);
         options.addOption(caseValueOption);
         //
         Option controlValueOption = new Option("controlval", true, "control value in dbGaP phenotype file (e.g. Control)");
-        controlValueOption.setRequired(true);
+        controlValueOption.setRequired(false);
         options.addOption(controlValueOption);
 	//
 	Option diseaseVarOption = new Option("dv", "diseasevar", true, "disease variable in dbGaP phenotype file (e.g. PRIMARY_DISEASE; required if -dn)");
@@ -103,6 +104,14 @@ public class VCFSegregation {
         Option maxNoCallsOption = new Option("mnc", "maxnocalls", true, "maximum number of no-calls for a locus to be output ("+DEFAULT_MAX_NOCALLS+")");
         maxNoCallsOption.setRequired(false);
         options.addOption(maxNoCallsOption);
+        //
+        Option labelFileOption = new Option("lf", "labelfile", true, "label file containing case/control labels for each subject");
+        labelFileOption.setRequired(false);
+        options.addOption(labelFileOption);
+        //
+        Option ignorePhaseOption = new Option("ip", "ignorephase", false, "ignore phasing, so that A|T and T|A are counted as same genotype (false)");
+        ignorePhaseOption.setRequired(false);
+        options.addOption(ignorePhaseOption);
 	
         try {
             cmd = parser.parse(options, args);
@@ -120,161 +129,181 @@ public class VCFSegregation {
             return;
         }
 
-	String ccVar = cmd.getOptionValue("casecontrolvar");
-	String caseValue = cmd.getOptionValue("caseval");
-	String controlValue = cmd.getOptionValue("controlval");
-	String sampleVar = cmd.getOptionValue("samplevar");
-
-	String diseaseVar = null;
-	String diseaseName = null;
-	if (cmd.hasOption("diseasevar")) {
-	    diseaseVar = cmd.getOptionValue("diseasevar");
-	    diseaseName = cmd.getOptionValue("diseasename");
-	}
-	
-	String desiredSexValue = null;
-	if (cmd.hasOption("desiredsex")) {
-	    desiredSexValue = cmd.getOptionValue("desiredsex");
-	}
-
-	double minMAF = DEFAULT_MIN_MAF;
-	if (cmd.hasOption("minmaf")) {
-	    minMAF = Double.parseDouble(cmd.getOptionValue("minmaf"));
-	}
-	
+        // some general parameters
+        double minMAF = DEFAULT_MIN_MAF;
+        if (cmd.hasOption("minmaf")) {
+            minMAF = Double.parseDouble(cmd.getOptionValue("minmaf"));
+        }
         int maxNoCalls = DEFAULT_MAX_NOCALLS;
         if (cmd.hasOption("maxnocalls")) {
             maxNoCalls = Integer.parseInt(cmd.getOptionValue("maxnocalls"));
         }
-	
-	// the optional sample file relates dbGaP_Subject_ID in the phenotypes file to the sample ID used in the VCF file
-	//
-	// # Study accession: phs000473.v2.p2
-	// # Table accession: pht002599.v2.p2
-	// # Consent group: All
-	// # Citation instructions: The study accession (phs000473.v2.p2) is used to cite the study and its data tables and documents. The data in this file should be cited using the accession....
-	// # To cite columns of data within this file, please use the variable (phv#) accessions below:
-	// #
-	// # 1) the table name and the variable (phv#) accessions below; or
-	// # 2) you may cite a variable as phv#.v2.p2
-	//
-	// dbGaP_Subject_ID dbGaP_Sample_ID BioSample Accession SUBJID  SAMPID SAMP_SOURCE SOURCE_SAMPID SAMPLE_USE
-	// 1284423          1836728         SAMN03897975        PT-1S8D	28278  KAROLINSKA  28278         Seq_DNA_WholeExome; Seq_DNA_SNP_CNV
-	//
-	// NOTE: there may be MORE THAN ONE LINE for the same dbGaP_Subject_ID! We'll assume that SAMPLE IDs are unique.
-	//
-	Map<String,String> sampleIdMap = new HashMap<>(); // keyed by dbGaPSubjectId=dbGaP_Subject_ID
-	if (cmd.hasOption("samplefile")) {
-	    BufferedReader sampleReader = new BufferedReader(new FileReader(cmd.getOptionValue("samplefile")));
-	    int sampleVarOffset = -1;
-	    boolean headerLine = true;
-	    String line = null;
-	    while ((line=sampleReader.readLine())!=null) {
-		if (line.startsWith("#")) {
-		    continue; // comment
-		} else if (line.trim().length()==0) {
-		    continue; // blank
-		} else if (headerLine) {
-		    // variable header
-		    String[] vars = line.split("\t");
-		    for (int i=0; i<vars.length; i++) {
-			if (vars[i].equals(sampleVar)) sampleVarOffset = i;
-		    }
-		    headerLine = false;
-		} else {
-		    String[] data = line.split("\t");
-		    String dbGaPSubjectId = data[0]; // assume first column is dbGaP_Subject_ID, which I hope is always true -- not necessarily unique!!
-		    String sampleId = data[sampleVarOffset]; // presume this is unique
-		    sampleIdMap.put(sampleId, dbGaPSubjectId);
-		}
-            }
-	}
+        boolean ignorePhase = cmd.hasOption("ignorephase");
 
-        // the required phenotypes file provides case/control information per sample
-	// 
-	// # Study accession: phs000473.v2.p2
-	// # Table accession: pht002600.v2.p2.c1
-	// # Consent group: General Research Use
-	// # Citation instructions: The study accession (phs000473.v2.p2) is used to cite the study and its data tables and documents.
-        // # The data in this file should be cited using the accession pht002600.v2.p2.c1.
-	// # To cite columns of data within this file, please use the variable (phv#) accessions below:
-	// #
-	// # 1) the table name and the variable (phv#) accessions below; or
-	// # 2) you may cite a variable as phv#.v2.p2.c1.
-	//
-	// dbGaP_Subject_ID SUBJID  SEX PRIMARY_DISEASE   ANALYSIS_CAT SITE  Coverage_Pass
-	// 1287483          PT-FJ7E M   Bipolar_Disorder  Case         BROAD N
-	//
-        Map<String,Boolean> subjectStatus = new HashMap<>(); // true if case, false if control, keyed by study ID used in VCF
-        String line = "";
-        boolean headerLine = true;
-        int ccVarOffset = -1;
-	int sexVarOffset = -1;
-	int diseaseVarOffset = -1;
+        // true if case, false if control, keyed by sample ID used in VCF
+        Map<String,Boolean> subjectStatus = new HashMap<>();
         int nCases = 0;
         int nControls = 0;
-	BufferedReader phenoReader = new BufferedReader(new FileReader(cmd.getOptionValue("phenofile")));
-        while ((line=phenoReader.readLine())!=null) {
-            if (line.startsWith("#")) {
-                continue; // comment
-            } else if (line.trim().length()==0) {
-                continue; // blank
-            } else if (headerLine) {
-                // variable header
-                String[] vars = line.split("\t");
-                for (int i=0; i<vars.length; i++) {
-                    if (vars[i].equals(ccVar)) ccVarOffset = i;
-		    if (vars[i].equals("SEX")) sexVarOffset = i;
-		    if (diseaseVar!=null && vars[i].equals(diseaseVar)) diseaseVarOffset = i;
+        if (cmd.hasOption("labelfile")) {
+            // read sample labels from the instance tab-delimited file. Comment lines start with #.
+            // 28304	case
+            // 60372	ctrl
+            String labelFilename = cmd.getOptionValue("labelfile");
+            BufferedReader reader = new BufferedReader(new FileReader(labelFilename));
+            String line = null;
+            while ((line=reader.readLine())!=null) {
+                if (!line.startsWith("#")) {
+                    String[] fields = line.split("\t");
+                    if (fields.length==2) {
+                        String sampleId = fields[0];
+                        boolean isCase = fields[1].equals("case");
+                        boolean isControl = fields[1].equals("ctrl");
+                        subjectStatus.put(sampleId, isCase);
+                        if (isCase) {
+                            nCases++;
+                        } else if (isControl) {
+                            nControls++;
+                        }
+                    }
                 }
-                headerLine = false;
-            } else {
-                String[] data = line.split("\t");
-		String dbGaPSubjectId = data[0]; // assume first column is dbGaP_Subject_ID, which I hope is always true
-		List<String> sampleIds = new ArrayList<>(); // we may have more than one sample ID per dbGaP_Subject_ID!
-		if (sampleIdMap.size()==0) {
-		    // no samples file, so assume ID in the second column is used in the VCF
-		    sampleIds.add(data[1]);
-		} else {
-		    // spin through the records to get all the sample IDs for this dbGaPSubjectId
-		    for (String sampleId : sampleIdMap.keySet()) {
-			String dgsId = sampleIdMap.get(sampleId);
-			if (dgsId.equals(dbGaPSubjectId)) sampleIds.add(sampleId);
-		    }
-		}
-                String ccValue = data[ccVarOffset];
-		String sexValue = "";
-		if (sexVarOffset>0) sexValue = data[sexVarOffset];
-		String diseaseValue = null;
-		if (diseaseVar!=null) diseaseValue = data[diseaseVarOffset];
-                boolean isCase = ccValue.equals(caseValue);
-                boolean isControl = ccValue.equals(controlValue);
-		boolean isDisease = diseaseVar==null || diseaseValue.contains(diseaseName);
-		boolean isDesiredSex = true;
-		if (desiredSexValue!=null) isDesiredSex = sexValue.equals(desiredSexValue);
-                if (((isDisease && isCase) || isControl) && isDesiredSex) {
-		    for (String sampleId : sampleIds) {
-			subjectStatus.put(sampleId, isCase); // true = case
-		    }
-		    if (isCase) {
-			nCases++;
-		    } else {
-			nControls++;
-		    }
-		}
+            }
+            reader.close();
+        } else {
+            // read samples from a set of dbGaP files
+            String ccVar = cmd.getOptionValue("casecontrolvar");
+            String caseValue = cmd.getOptionValue("caseval");
+            String controlValue = cmd.getOptionValue("controlval");
+            String sampleVar = cmd.getOptionValue("samplevar");
+            String diseaseVar = null;
+            String diseaseName = null;
+            if (cmd.hasOption("diseasevar")) {
+                diseaseVar = cmd.getOptionValue("diseasevar");
+                diseaseName = cmd.getOptionValue("diseasename");
+            }
+            String desiredSexValue = null;
+            if (cmd.hasOption("desiredsex")) {
+                desiredSexValue = cmd.getOptionValue("desiredsex");
+            }
+            // the optional sample file relates dbGaP_Subject_ID in the phenotypes file to the sample ID used in the VCF file
+            //
+            // # Study accession: phs000473.v2.p2
+            // # Table accession: pht002599.v2.p2
+            // # Consent group: All
+            // # Citation instructions: The study accession (phs000473.v2.p2) is used to cite the study and its data tables and documents. The data in this file should be cited using the accession....
+            // # To cite columns of data within this file, please use the variable (phv#) accessions below:
+            // #
+            // # 1) the table name and the variable (phv#) accessions below; or
+            // # 2) you may cite a variable as phv#.v2.p2
+            //
+            // dbGaP_Subject_ID dbGaP_Sample_ID BioSample Accession SUBJID  SAMPID SAMP_SOURCE SOURCE_SAMPID SAMPLE_USE
+            // 1284423          1836728         SAMN03897975        PT-1S8D	28278  KAROLINSKA  28278         Seq_DNA_WholeExome; Seq_DNA_SNP_CNV
+            //
+            // NOTE: there may be MORE THAN ONE LINE for the same dbGaP_Subject_ID! We'll assume that SAMPLE IDs are unique.
+            //
+            Map<String,String> sampleIdMap = new HashMap<>(); // keyed by dbGaPSubjectId=dbGaP_Subject_ID
+            if (cmd.hasOption("samplefile")) {
+                BufferedReader sampleReader = new BufferedReader(new FileReader(cmd.getOptionValue("samplefile")));
+                int sampleVarOffset = -1;
+                boolean headerLine = true;
+                String line = null;
+                while ((line=sampleReader.readLine())!=null) {
+                    if (line.startsWith("#")) {
+                        continue; // comment
+                    } else if (line.trim().length()==0) {
+                        continue; // blank
+                    } else if (headerLine) {
+                        // variable header
+                        String[] vars = line.split("\t");
+                        for (int i=0; i<vars.length; i++) {
+                            if (vars[i].equals(sampleVar)) sampleVarOffset = i;
+                        }
+                        headerLine = false;
+                    } else {
+                        String[] data = line.split("\t");
+                        String dbGaPSubjectId = data[0]; // assume first column is dbGaP_Subject_ID, which I hope is always true -- not necessarily unique!!
+                        String sampleId = data[sampleVarOffset]; // presume this is unique
+                        sampleIdMap.put(sampleId, dbGaPSubjectId);
+                    }
+                }
+            }
+            // the required phenotypes file provides case/control information per sample
+            // 
+            // # Study accession: phs000473.v2.p2
+            // # Table accession: pht002600.v2.p2.c1
+            // # Consent group: General Research Use
+            // # Citation instructions: The study accession (phs000473.v2.p2) is used to cite the study and its data tables and documents.
+            // # The data in this file should be cited using the accession pht002600.v2.p2.c1.
+            // # To cite columns of data within this file, please use the variable (phv#) accessions below:
+            // #
+            // # 1) the table name and the variable (phv#) accessions below; or
+            // # 2) you may cite a variable as phv#.v2.p2.c1.
+            //
+            // dbGaP_Subject_ID SUBJID  SEX PRIMARY_DISEASE   ANALYSIS_CAT SITE  Coverage_Pass
+            // 1287483          PT-FJ7E M   Bipolar_Disorder  Case         BROAD N
+            //
+            String line = "";
+            boolean headerLine = true;
+            int ccVarOffset = -1;
+            int sexVarOffset = -1;
+            int diseaseVarOffset = -1;
+            BufferedReader phenoReader = new BufferedReader(new FileReader(cmd.getOptionValue("phenofile")));
+            while ((line=phenoReader.readLine())!=null) {
+                if (line.startsWith("#")) {
+                    continue; // comment
+                } else if (line.trim().length()==0) {
+                    continue; // blank
+                } else if (headerLine) {
+                    // variable header
+                    String[] vars = line.split("\t");
+                    for (int i=0; i<vars.length; i++) {
+                        if (vars[i].equals(ccVar)) ccVarOffset = i;
+                        if (vars[i].equals("SEX")) sexVarOffset = i;
+                        if (diseaseVar!=null && vars[i].equals(diseaseVar)) diseaseVarOffset = i;
+                    }
+                    headerLine = false;
+                } else {
+                    String[] data = line.split("\t");
+                    String dbGaPSubjectId = data[0]; // assume first column is dbGaP_Subject_ID, which I hope is always true
+                    List<String> sampleIds = new ArrayList<>(); // we may have more than one sample ID per dbGaP_Subject_ID!
+                    if (sampleIdMap.size()==0) {
+                        // no samples file, so assume ID in the second column is used in the VCF
+                        sampleIds.add(data[1]);
+                    } else {
+                        // spin through the records to get all the sample IDs for this dbGaPSubjectId
+                        for (String sampleId : sampleIdMap.keySet()) {
+                            String dgsId = sampleIdMap.get(sampleId);
+                            if (dgsId.equals(dbGaPSubjectId)) sampleIds.add(sampleId);
+                        }
+                    }
+                    String ccValue = data[ccVarOffset];
+                    String sexValue = "";
+                    if (sexVarOffset>0) sexValue = data[sexVarOffset];
+                    String diseaseValue = null;
+                    if (diseaseVar!=null) diseaseValue = data[diseaseVarOffset];
+                    boolean isCase = ccValue.equals(caseValue);
+                    boolean isControl = ccValue.equals(controlValue);
+                    boolean isDisease = diseaseVar==null || diseaseValue.contains(diseaseName);
+                    boolean isDesiredSex = true;
+                    if (desiredSexValue!=null) isDesiredSex = sexValue.equals(desiredSexValue);
+                    if (((isDisease && isCase) || isControl) && isDesiredSex) {
+                        for (String sampleId : sampleIds) {
+                            subjectStatus.put(sampleId, isCase); // true = case
+                        }
+                        if (isCase) {
+                            nCases++;
+                        } else {
+                            nControls++;
+                        }
+                    }
+                }
             }
         }
-
-        //
-        // 1 877558 rs4372192 C T 71.55 PASS AC=1;AF=4.04e-05;AN=24736;BaseQRankSum=-1.369;CCC=24750;... GT:AD:DP:GQ:PL 0/0:7,0:7:21:0,21,281 0/0:7,0:7:21:0,21,218 ...
-        //
-	VCFFileReader vcfReader = new VCFFileReader(new File(cmd.getOptionValue("vcffile")));
-
         // find the desired sample names as they appear in the VCF file
+	VCFFileReader vcfReader = new VCFFileReader(new File(cmd.getOptionValue("vcffile")));
         VCFHeader vcfHeader = vcfReader.getFileHeader();
         List<String> vcfSampleNames = vcfHeader.getSampleNamesInOrder(); // all subjects in the VCF
-        Set<String> caseSampleNames = new HashSet<>();                // case subjects in the VCF
-        Set<String> controlSampleNames = new HashSet<>();             // control subjects in the VCF
+        Set<String> caseSampleNames = new HashSet<>();                   // case subjects in the VCF
+        Set<String> controlSampleNames = new HashSet<>();                // control subjects in the VCF
         for (String sampleName : subjectStatus.keySet()) {
             boolean found = false;
             if (vcfSampleNames.contains(sampleName)) {
@@ -285,7 +314,7 @@ public class VCFSegregation {
                     controlSampleNames.add(sampleName);
                 }
             } else {
-                // perhaps the VCF uses sample_sample format
+                // SPECIAL CASE: perhaps the VCF uses sample_sample format
                 String doubleSampleName = sampleName+"_"+sampleName;
                 if (vcfSampleNames.contains(doubleSampleName)) {
                     found = true;
@@ -327,6 +356,24 @@ public class VCFSegregation {
 	    for (Genotype g : genotypes) {
 		if (g.isNoCall()) continue;
 		String gString = g.getGenotypeString();
+                if (ignorePhase) {
+                    // sort the alleles in alphabetic order as unphased genotype
+                    gString = gString.replace("|","/");
+                    String[] alleles = gString.split("/");
+                    if (alleles.length>1 && !alleles[0].equals(alleles[1])) {
+                        TreeSet<String> sortedAlleles = new TreeSet<>(Arrays.asList(alleles));
+                        boolean first = true;
+                        gString = "";
+                        for (String allele : sortedAlleles) {
+                            if (first) {
+                                first = false;
+                            } else {
+                                gString += "/";
+                            }
+                            gString += allele;
+                        }
+                    }
+                }
 		if (!caseCounts.containsKey(gString)) caseCounts.put(gString, 0);
 		if (!controlCounts.containsKey(gString)) controlCounts.put(gString, 0);
 		String sampleName = g.getSampleName();
@@ -339,7 +386,7 @@ public class VCFSegregation {
 	    // order genotypes by decreasing control counts by using string sorting
 	    TreeSet<String> countsGenotypes = new TreeSet<>();
 	    for (String gString : controlCounts.keySet()) {
-		countsGenotypes.add(countf.format(controlCounts.get(gString))+"|"+gString);
+		countsGenotypes.add(countf.format(controlCounts.get(gString))+":"+gString);
 	    }
 	    // Cochran-Armitage test
 	    int numRows = 2;
@@ -357,12 +404,12 @@ public class VCFSegregation {
 	    // order counts by control descending
 	    int j = 0;
 	    for (String cg : countsGenotypes.descendingSet()) {
-		String[] parts = cg.split("\\|");
+		String[] parts = cg.split(":");
 		String gString = parts[1];
 		if (j>0) {
-		    genotypeString += "|";
-		    controlString += "|";
-		    caseString += "|";
+		    genotypeString += ":";
+		    controlString += ":";
+		    caseString += ":";
 		}
 		genotypeString += gString;
 		controlString += controlCounts.get(gString);

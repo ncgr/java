@@ -13,6 +13,11 @@
 #                                1)
 #  -dv,--diseasevar <arg>        disease variable in dbGaP phenotype file
 #                                (e.g. PRIMARY_DISEASE; required if -dn)
+#  -lf,--labelfile <arg>         label file containing case/control labels
+#                                for each subject
+#  -maf,--minmaf <arg>           minimum MAF for a locus to be output (0.01)
+#  -mnc,--maxnocalls <arg>       maximum number of no-calls for a locus to
+#                                be output (1000)
 #  -pf,--phenofile <arg>         dbGaP phenotype file
 #  -sf,--samplefile <arg>        dbGaP samples file (needed if contains
 #                                mapping from dbGaP_Subject_ID to sample ID
@@ -60,26 +65,32 @@
 # DESIREDSEX=
 # OUTFILE=GenomicPsychiatryCohort
 
-VCFFILE=/erdos/shokin/ncbi/VCF/SchizophreniaSwedish_Sklar/swe.vcf.gz
-PHENODIR=/erdos/shokin/ncbi/dbGaP-20036/PhenoGenotypeFiles/RootStudyConsentSet_phs000473.SchizophreniaSwedish_Sklar.v2.p2.c1.GRU/PhenotypeFiles
-PHENOFILE=phs000473.v2.pht002600.v2.p2.c1.Schizophrenia_Swedish_Subject_Phenotypes.GRU.txt
-SAMPLEFILE=phs000473.v2.pht002599.v2.p2.Schizophrenia_Swedish_Sample.MULTI.txt
-SAMPLEVAR=SAMPID
-DISEASENAME=Schizophrenia
-DISEASEVAR=PRIMARY_DISEASE
-CASECONTROLVAR=ANALYSIS_CAT
-CASEVAL=Case
-CONTROLVAL=Control
-MINMAF=0.01
-MAXNOCALLS=100
-OUTFILE=SchizophreniaSwedish_Sklar
+# VCFFILE=/erdos/shokin/ncbi/VCF/SchizophreniaSwedish_Sklar/swe.vcf.gz
+# PHENODIR=/erdos/shokin/ncbi/dbGaP-20036/PhenoGenotypeFiles/RootStudyConsentSet_phs000473.SchizophreniaSwedish_Sklar.v2.p2.c1.GRU/PhenotypeFiles
+# PHENOFILE=phs000473.v2.pht002600.v2.p2.c1.Schizophrenia_Swedish_Subject_Phenotypes.GRU.txt
+# SAMPLEFILE=phs000473.v2.pht002599.v2.p2.Schizophrenia_Swedish_Sample.MULTI.txt
+# SAMPLEVAR=SAMPID
+# DISEASENAME=Schizophrenia
+# DISEASEVAR=PRIMARY_DISEASE
+# CASECONTROLVAR=ANALYSIS_CAT
+# CASEVAL=Case
+# CONTROLVAL=Control
+# MINMAF=0.01
+# MAXNOCALLS=100
+# OUTFILE=SchizophreniaSwedish_Sklar
 
-java -server -Xms1g -Xmx600g -XX:+UseG1GC -XX:+UseStringDeduplication -cp "build/install/gwas/lib/*" org.ncgr.gwas.VCFSegregation $1 \
-     -vf $VCFFILE \
-     -pf $PHENODIR/$PHENOFILE \
-     -sf $PHENODIR/$SAMPLEFILE \
-     -sv $SAMPLEVAR \
-     -dn $DISEASENAME \
-     -dv $DISEASEVAR \
-     -ccv $CASECONTROLVAR -caseval $CASEVAL -controlval $CONTROLVAL \
-     > $OUTFILE.seg.txt
+# java -server -Xms1g -Xmx600g -XX:+UseG1GC -XX:+UseStringDeduplication -cp "build/install/gwas/lib/*" org.ncgr.gwas.VCFSegregation $1 \
+#      -vf $VCFFILE \
+#      -pf $PHENODIR/$PHENOFILE \
+#      -sf $PHENODIR/$SAMPLEFILE \
+#      -sv $SAMPLEVAR \
+#      -dn $DISEASENAME \
+#      -dv $DISEASEVAR \
+#      -ccv $CASECONTROLVAR -caseval $CASEVAL -controlval $CONTROLVAL \
+#      > $OUTFILE.seg.txt
+
+VCFFILE="../pangenomics/SCD/HBB.vcf.gz"
+LABELFILE="../pangenomics/SCD/labels.txt"
+OUTFILE="HBB"
+
+java -server -cp "build/install/gwas/lib/*" org.ncgr.gwas.VCFSegregation -ip -maf 0.0 -vf $VCFFILE -lf $LABELFILE > $OUTFILE.seg.txt
