@@ -9,9 +9,10 @@ import java.io.Reader;
 
 import java.util.List;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Map;
 import java.util.HashMap;
-import java.util.Set;
+import java.util.TreeSet;
 
 import htsjdk.variant.variantcontext.Genotype;
 import htsjdk.variant.variantcontext.VariantContext;
@@ -27,12 +28,6 @@ public class VCFImporter {
 
     // verbosity flag
     public boolean verbose = false;
-
-    // skip-edges flag (to speed things up on big graphs)
-    public boolean skipEdges = false;
-
-    // skip-sequences flag (to reduce memory)
-    public boolean skipSequences = false;
 
     // the File we've imported
     public File vcfFile;
@@ -53,7 +48,7 @@ public class VCFImporter {
      *
      * NOTE: non-calls (./.) are treated as a true lack of sequence, i.e. no node is created for that sample at that location.
      */
-    public void read(File vcfFile) throws FileNotFoundException, IOException {
+    public void read(File vcfFile, boolean ignorePhasing) throws FileNotFoundException, IOException {
         if (verbose) System.out.print("Reading samples and nodes from VCF...");
         // initiate the class collections
         nodes = new ArrayList<>();
@@ -70,11 +65,29 @@ public class VCFImporter {
 	for (VariantContext vc : vcfReader) {
 	    for (String sampleName : sampleNameList) {
 		Genotype g = vc.getGenotype(sampleName);
-                String nodeString = vc.getContig()+"_"+vc.getStart()+"_"+vc.getEnd()+"_"+g.getGenotypeString();
+                String genotypeString = g.getGenotypeString();
+                if (ignorePhasing) {
+                    genotypeString = genotypeString.replace("|","/");
+                    String[] alleles = genotypeString.split("/");
+                    if (alleles.length>1 && !alleles[0].equals(alleles[1])) {
+                        TreeSet<String> sortedAlleles = new TreeSet<>(Arrays.asList(alleles));
+                        boolean first = true;
+                        genotypeString = "";
+                        for (String allele : sortedAlleles) {
+                            if (first) {
+                                first = false;
+                            } else {
+                                genotypeString += "/";
+                            }
+                            genotypeString += allele;
+                        }
+                    }
+                }
+                String nodeString = vc.getContig()+"_"+vc.getStart()+"_"+vc.getEnd()+"_"+genotypeString;
                 Node n = nodesMap.get(nodeString);
                 if (n==null) {
                     nodeId++;
-                    n = new Node(nodeId, vc.getID(), vc.getContig(), vc.getStart(), vc.getEnd(), g.getGenotypeString(), 0.0); // AF will be updated later
+                    n = new Node(nodeId, vc.getID(), vc.getContig(), vc.getStart(), vc.getEnd(), genotypeString, 0.0); // AF will be updated later
                     nodes.add(n);
                     nodesMap.put(nodeString, n);
                 }

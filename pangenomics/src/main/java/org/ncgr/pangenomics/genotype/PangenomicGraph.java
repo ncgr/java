@@ -565,7 +565,7 @@ public class PangenomicGraph extends DirectedAcyclicGraph<Node,Edge> {
      */
     public void loadVCF(File vcfFile) throws IOException {
         VCFImporter vcfImporter = new VCFImporter();
-        vcfImporter.read(vcfFile);
+        vcfImporter.read(vcfFile, true); // ignore phasing
         buildGraph(vcfImporter.nodes, vcfImporter.sampleNodesMap, vcfImporter.nodeSamplesMap);
     }
 

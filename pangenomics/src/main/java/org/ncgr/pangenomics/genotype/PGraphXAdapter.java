@@ -45,7 +45,7 @@ class PGraphXAdapter extends JGraphXAdapter<Node,Edge> {
         this.minorNodeFrac = minorNodeFrac;
 
         numPaths = graph.getPathCount();
-        
+
         // get the highlighted path edges
         if (highlightedPath!=null) {
             highlightedPathEdges = highlightedPath.getEdges();
@@ -138,11 +138,15 @@ class PGraphXAdapter extends JGraphXAdapter<Node,Edge> {
                         }
                         // set border color based on HOM/HET genotype
                         if (genotypeCalled) {
-                            String[] genotypes = n.genotype.split("/");
-                            if (genotypes[0].equals(genotypes[1])) {
-                                setCellStyles("strokeColor", STROKE_COLOR_HOM, cells);
-                            } else {
-                                setCellStyles("strokeColor", STROKE_COLOR_HET, cells);
+                            String[] alleles = new String[0];
+                            if (n.genotype.contains("/")) alleles = n.genotype.split("/"); // unphased
+                            if (n.genotype.contains("|")) alleles = n.genotype.split("/"); // phased
+                            if (alleles.length==2) {
+                                if (alleles[0].equals(alleles[1])) {
+                                    setCellStyles("strokeColor", STROKE_COLOR_HOM, cells);
+                                } else {
+                                    setCellStyles("strokeColor", STROKE_COLOR_HET, cells);
+                                }
                             }
                         }
                     }
