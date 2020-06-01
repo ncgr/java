@@ -1,2 +1,0 @@
-#!/bin/sh
-java -server -cp "build/install/fr/lib/*" SvmTester $1

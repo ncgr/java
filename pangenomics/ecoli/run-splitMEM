@@ -1,3 +1,0 @@
-#!/bin/sh
-splitMEM -file ecoli.pan3.fa -multiFa -mem 10 -cdg ecoli.pan3.dot
-dot -Tpdf ecoli.pan3.dot > ecoli.pan3.pdf
