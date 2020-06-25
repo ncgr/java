@@ -6,7 +6,7 @@ import org.biojava.nbio.genome.parsers.gff.Feature;
 import org.biojava.nbio.genome.parsers.gff.Location;
 
 /**
- * Extends Feature to include a GFF3 string constructor.
+ * Extends Feature to support strand in GFF3 output.
  */
 public class GFF3Feature extends Feature {
 
@@ -43,7 +43,7 @@ public class GFF3Feature extends Feature {
     }
 
     /**
-     * Return a Feature given a GFF3 record string.
+     * Return a Feature given a GFF3 record string. Location contains strand.
      */
     private static Feature getFeature(String gff3Record) {
     	String[] fields = gff3Record.split("\\t");
@@ -63,7 +63,7 @@ public class GFF3Feature extends Feature {
     }
 
     /**
-     * Return a GFF3 string representation
+     * Return a GFF3 string representation including a strand column.
      *
      * 0 seqid - name of the chromosome or scaffold
      * 1 source - name of the program that generated this feature, or the data source (database or project name)

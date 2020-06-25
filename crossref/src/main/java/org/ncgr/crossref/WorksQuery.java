@@ -136,6 +136,12 @@ public class WorksQuery {
             System.exit(1);
         }
 
+        for (Object key : wq.item.keySet()) {
+            if (key.toString().equals("reference")) continue;
+            System.out.println("=========================================================================================");
+            System.out.println(key.toString()+":"+wq.item.get(key).toString());
+        }
+        
         System.out.println("status:\t"+wq.getStatus());
         if (wq.getStatus().equals("ok")) {
             System.out.println("message-type:\t"+wq.getMessageType());
@@ -167,7 +173,7 @@ public class WorksQuery {
             System.out.print(wq.getVolume()+" [");
             System.out.print(wq.getIssue()+"], ");                    
             System.out.print(wq.getPage()+" (");
-            System.out.println(wq.getIssueMonth()+"/"+wq.getIssueYear()+")");
+            System.out.println(wq.getJournalIssueMonth()+"/"+wq.getJournalIssueYear()+")");
             System.out.println(wq.getLinkUrl());
             System.out.println("ISSN: print="+wq.getPrintISSN()+" electronic="+wq.getElectronicISSN());
             System.out.println("score="+wq.getScore());
@@ -359,49 +365,66 @@ public class WorksQuery {
         }
     }
 
-    public int getIssueYear() {
-	Object issuedObj = item.get("issued");
-	Object datePartsObj = item.get("date-parts");
-	if (issuedObj==null || datePartsObj==null) {
-	    return 0;
-	} else {
-            JSONObject issued = (JSONObject) issuedObj;
-            JSONArray dateParts = (JSONArray) datePartsObj;
-            JSONArray parts = (JSONArray) dateParts.get(0);
-            return (int)(long)(Long) parts.get(0);
-        }
+    /**
+     * journal-issue:{"published-print":{"date-parts":[[2010,5]]},"issue":"7"}
+     */
+    public int getJournalIssueYear() {
+	Object journalIssueObj = item.get("journal-issue");
+	if (journalIssueObj==null) return 0;
+        JSONObject journalIssue = (JSONObject) journalIssueObj;
+        JSONObject publishedPrint = (JSONObject) journalIssue.get("published-print");
+        JSONArray dateParts = (JSONArray) publishedPrint.get("date-parts");
+        JSONArray parts = (JSONArray) dateParts.get(0);
+        return (int)(long)(Long) parts.get(0);
     }
-    public int getIssueMonth() {
-	Object issuedObj = item.get("issued");
-	Object datePartsObj = item.get("date-parts");
-	if (issuedObj==null || datePartsObj==null) {
-	    return 0;
-	} else {
-            JSONObject issued = (JSONObject) item.get("issued");
-            JSONArray dateParts = (JSONArray) issued.get("date-parts");
-            JSONArray parts = (JSONArray) dateParts.get(0);
-            if (parts.size()>1) {
-                return (int)(long)(Long) parts.get(1);
-            } else {
-                return 0;
-            }
-        }
+
+    /**
+     * journal-issue:{"published-print":{"date-parts":[[2010,5]]},"issue":"7"}
+     */
+    public int getJournalIssueMonth() {
+	Object journalIssueObj = item.get("journal-issue");
+	if (journalIssueObj==null) return 0;
+        JSONObject journalIssue = (JSONObject) journalIssueObj;
+        JSONObject publishedPrint = (JSONObject) journalIssue.get("published-print");
+        JSONArray dateParts = (JSONArray) publishedPrint.get("date-parts");
+        JSONArray parts = (JSONArray) dateParts.get(0);
+        return (int)(long)(Long) parts.get(1);
     }
-    public int getIssueDay() {
+
+    /**
+     * issued:{"date-parts":[[2010,1,19]]}
+     */
+    public int getIssuedYear() {
 	Object issuedObj = item.get("issued");
-	Object datePartsObj = item.get("date-parts");
-	if (issuedObj==null || datePartsObj==null) {
-	    return 0;
-	} else {
-            JSONObject issued = (JSONObject) item.get("issued");
-            JSONArray dateParts = (JSONArray) issued.get("date-parts");
-            JSONArray parts = (JSONArray) dateParts.get(0);
-            if (parts.size()>2) {
-                return (int)(long)(Long) parts.get(2);
-            } else {
-                return 0;
-            }
-        }
+	if (issuedObj==null) return 0;
+        JSONObject issued = (JSONObject) issuedObj;
+        JSONArray dateParts = (JSONArray) issued.get("date-parts");
+        JSONArray parts = (JSONArray) dateParts.get(0);
+        return (int)(long)(Long) parts.get(0);
+    }
+
+    /**
+     * issued:{"date-parts":[[2010,1,19]]}
+     */
+    public int getIssuedMonth() {
+	Object issuedObj = item.get("issued");
+	if (issuedObj==null) return 0;
+        JSONObject issued = (JSONObject) issuedObj;
+        JSONArray dateParts = (JSONArray) issued.get("date-parts");
+        JSONArray parts = (JSONArray) dateParts.get(0);
+        return (int)(long)(Long) parts.get(1);
+    }
+    
+    /**
+     * issued:{"date-parts":[[2010,1,19]]}
+     */
+    public int getIssuedDay() {
+	Object issuedObj = item.get("issued");
+	if (issuedObj==null) return 0;
+        JSONObject issued = (JSONObject) issuedObj;
+        JSONArray dateParts = (JSONArray) issued.get("date-parts");
+        JSONArray parts = (JSONArray) dateParts.get(0);
+        return (int)(long)(Long) parts.get(2);
     }
 
     public String getPublisher() {
