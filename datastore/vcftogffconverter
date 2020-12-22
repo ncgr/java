@@ -1,0 +1,2 @@
+#!/bin/sh
+java -server -cp "build/install/datastore/lib/*" org.ncgr.datastore.VCFToGFFConverter $1 $2 $3
