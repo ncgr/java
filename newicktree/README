@@ -1,0 +1,36 @@
+What's this?
+============
+
+It's a Newick tree parser:
+
+   http://en.wikipedia.org/wiki/Newick_format
+
+This code is based on the libnewicktree project:
+
+   https://github.com/cjb/libnewicktree
+   
+which is in turn *entirely* taken from the TreeJuxtaposer project at:
+
+   http://olduvai.sourceforge.net/tj/index.shtml
+
+How can I use it?
+================
+
+You could do something like this:
+
+    File treeFile = new File("my_newick_tree_file");
+    Tree tree = TreeParser.readTree(treeFile);
+    int tree_height = tree.getHeight();
+    System.out.println("largest tree height is: " + tree_height);
+    recursivePrint(tree, 0, 0);
+
+    void recursivePrint (Tree tree, int currkey, int currdepth) {
+        TreeNode currNode = tree.getNodeByKey(currkey);
+        int numChildren = currNode.numberChildren();
+        for (int i = 0; i < numChildren; i++) {
+            int childkey = currNode.getChild(i).key;
+            TreeNode childnode = tree.getNodeByKey(childkey);
+            System.out.println("child name is: " + childnode.getName() + " depth is: " + currdepth);
+            recursive_print(childkey, currdepth+1);
+        }
+    }

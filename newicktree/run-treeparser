@@ -1,0 +1,2 @@
+#!/bin/sh
+java -server -cp "build/libs/newicktree.jar" org.ncgr.newicktree.TreeParser L_B027KP # L_B1X6CJ L_B3HCXZ
