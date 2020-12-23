@@ -500,10 +500,16 @@ public class TreeParser {
      * Read a Tree from a file.
      */
     public static Tree readTree(File file) throws FileNotFoundException {
-        BufferedReader reader = new BufferedReader(new FileReader(file));
-        TreeParser tp = new TreeParser(reader);
-        return tp.tokenize(file.length(), file.getName());
+        return readTree(new BufferedReader(new FileReader(file)), file.length(), file.getName());
     }
+
+    /**
+     * Read a Tree from a BufferedReader, supplying the length and name.
+     */
+    public static Tree readTree(BufferedReader reader, long length, String name) {
+        TreeParser tp = new TreeParser(reader);
+        return tp.tokenize(length, name);
+    }        
 
     /**
      * Test application function.
