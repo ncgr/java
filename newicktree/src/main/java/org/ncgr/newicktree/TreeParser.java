@@ -544,7 +544,7 @@ public class TreeParser {
             TreeNode childnode = tree.getNodeByKey(childkey);
             String childName = childnode.getName();
             if (childName.length()==0) childName = ".";
-            System.out.println("child name:"+childName+" depth="+currdepth+" weight="+childnode.weight);
+            System.out.println("child name:"+childName+" depth="+currdepth+" weight="+childnode.weight+" isRoot="+childnode.isRoot()+" isLeaf="+childnode.isLeaf());
             recursivePrint(tree, childkey, currdepth+1);
         }
     }
