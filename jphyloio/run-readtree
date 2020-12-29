@@ -3,5 +3,5 @@
 #NEWICKFILE=data/input/legfed_v1_0.L_001QTQ.nwk
 NEWICKFILE=data/input/legfed_v1_0.L_B027KP.nwk
 
-java -cp build/libs/JPhyloIO.jar:libs/bioinfweb-commons-java-bio-3.0.0.jar:libs/bioinfweb-commons-java-core-3.2.0.jar:libs/commons-collections4-4.1.jar:libs/owlapi-XMLUtils-4.1.4.jar \
+java -cp build/libs/jphyloio.jar:libs/bioinfweb-commons-java-bio-3.0.0.jar:libs/bioinfweb-commons-java-core-3.2.0.jar:libs/commons-collections4-4.1.jar:libs/owlapi-XMLUtils-4.1.4.jar \
        	ReadTree $NEWICKFILE
