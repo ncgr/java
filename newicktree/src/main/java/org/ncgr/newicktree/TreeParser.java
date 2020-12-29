@@ -109,7 +109,7 @@ public class TreeParser {
         } catch (FileNotFoundException e) {
             System.err.println("Could not find file to identify: " + fileName);
         } catch (IOException e) {
-            System.out.println("Couldn't identify file: " + fileName);
+            System.err.println("Couldn't identify file: " + fileName);
         }
         return returnValue;
     }
@@ -155,7 +155,7 @@ public class TreeParser {
                                 }
                                 else st.nextToken(); // eat a non-word while looking for first tree word
                                     
-                                //                                    System.out.println("Not a word while looking for a tree start tag: " + st.ttype);
+                                // System.out.println("Not a word while looking for a tree start tag: " + st.ttype);
                             }
                         }
                         // not a tree section, find the end tag or the next start tag
@@ -176,7 +176,7 @@ public class TreeParser {
             System.err.println("Could not find file to identify: " + fileName);
         }
         catch (IOException e) {
-            System.out.println("Couldn't identify file: " + fileName);
+            System.err.println("Couldn't identify file: " + fileName);
         }
         return returnList;
     }
@@ -187,8 +187,9 @@ public class TreeParser {
      * @param s Display the string, for debugging.
      */
     public void debugOutput(String s) {
-        if (debugOutput)
-            System.out.println(s);
+        if (debugOutput) {
+            System.err.println(s);
+        }
     }
 
     /**
@@ -200,25 +201,24 @@ public class TreeParser {
      * @return Newly added treeNode linked into the tree. 
      */
     private TreeNode popAndName(String name, Stack nodeStack) {
-        TreeNode topNode = (TreeNode)nodeStack.pop();
+        TreeNode topNode = (TreeNode) nodeStack.pop();
         if (name == null) {
             topNode.label = "";
             topNode.setName("");
-        }
-        else {
+        } else {
             topNode.label = name;
             topNode.setName(name);
         }
         try {
             TreeNode parent = (TreeNode) nodeStack.peek();
             parent.addChild(topNode);
-        }
-        catch (EmptyStackException e) {
-            if (topNode != rootNode)
-                System.out.println("Parser error on node " + topNode);
+        } catch (EmptyStackException e) {
+            if (topNode != rootNode) {
+                System.err.println("Non-fatal EmptyStackException on topNode " + topNode);
+            }
         }
         topNode.setExtremeLeaves(); // sets leftmost and rightmost leaf, non-recursive
-        topNode.setNumberLeaves(); // sets number of leaves, non-recursive
+        topNode.setNumberLeaves();  // sets number of leaves, non-recursive
         topNode.linkNodesInPreorder();
         topNode.linkNodesInPostorder();
         return topNode;
@@ -325,8 +325,9 @@ public class TreeParser {
         }
         catch (IOException e) {
         }
-        if (!nodeStack.isEmpty())
+        if (!nodeStack.isEmpty()) {
             System.err.println("Node stack still has " + nodeStack.size() + " things");
+        }
         t.postProcess();
         return t;
     }
@@ -540,7 +541,7 @@ public class TreeParser {
         TreeNode currNode = tree.getNodeByKey(currkey);
         int numChildren = currNode.numberChildren();
         for (int i = 0; i < numChildren; i++) {
-            int childkey = currNode.getChild(i).key;
+            int childkey = currNode.getChild(i).getKey();
             TreeNode childnode = tree.getNodeByKey(childkey);
             String childName = childnode.getName();
             if (childName.length()==0) childName = ".";

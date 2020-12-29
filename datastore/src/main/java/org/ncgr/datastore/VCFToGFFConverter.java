@@ -42,7 +42,7 @@ public class VCFToGFFConverter {
 		Allele alt = vc.getAlternateAlleles().get(0);
 		char strand = '.';
 		Location location = Location.fromBio(start, end, strand); // 1-based
-		String attributes = "ID="+id+";Alleles="+ref.toString()+"/"+alt.toString();
+		String attributes = "ID="+id+";Name="+id+";Alleles="+ref.toString()+"/"+alt.toString();
 		GFF3Feature feature = new GFF3Feature(contig, source, "genetic_marker", location, 0.0, 0, attributes);
 		System.out.println(feature.toString());
 	    }

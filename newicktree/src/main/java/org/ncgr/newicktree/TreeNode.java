@@ -2,6 +2,7 @@ package org.ncgr.newicktree;
 
 import java.io.IOException;
 
+import java.util.List;
 import java.util.ArrayList;
 
 /**
@@ -19,10 +20,10 @@ import java.util.ArrayList;
 public class TreeNode {
 
     /** Array of child nodes that are attached below this internal node.  Null if this is a leaf. */
-    protected ArrayList<TreeNode> children; // eventually turn this into an array (need to change parser)
+    private ArrayList<TreeNode> children; // eventually turn this into an array (need to change parser)
 
     /** key is unique for nodes in one tree.  Keys are pre-ordered (root = 0, depth-traversal ordering). */
-    public int key;
+    private int key;
 
     /** Score for a node in [0,1] that corresponds to the topological similarity between two tree drawers.
         @see TreePairs#getBestCorrNodeScore(Tree, TreeNode, Tree, int) */
@@ -45,10 +46,17 @@ public class TreeNode {
      * This is (1/2 of cell size + minY) for leaves, midway between first and last child edge for internal nodes. */
     private double midYPosition;
 
-    /**  Returns the minimum key value of nodes in the subtree rooted by this node.
-     * @return The index of the smallest descendant node (which is the key for this node). */
-    // this is the key for this node
-    public int getMin() {
+    /**
+     * Set this node's key.
+     */
+    public void setKey(int key) {
+        this.key = key;
+    }
+    
+    /**
+     * @return This node's key
+     */
+    public int getKey() {
         return key;
     }
 
@@ -65,6 +73,13 @@ public class TreeNode {
      */
     public String getName() {
         return name;
+    }
+
+    /**
+     * @return this node's children
+     */
+    public List<TreeNode> getChildren() {
+        return children;
     }
 
     /**
@@ -248,7 +263,7 @@ public class TreeNode {
     /** Get the first child of this node. Doesn't work with leaf nodes.
      * @return First child of this internal node.
      */
-    protected TreeNode firstChild() {
+    public TreeNode firstChild() {
         return children.get(0);
     }
 

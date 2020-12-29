@@ -214,7 +214,7 @@ public class Tree {
         for(TreeNode n = root; n != null; n = n.preorderNext)
             {
                 n.label = n.name;
-                n.key = index++;
+                n.setKey(index++);
                 nodes.add(n);
                 if(n.name != null && n.name.length() > 0) {
                     // don't put an empty string in the

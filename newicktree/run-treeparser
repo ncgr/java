@@ -1,2 +1,5 @@
 #!/bin/sh
-java -server -cp "build/libs/newicktree.jar" org.ncgr.newicktree.TreeParser L_B027KP # L_B1X6CJ L_B3HCXZ
+## no errors
+#java -cp "build/libs/newicktree.jar" org.ncgr.newicktree.TreeParser /data/LIS/Gene_families/legume.genefam.fam1.M65K/legume.genefam.fam1.M65K.trees_ML_rooted/legfed_v1_0.L_B027KP
+## errors
+java -cp "build/libs/newicktree.jar" org.ncgr.newicktree.TreeParser /data/LIS/Gene_families/legume.genefam.fam1.M65K/legume.genefam.fam1.M65K.trees_ML_rooted/legfed_v1_0.L_001QTQ
