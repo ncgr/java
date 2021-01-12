@@ -1,0 +1,10 @@
+#!/bin/sh
+cp -v build/libs/*.jar ~/lis-bio-sources/lis-phylotree/libs
+cp -v libs/*.jar ~/lis-bio-sources/lis-phylotree/libs
+
+for mine in beanmine chickpeamine cowpeamine legumemine lentilmine lotusmine lupinmine medicmine peanutmine soymine phylomine testmine
+do
+    cp -v build/libs/*.jar ~/$mine/libs
+    cp -v libs/*.jar ~/$mine/libs
+done
+
