@@ -33,6 +33,14 @@ import org.w3c.dom.Node;
 
 import org.xml.sax.SAXException;
 
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.CommandLineParser;
+import org.apache.commons.cli.DefaultParser;
+import org.apache.commons.cli.HelpFormatter;
+import org.apache.commons.cli.Option;
+import org.apache.commons.cli.Options;
+import org.apache.commons.cli.ParseException;
+
 /**
  * A reader that parses a PubMed eSummaryResult XML response.
  *
@@ -76,34 +84,6 @@ public class PubMedSummary {
     public Map<String,String> references = new LinkedHashMap<String,String>();
 
     /**
-     * Get a summary of a PMID without an API key.
-     */
-    public PubMedSummary(int id) throws IOException, UnsupportedEncodingException, ParserConfigurationException, SAXException {
-        search(id);
-    }
-
-    /**
-     * Get a summary of a PMID with an API key
-     */
-    public PubMedSummary(int id, String apiKey) throws IOException, UnsupportedEncodingException, ParserConfigurationException, SAXException {
-        search(id, apiKey);
-    }
-
-    /**
-     * Get a summary of the first match to title (if exists) without an API key.
-     */
-    public PubMedSummary(String title) throws IOException, UnsupportedEncodingException, ParserConfigurationException, SAXException {
-        search(title);
-    }
-
-    /**
-     * Get a summary of the first match to title (if exists) with an API key.
-     */
-    public PubMedSummary(String title, String apiKey) throws IOException, UnsupportedEncodingException, ParserConfigurationException, SAXException {
-        search(title, apiKey);
-    }
-
-    /**
      * Search given an id.
      */
     void search(int id) throws IOException, UnsupportedEncodingException, ParserConfigurationException, SAXException {
@@ -140,7 +120,7 @@ public class PubMedSummary {
     /**
      * Search for a title without an API key.
      */
-    void search(String title) throws IOException, UnsupportedEncodingException, ParserConfigurationException, SAXException {
+    void searchTitle(String title) throws IOException, UnsupportedEncodingException, ParserConfigurationException, SAXException {
         // URL without API key
         String searchUrl = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=pubmed&term="+URLEncoder.encode(title,"UTF-8")+"[Title]";
         // parse the URL response
@@ -183,7 +163,7 @@ public class PubMedSummary {
     /**
      * Search for a title with an API key.
      */
-    void search(String title, String apiKey) throws IOException, UnsupportedEncodingException, ParserConfigurationException, SAXException {
+    void searchTitle(String title, String apiKey) throws IOException, UnsupportedEncodingException, ParserConfigurationException, SAXException {
         // URL without API key
         String searchUrl = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=pubmed&api_key="+apiKey+"&term="+URLEncoder.encode(title,"UTF-8")+"[Title]";
         // parse the URL response
@@ -219,6 +199,78 @@ public class PubMedSummary {
                     // set the PMID=0 to indicate not found, leave rest of fields populated
                     this.id = 0;
                 }
+            }
+        }
+    }
+
+    /**
+     * Search for a DOI without an API key.
+     */
+    void searchDOI(String doi) throws IOException, UnsupportedEncodingException, ParserConfigurationException, SAXException {
+        // URL without API key
+        String searchUrl = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=pubmed&term="+URLEncoder.encode(doi,"UTF-8")+"[DOI]";
+        // parse the URL response
+        DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
+        DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
+        Document doc = dBuilder.parse(searchUrl);
+        doc.getDocumentElement().normalize(); // recommended
+        // if article exists, count>0
+        Node countNode = doc.getElementsByTagName("Count").item(0);
+        int count = Integer.parseInt(countNode.getTextContent());
+        int id = 0;
+        if (count>0) {
+            Node idNode = doc.getElementsByTagName("Id").item(0);
+            id = Integer.parseInt(idNode.getTextContent());
+        }
+        if (id>0) {
+            // summary URL without API key
+            String summaryUrl = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi?db=pubmed&id="+id;
+            // parse the URL response
+            dbFactory = DocumentBuilderFactory.newInstance();
+            dBuilder = dbFactory.newDocumentBuilder();
+            doc = dBuilder.parse(summaryUrl);
+            doc.getDocumentElement().normalize(); // recommended
+            // if article doesn't exist, response has ERROR tag
+            boolean exists = doc.getElementsByTagName("ERROR").item(0)==null;
+            // parse
+            if (exists) {
+                parse(doc);
+            }
+        }
+    }
+
+    /**
+     * Search for a DOI with an API key.
+     */
+    void searchDOI(String doi, String apiKey) throws IOException, UnsupportedEncodingException, ParserConfigurationException, SAXException {
+        // URL without API key
+        String searchUrl = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=pubmed&api_key="+apiKey+"&term="+URLEncoder.encode(doi,"UTF-8")+"[DOI]";
+        // parse the URL response
+        DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
+        DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
+        Document doc = dBuilder.parse(searchUrl);
+        doc.getDocumentElement().normalize(); // recommended
+        // if article exists, count>0
+        Node countNode = doc.getElementsByTagName("Count").item(0);
+        int count = Integer.parseInt(countNode.getTextContent());
+        int id = 0;
+        if (count>0) {
+            Node idNode = doc.getElementsByTagName("Id").item(0);
+            id = Integer.parseInt(idNode.getTextContent());
+        }
+        if (id>0) {
+            // summary URL without API key
+            String summaryUrl = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi?db=pubmed&api_key="+apiKey+"&id="+id;
+            // parse the URL response
+            dbFactory = DocumentBuilderFactory.newInstance();
+            dBuilder = dbFactory.newDocumentBuilder();
+            doc = dBuilder.parse(summaryUrl);
+            doc.getDocumentElement().normalize(); // recommended
+            // if article doesn't exist, response has ERROR tag
+            boolean exists = doc.getElementsByTagName("ERROR").item(0)==null;
+            // parse
+            if (exists) {
+                parse(doc);
             }
         }
     }
@@ -346,47 +398,59 @@ public class PubMedSummary {
     }
 
     /**
-     * Handy command-line query
+     * Command-line queries
      */
-    public static void main(String[] args) {
-        
-        String input = "";
-        
-        if (args.length==0) {
-            System.err.println("Usage: PubMedSummary PMID|Title");
-            System.exit(1);
-        } else {
-            // concatenate the args with spaces
-            for (int i=0; i<args.length; i++) {
-                if (i>0) input += " ";
-                input += args[i];
-            }
-        }
-
+    public static void main(String[] args) throws IOException, ParserConfigurationException, SAXException {
+        Options options = new Options();
+        CommandLineParser parser = new DefaultParser();
+        HelpFormatter formatter = new HelpFormatter();
+        CommandLine cmd;
+        //
+        Option pmidOption = new Option("p", "pmid", true, "value of PMID for search");
+        pmidOption.setRequired(false);
+        options.addOption(pmidOption);
+        //
+        Option titleOption = new Option("t", "title", true, "value of title for search");
+        titleOption.setRequired(false);
+        options.addOption(titleOption);
+        //
+        Option doiOption = new Option("d", "doi", true, "value of DOI for search");
+        doiOption.setRequired(false);
+        options.addOption(doiOption);
+        //
         try {
-
-            PubMedSummary pms;
-            try {
-                int id = Integer.parseInt(input);
-                System.out.println("Search for PMID="+id);
-                System.out.println("");
-                pms = new PubMedSummary(id);
-            } catch (Exception e) {
-                String title = input;
-                System.out.println("Search for title="+title);
-                System.out.println("");
-                pms = new PubMedSummary(title);
-            }
-            
-            if (pms.id==0) System.out.println("***** No match found for PMID or title:"+input);
-            System.out.println(pms.toString());
-                
-        } catch (Exception ex) {
-            System.err.println(ex.toString());
+            cmd = parser.parse(options, args);
+        } catch (ParseException e) {
+            System.err.println(e.getMessage());
+            formatter.printHelp("PubMedSummary", options);
             System.exit(1);
+            return;
         }
-        
+        if (cmd.getOptions().length==0) {
+            formatter.printHelp("PubMedSummary", options);
+            System.exit(1);
+            return;
+        }        
+        // search
+        PubMedSummary pms = new PubMedSummary();
+        if (cmd.hasOption("pmid")) {
+            int id = Integer.parseInt(cmd.getOptionValue("pmid"));
+            System.out.println("Search for PMID="+id);
+            System.out.println("");
+            pms.search(id);
+        } else if (cmd.hasOption("title")) {
+            String title = cmd.getOptionValue("title");
+            System.out.println("Search for title="+title);
+            System.out.println("");
+            pms.searchTitle(title);
+        } else if (cmd.hasOption("doi")) {
+            String doi = cmd.getOptionValue("doi");
+            System.out.println("Search for DOI="+doi);
+            System.out.println("");
+            pms.searchDOI(doi);
+        }
+        // output
+        System.out.println(pms.toString());
     }
-
 }
 

@@ -32,6 +32,11 @@ dependencies {
     // https://mvnrepository.com/artifact/org.ogce/xpp3
     compile group: 'org.ogce', name: 'xpp3', version: '1.1.6'
 
+    // https://mvnrepository.com/artifact/commons-cli/commons-cli
+    implementation group: 'commons-cli', name: 'commons-cli', version: '1.4'
+
+    // https://mvnrepository.com/artifact/javax.xml.bind/jaxb-api
+    implementation group: 'javax.xml.bind', name: 'jaxb-api', version: '2.3.1'
 }
 
 // In this section you declare where to find the dependencies of your project

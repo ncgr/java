@@ -1,0 +1,6 @@
+#!/bin/sh
+rm -f expt.tsv
+rm -f mark.tsv
+rm -f qtl.tsv
+#java -server -cp "build/install/datastore/lib/*" org.ncgr.datastore.CmapConverter /data/legfed-intermine-data/soybean-cmap/Soybean-GmComposite2003.txt
+java -server -cp "build/install/datastore/lib/*" org.ncgr.datastore.CmapConverter /data/LIS/Phaseolus_vulgaris/mixed.map.7PMp/phavu.mixed.map1.7PMp.cmap.txt
