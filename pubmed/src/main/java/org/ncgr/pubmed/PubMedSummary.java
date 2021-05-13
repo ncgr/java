@@ -86,7 +86,7 @@ public class PubMedSummary {
     /**
      * Search given an id.
      */
-    void search(int id) throws IOException, UnsupportedEncodingException, ParserConfigurationException, SAXException {
+    public void search(int id) throws IOException, UnsupportedEncodingException, ParserConfigurationException, SAXException {
         // URL without API key
         String url = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi?db=pubmed&id="+id;
         // parse the URL response
@@ -103,7 +103,7 @@ public class PubMedSummary {
     /**
      * Search given an id and API key.
      */
-    void search(int id, String apiKey) throws IOException, UnsupportedEncodingException, ParserConfigurationException, SAXException {
+    public void search(int id, String apiKey) throws IOException, UnsupportedEncodingException, ParserConfigurationException, SAXException {
         // URL with API key
         String url = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi?db=pubmed&api_key="+apiKey+"&id="+id;
         // parse the URL response
@@ -120,7 +120,7 @@ public class PubMedSummary {
     /**
      * Search for a title without an API key.
      */
-    void searchTitle(String title) throws IOException, UnsupportedEncodingException, ParserConfigurationException, SAXException {
+    public void searchTitle(String title) throws IOException, UnsupportedEncodingException, ParserConfigurationException, SAXException {
         // URL without API key
         String searchUrl = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=pubmed&term="+URLEncoder.encode(title,"UTF-8")+"[Title]";
         // parse the URL response
@@ -163,7 +163,7 @@ public class PubMedSummary {
     /**
      * Search for a title with an API key.
      */
-    void searchTitle(String title, String apiKey) throws IOException, UnsupportedEncodingException, ParserConfigurationException, SAXException {
+    public void searchTitle(String title, String apiKey) throws IOException, UnsupportedEncodingException, ParserConfigurationException, SAXException {
         // URL without API key
         String searchUrl = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=pubmed&api_key="+apiKey+"&term="+URLEncoder.encode(title,"UTF-8")+"[Title]";
         // parse the URL response
@@ -206,7 +206,7 @@ public class PubMedSummary {
     /**
      * Search for a DOI without an API key.
      */
-    void searchDOI(String doi) throws IOException, UnsupportedEncodingException, ParserConfigurationException, SAXException {
+    public void searchDOI(String doi) throws IOException, UnsupportedEncodingException, ParserConfigurationException, SAXException {
         // URL without API key
         String searchUrl = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=pubmed&term="+URLEncoder.encode(doi,"UTF-8")+"[DOI]";
         // parse the URL response
@@ -242,7 +242,7 @@ public class PubMedSummary {
     /**
      * Search for a DOI with an API key.
      */
-    void searchDOI(String doi, String apiKey) throws IOException, UnsupportedEncodingException, ParserConfigurationException, SAXException {
+    public void searchDOI(String doi, String apiKey) throws IOException, UnsupportedEncodingException, ParserConfigurationException, SAXException {
         // URL without API key
         String searchUrl = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=pubmed&api_key="+apiKey+"&term="+URLEncoder.encode(doi,"UTF-8")+"[DOI]";
         // parse the URL response
