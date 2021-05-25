@@ -32,7 +32,8 @@ public class PubMedPublication {
      */
     public PubMedPublication(DataConverter converter, int pmid) throws IOException, UnsupportedEncodingException, ParserConfigurationException, SAXException {
         // get the summary
-        summary = new PubMedSummary(pmid);
+        summary = new PubMedSummary();
+        summary.search(pmid);
         if (summary.id!=0) {
             // create and populate the Publication Item
             publication = converter.createItem("Publication");

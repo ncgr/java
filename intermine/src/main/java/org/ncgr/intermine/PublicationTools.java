@@ -74,7 +74,8 @@ import org.xml.sax.SAXException;
 public class PublicationTools {
 
     public static Item getPublicationFromPMID(DataConverter converter, int pmid) throws IOException, UnsupportedEncodingException, ParserConfigurationException, SAXException {
-        PubMedSummary summary = new PubMedSummary(pmid);
+        PubMedSummary summary = new PubMedSummary();
+        summary.search(pmid);
         // the publication Item
         Item publication = converter.createItem("Publication");
         publication.setAttribute("year", String.valueOf(getYear(summary.pubDate)));

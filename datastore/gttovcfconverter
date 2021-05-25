@@ -1,0 +1,24 @@
+#!/bin/sh
+## Usage: GTtoVCFConverter <gt file> <marker GFF file> <output VCF file>
+
+# cowpea-genotyping/
+# ├── CB27_x_IT82E-18.gt
+# ├── CB46_x_IT93K-503-1.gt
+# ├── README
+# ├── Sanzi_x_Vita7.gt
+# ├── tpj13827-sup-0004-DataS1.gt
+# ├── TVu-14676_x_IT84S-2246-4.gt
+# └── ZN016_x_Zhijiang282.gt
+
+GFFFILE=/data/LIS/Vigna_unguiculata/IT97K-499-35.gnm1.mrk.52FC/vigun.IT97K-499-35.gnm1.mrk.52FC.Cowpea1MSelectedSNPs.gff3
+
+# GTFILE=/data/legfed-intermine-data/cowpea-genotyping/tpj13827-sup-0004-DataS1.gt
+# OUTFILE=/data/LIS/Vigna_unguiculata/vigun.IT97K-499-35.gnm1.div.tpj13827-sup-0004-DataS1.vcf
+
+# GTFILE=/data/legfed-intermine-data/cowpea-genotyping/CB27_x_IT82E-18.gt
+# OUTFILE=/data/LIS/Vigna_unguiculata/vigun.IT97K-499-35.gnm1.div.CB27_x_IT82E-18.vcf
+
+GTFILE=/data/legfed-intermine-data/cowpea-genotyping/CB46_x_IT93K-503-1.gt
+OUTFILE=/data/LIS/Vigna_unguiculata/vigun.IT97K-499-35.gnm1.div.CB46_x_IT93K-503-1.vcf
+
+java -server -cp "build/install/datastore/lib/*" org.ncgr.datastore.GTtoVCFConverter $GTFILE $GFFFILE $OUTFILE
