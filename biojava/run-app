@@ -1,0 +1,2 @@
+#!/bin/sh
+java -cp "app/build/install/app/lib/*" org.ncgr.biojava.App $1

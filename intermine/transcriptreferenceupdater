@@ -1,3 +1,4 @@
 #!/bin/sh
 cp ~/.intermine/$1.properties src/main/resources/intermine.properties
+./gradlew installdist
 java -cp "build/install/ncgr-intermine/lib/*" org.ncgr.intermine.TranscriptReferenceUpdater
