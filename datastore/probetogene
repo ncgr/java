@@ -1,0 +1,9 @@
+#!/bin/sh
+## Usage: ProbeToGene <probe-gene file> <expression file>
+
+PROBEFILE=/data/mudvardi-mtgea/JCVI-Mt4.0v2-gene.vs.affx-1.kgb.synonymy.tsv
+EXPRESSIONFILE=/data/mudvardi-mtgea/expression.txt
+
+OUTPUTFILE=/data/v2/Medicago/truncatula/expression/A17_HM341.gnm4.ann2.expr.RLZY/A17_HM341.gnm4.ann2.expr.RLZY.values.new
+
+java -server -cp "build/install/datastore/lib/*" org.ncgr.datastore.ProbeToGene $PROBEFILE $EXPRESSIONFILE > $OUTPUTFILE
