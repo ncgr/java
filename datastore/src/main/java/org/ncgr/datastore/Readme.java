@@ -20,7 +20,7 @@ public class Readme {
     public String synopsis; 
     public String related_to; 
     public String scientific_name; 
-    public String taxid; 
+    public int taxid; 
     public String scientific_name_abbrev; 
     public String[] genotype; 
     public String description; 

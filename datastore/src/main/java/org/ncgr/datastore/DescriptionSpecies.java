@@ -61,7 +61,7 @@ import com.fasterxml.jackson.dataformat.yaml.YAMLMapper;
 public class DescriptionSpecies {
 
     // species attributes
-    public String taxid;
+    public int taxid;
     public String genus;
     public String species;
     public String abbrev;
