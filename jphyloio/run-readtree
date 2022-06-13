@@ -1,7 +1,4 @@
 #!/bin/sh
+NEWICKFILE=/data/v2/LEGUMES/Fabaceae/genefamilies/legume.genefam.fam1.M65K/legume.genefam.fam1.M65K.trees_ML_rooted/legfed_v1_0.L_VNJ086
 
-#NEWICKFILE=data/input/legfed_v1_0.L_001QTQ.nwk
-NEWICKFILE=data/input/legfed_v1_0.L_B027KP.nwk
-
-java -cp build/libs/ncgr-jphyloio.jar:libs/bioinfweb-commons-java-bio-3.0.0.jar:libs/bioinfweb-commons-java-core-3.2.0.jar:libs/commons-collections4-4.1.jar:libs/owlapi-XMLUtils-4.1.4.jar \
-       	ReadTree $NEWICKFILE
+java -classpath "build/install/ncgr-jphyloio/lib/*" ReadTree $NEWICKFILE

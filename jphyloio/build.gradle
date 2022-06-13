@@ -9,6 +9,7 @@
 plugins {
     // Apply the java-library plugin to add support for Java Library
     id 'java-library'
+    id 'application'
 }
 
 repositories {
@@ -18,15 +19,6 @@ repositories {
 }
 
 dependencies {
-    // This dependency is exported to consumers, that is to say found on their compile classpath.
-    api 'org.apache.commons:commons-math3:3.6.1'
-
-    // This dependency is used internally, and not exposed to consumers on their own compile classpath.
-    implementation 'com.google.guava:guava:28.1-jre'
-
-    // Use JUnit test framework
-    testImplementation 'junit:junit:4.12'
-
     // https://mvnrepository.com/artifact/javax.xml.bind/jaxb-api
     implementation group: 'javax.xml.bind', name: 'jaxb-api', version: '2.4.0-b180830.0359'
 
@@ -41,4 +33,7 @@ dependencies {
 
     // https://mvnrepository.com/artifact/org.apache.commons/commons-lang3
     implementation group: 'org.apache.commons', name: 'commons-lang3', version: '3.5'
+
+    // https://mvnrepository.com/artifact/net.sourceforge.owlapi/owlapi-api
+    implementation group: 'net.sourceforge.owlapi', name: 'owlapi-api', version: '5.1.20'
 }

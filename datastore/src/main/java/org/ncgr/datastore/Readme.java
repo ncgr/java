@@ -40,6 +40,7 @@ public class Readme {
     public String citation;
 
     // source-specific attributes
+    public String genetic_map;
     public String genotyping_platform;
     public String genotyping_method;
     public String expression_unit;
@@ -78,4 +79,3 @@ public class Readme {
         Readme readme = Readme.parse(filename);
     }
 }
-

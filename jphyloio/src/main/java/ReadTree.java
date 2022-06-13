@@ -39,6 +39,7 @@ public class ReadTree {
                 System.err.println("File format is not a Newick file: "+formatID);
                 return;
             }
+            System.out.println("Format: "+formatID);
             // read the tree
             readTree(factory, inputFile);
         } catch (Exception e) {
@@ -51,19 +52,30 @@ public class ReadTree {
      */
     static void readTree(JPhyloIOReaderWriterFactory factory, File file) throws Exception {
         ReadWriteParameterMap parameters = new ReadWriteParameterMap();
+
         // Use OTU labels as node labels if no node label is present.
         parameters.put(ReadWriteParameterNames.KEY_USE_OTU_LABEL, true);  
+
         // This parameter defines if cross links between nodes (defined by the clade_relation tag of PhyloXML) should be
         // modeled as metadata attached to a node or if the whole phylogeny shall be interpreted as a phylogenetic network.
         // Since the network interpretation is the default, we need to set this parameter in order to receive tree events
         // and not network events.
-        parameters.put(ReadWriteParameterNames.KEY_PHYLOXML_CONSIDER_PHYLOGENY_AS_TREE, true);
+        
+        // commenting out doesn't help
+        // parameters.put(ReadWriteParameterNames.KEY_PHYLOXML_CONSIDER_PHYLOGENY_AS_TREE, true);
 
-        NewickEventReader reader = new NewickEventReader​(file, parameters);
+        // TEST - doesn't help
+        // parameters.put(ReadWriteParameterNames.KEY_EXPECT_E_NEWICK, true);
+
+        //NewickEventReader reader = new NewickEventReader​(file, parameters);
+        NewickEventReader reader = new NewickEventReader(file, parameters);
 
         // This loop will run until all events of the JPhyloIO reader are consumed (and the end of the document is reached). 
         while (reader.hasNextEvent()) {
             JPhyloIOEvent event = reader.next();
+            // DEBUG
+            System.out.println("## "+event.getType().toString());
+            //
             if (event.getType().getTopologyType().equals(EventTopologyType.START)) {
                 switch (event.getType().getContentType()) {
                 case ALIGNMENT:
