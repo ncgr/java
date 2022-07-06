@@ -1,0 +1,4 @@
+#!/bin/sh
+for f in `ls -d ~/lis-bio-sources/*/libs`; do
+    cp ncgr-zip/build/libs/ncgr-zip.jar $f
+done
