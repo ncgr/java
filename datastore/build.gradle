@@ -38,6 +38,12 @@ dependencies {
     implementation group: 'com.github.samtools', name: 'htsjdk', version: '2.16.1'
 
     implementation group: 'com.fasterxml.jackson.dataformat', name: 'jackson-dataformat-yaml', version: '2.12.1'
+
+    // https://mvnrepository.com/artifact/org.slf4j/slf4j-api
+    implementation group: 'org.slf4j', name: 'slf4j-api', version: '1.7.36'
+    // https://mvnrepository.com/artifact/org.slf4j/slf4j-nop
+    testImplementation group: 'org.slf4j', name: 'slf4j-nop', version: '1.7.36'
+
 }
 
 // In this section you declare where to find the dependencies of your project
