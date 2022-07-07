@@ -6,8 +6,8 @@ Java class representation of a README file, along with a method to load it from 
 ## org.ncgr.datastore.CollectionValidator.java
 The abstract class to be extended by all validators.
 
-## org.ncgr.datastore.validation.AnnotationCollectionValidator.java
+### org.ncgr.datastore.validation.AnnotationCollectionValidator.java
 Validates an /annotations/ collection.
 
-## org.ncgr.datastore.validation.GenomeCollectionValidator.java
+### org.ncgr.datastore.validation.GenomeCollectionValidator.java
 Validates a /genomes/ collection.
