@@ -49,38 +49,34 @@ public class AnnotationCollectionValidator extends CollectionValidator {
         // check that the required files are present
         for (String fileType : requiredFileTypes) {
             if (!validator.dataFileExists(fileType)) {
-                validator.printError("Required file type "+fileType+" is not present in collection.");
+                validator.printErrorAndExit("Required file type "+fileType+" is not present in collection.");
             }
         }
 
-        // gene_models_main.gff3.gz
-        if (validator.dataFileExists("gene_models_main.gff3.gz")) {
-            try {
-                File file = validator.getDataFile("gene_models_main.gff3.gz");
-                System.out.println("## "+file.getName());
-                // uncompress the gff3.gz file
-                File tempfile = new File(TEMPGENEFILE);
-                tempfile.delete();
-                BufferedWriter writer = new BufferedWriter(new FileWriter(tempfile));
-                BufferedReader reader = GZIPBufferedReader.getReader(file);
-                String line = null;
-                while ( (line=reader.readLine())!=null ) {
-                    writer.write(line);
-                    writer.newLine();
-                }
-                writer.close();
-                // validate the uncompressed GFF3 file
-                HashSet<String> features = new HashSet<>();
-                FeatureList featureList = GFF3Reader.read(TEMPGENEFILE);
-                for (FeatureI featureI : featureList) {
-                    validator.validateGenomicFeatureI(featureI, features);
-                }
-            } catch (Exception ex) {
-                validator.printError(ex.getMessage());
+        // gene_models_main.gff3.gz (required)
+        try {
+            File file = validator.getDataFile("gene_models_main.gff3.gz");
+            System.out.println("## "+file.getName());
+            // uncompress the gff3.gz file
+            File tempfile = new File(TEMPGENEFILE);
+            tempfile.delete();
+            BufferedWriter writer = new BufferedWriter(new FileWriter(tempfile));
+            BufferedReader reader = GZIPBufferedReader.getReader(file);
+            String line = null;
+            while ( (line=reader.readLine())!=null ) {
+                writer.write(line);
+                writer.newLine();
             }
-        } else {
-            validator.printError("Required file type gene_models_main.gff3.gz is not present in collection.");
-        }            
+            writer.close();
+            // validate the uncompressed GFF3 file
+            HashSet<String> features = new HashSet<>();
+            FeatureList featureList = GFF3Reader.read(TEMPGENEFILE);
+            for (FeatureI featureI : featureList) {
+                validator.validateGenomicFeatureI(featureI, features);
+            }
+        } catch (Exception ex) {
+            validator.printError(ex.getMessage());
+        }
 
         // protein.faa.gz AND/OR protein_primary.faa.gz
         boolean proteinPresent = false;

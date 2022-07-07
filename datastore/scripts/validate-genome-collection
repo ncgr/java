@@ -1,0 +1,3 @@
+#!/bin/sh
+
+java -cp "./build/install/ncgr-datastore/lib/*" org.ncgr.datastore.validation.GenomeCollectionValidator $1
