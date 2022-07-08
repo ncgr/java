@@ -8,7 +8,6 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.util.Arrays;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 
@@ -26,15 +25,12 @@ public class AnnotationCollectionValidator extends CollectionValidator {
     private static final String TEMPGENEFILE = "/tmp/gene_models_main.gff3";
     private static final String TEMPIPRSCANFILE = "/tmp/iprscan.gff3";
 
-    public static List<String> requiredFileTypes = Arrays.asList("gene_models_main.gff3.gz");
-
     /**
      * Construct from an annotation directory
      */
     public AnnotationCollectionValidator(String dirString) {
         setVars(dirString);
-        System.out.println("## ------------------------------------------------------------------------------");
-        System.out.println("## Validating annotation collection "+collection+" with gensp="+gensp);
+        requiredFileTypes = Arrays.asList("gene_models_main.gff3.gz");
     }
 
     public static void main(String[] args) {
@@ -43,20 +39,15 @@ public class AnnotationCollectionValidator extends CollectionValidator {
             System.exit(1);
         }
 
-        // construct our validator
+        // construct our validator and check required files
         AnnotationCollectionValidator validator = new AnnotationCollectionValidator(args[0]);
-
-        // check that the required files are present
-        for (String fileType : requiredFileTypes) {
-            if (!validator.dataFileExists(fileType)) {
-                validator.printErrorAndExit("Required file type "+fileType+" is not present in collection.");
-            }
-        }
+        validator.printHeader();
+        validator.checkRequiredFiles();
 
         // gene_models_main.gff3.gz (required)
         try {
             File file = validator.getDataFile("gene_models_main.gff3.gz");
-            System.out.println("## "+file.getName());
+            System.out.println(" - "+file.getName());
             // uncompress the gff3.gz file
             File tempfile = new File(TEMPGENEFILE);
             tempfile.delete();
@@ -69,10 +60,21 @@ public class AnnotationCollectionValidator extends CollectionValidator {
             }
             writer.close();
             // validate the uncompressed GFF3 file
-            HashSet<String> features = new HashSet<>();
             FeatureList featureList = GFF3Reader.read(TEMPGENEFILE);
             for (FeatureI featureI : featureList) {
-                validator.validateGenomicFeatureI(featureI, features);
+                if (!validator.hasValidSeqname(featureI)) {
+                    validator.printError(file.getName()+" has an invalid seqname:");
+                    validator.printError(featureI.toString());
+                }
+                if (!validator.hasValidGenomicID(featureI)) {
+                    validator.printError(file.getName()+" has an invalid ID attribute:");
+                    validator.printError(featureI.toString());
+                }
+                if (!validator.hasValidParent(featureI)) {
+                    validator.printError(file.getName()+" has an invalid parent attribute; does the file need sorting?");
+                    validator.printError(featureI.toString());
+                }
+                if (!validator.valid) break;
             }
         } catch (Exception ex) {
             validator.printError(ex.getMessage());
@@ -85,10 +87,10 @@ public class AnnotationCollectionValidator extends CollectionValidator {
                 proteinPresent = true;
                 try {
                     File file = validator.getDataFile(fileType);
-                    System.out.println("## "+file.getName());
+                    System.out.println(" - "+file.getName());
                     Map<String,ProteinSequence> sequenceMap = GZIPFastaReader.readFastaProteinSequence(file);
                     for (ProteinSequence sequence : sequenceMap.values()) {
-                        validator.validateSequence(sequence);
+                        validator.validateSequenceIdentifier(file, sequence);
                     }
                 } catch (Exception ex) {
                     validator.printError(ex.getMessage());
@@ -106,10 +108,10 @@ public class AnnotationCollectionValidator extends CollectionValidator {
                 cdsPresent = true;
                 try {
                     File file = validator.getDataFile(fileType);
-                    System.out.println("## "+file.getName());
+                    System.out.println(" - "+file.getName());
                     Map<String,DNASequence> sequenceMap = GZIPFastaReader.readFastaDNASequence(file);
                     for (DNASequence sequence : sequenceMap.values()) {
-                        validator.validateSequence(sequence);
+                        validator.validateSequenceIdentifier(file, sequence);
                     }
                 } catch (Exception ex) {
                     validator.printError(ex.getMessage());
@@ -127,10 +129,10 @@ public class AnnotationCollectionValidator extends CollectionValidator {
                 mrnaPresent = true;
                 try {
                     File file = validator.getDataFile(fileType);
-                    System.out.println("## "+file.getName());
+                    System.out.println(" - "+file.getName());
                     Map<String,DNASequence> sequenceMap = GZIPFastaReader.readFastaDNASequence(file);
                     for (DNASequence sequence : sequenceMap.values()) {
-                        validator.validateSequence(sequence);
+                        validator.validateSequenceIdentifier(file, sequence);
                     }
                 } catch (Exception ex) {
                     validator.printError(ex.getMessage());
@@ -145,7 +147,7 @@ public class AnnotationCollectionValidator extends CollectionValidator {
         if (validator.dataFileExists("iprscan.gff3.gz")) {
             try {
                 File file = validator.getDataFile("iprscan.gff3.gz");
-                System.out.println("## "+file.getName());
+                System.out.println(" - "+file.getName());
                 // uncompress the gff3.gz file
                 File tempfile = new File(TEMPIPRSCANFILE);
                 tempfile.delete();
@@ -160,7 +162,11 @@ public class AnnotationCollectionValidator extends CollectionValidator {
                 // validate the uncompressed GFF3 file
                 FeatureList featureList = GFF3Reader.read(TEMPIPRSCANFILE);
                 for (FeatureI featureI : featureList) {
-                    validator.validateIPRScanFeatureI(featureI);
+                    if (!validator.hasValidSeqname(featureI)) {
+                        validator.printError(file.getName()+" has an invalid seqname:");
+                        validator.printError(featureI.toString());
+                    }
+                    if (!validator.valid) break;
                 }
             } catch (Exception ex) {
                 validator.printError(ex.getMessage());
@@ -170,13 +176,13 @@ public class AnnotationCollectionValidator extends CollectionValidator {
         // legfed_v1_0.M65K.gfa.tsv.gz NO VALIDATION
         if (validator.dataFileExists("legfed_v1_0.M65K.gfa.tsv.gz")) {
             File file = validator.getDataFile("legfed_v1_0.M65K.gfa.tsv.gz");
-            System.out.println("## "+file.getName()+" (no validation)");
+            System.out.println(" - "+file.getName()+" (no validation)");
         }
 
         // legfed_v1_0.M65K.gfa.tsv.gz NO VALIDATION
         if (validator.dataFileExists("legfed_v1_0.M65K.pathway.tsv.gz")) {
             File file = validator.getDataFile("legfed_v1_0.M65K.pathway.tsv.gz");
-            System.out.println("## "+file.getName()+" (no validation)");
+            System.out.println(" - "+file.getName()+" (no validation)");
         }
         
         // valid!
@@ -184,4 +190,3 @@ public class AnnotationCollectionValidator extends CollectionValidator {
     }
 
 }
-    

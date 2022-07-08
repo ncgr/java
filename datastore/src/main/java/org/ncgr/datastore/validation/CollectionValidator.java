@@ -6,6 +6,7 @@ import java.io.File;
 import java.io.IOException;
 
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 
 import org.biojava.nbio.core.sequence.template.AbstractSequence;
@@ -18,13 +19,29 @@ import org.biojava.nbio.genome.parsers.gff.Location;
  */
 public abstract class CollectionValidator {
 
+    final static String NC="\033[0m";    // no color
+    final static String RD="\033[1;31m"; // red
+    final static String GR="\033[1;32m"; // green
+    final static String LP="\033[1;35m"; // light purple
+    
     File dir;
     Readme readme;
-    String collection;
     String gensp;
-    String collectionSansKey4;
-    String collectionSansAnnKey4;
+    String collection;         // Strain.gnm.x.y.z.KEY4
+    String collectionSansKey4; // Strain.gnm.x.y.z
+    String genspStrainGnm;     // gensp.Strain.gnm
     boolean valid = true;
+    List<String> requiredFileTypes;
+
+    HashSet<String> features = new HashSet<>(); // utility for keeping track of GFF parents
+
+    /**
+     * Print out a couple header lines
+     */
+    public void printHeader() {
+        System.out.println("--------------------------------------------------------------------------------");
+        System.out.println("### Validating "+purple(gensp)+" collection "+purple(collection));
+    }
 
     /**
      * Use this to construct in an extending class.
@@ -33,13 +50,13 @@ public abstract class CollectionValidator {
         // dir
         this.dir = new File(dirString);
         if (!dir.exists() || !dir.isDirectory()) {
-            printErrorAndExit(dirString+" does not exist or is not a directory.");
+            printErrorAndExit(red(dirString)+" does not exist or is not a directory.");
         }
         // collection from dirname
         this.collection = dir.getName();
         File readmeFile = new File(dir, "README."+collection+".yml");
         if (!readmeFile.exists()) {
-            printErrorAndExit("README file "+readmeFile.getName()+" is not present in collection.");
+            printErrorAndExit(red(readmeFile.getName())+" is not present in collection "+purple(collection));
         }
         // readme
         try {
@@ -49,14 +66,14 @@ public abstract class CollectionValidator {
         }
         // README identifier = collection
         if (!readme.identifier.equals(collection)) {
-            printErrorAndExit("README.identifier "+readme.identifier+" does not match collection.");
+            printErrorAndExit("README.identifier "+red(readme.identifier)+" does not match collection "+purple(collection));
         }
         // gensp
         this.gensp = readme.scientific_name_abbrev;
         if (gensp==null) {
-            printErrorAndExit("README file does not contain scientific_name_abbrev entry.");
+            printErrorAndExit("README file does not contain "+red("scientific_name_abbrev")+" entry.");
         }
-        // collectionSansKey4 is the prefix for LIS feature identifiers
+        // collectionSansKey4 is the KEY4-removed prefix for LIS feature identifiers
         String[] fields = collection.split("\\.");
         int len = fields.length;
         collectionSansKey4 = "";
@@ -64,12 +81,24 @@ public abstract class CollectionValidator {
             if (i>0) collectionSansKey4 += ".";
             collectionSansKey4 += fields[i];
         }
-        // collectionSansAnnKey4 is the prefix for LIS chromosomes/scaffolds
-        collectionSansAnnKey4 = "";
-        for (int i=0; i<len-2; i++) {
-            if (i>0) collectionSansAnnKey4 += ".";
-            collectionSansAnnKey4 += fields[i];
+        // genspStrainGnm is the gensp.strain.gnm prefix for LIS chromosomes/scaffolds, etc.
+        genspStrainGnm = gensp;
+        for (int i=0; i<2; i++) {
+            genspStrainGnm += "." + fields[i];
         }
+    }
+
+    /**
+     * Check that required files are present, listed in extending class requiredFileTypes List.
+     * Exit if any files are missing.
+     */
+    public void checkRequiredFiles() {
+        for (String fileType : requiredFileTypes) {
+            if (!dataFileExists(fileType)) {
+                printError("Required file type "+red(fileType)+" is not present in "+purple(collection));
+            }
+        }
+        if (!valid) System.exit(1);
     }
 
     /**
@@ -92,7 +121,7 @@ public abstract class CollectionValidator {
      */
     public void printError(String error) {
         valid = false;
-        System.out.println("## INVALID: "+error);
+        System.out.println("### "+red("INVALID: ")+error);
     }
 
     /**
@@ -107,96 +136,61 @@ public abstract class CollectionValidator {
      * Print the message for when the collection is valid.
      */
     public static void printIsValidMessage() {
-        System.out.println("## VALID");
+        System.out.println("### "+green("VALID"));
     }
 
     /**
-     * Return true if the given identifier is a valid LIS identifier for a feature.
+     * Return true if the given string is a valid LIS identifier or data filename.
      */
-    public boolean featureMatchesCollection(String identifier) {
-        return identifier.startsWith(gensp+"."+collectionSansKey4);
+    public boolean matchesCollection(String identifier) {
+        return identifier.startsWith(genspStrainGnm);
+    }
+    
+
+    /**
+     * Validate the seqname of a GFF record, ensuring that it matches the collection.
+     */
+    public boolean hasValidSeqname(FeatureI featureI) {
+        return matchesCollection(featureI.seqname());
     }
 
     /**
-     * Return true if the given identifier is a valid LIS identifier for a chromosome/scaffold.
+     * Validate the ID in a genomic GFF file (must exist and match collection).
      */
-    public boolean seqMatchesCollection(String identifier) {
-        return identifier.startsWith(gensp+"."+collectionSansAnnKey4);
+    public boolean hasValidGenomicID(FeatureI featureI) {
+        String id = getAttribute(featureI, "ID");
+        return (id!=null && matchesCollection(id));
     }
     
     /**
-     * Validate a genomic feature.
-     * The features set is used to ensure that parents are loaded before children.
+     * Validate a genomic GFF feature's parent using the features set to ensure that parents are loaded before children.
+     * Note: parent attribute may be a comma-separated list of parents, or not present.
      */
-    void validateGenomicFeatureI(FeatureI featureI, HashSet<String> features) {
-        String seqname = featureI.seqname();
-        Location location = featureI.location();
-        String type = featureI.type();
-        // attributes
+    public boolean hasValidParent(FeatureI featureI) {
         String id = getAttribute(featureI, "ID");
-        String name = getAttribute(featureI, "Name");
-        String parent = getAttribute(featureI, "Parent");
-        String note = getAttribute(featureI, "Note");
-        String dbxref = getAttribute(featureI, "Dbxref");
-        String ontology_term = getAttribute(featureI, "Ontology_term");
-        String alleles = getAttribute(featureI, "alleles");
-        String symbol = getAttribute(featureI, "symbol");
-        // check that seqname matches collection
-        if (!seqMatchesCollection(seqname)) {
-            printError("seqname in this GFF record is not a valid LIS identifier:");
-            printErrorAndExit(featureI.toString());
-        }
-        // check that ID exists
-        if (id==null) {
-            printError("GFF line does not include ID:");
-            printErrorAndExit(featureI.toString());
-        }
-        // check that ID matches collection
-        if (!featureMatchesCollection(id)) {
-            printError("ID in this GFF record is not a valid LIS identifier:");
-            printErrorAndExit(featureI.toString());
-        }
-        // check that parent is already loaded; could be comma-separated list of parents
-        if (parent!=null) {
-            boolean parentLoaded = false;
-            String[] parents = parent.split(",");
-            for (String p : parents) {
-                if (features.contains(p)) parentLoaded = true;
-            }
-            if (!parentLoaded) {
-                printError("Parent ID in this GFF record has not yet been loaded. GFF file needs to be sorted.");
-                printErrorAndExit(featureI.toString());
-            }
-        }
         // add this feature to list for future parent check
         features.add(id);
+        String parent = getAttribute(featureI, "Parent");
+        // non-parent is valid
+        if (parent==null) return true;
+        // one of parent entries must be in features set
+        boolean parentLoaded = false;
+        for (String p : parent.split(",")) {
+            if (features.contains(p)) parentLoaded = true;
+        }
+        return parentLoaded;
     }
 
     /**
-     * Validate an IPRScan feature which is placed on a protein.
+     * Validate a BioJava sequence identifier, making sure it matches the collection.
      */
-    void validateIPRScanFeatureI(FeatureI featureI) {
-        String seqname = featureI.seqname();
-        // check that seqname matches collection
-        if (!seqMatchesCollection(seqname)) {
-            printError("seqname in this GFF record is not a valid LIS identifier:");
-            printErrorAndExit(featureI.toString());
-        }
-    }
-    
-    /**
-     * Validate a BioJava sequence.
-     */
-    void validateSequence(AbstractSequence sequence) {
-        String identifier = getFastaIdentifier(sequence);
-        if (!featureMatchesCollection(identifier)) {
-            printError("ID in this FASTA sequence is not a valid LIS identifier:");
-            printErrorAndExit(sequence.getAccession().getID());
-        }
+    public boolean hasValidSequenceIdentifier(AbstractSequence sequence) {
+        String identifier = getFastaSequenceIdentifier(sequence);
+        return (matchesCollection(identifier));
     }
 
     /**
-     * Return an attribute for the given name ignoring case
+     * Return a GFF attribute for the given name ignoring case
      */
     static String getAttribute(FeatureI featureI, String name) {
         Map<String,String> attributeMap = featureI.getAttributes();
@@ -214,7 +208,7 @@ public abstract class CollectionValidator {
      * @param sequence the AbstractSequence
      * @return the identifier
      */
-    static String getFastaIdentifier(AbstractSequence sequence) {
+    static String getFastaSequenceIdentifier(AbstractSequence sequence) {
         String identifier = null;
         String header = sequence.getAccession().getID();
         String[] bits = header.split(" ");
@@ -225,6 +219,41 @@ public abstract class CollectionValidator {
             identifier = bits[0];
         }
         return identifier;
+    }
+
+    /**
+     * Print an error message and exit if sequence has an invalid identifier.
+     *
+     * @param file the file (used for informative output)
+     * @param sequence the sequence being tested
+     */
+    void validateSequenceIdentifier(File file, AbstractSequence sequence) {
+        if (!hasValidSequenceIdentifier(sequence)) {
+            printError(red(file.getName())+" has an invalid sequence identifier in header:");
+            printError(sequence.getAccession().getID());
+        }
+        if (!valid) System.exit(1);
+    }
+
+    /**
+     * ANSI color string red
+     */
+    static String red(String s) {
+        return RD+s+NC;
+    }
+
+    /**
+     * ANSI color string light purple
+     */
+    static String purple(String s) {
+        return LP+s+NC;
+    }
+
+    /**
+     * ANSI color string green
+     */
+    static String green(String s) {
+        return GR+s+NC;
     }
 
 }
