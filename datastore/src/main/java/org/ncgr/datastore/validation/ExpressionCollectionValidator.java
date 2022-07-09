@@ -20,8 +20,8 @@ public class ExpressionCollectionValidator extends CollectionValidator {
      * Construct from an genome directory
      */
     public ExpressionCollectionValidator(String dirString) {
+        super(dirString);
         requiredFileTypes = Arrays.asList("samples.tsv.gz", "values.tsv.gz", "obo.tsv.gz");
-        setVars(dirString);
     }
 
     public static void main(String[] args) {
@@ -33,7 +33,11 @@ public class ExpressionCollectionValidator extends CollectionValidator {
         // construct our validator and check required files
         ExpressionCollectionValidator validator = new ExpressionCollectionValidator(args[0]);
         validator.printHeader();
-        validator.checkRequiredFiles();
+        try {
+            validator.checkRequiredFiles();
+        } catch (ValidationException ex) {
+            printErrorAndExit(ex.getMessage());
+        }
 
         // samples.tsv.gz
         if (validator.dataFileExists("samples.tsv.gz")) {
@@ -64,7 +68,7 @@ public class ExpressionCollectionValidator extends CollectionValidator {
                 }
             }
         } catch (Exception ex) {
-            validator.printErrorAndExit(ex.getMessage());
+            printErrorAndExit(ex.getMessage());
         }
             
         // valid!

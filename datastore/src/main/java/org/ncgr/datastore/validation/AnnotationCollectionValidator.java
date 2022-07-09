@@ -22,14 +22,13 @@ import org.biojava.nbio.genome.parsers.gff.GFF3Reader;
  * Methods to validate an LIS Datastore /annotations/ collection
  */
 public class AnnotationCollectionValidator extends CollectionValidator {
-    private static final String TEMPGENEFILE = "/tmp/gene_models_main.gff3";
-    private static final String TEMPIPRSCANFILE = "/tmp/iprscan.gff3";
+    private static final String TEMPFILE = "/tmp/temp.gff3";
 
     /**
      * Construct from an annotation directory
      */
     public AnnotationCollectionValidator(String dirString) {
-        setVars(dirString);
+        super(dirString);
         requiredFileTypes = Arrays.asList("gene_models_main.gff3.gz");
     }
 
@@ -41,15 +40,21 @@ public class AnnotationCollectionValidator extends CollectionValidator {
 
         // construct our validator and check required files
         AnnotationCollectionValidator validator = new AnnotationCollectionValidator(args[0]);
+
+        // header and required files
         validator.printHeader();
-        validator.checkRequiredFiles();
+        try {
+            validator.checkRequiredFiles();
+        } catch (ValidationException ex) {
+            printErrorAndExit(ex.getMessage());
+        }
 
         // gene_models_main.gff3.gz (required)
         try {
             File file = validator.getDataFile("gene_models_main.gff3.gz");
             System.out.println(" - "+file.getName());
             // uncompress the gff3.gz file
-            File tempfile = new File(TEMPGENEFILE);
+            File tempfile = new File(TEMPFILE);
             tempfile.delete();
             BufferedWriter writer = new BufferedWriter(new FileWriter(tempfile));
             BufferedReader reader = GZIPBufferedReader.getReader(file);
@@ -60,7 +65,7 @@ public class AnnotationCollectionValidator extends CollectionValidator {
             }
             writer.close();
             // validate the uncompressed GFF3 file
-            FeatureList featureList = GFF3Reader.read(TEMPGENEFILE);
+            FeatureList featureList = GFF3Reader.read(TEMPFILE);
             for (FeatureI featureI : featureList) {
                 if (!validator.hasValidSeqname(featureI)) {
                     validator.printError(file.getName()+" has an invalid seqname:");
@@ -149,7 +154,7 @@ public class AnnotationCollectionValidator extends CollectionValidator {
                 File file = validator.getDataFile("iprscan.gff3.gz");
                 System.out.println(" - "+file.getName());
                 // uncompress the gff3.gz file
-                File tempfile = new File(TEMPIPRSCANFILE);
+                File tempfile = new File(TEMPFILE);
                 tempfile.delete();
                 BufferedWriter writer = new BufferedWriter(new FileWriter(tempfile));
                 BufferedReader reader = GZIPBufferedReader.getReader(file);
@@ -160,7 +165,7 @@ public class AnnotationCollectionValidator extends CollectionValidator {
                 }
                 writer.close();
                 // validate the uncompressed GFF3 file
-                FeatureList featureList = GFF3Reader.read(TEMPIPRSCANFILE);
+                FeatureList featureList = GFF3Reader.read(TEMPFILE);
                 for (FeatureI featureI : featureList) {
                     if (!validator.hasValidSeqname(featureI)) {
                         validator.printError(file.getName()+" has an invalid seqname:");
@@ -182,7 +187,7 @@ public class AnnotationCollectionValidator extends CollectionValidator {
                 BufferedReader br = GZIPBufferedReader.getReader(file);
                 String line = null;
                 while ((line=br.readLine())!=null) {
-                    if (line.startsWith("#") || line.startsWith("ScoreMeaning") || line.trim().length()==0) continue; // comment or blank
+                    if (line.startsWith("#") || line.startsWith("URL") || line.startsWith("ScoreMeaning") || line.trim().length()==0) continue; // comment or blank
                     String[] parts = line.split("\t");
                     String geneId = parts[0];
                     String family = parts[1];
@@ -198,7 +203,7 @@ public class AnnotationCollectionValidator extends CollectionValidator {
                     if (!validator.valid) break;
                 }
             } catch (Exception ex) {
-                validator.printErrorAndExit(ex.getMessage());
+                printErrorAndExit(ex.getMessage());
             }
         }
 
@@ -211,7 +216,7 @@ public class AnnotationCollectionValidator extends CollectionValidator {
                 BufferedReader br = GZIPBufferedReader.getReader(file);
                 String line = null;
                 while ((line=br.readLine())!=null) {
-                    if (line.startsWith("#") || line.trim().length()==0) continue; // comment or blank
+                    if (line.startsWith("#") || line.startsWith("URL") || line.startsWith("SourceSpecies") || line.trim().length()==0) continue; // comment or blank
                     String[] parts = line.split("\t");
                     String pathwayId = parts[0];
                     String pathwayName = parts[1];
@@ -223,7 +228,7 @@ public class AnnotationCollectionValidator extends CollectionValidator {
                     if (!validator.valid) break;
                 }
             } catch (Exception ex) {
-                validator.printErrorAndExit(ex.getMessage());
+                printErrorAndExit(ex.getMessage());
             }
         }
 
@@ -252,7 +257,7 @@ public class AnnotationCollectionValidator extends CollectionValidator {
                     if (!validator.valid) break;
                 }
             } catch (Exception ex) {
-                validator.printErrorAndExit(ex.getMessage());
+                printErrorAndExit(ex.getMessage());
             }
         }
         

@@ -32,8 +32,8 @@ public class MarkerCollectionValidator extends CollectionValidator {
      * Construct from an genome directory
      */
     public MarkerCollectionValidator(String dirString) {
+        super(dirString);
         requiredFileTypes = Arrays.asList("gff3.gz");
-        setVars(dirString);
     }
 
     public static void main(String[] args) {
@@ -45,7 +45,11 @@ public class MarkerCollectionValidator extends CollectionValidator {
         // construct our validator and check required files
         MarkerCollectionValidator validator = new MarkerCollectionValidator(args[0]);
         validator.printHeader();
-        validator.checkRequiredFiles();
+        try {
+            validator.checkRequiredFiles();
+        } catch (ValidationException ex) {
+            printErrorAndExit(ex.getMessage());
+        }
 
         // gff3.gz
         if (validator.dataFileExists("gff3.gz")) {

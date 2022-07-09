@@ -23,8 +23,8 @@ public class GenomeCollectionValidator extends CollectionValidator {
      * Construct from an genome directory
      */
     public GenomeCollectionValidator(String dirString) {
+        super(dirString);
         requiredFileTypes = Arrays.asList("genome_main.fna.gz");
-        setVars(dirString);
     }
 
     public static void main(String[] args) {
@@ -36,12 +36,16 @@ public class GenomeCollectionValidator extends CollectionValidator {
         // construct our validator and check required files
         GenomeCollectionValidator validator = new GenomeCollectionValidator(args[0]);
         validator.printHeader();
-        validator.checkRequiredFiles();
+        try {
+            validator.checkRequiredFiles();
+        } catch (ValidationException ex) {
+            printErrorAndExit(ex.getMessage());
+        }
 
         // genome_main.fna.gz
         try {
             File file = validator.getDataFile("genome_main.fna.gz");
-            System.out.println(" - "+file.getName()+" ...reading...");
+            System.out.println(" - "+file.getName());
             Map<String,DNASequence> sequenceMap = GZIPFastaReader.readFastaDNASequence(file);
             for (DNASequence sequence : sequenceMap.values()) {
                 validator.validateSequenceIdentifier(file, sequence);

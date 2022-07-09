@@ -36,7 +36,7 @@ public class SyntenyCollectionValidator extends CollectionValidator {
      * Construct from an genome directory
      */
     public SyntenyCollectionValidator(String dirString) {
-        setVars(dirString);
+        super(dirString);
     }
 
     public static void main(String[] args) {
@@ -60,7 +60,7 @@ public class SyntenyCollectionValidator extends CollectionValidator {
                 filenameOK = filenameOK && genspStrainGnm1.equals(validator.genspStrainGnm);    // match collection
                 filenameOK = filenameOK && parts[3].equals("x");
                 if (!filenameOK) {
-                    validator.printErrorAndExit(file.getName()+" is incorrectly named. Format: gensp.Strain.gnm.x.gensp.Strain.gnm.KEY4.gff3.gz");
+                    printErrorAndExit(file.getName()+" is incorrectly named. Format: gensp.Strain.gnm.x.gensp.Strain.gnm.KEY4.gff3.gz");
                 }
                 System.out.println(" - "+file.getName());
                 // will check genspStrainGnm2 against Name and matches attributes

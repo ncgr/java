@@ -3,6 +3,7 @@ package org.ncgr.datastore.validation;
 import org.ncgr.datastore.Readme;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 
 import java.util.HashSet;
@@ -28,12 +29,55 @@ public abstract class CollectionValidator {
     Readme readme;
     String gensp;
     String collection;         // Strain.gnm.x.y.z.KEY4
-    String collectionSansKey4; // Strain.gnm.x.y.z
     String genspStrainGnm;     // gensp.Strain.gnm
     boolean valid = true;
     List<String> requiredFileTypes;
 
     HashSet<String> features = new HashSet<>(); // utility for keeping track of GFF parents
+
+    /**
+     * Construct given a directory string. Print error and exit if collection has fundamental problems.
+     *
+     * @param dirString the directory, e.g. /data/v2/Glycine/max/genomes/Wm82.gnm1.ann1.ABCD (with or without trailing slash).
+     */
+    public CollectionValidator(String dirString) {
+        // dir
+        this.dir = new File(dirString);
+        if (!dir.exists() || !dir.isDirectory()) {
+            printErrorAndExit(red(dirString)+" does not exist or is not a directory.");
+        }
+        // collection from dirname
+        this.collection = dir.getName();
+        // README
+        File readmeFile = new File(dir, "README."+collection+".yml");
+        if (!readmeFile.exists()) {
+            printHeader();
+            printErrorAndExit(red(readmeFile.getName())+" is not present in collection "+purple(collection));
+        }
+        try {
+            this.readme = Readme.parse(readmeFile);
+        } catch (IOException ex) {
+            printHeader();
+            printErrorAndExit(red(ex.getMessage()));
+        }
+        // README identifier = collection
+        if (!readme.identifier.equals(collection)) {
+            printHeader();
+            printErrorAndExit("README.identifier "+red(readme.identifier)+" does not match collection "+purple(collection));
+        }
+        // gensp
+        this.gensp = readme.scientific_name_abbrev;
+        if (gensp==null) {
+            printHeader();
+            printErrorAndExit("README file does not contain "+red("scientific_name_abbrev")+" entry.");
+        }
+        // form the gensp.Strain.gnm prefix for LIS genomic feature identifiers.
+        String[] fields = collection.split("\\.");
+        genspStrainGnm = gensp;
+        for (int i=0; i<2; i++) {
+            genspStrainGnm += "." + fields[i];
+        }
+    }
 
     /**
      * Print out a couple header lines
@@ -45,58 +89,13 @@ public abstract class CollectionValidator {
     }
 
     /**
-     * Use this to construct in an extending class.
-     */
-    public void setVars(String dirString) {
-        // dir
-        this.dir = new File(dirString);
-        if (!dir.exists() || !dir.isDirectory()) {
-            printErrorAndExit(red(dirString)+" does not exist or is not a directory.");
-        }
-        // collection from dirname
-        this.collection = dir.getName();
-        File readmeFile = new File(dir, "README."+collection+".yml");
-        if (!readmeFile.exists()) {
-            printErrorAndExit(red(readmeFile.getName())+" is not present in collection "+purple(collection));
-        }
-        // readme
-        try {
-            this.readme = Readme.parse(readmeFile);
-        } catch (Exception ex) {
-            printErrorAndExit(ex.getMessage());
-        }
-        // README identifier = collection
-        if (!readme.identifier.equals(collection)) {
-            printErrorAndExit("README.identifier "+red(readme.identifier)+" does not match collection "+purple(collection));
-        }
-        // gensp
-        this.gensp = readme.scientific_name_abbrev;
-        if (gensp==null) {
-            printErrorAndExit("README file does not contain "+red("scientific_name_abbrev")+" entry.");
-        }
-        // collectionSansKey4 is the KEY4-removed prefix for LIS feature identifiers
-        String[] fields = collection.split("\\.");
-        int len = fields.length;
-        collectionSansKey4 = "";
-        for (int i=0; i<(len-1); i++) {
-            if (i>0) collectionSansKey4 += ".";
-            collectionSansKey4 += fields[i];
-        }
-        // genspStrainGnm is the gensp.strain.gnm prefix for LIS chromosomes/scaffolds, etc.
-        genspStrainGnm = gensp;
-        for (int i=0; i<2; i++) {
-            genspStrainGnm += "." + fields[i];
-        }
-    }
-
-    /**
      * Check that required files are present, listed in extending class requiredFileTypes List.
      * Exit if any files are missing.
      */
-    public void checkRequiredFiles() {
+    public void checkRequiredFiles() throws ValidationException {
         for (String fileType : requiredFileTypes) {
             if (!dataFileExists(fileType)) {
-                printError("Required file type "+red(fileType)+" is not present in "+purple(collection));
+                throw new ValidationException("Required file type "+red(fileType)+" is not present in "+purple(collection));
             }
         }
         if (!valid) System.exit(1);
@@ -118,7 +117,7 @@ public abstract class CollectionValidator {
     }
 
     /**
-     * Print a standard error message.
+     * Print a standard error message and set valid = false.
      */
     public void printError(String error) {
         valid = false;
@@ -128,8 +127,8 @@ public abstract class CollectionValidator {
     /**
      * Print a standard error message then exit with status=1.
      */
-    public void printErrorAndExit(String error) {
-        printError(error);
+    public static void printErrorAndExit(String error) {
+        System.out.println("### "+red("INVALID: ")+error);
         System.exit(1);
     }
 
@@ -228,12 +227,10 @@ public abstract class CollectionValidator {
      * @param file the file (used for informative output)
      * @param sequence the sequence being tested
      */
-    void validateSequenceIdentifier(File file, AbstractSequence sequence) {
+    void validateSequenceIdentifier(File file, AbstractSequence sequence) throws ValidationException {
         if (!hasValidSequenceIdentifier(sequence)) {
-            printError(red(file.getName())+" has an invalid sequence identifier in header:");
-            printError(sequence.getAccession().getID());
+            throw new ValidationException(file.getName()+" has an invalid sequence identifier in header:\n"+sequence.getAccession().getID());
         }
-        if (!valid) System.exit(1);
     }
 
     /**
