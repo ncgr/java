@@ -39,6 +39,7 @@ public abstract class CollectionValidator {
      * Print out a couple header lines
      */
     public void printHeader() {
+        System.err.println(collection); // for terminal monitoring when stdout is redirected to a file
         System.out.println("--------------------------------------------------------------------------------");
         System.out.println("### Validating "+purple(gensp)+" collection "+purple(collection));
     }

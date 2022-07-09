@@ -173,16 +173,87 @@ public class AnnotationCollectionValidator extends CollectionValidator {
             }
         }            
 
-        // legfed_v1_0.M65K.gfa.tsv.gz NO VALIDATION
+        // legfed_v1_0.M65K.gfa.tsv.gz
+        // #gene   family  protein score
         if (validator.dataFileExists("legfed_v1_0.M65K.gfa.tsv.gz")) {
             File file = validator.getDataFile("legfed_v1_0.M65K.gfa.tsv.gz");
-            System.out.println(" - "+file.getName()+" (no validation)");
+            System.out.println(" - "+file.getName());
+            try {
+                BufferedReader br = GZIPBufferedReader.getReader(file);
+                String line = null;
+                while ((line=br.readLine())!=null) {
+                    if (line.startsWith("#") || line.startsWith("ScoreMeaning") || line.trim().length()==0) continue; // comment or blank
+                    String[] parts = line.split("\t");
+                    String geneId = parts[0];
+                    String family = parts[1];
+                    String proteinId = parts[2];
+                    if (!validator.matchesCollection(geneId)) {
+                        validator.printError("Gene ID "+geneId+" in "+file.getName()+" is not a valid LIS identifier:");
+                        validator.printError(line);
+                    }
+                    if (!validator.matchesCollection(proteinId)) {
+                        validator.printError("Protein ID "+proteinId+" in "+file.getName()+" is not a valid LIS identifier:");
+                        validator.printError(line);
+                    }
+                    if (!validator.valid) break;
+                }
+            } catch (Exception ex) {
+                validator.printErrorAndExit(ex.getMessage());
+            }
         }
 
-        // legfed_v1_0.M65K.gfa.tsv.gz NO VALIDATION
+        // legfed_v1_0.M65K.gfa.tsv.gz
+        // #pathway_identifier  pathway_name  gene
         if (validator.dataFileExists("legfed_v1_0.M65K.pathway.tsv.gz")) {
             File file = validator.getDataFile("legfed_v1_0.M65K.pathway.tsv.gz");
-            System.out.println(" - "+file.getName()+" (no validation)");
+            System.out.println(" - "+file.getName());
+            try {
+                BufferedReader br = GZIPBufferedReader.getReader(file);
+                String line = null;
+                while ((line=br.readLine())!=null) {
+                    if (line.startsWith("#") || line.trim().length()==0) continue; // comment or blank
+                    String[] parts = line.split("\t");
+                    String pathwayId = parts[0];
+                    String pathwayName = parts[1];
+                    String geneId = parts[2];
+                    if (!validator.matchesCollection(geneId)) {
+                        validator.printError("Gene ID "+geneId+" in "+file.getName()+" is not a valid LIS identifier:");
+                        validator.printError(line);
+                    }
+                    if (!validator.valid) break;
+                }
+            } catch (Exception ex) {
+                validator.printErrorAndExit(ex.getMessage());
+            }
+        }
+
+        // phytozome_10_2.HFNR.gfa.tsv.gz
+        // #gene   family  protein score
+        if (validator.dataFileExists("phytozome_10_2.HFNR.gfa.tsv.gz")) {
+            File file = validator.getDataFile("phytozome_10_2.HFNR.gfa.tsv.gz");
+            System.out.println(" - "+file.getName());
+            try {
+                BufferedReader br = GZIPBufferedReader.getReader(file);
+                String line = null;
+                while ((line=br.readLine())!=null) {
+                    if (line.startsWith("#") || line.startsWith("ScoreMeaning") || line.trim().length()==0) continue; // comment or blank
+                    String[] parts = line.split("\t");
+                    String geneId = parts[0];
+                    String family = parts[1];
+                    String proteinId = parts[2];
+                    if (!validator.matchesCollection(geneId)) {
+                        validator.printError("Gene ID "+geneId+" in "+file.getName()+" is not a valid LIS identifier:");
+                        validator.printError(line);
+                    }
+                    if (!validator.matchesCollection(proteinId)) {
+                        validator.printError("Protein ID "+proteinId+" in "+file.getName()+" is not a valid LIS identifier:");
+                        validator.printError(line);
+                    }
+                    if (!validator.valid) break;
+                }
+            } catch (Exception ex) {
+                validator.printErrorAndExit(ex.getMessage());
+            }
         }
         
         // valid!
