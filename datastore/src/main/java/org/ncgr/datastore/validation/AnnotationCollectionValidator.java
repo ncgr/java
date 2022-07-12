@@ -68,15 +68,15 @@ public class AnnotationCollectionValidator extends CollectionValidator {
             FeatureList featureList = GFF3Reader.read(TEMPFILE);
             for (FeatureI featureI : featureList) {
                 if (!validator.hasValidSeqname(featureI)) {
-                    validator.printError(file.getName()+" has an invalid seqname:");
+                    validator.printError(file.getName()+" record seqname is invalid:");
                     validator.printError(featureI.toString());
                 }
                 if (!validator.hasValidGenomicID(featureI)) {
-                    validator.printError(file.getName()+" has an invalid ID attribute:");
+                    validator.printError(file.getName()+" record ID attribute is missing or invalid:");
                     validator.printError(featureI.toString());
                 }
                 if (!validator.hasValidParent(featureI)) {
-                    validator.printError(file.getName()+" has an invalid parent attribute; does the file need sorting?");
+                    validator.printError(file.getName()+" record parent attribute is invalid; does the file need sorting?");
                     validator.printError(featureI.toString());
                 }
                 if (!validator.valid) break;

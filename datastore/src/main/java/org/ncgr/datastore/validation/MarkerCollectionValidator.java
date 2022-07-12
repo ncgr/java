@@ -71,11 +71,11 @@ public class MarkerCollectionValidator extends CollectionValidator {
                 FeatureList featureList = GFF3Reader.read(TEMPFILE);
                 for (FeatureI featureI : featureList) {
                     if (!validator.hasValidSeqname(featureI)) {
-                        validator.printError(file.getName()+" has an invalid seqname:");
+                        validator.printError(file.getName()+" record seqname is invalid:");
                         validator.printError(featureI.toString());
                     }
                     if (!validator.hasValidGenomicID(featureI)) {
-                        validator.printError(file.getName()+" has a missing or invalid ID attribute:");
+                        validator.printError(file.getName()+" record ID attribute is missing or invalid:");
                         validator.printError(featureI.toString());
                     }
                     if (!validator.valid) System.exit(1);
