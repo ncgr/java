@@ -17,7 +17,7 @@ import java.util.Map;
 public class ExpressionCollectionValidator extends CollectionValidator {
 
     /**
-     * Construct from an genome directory
+     * Construct from an /expression/ directory
      */
     public ExpressionCollectionValidator(String dirString) {
         super(dirString);

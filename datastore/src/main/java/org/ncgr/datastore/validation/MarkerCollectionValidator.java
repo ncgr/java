@@ -29,7 +29,7 @@ public class MarkerCollectionValidator extends CollectionValidator {
     private static final String TEMPFILE = "/tmp/marker.gff3";
 
     /**
-     * Construct from an genome directory
+     * Construct from a /markers/ directory
      */
     public MarkerCollectionValidator(String dirString) {
         super(dirString);

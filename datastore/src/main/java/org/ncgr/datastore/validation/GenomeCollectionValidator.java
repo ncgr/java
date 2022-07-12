@@ -20,7 +20,7 @@ import org.biojava.nbio.core.sequence.DNASequence;
 public class GenomeCollectionValidator extends CollectionValidator {
 
     /**
-     * Construct from an genome directory
+     * Construct from a /genomes/ directory
      */
     public GenomeCollectionValidator(String dirString) {
         super(dirString);

@@ -25,7 +25,7 @@ public class AnnotationCollectionValidator extends CollectionValidator {
     private static final String TEMPFILE = "/tmp/temp.gff3";
 
     /**
-     * Construct from an annotation directory
+     * Construct from an /annotations/ directory
      */
     public AnnotationCollectionValidator(String dirString) {
         super(dirString);

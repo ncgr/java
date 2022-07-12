@@ -33,7 +33,7 @@ public class SyntenyCollectionValidator extends CollectionValidator {
     private static final String TEMPFILE = "/tmp/synteny.gff3";
 
     /**
-     * Construct from an genome directory
+     * Construct from a /synteny/ directory
      */
     public SyntenyCollectionValidator(String dirString) {
         super(dirString);
