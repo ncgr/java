@@ -21,7 +21,7 @@ public class MapCollectionValidator extends CollectionValidator {
      */
     public MapCollectionValidator(String dirString) {
         super(dirString);
-        requiredFileTypes = Arrays.asList("lg.tsv.gz", "mrk.tsv.gz");
+        requiredFileTypes = Arrays.asList("lg.tsv.gz");
     }
 
     public static void main(String[] args) {
@@ -63,22 +63,24 @@ public class MapCollectionValidator extends CollectionValidator {
         // mrk.tsv.gz
         // #marker linkage_group   position
         // A053_2  GmComposite1999_A1      32.20
-        try {
-            File file = validator.getDataFile("mrk.tsv.gz");
-            System.out.println(" - "+file.getName());
-            BufferedReader br = GZIPBufferedReader.getReader(file);
-            String line = null;
-            while ((line=br.readLine())!=null) {
-                if (line.startsWith("#") || line.trim().length()==0) continue; // comment or blank
-                String[] parts = line.split("\t");
-                if (parts.length!=3) {
-                    validator.printError("File does not have three values (marker,linkage_group,position) in this line:");
-                    validator.printError(line);
-                    break;
+        if (validator.dataFileExists("mrk.tsv.gz")) {
+            try {
+                File file = validator.getDataFile("mrk.tsv.gz");
+                System.out.println(" - "+file.getName());
+                BufferedReader br = GZIPBufferedReader.getReader(file);
+                String line = null;
+                while ((line=br.readLine())!=null) {
+                    if (line.startsWith("#") || line.trim().length()==0) continue; // comment or blank
+                    String[] parts = line.split("\t");
+                    if (parts.length!=3) {
+                        validator.printError("File does not have three values (marker,linkage_group,position) in this line:");
+                        validator.printError(line);
+                        break;
+                    }
                 }
+            } catch (Exception ex) {
+                printErrorAndExit(ex.getMessage());
             }
-        } catch (Exception ex) {
-            printErrorAndExit(ex.getMessage());
         }
             
         // valid!
