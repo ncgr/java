@@ -148,7 +148,7 @@ public class AnnotationCollectionValidator extends CollectionValidator {
             validator.printError("Neither mrna.fna.gz nor mrna_primary.fna.gz file is present.");
         }
         
-        // iprscan.gff3.gz
+        // iprscan.gff3.gz (optional)
         if (validator.dataFileExists("iprscan.gff3.gz")) {
             try {
                 File file = validator.getDataFile("iprscan.gff3.gz");
@@ -178,7 +178,7 @@ public class AnnotationCollectionValidator extends CollectionValidator {
             }
         }            
 
-        // legfed_v1_0.M65K.gfa.tsv.gz
+        // legfed_v1_0.M65K.gfa.tsv.gz (required)
         // #gene   family  protein score
         if (validator.dataFileExists("legfed_v1_0.M65K.gfa.tsv.gz")) {
             File file = validator.getDataFile("legfed_v1_0.M65K.gfa.tsv.gz");
@@ -200,6 +200,10 @@ public class AnnotationCollectionValidator extends CollectionValidator {
                         validator.printError("Protein ID "+proteinId+" in "+file.getName()+" is not a valid LIS identifier:");
                         validator.printError(line);
                     }
+                    if (!family.startsWith("legfed")) {
+                        validator.printError("Gene family identifier "+family+" in "+file.getName()+" is not valid:");
+                        validator.printError(line);
+                    }
                     if (!validator.valid) break;
                 }
             } catch (Exception ex) {
@@ -207,7 +211,7 @@ public class AnnotationCollectionValidator extends CollectionValidator {
             }
         }
 
-        // legfed_v1_0.M65K.gfa.tsv.gz
+        // legfed_v1_0.M65K.pathway.tsv.gz (optional)
         // #pathway_identifier  pathway_name  gene
         if (validator.dataFileExists("legfed_v1_0.M65K.pathway.tsv.gz")) {
             File file = validator.getDataFile("legfed_v1_0.M65K.pathway.tsv.gz");
@@ -232,7 +236,7 @@ public class AnnotationCollectionValidator extends CollectionValidator {
             }
         }
 
-        // phytozome_10_2.HFNR.gfa.tsv.gz
+        // phytozome_10_2.HFNR.gfa.tsv.gz (optional)
         // #gene   family  protein score
         if (validator.dataFileExists("phytozome_10_2.HFNR.gfa.tsv.gz")) {
             File file = validator.getDataFile("phytozome_10_2.HFNR.gfa.tsv.gz");
@@ -252,6 +256,10 @@ public class AnnotationCollectionValidator extends CollectionValidator {
                     }
                     if (!validator.matchesCollection(proteinId)) {
                         validator.printError("Protein ID "+proteinId+" in "+file.getName()+" is not a valid LIS identifier:");
+                        validator.printError(line);
+                    }
+                    if (!family.startsWith("phytozome")) {
+                        validator.printError("Gene family identifier "+family+" in "+file.getName()+" is not valid:");
                         validator.printError(line);
                     }
                     if (!validator.valid) break;

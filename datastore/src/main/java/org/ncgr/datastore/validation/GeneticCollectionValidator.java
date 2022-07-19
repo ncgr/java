@@ -58,8 +58,8 @@ public class GeneticCollectionValidator extends CollectionValidator {
         }
 
         // qtlmrk.tsv.gz
-        // #qtl_identifier trait_name      marker  linkage_group
-        // Leaflet area 9-1        Leaflet area    BARC-050677-09819       GmComposite2003_C1
+        // #qtl_identifier   trait_name    marker             [linkage_group]
+        // Leaflet area 9-1  Leaflet area  BARC-050677-09819  GmComposite2003_C1
         if (validator.dataFileExists("qtlmrk.tsv.gz")) {
             try {
                 File file = validator.getDataFile("qtlmrk.tsv.gz");
@@ -69,8 +69,8 @@ public class GeneticCollectionValidator extends CollectionValidator {
                 while ((line=br.readLine())!=null) {
                     if (line.startsWith("#") || line.trim().length()==0) continue; // comment or blank
                     String[] parts = line.split("\t");
-                    if (parts.length!=4) {
-                        validator.printError("File does not have four values (qtl_identifier,trait_name,marker,linkage_group) in this line:");
+                    if (parts.length<3) {
+                        validator.printError("File does not have three required values (qtl_identifier,trait_name,marker) in this line:");
                         validator.printError(line);
                         break;
                     }
@@ -125,6 +125,13 @@ public class GeneticCollectionValidator extends CollectionValidator {
                 printErrorAndExit(ex.getMessage());
             }
         }
+
+        // mstmap.tsv.gz
+        // NOT VALIDATED
+        if (validator.dataFileExists("mstmap.tsv.gz")) {
+            File file = validator.getDataFile("mstmap.tsv.gz");
+            System.out.println(" - "+file.getName()+" (not validated)");
+        }            
         
         // valid!
         if (validator.valid) printIsValidMessage();
