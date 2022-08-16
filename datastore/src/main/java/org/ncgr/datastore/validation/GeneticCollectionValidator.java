@@ -60,7 +60,12 @@ public class GeneticCollectionValidator extends CollectionValidator {
         // qtlmrk.tsv.gz
         // #qtl_identifier   trait_name    marker             [linkage_group]
         // Leaflet area 9-1  Leaflet area  BARC-050677-09819  GmComposite2003_C1
+        // Also: check that genetic_map attribute is in README
         if (validator.dataFileExists("qtlmrk.tsv.gz")) {
+            // README must contain genetic_map entry
+            if (validator.readme.genetic_map==null) {
+                validator.printError("genetic_map attribute is missing from README");
+            }
             try {
                 File file = validator.getDataFile("qtlmrk.tsv.gz");
                 System.out.println(" - "+file.getName());
@@ -83,7 +88,12 @@ public class GeneticCollectionValidator extends CollectionValidator {
         // qtl.tsv.gz
         // #qtl_identifier trait_name      linkage_group   start   end     peak
         // First flower 26-5       First flower    GmComposite2003_C2      104.4   106.4   105.4
+        // Also: check that genetic_map attribute is in README
         if (validator.dataFileExists("qtl.tsv.gz")) {
+            // README must contain genetic_map entry
+            if (validator.readme.genetic_map==null) {
+                validator.printError("genetic_map attribute is missing from README");
+            }
             try {
                 File file = validator.getDataFile("qtl.tsv.gz");
                 System.out.println(" - "+file.getName());
