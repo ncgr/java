@@ -94,11 +94,11 @@ public abstract class CollectionValidator {
      */
     public void checkRequiredFiles() throws ValidationException {
         for (String fileType : requiredFileTypes) {
-            if (!dataFileExists(fileType)) {
-                throw new ValidationException("Required file type "+red(fileType)+" is not present in "+purple(collection));
+            File file = getDataFile(fileType);
+            if (!file.exists()) {
+                throw new ValidationException("Required file "+red(file.getName())+" is not present in "+purple(collection));
             }
         }
-        if (!valid) System.exit(1);
     }
 
     /**

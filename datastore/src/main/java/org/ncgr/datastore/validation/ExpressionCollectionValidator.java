@@ -39,16 +39,54 @@ public class ExpressionCollectionValidator extends CollectionValidator {
             printErrorAndExit(ex.getMessage());
         }
 
-        // samples.tsv.gz
-        if (validator.dataFileExists("samples.tsv.gz")) {
-            File file = validator.getDataFile("samples.tsv.gz");
-            System.out.println(" - "+file.getName()+" (no validation)");
+        // check required extra README keys
+        if (validator.readme.expression_unit==null) {
+            validator.printError("README file lacks required expresion_unit key:value.");
         }
 
+        // samples.tsv.gz
+        // #identifier     name    description     treatment       tissue  development_stage       species genotype        replicate_group
+        try {
+            File file = validator.getDataFile("samples.tsv.gz");
+            System.out.println(" - "+file.getName());
+            BufferedReader br = GZIPBufferedReader.getReader(file);
+            String line = null;
+            while ((line=br.readLine())!=null) {
+                if (line.trim().length()==0) continue;
+                String[] parts = line.split("\t");
+                if (line.startsWith("#")) {
+                    if (!parts[0].equals("#identifier")) {
+                        validator.printError(file.getName()+" heading does not start with #identifier.");
+                        validator.printError(line);
+                    }
+                } else {
+                    if (parts.length<3) {
+                        validator.printError(file.getName()+" does not contain at least three values in this line:");
+                        validator.printError(line);
+                    }
+                }
+            }
+        } catch (Exception ex) {
+            printErrorAndExit(ex.getMessage());
+        }
+        
         // obo.tsv.gz
-        if (validator.dataFileExists("obo.tsv.gz")) {
+        // #identifier     ontology_term
+        try {
             File file = validator.getDataFile("obo.tsv.gz");
-            System.out.println(" - "+file.getName()+" (no validation)");
+            System.out.println(" - "+file.getName());
+            BufferedReader br = GZIPBufferedReader.getReader(file);
+            String line = null;
+            while ((line=br.readLine())!=null) {
+                if (line.startsWith("#") || line.trim().length()==0) continue; // comment or blank
+                String[] parts = line.split("\t");
+                if (parts.length<2) {
+                    validator.printError(file.getName()+" does not contain two values in this line:");
+                    validator.printError(line);
+                }
+            }
+        } catch (Exception ex) {
+            printErrorAndExit(ex.getMessage());
         }
 
         // values.tsv.gz
@@ -60,7 +98,7 @@ public class ExpressionCollectionValidator extends CollectionValidator {
             while ((line=br.readLine())!=null) {
                 if (line.startsWith("#") || line.trim().length()==0) continue; // comment or blank
                 String[] parts = line.split("\t");
-                if (parts[0].toLowerCase().equals("geneid")) continue; // header line
+                if (parts[0].toLowerCase().equals("gene_id")) continue; // header line
                 // a gene line
                 String geneId = parts[0];
                 if (!validator.matchesCollection(geneId)) {
