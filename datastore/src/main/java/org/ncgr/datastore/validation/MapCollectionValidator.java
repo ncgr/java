@@ -7,6 +7,7 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -47,6 +48,8 @@ public class MapCollectionValidator extends CollectionValidator {
         // lg.tsv.gz
         // #linkage_group  length  chromosome
         // GmComposite1999_A1      96.60   5
+        // load the LG names into a list to check they match those in marker.tsv.gz.
+        List<String> lgList = new ArrayList<>();
         try {
             File file = validator.getDataFile("lg.tsv.gz");
             System.out.println(" - "+file.getName());
@@ -56,10 +59,13 @@ public class MapCollectionValidator extends CollectionValidator {
                 if (line.startsWith("#") || line.trim().length()==0) continue; // comment or blank
                 String[] parts = line.split("\t");
                 if (parts.length<2) {
-                    validator.printError("File does not at least two values (linkage_group,length,[chromosome]) in this line:");
+                    validator.printError("LG file does not at least two values (linkage_group,length,[chromosome]) in this line:");
                     validator.printError(line);
                     break;
+                } else {
+                    lgList.add(parts[0]);
                 }
+                    
             }
         } catch (Exception ex) {
             printErrorAndExit(ex.getMessage());
@@ -68,6 +74,7 @@ public class MapCollectionValidator extends CollectionValidator {
         // mrk.tsv.gz
         // #marker linkage_group   position
         // A053_2  GmComposite1999_A1      32.20
+        // Check that LG name matches one in the lg.tsv file.
         try {
             File file = validator.getDataFile("mrk.tsv.gz");
             System.out.println(" - "+file.getName());
@@ -77,7 +84,11 @@ public class MapCollectionValidator extends CollectionValidator {
                 if (line.startsWith("#") || line.trim().length()==0) continue; // comment or blank
                 String[] parts = line.split("\t");
                 if (parts.length!=3) {
-                    validator.printError("File does not have three values (marker,linkage_group,position) in this line:");
+                    validator.printError("Marker file does not have three values (marker,linkage_group,position) in this line:");
+                    validator.printError(line);
+                    break;
+                } else if (!lgList.contains(parts[1])) {
+                    validator.printError("Marker file contains an LG identifier missing in LG file in this line:");
                     validator.printError(line);
                     break;
                 }
