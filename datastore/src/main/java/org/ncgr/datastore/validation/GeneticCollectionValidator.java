@@ -35,7 +35,7 @@ public class GeneticCollectionValidator extends CollectionValidator {
         validator.printHeader();
 
         // obo.tsv.gz
-        // #trait_name     obo_term
+        // #trait_name     obo_term     [obo_term_description]
         // Seed length to width ratio      SOY:0001979
         if (validator.dataFileExists("obo.tsv.gz")) {
             try {
@@ -46,8 +46,8 @@ public class GeneticCollectionValidator extends CollectionValidator {
                 while ((line=br.readLine())!=null) {
                     if (line.startsWith("#") || line.trim().length()==0) continue; // comment or blank
                     String[] parts = line.split("\t");
-                    if (parts.length!=2) {
-                        validator.printError("File does have two values (trait_name,obo_term) in this line:");
+                    if (parts.length<2) {
+                        validator.printError("File does have at least two values (trait_name,obo_term) in this line:");
                         validator.printError(line);
                         break;
                     }
