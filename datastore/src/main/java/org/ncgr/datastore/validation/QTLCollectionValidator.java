@@ -12,26 +12,26 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Methods to validate an LIS Datastore /genetic/ collection.
+ * Methods to validate an LIS Datastore /qtl/ collection.
  */
-public class GeneticCollectionValidator extends CollectionValidator {
+public class QTLCollectionValidator extends CollectionValidator {
 
     /**
-     * Construct from a /genetic/ directory
-     * files: obo.tsv.gz, qtlmrk.tsv.gz, qtl.tsv.gz, result.tsv.gz
+     * Construct from a /qtl/ directory
+     * files: obo.tsv.gz, qtlmrk.tsv.gz, qtl.tsv.gz, trait.tsv.gz
      */
-    public GeneticCollectionValidator(String dirString) {
+    public QTLCollectionValidator(String dirString) {
         super(dirString);
     }
 
     public static void main(String[] args) {
         if (args.length!=1) {
-            System.err.println("Usage: GeneticCollectionValidator [genome directory]");
+            System.err.println("Usage: QTLCollectionValidator [collection directory]");
             System.exit(1);
         }
 
         // construct our validator and check required files
-        GeneticCollectionValidator validator = new GeneticCollectionValidator(args[0]);
+        QTLCollectionValidator validator = new QTLCollectionValidator(args[0]);
         validator.printHeader();
 
         // obo.tsv.gz
@@ -113,20 +113,20 @@ public class GeneticCollectionValidator extends CollectionValidator {
             }
         }
 
-        // result.tsv.gz
-        // #trait_name     marker  pvalue
-        // SDS root retention      ss107929748     2.0E-5
-        if (validator.dataFileExists("result.tsv.gz")) {
+        // trait.tsv.gz
+        // #trait_name          description
+        // SDS root retention   roots were removed and sent to the Students for a Democratic Society
+        if (validator.dataFileExists("trait.tsv.gz")) {
             try {
-                File file = validator.getDataFile("result.tsv.gz");
+                File file = validator.getDataFile("trait.tsv.gz");
                 System.out.println(" - "+file.getName());
                 BufferedReader br = GZIPBufferedReader.getReader(file);
                 String line = null;
                 while ((line=br.readLine())!=null) {
                     if (line.startsWith("#") || line.trim().length()==0) continue; // comment or blank
                     String[] parts = line.split("\t");
-                    if (parts.length!=3) {
-                        validator.printError("File does not have three values (trait_name,marker,pvalue) in this line:");
+                    if (parts.length!=2) {
+                        validator.printError("File does not have two values (trait_name,description) in this line:");
                         validator.printError(line);
                         break;
                     }
@@ -136,16 +136,8 @@ public class GeneticCollectionValidator extends CollectionValidator {
             }
         }
 
-        // mstmap.tsv.gz
-        // NOT VALIDATED
-        if (validator.dataFileExists("mstmap.tsv.gz")) {
-            File file = validator.getDataFile("mstmap.tsv.gz");
-            System.out.println(" - "+file.getName()+" (not validated)");
-        }            
-        
         // valid!
         if (validator.valid) printIsValidMessage();
     }
 
 }
-    
