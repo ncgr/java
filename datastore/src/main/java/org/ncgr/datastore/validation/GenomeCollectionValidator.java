@@ -35,27 +35,40 @@ public class GenomeCollectionValidator extends CollectionValidator {
 
         // construct our validator and check required files
         GenomeCollectionValidator validator = new GenomeCollectionValidator(args[0]);
-        validator.printHeader();
+        validator.validate();
+        // valid!
+        if (validator.isValid()) printIsValidMessage();
+    }
+
+    /**
+     * Validate the current instance.
+     */
+    public void validate() {
+        printHeader();
         try {
-            validator.checkRequiredFiles();
+            checkRequiredFiles();
         } catch (ValidationException ex) {
             printErrorAndExit(ex.getMessage());
         }
 
+        // README
+        if (readme.identifier==null) printError("README.identifier is missing.");
+        if (readme.taxid==0) printError("README.taxid is missing.");
+        if (readme.synopsis==null) printError("README.synopsis is missing.");
+        if (readme.description==null) printError("README.description is missing.");
+        if (readme.scientific_name_abbrev==null) printError("README.scientific_name_abbrev is missing.");
+
         // genome_main.fna.gz
         try {
-            File file = validator.getDataFile("genome_main.fna.gz");
+            File file = getDataFile("genome_main.fna.gz");
             System.out.println(" - "+file.getName());
             Map<String,DNASequence> sequenceMap = GZIPFastaReader.readFastaDNASequence(file);
             for (DNASequence sequence : sequenceMap.values()) {
-                validator.validateSequenceIdentifier(file, sequence);
+                validateSequenceIdentifier(file, sequence);
             }
         } catch (Exception ex) {
-            validator.printError(ex.getMessage());
+            printError(ex.getMessage());
         }
-
-        // valid!
-        if (validator.valid) printIsValidMessage();
     }
       
 }

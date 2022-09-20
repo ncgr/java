@@ -83,8 +83,8 @@ public abstract class CollectionValidator {
      * Print out a couple header lines
      */
     public void printHeader() {
-        System.err.println(collection); // for terminal monitoring when stdout is redirected to a file
         System.out.println("--------------------------------------------------------------------------------");
+        System.err.println(collection); // for terminal monitoring when stdout is redirected to a file
         System.out.println("### Validating "+purple(gensp)+" collection "+purple(collection));
     }
 
@@ -102,7 +102,7 @@ public abstract class CollectionValidator {
     }
 
     /**
-     * Return true if the gensp.fileType file exists in the collection.
+     * Return true if the gensp.collection.fileType file exists in the collection.
      */
     boolean dataFileExists(String fileType) {
         File file = getDataFile(fileType);
@@ -231,6 +231,23 @@ public abstract class CollectionValidator {
         if (!hasValidSequenceIdentifier(sequence)) {
             throw new ValidationException(file.getName()+" has an invalid sequence identifier in header:\n"+sequence.getAccession().getID());
         }
+    }
+
+    /**
+     * Return true if the given data filename matches the current collection, i.e. starts with gensp.collection.
+     *
+     * @param filename the filename to be checked
+     * @return true if the filename starts with the collection
+     */
+    boolean isValidDataFilename(String filename) {
+        return filename.startsWith(gensp+"."+collection);
+    }
+
+    /**
+     * Return the value of the valid variable.
+     */
+    public boolean isValid() {
+        return valid;
     }
 
     /**

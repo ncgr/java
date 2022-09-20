@@ -47,17 +47,25 @@ public class SyntenyCollectionValidator extends CollectionValidator {
 
         // construct our validator
         SyntenyCollectionValidator validator = new SyntenyCollectionValidator(args[0]);
-        validator.printHeader();
+        validator.validate();
+        if (validator.valid) printIsValidMessage();
+    }
+
+    /**
+     * Validate the current instance.
+     */
+    public void validate() {
+        printHeader();
         
         // iterate over data files in dir
-        for (File file : validator.dir.listFiles()) {
+        for (File file : dir.listFiles()) {
             if (file.getName().endsWith("gff3.gz")) {
                 // 0      1       2    3 4      5       6    7    8    9
                 // gensp1.Strain1.gnm1.x.gensp2.Strain2.gnm2.KEY4.gff3.gz
                 boolean filenameOK = true;
                 String[] parts = file.getName().split("\\.");
                 String genspStrainGnm1 = parts[0] + "." + parts[1] + "." + parts[2];
-                filenameOK = filenameOK && genspStrainGnm1.equals(validator.genspStrainGnm);    // match collection
+                filenameOK = filenameOK && genspStrainGnm1.equals(genspStrainGnm);    // match collection
                 filenameOK = filenameOK && parts[3].equals("x");
                 if (!filenameOK) {
                     printErrorAndExit(file.getName()+" is incorrectly named. Format: gensp.Strain.gnm.x.gensp.Strain.gnm.KEY4.gff3.gz");
@@ -79,31 +87,27 @@ public class SyntenyCollectionValidator extends CollectionValidator {
                     // validate
                     FeatureList featureList = GFF3Reader.read(TEMPFILE);
                     for (FeatureI featureI : featureList) {
-                        if (!validator.hasValidSeqname(featureI)) {
-                            validator.printError(file.getName()+" has an invalid seqname:");
-                            validator.printError(featureI.toString());
+                        if (!hasValidSeqname(featureI)) {
+                            printError(file.getName()+" has an invalid seqname:");
+                            printError(featureI.toString());
                         }
-                        String name = validator.getAttribute(featureI, "Name");
+                        String name = getAttribute(featureI, "Name");
                         if (!name.startsWith(genspStrainGnm2)) {
-                            validator.printError(file.getName()+" record has incorrect format Name attribute:");
-                            validator.printError(featureI.toString());
+                            printError(file.getName()+" record has incorrect format Name attribute:");
+                            printError(featureI.toString());
                         }
-                        String matches = validator.getAttribute(featureI, "matches");
+                        String matches = getAttribute(featureI, "matches");
                         if (!matches.startsWith(genspStrainGnm2)) {
-                            validator.printError(file.getName()+" record has incorrect format matches attribute:");
-                            validator.printError(featureI.toString());
+                            printError(file.getName()+" record has incorrect format matches attribute:");
+                            printError(featureI.toString());
                         }
-                        if (!validator.valid) break;
+                        if (!valid) break;
                     }
                 } catch (Exception ex) {
-                    validator.printError(ex.getMessage());
+                    printError(ex.getMessage());
                 }
             }
         }
-
-        // valid!
-        if (validator.valid) printIsValidMessage();
     }
 
 }
-    

@@ -44,50 +44,57 @@ public class MarkerCollectionValidator extends CollectionValidator {
 
         // construct our validator and check required files
         MarkerCollectionValidator validator = new MarkerCollectionValidator(args[0]);
-        validator.printHeader();
+        validator.validate();
+        if (!validator.isValid()) printIsValidMessage();
+    }
+
+    /**
+     * Validate the current instance.
+     */
+    public void validate() {
+        printHeader();
         try {
-            validator.checkRequiredFiles();
+            checkRequiredFiles();
         } catch (ValidationException ex) {
             printErrorAndExit(ex.getMessage());
         }
 
-        // gff3.gz
-        if (validator.dataFileExists("gff3.gz")) {
-            try {
-                File file = validator.getDataFile("gff3.gz");
-                System.out.println(" - "+file.getName());
-                // uncompress the gff3.gz file
-                File tempfile = new File(TEMPFILE);
-                tempfile.delete();
-                BufferedWriter writer = new BufferedWriter(new FileWriter(tempfile));
-                BufferedReader reader = GZIPBufferedReader.getReader(file);
-                String line = null;
-                while ( (line=reader.readLine())!=null ) {
-                    writer.write(line);
-                    writer.newLine();
-                }
-                writer.close();
-                // validate the uncompressed GFF3 file
-                FeatureList featureList = GFF3Reader.read(TEMPFILE);
-                for (FeatureI featureI : featureList) {
-                    if (!validator.hasValidSeqname(featureI)) {
-                        validator.printError(file.getName()+" record seqname is invalid:");
-                        validator.printError(featureI.toString());
-                    }
-                    if (!validator.hasValidGenomicID(featureI)) {
-                        validator.printError(file.getName()+" record ID attribute is missing or invalid:");
-                        validator.printError(featureI.toString());
-                    }
-                    if (!validator.valid) System.exit(1);
-                }
-            } catch (Exception ex) {
-                validator.printError(ex.getMessage());
-            }
-        }        
+        // genotyping_platform is required
+        if (readme.genotyping_platform==null) {                                                                                                                                           
+                throw new RuntimeException("README does not have required genotyping_platform key:value.");
+        }
 
-        // valid!
-        if (validator.valid) printIsValidMessage();
+        // gff3.gz
+        try {
+            File file = getDataFile("gff3.gz");
+            System.out.println(" - "+file.getName());
+            // uncompress the gff3.gz file
+            File tempfile = new File(TEMPFILE);
+            tempfile.delete();
+            BufferedWriter writer = new BufferedWriter(new FileWriter(tempfile));
+            BufferedReader reader = GZIPBufferedReader.getReader(file);
+            String line = null;
+            while ( (line=reader.readLine())!=null ) {
+                writer.write(line);
+                writer.newLine();
+            }
+            writer.close();
+            // validate the uncompressed GFF3 file
+            FeatureList featureList = GFF3Reader.read(TEMPFILE);
+            for (FeatureI featureI : featureList) {
+                if (!hasValidSeqname(featureI)) {
+                    printError(file.getName()+" record seqname is invalid:");
+                    printError(featureI.toString());
+                }
+                if (!hasValidGenomicID(featureI)) {
+                    printError(file.getName()+" record ID attribute is missing or invalid:");
+                    printError(featureI.toString());
+                }
+                if (!valid) System.exit(1);
+            }
+        } catch (Exception ex) {
+            printError(ex.getMessage());
+        }
     }
 
 }
-    
