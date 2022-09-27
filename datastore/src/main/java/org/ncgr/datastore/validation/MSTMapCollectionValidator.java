@@ -22,6 +22,7 @@ public class MSTMapCollectionValidator extends CollectionValidator {
      */
     public MSTMapCollectionValidator(String dirString) {
         super(dirString);
+        requiredFileTypes = Arrays.asList("mstmap.tsv.gz");
     }
 
     public static void main(String[] args) {
@@ -29,20 +30,25 @@ public class MSTMapCollectionValidator extends CollectionValidator {
             System.err.println("Usage: MSTMapCollectionValidator [genome directory]");
             System.exit(1);
         }
-
-        // construct our validator and check required files
         MSTMapCollectionValidator validator = new MSTMapCollectionValidator(args[0]);
+        validator.validate();
         validator.printHeader();
+        if (validator.valid) printIsValidMessage();
+    }
 
+    /**
+     * Validate the current instance.
+     */
+    public void validate() {
+        try {
+            checkRequiredFiles();
+        } catch (ValidationException ex) {
+            printErrorAndExit(ex.getMessage());
+        }
         // mstmap.tsv.gz
         // NOT VALIDATED
-        if (validator.dataFileExists("mstmap.tsv.gz")) {
-            File file = validator.getDataFile("mstmap.tsv.gz");
-            System.out.println(" - "+file.getName()+" (not validated)");
-        }            
-        
-        // valid!
-        if (validator.valid) printIsValidMessage();
+        File file = getDataFile("mstmap.tsv.gz");
+        System.out.println(" - "+file.getName()+" (not validated)");
     }
 
 }

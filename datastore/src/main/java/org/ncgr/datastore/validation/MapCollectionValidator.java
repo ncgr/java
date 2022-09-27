@@ -33,15 +33,23 @@ public class MapCollectionValidator extends CollectionValidator {
 
         // construct our validator and check required files
         MapCollectionValidator validator = new MapCollectionValidator(args[0]);
-        validator.printHeader();
+        validator.validate();
+        if (validator.isValid()) printIsValidMessage();
+    }
+
+    /**
+     * Validate this instance.
+     */
+    public void validate() {
+        printHeader();
         try {
-            validator.checkRequiredFiles();
+            checkRequiredFiles();
         } catch (ValidationException ex) {
             printErrorAndExit(ex.getMessage());
         }
 
         // README must contain genetic_map entry
-        if (validator.readme.genetic_map==null) {
+        if (readme.genetic_map==null) {
             printErrorAndExit(red("genetic_map attribute is missing from README."));
         }
 
@@ -51,7 +59,7 @@ public class MapCollectionValidator extends CollectionValidator {
         // load the LG names into a list to check they match those in marker.tsv.gz.
         List<String> lgList = new ArrayList<>();
         try {
-            File file = validator.getDataFile("lg.tsv.gz");
+            File file = getDataFile("lg.tsv.gz");
             System.out.println(" - "+file.getName());
             BufferedReader br = GZIPBufferedReader.getReader(file);
             String line = null;
@@ -59,8 +67,8 @@ public class MapCollectionValidator extends CollectionValidator {
                 if (line.startsWith("#") || line.trim().length()==0) continue; // comment or blank
                 String[] parts = line.split("\t");
                 if (parts.length<2) {
-                    validator.printError("LG file does not at least two values (linkage_group,length,[chromosome]) in this line:");
-                    validator.printError(line);
+                    printError("LG file does not at least two values (linkage_group,length,[chromosome]) in this line:");
+                    printError(line);
                     break;
                 } else {
                     lgList.add(parts[0]);
@@ -76,7 +84,7 @@ public class MapCollectionValidator extends CollectionValidator {
         // A053_2  GmComposite1999_A1      32.20
         // Check that LG name matches one in the lg.tsv file.
         try {
-            File file = validator.getDataFile("mrk.tsv.gz");
+            File file = getDataFile("mrk.tsv.gz");
             System.out.println(" - "+file.getName());
             BufferedReader br = GZIPBufferedReader.getReader(file);
             String line = null;
@@ -84,21 +92,18 @@ public class MapCollectionValidator extends CollectionValidator {
                 if (line.startsWith("#") || line.trim().length()==0) continue; // comment or blank
                 String[] parts = line.split("\t");
                 if (parts.length!=3) {
-                    validator.printError("Marker file does not have three values (marker,linkage_group,position) in this line:");
-                    validator.printError(line);
+                    printError("Marker file does not have three values (marker,linkage_group,position) in this line:");
+                    printError(line);
                     break;
                 } else if (!lgList.contains(parts[1])) {
-                    validator.printError("Marker file contains an LG identifier missing in LG file in this line:");
-                    validator.printError(line);
+                    printError("Marker file contains an LG identifier missing in LG file in this line:");
+                    printError(line);
                     break;
                 }
             }
         } catch (Exception ex) {
             printErrorAndExit(ex.getMessage());
         }
-            
-        // valid!
-        if (validator.valid) printIsValidMessage();
     }
 
 }
