@@ -6,6 +6,7 @@ import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
@@ -51,7 +52,10 @@ public class ExpressionCollectionValidator extends CollectionValidator {
         }
 
         // samples.tsv.gz REQUIRED
-        // #identifier     name    description     treatment       tissue  development_stage       species genotype        replicate_group
+        // 0            1     2            3          4       5                  6        7         8
+        // #identifier  name  description  treatment  tissue  development_stage  species  genotype  replicate_group
+        // store identifiers for check against values.tsv and obo.tsv
+        List<String> sampleIdentifiers = new ArrayList<>();
         try {
             File file = getDataFile("samples.tsv.gz");
             System.out.println(" - "+file.getName());
@@ -70,6 +74,7 @@ public class ExpressionCollectionValidator extends CollectionValidator {
                         printError(file.getName()+" does not contain at least three values in this line:");
                         printError(line);
                     }
+                    sampleIdentifiers.add(parts[0]);
                 }
             }
         } catch (Exception ex) {
@@ -78,6 +83,8 @@ public class ExpressionCollectionValidator extends CollectionValidator {
         
         // obo.tsv.gz REQUIRED
         // #identifier     ontology_term
+        // check that identifiers are in samples.tsv
+        List<String> oboIdentifiers = new ArrayList<>();
         try {
             File file = getDataFile("obo.tsv.gz");
             System.out.println(" - "+file.getName());
@@ -90,12 +97,18 @@ public class ExpressionCollectionValidator extends CollectionValidator {
                     printError(file.getName()+" does not contain two values in this line:");
                     printError(line);
                 }
+                if (!sampleIdentifiers.contains(parts[0])) {
+                    printError(file.getName()+" contains a sample that is not present in samples.tsv file.");
+                    printError(line);
+                }
             }
         } catch (Exception ex) {
             printErrorAndExit(ex.getMessage());
         }
-
+        
         // values.tsv.gz REQUIRED
+        // gene_id sample1 sample2 .... sampleN
+        // check that all sample identifiers match those in samples.tsv
         try {
             File file = getDataFile("values.tsv.gz");
             System.out.println(" - "+file.getName());
@@ -104,7 +117,15 @@ public class ExpressionCollectionValidator extends CollectionValidator {
             while ((line=br.readLine())!=null) {
                 if (line.startsWith("#") || line.trim().length()==0) continue; // comment or blank
                 String[] parts = line.split("\t");
-                if (parts[0].toLowerCase().equals("gene_id")) continue; // header line
+                if (parts[0].toLowerCase().equals("gene_id")) {
+                    // header line, check all identifiers
+                    for (int i=1; i<parts.length; i++) {
+                        if (!sampleIdentifiers.contains(parts[i])) {
+                            printError(file.getName()+" contains a sample "+parts[i]+" in the header that is not present in samples.tsv file.");
+                        }
+                    }
+                    continue;
+                }
                 // a gene line
                 String geneId = parts[0];
                 if (!matchesCollection(geneId)) {
@@ -117,4 +138,3 @@ public class ExpressionCollectionValidator extends CollectionValidator {
     }
 
 }
-    
