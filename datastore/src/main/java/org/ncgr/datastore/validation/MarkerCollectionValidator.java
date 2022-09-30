@@ -45,7 +45,7 @@ public class MarkerCollectionValidator extends CollectionValidator {
         // construct our validator and check required files
         MarkerCollectionValidator validator = new MarkerCollectionValidator(args[0]);
         validator.validate();
-        if (!validator.isValid()) printIsValidMessage();
+        if (validator.isValid()) printIsValidMessage();
     }
 
     /**
