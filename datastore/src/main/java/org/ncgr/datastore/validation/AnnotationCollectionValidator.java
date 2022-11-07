@@ -187,12 +187,16 @@ public class AnnotationCollectionValidator extends CollectionValidator {
         }
 
         // GFAPREFIX.gfa.tsv.gz (required)
-        // Check that the gene and protein identifiers exist in the GFF and protein FASTA
+        // Check that the FIRST record gene and protein identifiers exist in the GFF and protein FASTA
+        // (It takes too long to check every record.)
         try {
+            List<String> gfaGenes = new ArrayList<>();
+            List<String> gfaProteins = new ArrayList<>();
             File file = getDataFile(GFAPREFIX+".gfa.tsv.gz");
             System.out.println(" - "+file.getName());
             BufferedReader br = GZIPBufferedReader.getReader(file);
             String line = null;
+            boolean first = true;
             while ((line=br.readLine())!=null) {
                 if (line.startsWith("#") || line.startsWith("URL") || line.startsWith("ScoreMeaning") || line.trim().length()==0) continue; // comment or blank
                 String[] parts = line.split("\t");
@@ -212,14 +216,15 @@ public class AnnotationCollectionValidator extends CollectionValidator {
                     printError("Gene family identifier "+family+" in "+file.getName()+" is not valid:");
                     printError(line);
                 }
-                // cross-checks
-                if (!gffGenes.contains(geneId)) {
-                    printError("Gene identifier "+geneId+" in "+file.getName()+" is not present in GFF file.");
-                    printError(line);
-                }
-                if (!fastaProteins.contains(proteinId)) {
-                    printError("Protein identifier "+proteinId+" in "+file.getName()+" is not present in protein FASTA file(s).");
-                    printError(line);
+                // cross-check the first gene and protein against the GFF and protein FASTA
+                if (first) {
+                    if (!gffGenes.contains(geneId)) {
+                        printError("GFA file contains gene ID "+geneId+" that is not present in the gene models GFF file.");
+                    }
+                    if (!fastaProteins.contains(proteinId)) {
+                        printError("GFA file contains protein ID "+proteinId+" that is not present in the protein FASTA file(s).");
+                    }
+                    first = false;
                 }
                 if (!valid) break;
             }
