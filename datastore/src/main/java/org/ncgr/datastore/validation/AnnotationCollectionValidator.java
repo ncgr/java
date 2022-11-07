@@ -8,6 +8,7 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -23,13 +24,18 @@ import org.biojava.nbio.genome.parsers.gff.GFF3Reader;
  */
 public class AnnotationCollectionValidator extends CollectionValidator {
     private static final String TEMPFILE = "/tmp/temp.gff3";
+    private static final String GFAPREFIX = "legfed_v1_0.M65K";
 
     /**
      * Construct from an /annotations/ directory
      */
     public AnnotationCollectionValidator(String dirString) {
         super(dirString);
-        requiredFileTypes = Arrays.asList("gene_models_main.gff3.gz");
+        requiredFileTypes = Arrays.asList("gene_models_main.gff3.gz",
+                                          "protein.faa.gz",
+                                          "mrna.fna.gz",
+                                          "cds.fna.gz",
+                                          GFAPREFIX+".gfa.tsv.gz");
     }
 
     public static void main(String[] args) {
@@ -53,6 +59,10 @@ public class AnnotationCollectionValidator extends CollectionValidator {
         } catch (ValidationException ex) {
             printErrorAndExit(ex.getMessage());
         }
+        
+        // store some identifiers for cross-checks
+        List<String> gffGenes = new ArrayList<>();
+        List<String> fastaProteins = new ArrayList<>();
         
         // gene_models_main.gff3.gz (required)
         try {
@@ -85,37 +95,34 @@ public class AnnotationCollectionValidator extends CollectionValidator {
                     printError(featureI.toString());
                 }
                 if (!valid) break;
+                // add the identifier to the list for later cross-checks
+                gffGenes.add(getAttribute(featureI, "ID"));
             }
         } catch (Exception ex) {
             printError(ex.getMessage());
         }
         
-        // protein.faa.gz AND/OR protein_primary.faa.gz
-        boolean proteinPresent = false;
+        // protein.faa.gz (required) and protein_primary.faa.gz (optional)
         for (String fileType : Arrays.asList("protein.faa.gz","protein_primary.faa.gz")) {
             if (dataFileExists(fileType)) {
-                proteinPresent = true;
                 try {
                     File file = getDataFile(fileType);
                     System.out.println(" - "+file.getName());
                     Map<String,ProteinSequence> sequenceMap = GZIPFastaReader.readFastaProteinSequence(file);
                     for (ProteinSequence sequence : sequenceMap.values()) {
                         validateSequenceIdentifier(file, sequence);
+                        // add the identifier to the list for later cross-checks
+                        fastaProteins.add(getFastaSequenceIdentifier(sequence));
                     }
                 } catch (Exception ex) {
                     printError(ex.getMessage());
                 }
             }
         }
-        if (!proteinPresent) {
-            printError("Neither protein.faa.gz nor protein_primary.faa.gz file is present.");
-        }
 
-        // cds.fna.gz AND/OR cds_primary.fna.gz
-        boolean cdsPresent = false;
+        // cds.fna.gz (required) and cds_primary.fna.gz (optional)
         for (String fileType : Arrays.asList("cds.fna.gz","cds_primary.fna.gz")) {
             if (dataFileExists(fileType)) {
-                cdsPresent = true;
                 try {
                     File file = getDataFile(fileType);
                     System.out.println(" - "+file.getName());
@@ -128,11 +135,8 @@ public class AnnotationCollectionValidator extends CollectionValidator {
                 }
             }
         }
-        if (!cdsPresent) {
-            printError("Neither cds.fna.gz nor cds_primary.fna.gz file is present.");
-        }
 
-        // mrna.fna.gz AND/OR mrna_primary.fna.gz
+        // mrna.fna.gz (required) and mrna_primary.fna.gz (optional)
         boolean mrnaPresent = false;
         for (String fileType : Arrays.asList("mrna.fna.gz","mrna_primary.fna.gz")) {
             if (dataFileExists(fileType)) {
@@ -148,9 +152,6 @@ public class AnnotationCollectionValidator extends CollectionValidator {
                     printError(ex.getMessage());
                 }
             }
-        }
-        if (!mrnaPresent) {
-            printError("Neither mrna.fna.gz nor mrna_primary.fna.gz file is present.");
         }
         
         // iprscan.gff3.gz (optional)
@@ -181,45 +182,55 @@ public class AnnotationCollectionValidator extends CollectionValidator {
             } catch (Exception ex) {
                 printError(ex.getMessage());
             }
-        }            
-
-        // legfed_v1_0.M65K.gfa.tsv.gz (required)
-        // #gene   family  protein score
-        if (dataFileExists("legfed_v1_0.M65K.gfa.tsv.gz")) {
-            File file = getDataFile("legfed_v1_0.M65K.gfa.tsv.gz");
-            System.out.println(" - "+file.getName());
-            try {
-                BufferedReader br = GZIPBufferedReader.getReader(file);
-                String line = null;
-                while ((line=br.readLine())!=null) {
-                    if (line.startsWith("#") || line.startsWith("URL") || line.startsWith("ScoreMeaning") || line.trim().length()==0) continue; // comment or blank
-                    String[] parts = line.split("\t");
-                    String geneId = parts[0];
-                    String family = parts[1];
-                    String proteinId = parts[2];
-                    if (!matchesCollection(geneId)) {
-                        printError("Gene ID "+geneId+" in "+file.getName()+" is not a valid LIS identifier:");
-                        printError(line);
-                    }
-                    if (!matchesCollection(proteinId)) {
-                        printError("Protein ID "+proteinId+" in "+file.getName()+" is not a valid LIS identifier:");
-                        printError(line);
-                    }
-                    if (!family.startsWith("legfed")) {
-                        printError("Gene family identifier "+family+" in "+file.getName()+" is not valid:");
-                        printError(line);
-                    }
-                    if (!valid) break;
-                }
-            } catch (Exception ex) {
-                printErrorAndExit(ex.getMessage());
-            }
+        } else {
+            printWarning("Optional iprscan.gff3.gz file is not present.");
         }
 
-        // legfed_v1_0.M65K.pathway.tsv.gz (optional)
-        // #pathway_identifier  pathway_name  gene
-        if (dataFileExists("legfed_v1_0.M65K.pathway.tsv.gz")) {
-            File file = getDataFile("legfed_v1_0.M65K.pathway.tsv.gz");
+        // GFAPREFIX.gfa.tsv.gz (required)
+        // Check that the gene and protein identifiers exist in the GFF and protein FASTA
+        try {
+            File file = getDataFile(GFAPREFIX+".gfa.tsv.gz");
+            System.out.println(" - "+file.getName());
+            BufferedReader br = GZIPBufferedReader.getReader(file);
+            String line = null;
+            while ((line=br.readLine())!=null) {
+                if (line.startsWith("#") || line.startsWith("URL") || line.startsWith("ScoreMeaning") || line.trim().length()==0) continue; // comment or blank
+                String[] parts = line.split("\t");
+                String geneId = parts[0];
+                String family = parts[1];
+                String proteinId = parts[2];
+                // syntax checks
+                if (!matchesCollection(geneId)) {
+                    printError("Gene ID "+geneId+" in "+file.getName()+" is not a valid LIS identifier:");
+                    printError(line);
+                }
+                if (!matchesCollection(proteinId)) {
+                    printError("Protein ID "+proteinId+" in "+file.getName()+" is not a valid LIS identifier:");
+                    printError(line);
+                }
+                if (!family.startsWith("legfed")) {
+                    printError("Gene family identifier "+family+" in "+file.getName()+" is not valid:");
+                    printError(line);
+                }
+                // cross-checks
+                if (!gffGenes.contains(geneId)) {
+                    printError("Gene identifier "+geneId+" in "+file.getName()+" is not present in GFF file.");
+                    printError(line);
+                }
+                if (!fastaProteins.contains(proteinId)) {
+                    printError("Protein identifier "+proteinId+" in "+file.getName()+" is not present in protein FASTA file(s).");
+                    printError(line);
+                }
+                if (!valid) break;
+            }
+        } catch (Exception ex) {
+            printErrorAndExit(ex.getMessage());
+        }
+
+        // pathway.tsv.gz OR GFAPREFIX.pathway.tsv.gz (optional)
+        if (dataFileExists("pathway.tsv.gz") || dataFileExists(GFAPREFIX+".pathway.tsv.gz")) {
+            File file = getDataFile("pathway.tsv.gz");
+            if (!file.exists()) file = getDataFile(GFAPREFIX+".pathway.tsv.gz");
             System.out.println(" - "+file.getName());
             try {
                 BufferedReader br = GZIPBufferedReader.getReader(file);
@@ -227,22 +238,28 @@ public class AnnotationCollectionValidator extends CollectionValidator {
                 while ((line=br.readLine())!=null) {
                     if (line.startsWith("#") || line.startsWith("URL") || line.startsWith("SourceSpecies") || line.trim().length()==0) continue; // comment or blank
                     String[] parts = line.split("\t");
-                    String pathwayId = parts[0];
-                    String pathwayName = parts[1];
-                    String geneId = parts[2];
-                    if (!matchesCollection(geneId)) {
-                        printError("Gene ID "+geneId+" in "+file.getName()+" is not a valid LIS identifier:");
+                    if (parts.length==3) {
+                        String pathwayId = parts[0];
+                        String pathwayName = parts[1];
+                        String geneId = parts[2];
+                        if (!matchesCollection(geneId)) {
+                            printError("Gene ID "+geneId+" in "+file.getName()+" is not a valid LIS identifier:");
+                            printError(line);
+                        }
+                    } else {
+                        printError("pathway file "+file.getName()+" contains data line with other than exactly 3 columns:");
                         printError(line);
-                    }
+                    }                        
                     if (!valid) break;
                 }
             } catch (Exception ex) {
                 printErrorAndExit(ex.getMessage());
             }
+        } else {
+            printWarning("Optional pathway.tsv.gz file is not present.");
         }
 
         // phytozome_10_2.HFNR.gfa.tsv.gz (optional)
-        // #gene   family  protein score
         if (dataFileExists("phytozome_10_2.HFNR.gfa.tsv.gz")) {
             File file = getDataFile("phytozome_10_2.HFNR.gfa.tsv.gz");
             System.out.println(" - "+file.getName());
@@ -272,6 +289,8 @@ public class AnnotationCollectionValidator extends CollectionValidator {
             } catch (Exception ex) {
                 printErrorAndExit(ex.getMessage());
             }
+        } else {
+            printWarning("Optional phytozome_10_2.HFNR.gfa.tsv.gz file is not present.");
         }
     }
 

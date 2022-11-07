@@ -23,6 +23,8 @@ public abstract class CollectionValidator {
     final static String NC="\033[0m";    // no color
     final static String RD="\033[1;31m"; // red
     final static String GR="\033[1;32m"; // green
+    final static String YL="\033[1;33m"; // yellow
+    final static String BL="\033[1;34m"; // blue
     final static String LP="\033[1;35m"; // light purple
     
     File dir;
@@ -116,13 +118,20 @@ public abstract class CollectionValidator {
     }
 
     /**
-     * Print a standard error message and set valid = false.
+     * Print an error message and set valid = false.
      */
     public void printError(String error) {
         valid = false;
         System.out.println("### "+red("INVALID: ")+error);
     }
 
+    /**
+     * Print a warning.
+     */
+    public void printWarning(String warning) {
+        System.out.println("### "+yellow(warning));
+    }
+    
     /**
      * Print a standard error message then exit with status=1.
      */
@@ -268,6 +277,13 @@ public abstract class CollectionValidator {
      */
     static String green(String s) {
         return GR+s+NC;
+    }
+
+    /**
+     * ANSI coloir string yellow
+     */
+    static String yellow(String s) {
+        return YL+s+NC;
     }
 
 }
