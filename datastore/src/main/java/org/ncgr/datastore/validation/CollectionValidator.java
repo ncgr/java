@@ -97,9 +97,10 @@ public abstract class CollectionValidator {
         for (String fileType : requiredFileTypes) {
             File file = getDataFile(fileType);
             if (!file.exists()) {
-                throw new ValidationException("Required file "+red(file.getName())+" is not present in "+purple(collection));
+                printError("Required file "+red(file.getName())+" is not present in "+purple(collection));
             }
         }
+        if (!valid) throw new ValidationException("Missing required files.");
     }
 
     /**
