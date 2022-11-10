@@ -83,6 +83,7 @@ public class MapCollectionValidator extends CollectionValidator {
         // #marker linkage_group   position
         // A053_2  GmComposite1999_A1      32.20
         // Check that LG name matches one in the lg.tsv file.
+        // Also check that marker names aren't empty.
         try {
             File file = getDataFile("mrk.tsv.gz");
             System.out.println(" - "+file.getName());
@@ -97,6 +98,10 @@ public class MapCollectionValidator extends CollectionValidator {
                     break;
                 } else if (!lgList.contains(parts[1])) {
                     printError("Marker file contains an LG identifier missing in LG file in this line:");
+                    printError(line);
+                    break;
+                } else if (parts[0].trim().length()==0) {
+                    printError("Marker file has empty marker name in this line:");
                     printError(line);
                     break;
                 }
