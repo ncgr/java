@@ -59,8 +59,8 @@ public class QTLCollectionValidator extends CollectionValidator {
         }
 
         // qtl.tsv.gz REQUIRED
-        // #qtl_identifier trait_name    linkage_group start   end     [peak favored_allele_source lod likelihood_ratio  marker_r2 total_r2  additivity]
-        // FF5             First flower  C2            104.4   106.4   105.4
+        // #qtl_identifier   trait_name    genetic_map      linkage_group start   end     [peak favored_allele_source lod likelihood_ratio  marker_r2 total_r2  additivity]
+        // First flower 1-1  First flower  GmComposite2003  C2            104.4   106.4   105.4
         // Store the distinct trait names to check that they match the obo file.
         Set<String> qtlTraitNames = new HashSet<>();
         try {
@@ -69,10 +69,25 @@ public class QTLCollectionValidator extends CollectionValidator {
             BufferedReader br = GZIPBufferedReader.getReader(file);
             String line = null;
             while ((line=br.readLine())!=null) {
-                if (line.startsWith("#") || line.trim().length()==0) continue; // comment or blank
+                if (line.trim().length()==0) continue;
                 String[] parts = line.split("\t");
-                if (parts.length<5) {
-                    printError("File does not have required five values (qtl_identifier,trait_name,linkage_group,start,end) in this line:");
+                if (line.startsWith("#")) {
+                    // check header
+                    List<String> partsList = Arrays.asList(parts);
+                    if (partsList.contains("#qtl_identifier") &&
+                        partsList.contains("trait_name") &&
+                        partsList.contains("genetic_map") &&
+                        partsList.contains("linkage_group") &&
+                        partsList.contains("start") &&
+                        partsList.contains("end")) {
+                        continue;
+                    } else {
+                        printError("qtl.tsv.gz file does not have correct header:");
+                        printError(line);
+                        break;
+                    }
+                } else if (parts.length<6) {
+                    printError("File does not have six required values (qtl_identifier,trait_name,genetic_map,linkage_group,start,end) in this line:");
                     printError(line);
                     break;
                 }
@@ -83,8 +98,8 @@ public class QTLCollectionValidator extends CollectionValidator {
         }
 
         // qtlmrk.tsv.gz OPTIONAL
-        // #qtl_identifier   trait_name    marker             [linkage_group]
-        // Leaflet area 9-1  Leaflet area  BARC-050677-09819  GmComposite2003_C1
+        // #qtl_identifier   trait_name    genetic_map     marker             [linkage_group]
+        // Leaflet area 9-1  Leaflet area  GmComposite2003 BARC-050677-09819  GmComposite2003_C1
         if (dataFileExists("qtlmrk.tsv.gz")) {
             try {
                 File file = getDataFile("qtlmrk.tsv.gz");
@@ -92,10 +107,23 @@ public class QTLCollectionValidator extends CollectionValidator {
                 BufferedReader br = GZIPBufferedReader.getReader(file);
                 String line = null;
                 while ((line=br.readLine())!=null) {
-                    if (line.startsWith("#") || line.trim().length()==0) continue; // comment or blank
+                    if (line.trim().length()==0) continue;
                     String[] parts = line.split("\t");
-                    if (parts.length<3) {
-                        printError("File does not have three required values (qtl_identifier,trait_name,marker) in this line:");
+                    if (line.startsWith("#")) {
+                        // check header
+                        List<String> partsList = Arrays.asList(parts);
+                        if (partsList.contains("#qtl_identifier") &&
+                            partsList.contains("trait_name") &&
+                            partsList.contains("genetic_map") &&
+                            partsList.contains("marker")) {
+                            continue;
+                        } else {
+                            printError("qtlmrk.tsv.gz file does not have correct header:");
+                            printError(line);
+                            break;
+                        }
+                    } else if (parts.length<4) {
+                        printError("qtlmrk.tsv.gz file does not have four required values (qtl_identifier,trait_name,genetic_map,marker) in this line:");
                         printError(line);
                         break;
                     }
