@@ -7,7 +7,6 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.util.Arrays;
-import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -15,6 +14,7 @@ import java.util.Set;
 
 /**
  * Methods to validate an LIS Datastore /qtl/ collection.
+ * The qtl.tsv file is required, since we say a "QTL study" has to be on a genetic map with linkage groups.
  */
 public class QTLCollectionValidator extends CollectionValidator {
 
@@ -32,7 +32,6 @@ public class QTLCollectionValidator extends CollectionValidator {
             System.err.println("Usage: QTLCollectionValidator [collection directory]");
             System.exit(1);
         }
-
         // construct our validator and validate
         QTLCollectionValidator validator = new QTLCollectionValidator(args[0]);
         validator.validate();
@@ -50,15 +49,12 @@ public class QTLCollectionValidator extends CollectionValidator {
             printErrorAndExit(ex.getMessage());
         }
 
-        // README must contain genotype and genetic_map entries
+        // README must contain genotype entries
         if (readme.genotype==null) {
             printError("README file is missing genotype key:value.");
         }
-        if (readme.genetic_map==null) {
-            printError("README file is missing genetic_map key:value.");
-        }
 
-        // qtl.tsv.gz REQUIRED
+        // qtl.tsv.gz OPTIONAL
         // #qtl_identifier   trait_name    genetic_map      linkage_group start   end     [peak favored_allele_source lod likelihood_ratio  marker_r2 total_r2  additivity]
         // First flower 1-1  First flower  GmComposite2003  C2            104.4   106.4   105.4
         // Store the distinct trait names to check that they match the obo file.
@@ -100,7 +96,9 @@ public class QTLCollectionValidator extends CollectionValidator {
         // qtlmrk.tsv.gz OPTIONAL
         // #qtl_identifier   trait_name    genetic_map     marker             [linkage_group]
         // Leaflet area 9-1  Leaflet area  GmComposite2003 BARC-050677-09819  GmComposite2003_C1
-        if (dataFileExists("qtlmrk.tsv.gz")) {
+        Set<String> qtlmrkTraitNames = new HashSet<>();
+        Boolean qtlmrkExists = dataFileExists("qtlmrk.tsv.gz");
+        if (qtlmrkExists) {
             try {
                 File file = getDataFile("qtlmrk.tsv.gz");
                 System.out.println(" - "+file.getName());
@@ -127,6 +125,7 @@ public class QTLCollectionValidator extends CollectionValidator {
                         printError(line);
                         break;
                     }
+                    qtlmrkTraitNames.add(parts[1]);
                 }
             } catch (Exception ex) {
                 printErrorAndExit(ex.getMessage());
@@ -182,11 +181,14 @@ public class QTLCollectionValidator extends CollectionValidator {
             }
         }
 
-        // check that OBO trait names match qtl file.
+        // check that OBO trait names match qtl or qtlmrk file.
         if (oboTraitNames.size()>0) {
             for (String oboTraitName : oboTraitNames) {
                 if (!qtlTraitNames.contains(oboTraitName)) {
-                    printError("OBO file contains a trait that is missing in QTL file: "+oboTraitName);
+                    printError("OBO file contains a trait that is missing in qtl.tsv.gz file: "+oboTraitName);
+                }
+                if (qtlmrkExists && !qtlmrkTraitNames.contains(oboTraitName)) {
+                    printError("OBO file contains a trait that is missing in qtlmrk.tsv.gz file: "+oboTraitName);
                 }
             }
         }

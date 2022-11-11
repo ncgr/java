@@ -22,6 +22,7 @@ public class GWASCollectionValidator extends CollectionValidator {
      */
     public GWASCollectionValidator(String dirString) {
         super(dirString);
+        requiredFileTypes = Arrays.asList("result.tsv.gz","trait.tsv.gz");
     }
 
     public static void main(String[] args) {
