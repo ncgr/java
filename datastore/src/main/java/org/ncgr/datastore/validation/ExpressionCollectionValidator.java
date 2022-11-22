@@ -114,22 +114,30 @@ public class ExpressionCollectionValidator extends CollectionValidator {
             System.out.println(" - "+file.getName());
             BufferedReader br = GZIPBufferedReader.getReader(file);
             String line = null;
+            boolean first = true;
             while ((line=br.readLine())!=null) {
                 if (line.startsWith("#") || line.trim().length()==0) continue; // comment or blank
                 String[] parts = line.split("\t");
-                if (parts[0].toLowerCase().equals("gene_id")) {
-                    // header line, check all identifiers
-                    for (int i=1; i<parts.length; i++) {
-                        if (!sampleIdentifiers.contains(parts[i])) {
-                            printError(file.getName()+" contains a sample "+parts[i]+" in the header that is not present in samples.tsv file.");
+                if (first) {
+                    first = false;
+                    if (line.startsWith("gene_id")) {
+                        // header line, check all identifiers
+                        for (int i=1; i<parts.length; i++) {
+                            if (!sampleIdentifiers.contains(parts[i])) {
+                                printError(file.getName()+" contains a sample "+parts[i]+" in the header that is not present in samples.tsv file.");
+                            }
                         }
+                        continue;
+                    } else {
+                        printError(file.getName()+" first line does not start with gene_id.");
+                        break;
                     }
-                    continue;
-                }
-                // a gene line
-                String geneId = parts[0];
-                if (!matchesCollection(geneId)) {
-                    printError("Gene ID "+geneId+" in "+file.getName()+" is not a valid LIS identifier:");
+                } else {
+                    // a gene line
+                    String geneId = parts[0];
+                    if (!matchesCollection(geneId)) {
+                        printError("Gene ID "+geneId+" in "+file.getName()+" is not a valid LIS identifier:");
+                    }
                 }
             }
         } catch (Exception ex) {
