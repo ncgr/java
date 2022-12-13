@@ -59,6 +59,7 @@ public class QTLCollectionValidator extends CollectionValidator {
         // First flower 1-1  First flower  GmComposite2003  C2            104.4   106.4   105.4
         // Store the distinct trait names to check that they match the obo file.
         Set<String> qtlTraitNames = new HashSet<>();
+        Set<String> qtlIdentifiers = new HashSet<>();
         try {
             File file = getDataFile("qtl.tsv.gz");
             System.out.println(" - "+file.getName());
@@ -87,6 +88,7 @@ public class QTLCollectionValidator extends CollectionValidator {
                     printError(line);
                     break;
                 }
+                qtlIdentifiers.add(parts[0]);
                 qtlTraitNames.add(parts[1]);
             }
         } catch (Exception ex) {
@@ -124,6 +126,8 @@ public class QTLCollectionValidator extends CollectionValidator {
                         printError("qtlmrk.tsv.gz file does not have four required values (qtl_identifier,trait_name,genetic_map,marker) in this line:");
                         printError(line);
                         break;
+                    } else if (!qtlIdentifiers.contains(parts[0])) {
+                        printError("qtlmrk.tsv.gz file contains a QTL "+parts[0]+" that is not present in qtl.tsv.gz.");
                     }
                     qtlmrkTraitNames.add(parts[1]);
                 }

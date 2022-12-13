@@ -130,7 +130,7 @@ public abstract class CollectionValidator {
      * Print a warning.
      */
     public void printWarning(String warning) {
-        System.out.println("### "+yellow(warning));
+        System.out.println(" x "+yellow(warning));
     }
     
     /**

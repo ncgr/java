@@ -183,7 +183,7 @@ public class AnnotationCollectionValidator extends CollectionValidator {
                 printError(ex.getMessage());
             }
         } else {
-            printWarning("Optional iprscan.gff3.gz file is not present.");
+            printWarning("optional iprscan.gff3.gz file is not present.");
         }
 
         // GFAPREFIX.gfa.tsv.gz (required)
@@ -261,7 +261,7 @@ public class AnnotationCollectionValidator extends CollectionValidator {
                 printErrorAndExit(ex.getMessage());
             }
         } else {
-            printWarning("Optional pathway.tsv.gz file is not present.");
+            printWarning("optional pathway.tsv.gz file is not present.");
         }
 
         // phytozome_10_2.HFNR.gfa.tsv.gz (optional)
@@ -295,7 +295,7 @@ public class AnnotationCollectionValidator extends CollectionValidator {
                 printErrorAndExit(ex.getMessage());
             }
         } else {
-            printWarning("Optional phytozome_10_2.HFNR.gfa.tsv.gz file is not present.");
+            printWarning("optional phytozome_10_2.HFNR.gfa.tsv.gz file is not present.");
         }
     }
 
