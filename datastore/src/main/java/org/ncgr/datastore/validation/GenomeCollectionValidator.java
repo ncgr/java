@@ -7,6 +7,7 @@ import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
@@ -66,14 +67,35 @@ public class GenomeCollectionValidator extends CollectionValidator {
             Map<String,DNASequence> sequenceMap = GZIPFastaReader.readFastaDNASequence(file);
             int chromosomeCount = 0;
             int supercontigCount = 0;
+            List<String> chromosomePrefixes = new ArrayList<>();
+            if (readme.chromosome_prefix!=null) {
+                for (String prefix : readme.chromosome_prefix.split(",")) {
+                    chromosomePrefixes.add(prefix);
+                }
+            }
+            List<String> supercontigPrefixes = new ArrayList<>();
+            if (readme.supercontig_prefix!=null) {
+                for (String prefix : readme.supercontig_prefix.split(",")) {
+                    supercontigPrefixes.add(prefix);
+                }
+            }
             for (DNASequence sequence : sequenceMap.values()) {
                 validateSequenceIdentifier(file, sequence);
+                // count chromosomes and supercontigs
                 String identifier = getFastaSequenceIdentifier(sequence);
-                if (readme.chromosome_prefix!=null && identifier.startsWith(genspStrainGnm+"."+readme.chromosome_prefix)) {
-                    chromosomeCount++;
+                if (chromosomePrefixes.size()>0) {
+                    for (String prefix : chromosomePrefixes) {
+                        if (identifier.startsWith(genspStrainGnm+"."+prefix)) {
+                            chromosomeCount++;
+                        }
+                    }
                 }
-                if (readme.supercontig_prefix!=null && identifier.startsWith(genspStrainGnm+"."+readme.supercontig_prefix)) {
-                    supercontigCount++;
+                if (supercontigPrefixes.size()>0) {
+                    for (String prefix : supercontigPrefixes) {
+                        if (identifier.startsWith(genspStrainGnm+"."+prefix)) {
+                            supercontigCount++;
+                        }
+                    }
                 }
             }
             if (chromosomeCount>0 || supercontigCount>0) {
