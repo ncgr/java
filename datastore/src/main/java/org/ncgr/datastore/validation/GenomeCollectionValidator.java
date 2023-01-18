@@ -57,14 +57,29 @@ public class GenomeCollectionValidator extends CollectionValidator {
         if (readme.synopsis==null) printError("README.synopsis is missing.");
         if (readme.description==null) printError("README.description is missing.");
         if (readme.scientific_name_abbrev==null) printError("README.scientific_name_abbrev is missing.");
+        if (readme.chromosome_prefix==null && readme.supercontig_prefix==null) printError("README.chromsome_prefix and README.supercontig_prefix are BOTH missing.");
 
         // genome_main.fna.gz
         try {
             File file = getDataFile("genome_main.fna.gz");
             System.out.println(" - "+file.getName());
             Map<String,DNASequence> sequenceMap = GZIPFastaReader.readFastaDNASequence(file);
+            int chromosomeCount = 0;
+            int supercontigCount = 0;
             for (DNASequence sequence : sequenceMap.values()) {
                 validateSequenceIdentifier(file, sequence);
+                String identifier = getFastaSequenceIdentifier(sequence);
+                if (readme.chromosome_prefix!=null && identifier.startsWith(genspStrainGnm+"."+readme.chromosome_prefix)) {
+                    chromosomeCount++;
+                }
+                if (readme.supercontig_prefix!=null && identifier.startsWith(genspStrainGnm+"."+readme.supercontig_prefix)) {
+                    supercontigCount++;
+                }
+            }
+            if (chromosomeCount>0 || supercontigCount>0) {
+                printInfo(chromosomeCount+" chromosomes and "+supercontigCount+" supercontigs");
+            } else {
+                printError("No chromosomes or supercontigs found!");
             }
         } catch (Exception ex) {
             printError(ex.getMessage());

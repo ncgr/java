@@ -132,6 +132,13 @@ public abstract class CollectionValidator {
     public void printWarning(String warning) {
         System.out.println(" x "+yellow(warning));
     }
+
+    /**
+     * Print some info.
+     */
+    public void printInfo(String info) {
+        System.out.println(" + "+green(info));
+    }
     
     /**
      * Print a standard error message then exit with status=1.

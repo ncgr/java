@@ -39,13 +39,15 @@ public class Readme {
     public String keywords; 
     public String citation;
 
-    // source-specific attributes
+    // collection-specific attributes
     public String genetic_map;
     public String genotyping_platform;
     public String genotyping_method;
     public String expression_unit;
     public String sraproject;
     public String geoseries;
+    public String chromosome_prefix;
+    public String supercontig_prefix;
 
     /**
      * Return a Readme parsed from a file given by a filename.
