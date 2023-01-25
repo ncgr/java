@@ -9,6 +9,8 @@ import java.io.File;
 import java.io.FileWriter;
 import java.util.Arrays;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 
@@ -26,6 +28,9 @@ public class AnnotationCollectionValidator extends CollectionValidator {
     private static final String TEMPFILE = "/tmp/temp.gff3";
     private static final String GFAPREFIX = "legfed_v1_0.M65K";
 
+    HashSet<String> featureIDs = new HashSet<>();
+    Map<String,HashSet<String>> featureTypeIDs = new HashMap<>();
+    
     /**
      * Construct from an /annotations/ directory
      */
@@ -61,7 +66,6 @@ public class AnnotationCollectionValidator extends CollectionValidator {
         }
         
         // store some identifiers for cross-checks
-        List<String> gffGenes = new ArrayList<>();
         List<String> fastaProteins = new ArrayList<>();
         
         // gene_models_main.gff3.gz (required)
@@ -82,6 +86,10 @@ public class AnnotationCollectionValidator extends CollectionValidator {
             // validate the uncompressed GFF3 file
             FeatureList featureList = GFF3Reader.read(TEMPFILE);
             for (FeatureI featureI : featureList) {
+                if (isDuplicateID(featureI)) {
+                    printError(file.getName()+" record ID is duplicate of one already read:");
+                    printError(featureI.toString());
+                }
                 if (!hasValidSeqname(featureI)) {
                     printError(file.getName()+" record seqname is invalid:");
                     printError(featureI.toString());
@@ -94,9 +102,16 @@ public class AnnotationCollectionValidator extends CollectionValidator {
                     printError(file.getName()+" record parent attribute is invalid; does the file need sorting?");
                     printError(featureI.toString());
                 }
-                if (!valid) break;
-                // add the identifier to the list for later cross-checks
-                gffGenes.add(getAttribute(featureI, "ID"));
+                // store ID in featureIDs and featureTypeIDs for future checks
+                featureIDs.add(getAttribute(featureI, "ID"));
+                String type = featureI.type();
+                if (featureTypeIDs.containsKey(type)) {
+                    featureTypeIDs.get(type).add(getAttribute(featureI, "ID"));
+                } else {
+                    HashSet<String> set = new HashSet<>();
+                    set.add(getAttribute(featureI, "ID"));
+                    featureTypeIDs.put(type, set);
+                }
             }
         } catch (Exception ex) {
             printError(ex.getMessage());
@@ -177,7 +192,6 @@ public class AnnotationCollectionValidator extends CollectionValidator {
                         printError(file.getName()+" has an invalid seqname:");
                         printError(featureI.toString());
                     }
-                    if (!valid) break;
                 }
             } catch (Exception ex) {
                 printError(ex.getMessage());
@@ -187,16 +201,15 @@ public class AnnotationCollectionValidator extends CollectionValidator {
         }
 
         // GFAPREFIX.gfa.tsv.gz (required)
-        // Check that the FIRST record gene and protein identifiers exist in the GFF and protein FASTA
-        // (It takes too long to check every record.)
+        // Check that the gene identifiers exist in the GFF.
         try {
+            HashSet<String> geneIDs = featureTypeIDs.get("gene");
             List<String> gfaGenes = new ArrayList<>();
             List<String> gfaProteins = new ArrayList<>();
             File file = getDataFile(GFAPREFIX+".gfa.tsv.gz");
             System.out.println(" - "+file.getName());
             BufferedReader br = GZIPBufferedReader.getReader(file);
             String line = null;
-            boolean first = true;
             while ((line=br.readLine())!=null) {
                 if (line.startsWith("#") || line.startsWith("URL") || line.startsWith("ScoreMeaning") || line.trim().length()==0) continue; // comment or blank
                 String[] parts = line.split("\t");
@@ -216,17 +229,13 @@ public class AnnotationCollectionValidator extends CollectionValidator {
                     printError("Gene family identifier "+family+" in "+file.getName()+" is not valid:");
                     printError(line);
                 }
-                // cross-check the first gene and protein against the GFF and protein FASTA
-                if (first) {
-                    if (!gffGenes.contains(geneId)) {
-                        printError("GFA file contains gene ID "+geneId+" that is not present in the gene models GFF file.");
-                    }
-                    if (!fastaProteins.contains(proteinId)) {
-                        printError("GFA file contains protein ID "+proteinId+" that is not present in the protein FASTA file(s).");
-                    }
-                    first = false;
+                // cross-check the gene and protein against the GFF and protein FASTA
+                if (!geneIDs.contains(geneId)) {
+                    printError("GFA file contains gene ID "+geneId+" that is not present in the gene models GFF file.");
                 }
-                if (!valid) break;
+                if (!fastaProteins.contains(proteinId)) {
+                    printError("GFA file contains protein ID "+proteinId+" that is not present in the protein FASTA file(s).");
+                }
             }
         } catch (Exception ex) {
             printErrorAndExit(ex.getMessage());
@@ -255,7 +264,6 @@ public class AnnotationCollectionValidator extends CollectionValidator {
                         printError("pathway file "+file.getName()+" contains data line with other than exactly 3 columns:");
                         printError(line);
                     }                        
-                    if (!valid) break;
                 }
             } catch (Exception ex) {
                 printErrorAndExit(ex.getMessage());
@@ -289,7 +297,6 @@ public class AnnotationCollectionValidator extends CollectionValidator {
                         printError("Gene family identifier "+family+" in "+file.getName()+" is not valid:");
                         printError(line);
                     }
-                    if (!valid) break;
                 }
             } catch (Exception ex) {
                 printErrorAndExit(ex.getMessage());
@@ -297,6 +304,36 @@ public class AnnotationCollectionValidator extends CollectionValidator {
         } else {
             printWarning("optional phytozome_10_2.HFNR.gfa.tsv.gz file is not present.");
         }
+    }
+
+    /**
+     * Return true if this feature's ID has already been read for the same type in the GFF.
+     */
+    public boolean isDuplicateID(FeatureI featureI) {
+        String id = getAttribute(featureI, "ID");
+        String type = featureI.type();
+        if (featureTypeIDs.containsKey(type)) {
+            HashSet<String> set = featureTypeIDs.get(type);
+            return set.contains(id);
+        } else {
+            return false;
+        }
+    }
+
+    /**
+     * Validate a genomic GFF feature's parent using the featureIDs set to ensure that parents are loaded before children.
+     * Note: parent attribute may be a comma-separated list of parents, or not present.
+     */
+    public boolean hasValidParent(FeatureI featureI) {
+        String parent = getAttribute(featureI, "Parent");
+        // non-parent is valid
+        if (parent==null) return true;
+        // one of parent entries must be in featureIDs set
+        boolean parentLoaded = false;
+        for (String p : parent.split(",")) {
+            if (featureIDs.contains(p)) parentLoaded = true;
+        }
+        return parentLoaded;
     }
 
 }

@@ -12,7 +12,6 @@ import java.util.Map;
 
 import org.biojava.nbio.core.sequence.template.AbstractSequence;
 import org.biojava.nbio.genome.parsers.gff.FeatureI;
-import org.biojava.nbio.genome.parsers.gff.Location;
 
 /**
  * Extend this class for each collection type-specific validator.
@@ -34,8 +33,6 @@ public abstract class CollectionValidator {
     String genspStrainGnm;     // gensp.Strain.gnm
     boolean valid = true;
     List<String> requiredFileTypes;
-
-    HashSet<String> features = new HashSet<>(); // utility for keeping track of GFF parents
 
     /**
      * Construct given a directory string. Print error and exit if collection has fundamental problems.
@@ -72,6 +69,15 @@ public abstract class CollectionValidator {
         if (gensp==null) {
             printHeader();
             printErrorAndExit("README file does not contain "+red("scientific_name_abbrev")+" entry.");
+        }
+        // publication
+        if (readme.publication_doi==null || readme.publication_doi.trim().length()==0) {
+            printHeader();
+            printErrorAndExit("README file does not contain "+red("publication_doi")+" entry.");
+        }
+        if (readme.publication_title==null || readme.publication_title.trim().length()==0) {
+            printHeader();
+            printErrorAndExit("README file does not contain "+red("publication_title")+" entry.");
         }
         // form the gensp.Strain.gnm prefix for LIS genomic feature identifiers.
         String[] fields = collection.split("\\.");
@@ -161,61 +167,13 @@ public abstract class CollectionValidator {
     public boolean matchesCollection(String identifier) {
         return identifier.startsWith(genspStrainGnm);
     }
-    
-
-    /**
-     * Validate the seqname of a GFF record, ensuring that it matches the collection.
-     */
-    public boolean hasValidSeqname(FeatureI featureI) {
-        return matchesCollection(featureI.seqname());
-    }
-
-    /**
-     * Validate the ID in a genomic GFF file (must exist and match collection).
-     */
-    public boolean hasValidGenomicID(FeatureI featureI) {
-        String id = getAttribute(featureI, "ID");
-        return (id!=null && matchesCollection(id));
-    }
-    
-    /**
-     * Validate a genomic GFF feature's parent using the features set to ensure that parents are loaded before children.
-     * Note: parent attribute may be a comma-separated list of parents, or not present.
-     */
-    public boolean hasValidParent(FeatureI featureI) {
-        String id = getAttribute(featureI, "ID");
-        // add this feature to list for future parent check
-        features.add(id);
-        String parent = getAttribute(featureI, "Parent");
-        // non-parent is valid
-        if (parent==null) return true;
-        // one of parent entries must be in features set
-        boolean parentLoaded = false;
-        for (String p : parent.split(",")) {
-            if (features.contains(p)) parentLoaded = true;
-        }
-        return parentLoaded;
-    }
-
+        
     /**
      * Validate a BioJava sequence identifier, making sure it matches the collection.
      */
     public boolean hasValidSequenceIdentifier(AbstractSequence sequence) {
         String identifier = getFastaSequenceIdentifier(sequence);
         return (matchesCollection(identifier));
-    }
-
-    /**
-     * Return a GFF attribute for the given name ignoring case
-     */
-    static String getAttribute(FeatureI featureI, String name) {
-        Map<String,String> attributeMap = featureI.getAttributes();
-        for (String attributeName : attributeMap.keySet()) {
-            if (attributeName.equalsIgnoreCase(name)) {
-                return attributeMap.get(attributeName);
-            }
-        }
-        return null;
     }
 
     /**
@@ -257,6 +215,34 @@ public abstract class CollectionValidator {
      */
     boolean isValidDataFilename(String filename) {
         return filename.startsWith(gensp+"."+collection);
+    }
+
+    /**
+     * Return a GFF attribute for the given name ignoring case
+     */
+    static String getAttribute(FeatureI featureI, String name) {
+        Map<String,String> attributeMap = featureI.getAttributes();
+        for (String attributeName : attributeMap.keySet()) {
+            if (attributeName.equalsIgnoreCase(name)) {
+                return attributeMap.get(attributeName);
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Validate the seqname of a GFF record, ensuring that it matches the collection.
+     */
+    public boolean hasValidSeqname(FeatureI featureI) {
+        return matchesCollection(featureI.seqname());
+    }
+
+    /**
+     * Validate the ID in a genomic GFF file (must exist and match collection).
+     */
+    public boolean hasValidGenomicID(FeatureI featureI) {
+        String id = getAttribute(featureI, "ID");
+        return (id!=null && matchesCollection(id));
     }
 
     /**
