@@ -75,10 +75,6 @@ public abstract class CollectionValidator {
             printHeader();
             printErrorAndExit("README file does not contain "+red("publication_doi")+" entry.");
         }
-        if (readme.publication_title==null || readme.publication_title.trim().length()==0) {
-            printHeader();
-            printErrorAndExit("README file does not contain "+red("publication_title")+" entry.");
-        }
         // form the gensp.Strain.gnm prefix for LIS genomic feature identifiers.
         String[] fields = collection.split("\\.");
         genspStrainGnm = gensp;
@@ -92,7 +88,7 @@ public abstract class CollectionValidator {
      */
     public void printHeader() {
         System.out.println("--------------------------------------------------------------------------------");
-        System.out.println("### Validating "+purple(gensp)+" collection "+purple(collection));
+        System.out.println("## Validating "+purple(gensp)+" collection "+purple(collection));
     }
 
     /**
@@ -129,7 +125,7 @@ public abstract class CollectionValidator {
      */
     public void printError(String error) {
         valid = false;
-        System.out.println("### "+red("INVALID: ")+error);
+        System.out.println("## "+red("INVALID: ")+error);
     }
 
     /**
@@ -150,7 +146,7 @@ public abstract class CollectionValidator {
      * Print a standard error message then exit with status=1.
      */
     public static void printErrorAndExit(String error) {
-        System.out.println("### "+red("INVALID: ")+error);
+        System.out.println("## "+red("INVALID: ")+error);
         System.exit(1);
     }
 
@@ -158,7 +154,7 @@ public abstract class CollectionValidator {
      * Print the message for when the collection is valid.
      */
     public static void printIsValidMessage() {
-        System.out.println("### "+green("VALID"));
+        System.out.println("## "+green("VALID"));
     }
 
     /**

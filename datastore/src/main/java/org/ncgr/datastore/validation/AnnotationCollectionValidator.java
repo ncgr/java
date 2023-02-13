@@ -83,24 +83,33 @@ public class AnnotationCollectionValidator extends CollectionValidator {
                 writer.newLine();
             }
             writer.close();
+            // just show one error message per type of error
+            boolean duplicateFound = false;
+            boolean invalidSeqnameFound = false;
+            boolean invalidGenomicIDFound = false;
+            boolean invalidParentFound = false;
             // validate the uncompressed GFF3 file
             FeatureList featureList = GFF3Reader.read(TEMPFILE);
             for (FeatureI featureI : featureList) {
-                if (isDuplicateID(featureI)) {
+                if (isDuplicateID(featureI) && !duplicateFound) {
                     printError(file.getName()+" record ID is duplicate of one already read:");
                     printError(featureI.toString());
+                    duplicateFound = true;
                 }
-                if (!hasValidSeqname(featureI)) {
+                if (!hasValidSeqname(featureI) && !invalidSeqnameFound) {
                     printError(file.getName()+" record seqname is invalid:");
                     printError(featureI.toString());
+                    invalidSeqnameFound = true;
                 }
-                if (!hasValidGenomicID(featureI)) {
+                if (!hasValidGenomicID(featureI) && !invalidGenomicIDFound) {
                     printError(file.getName()+" record ID attribute is missing or invalid:");
                     printError(featureI.toString());
+                    invalidGenomicIDFound = true;
                 }
-                if (!hasValidParent(featureI)) {
+                if (!hasValidParent(featureI) && !invalidParentFound) {
                     printError(file.getName()+" record parent attribute is invalid; does the file need sorting?");
                     printError(featureI.toString());
+                    invalidParentFound = true;
                 }
                 // store ID in featureIDs and featureTypeIDs for future checks
                 featureIDs.add(getAttribute(featureI, "ID"));
@@ -187,10 +196,12 @@ public class AnnotationCollectionValidator extends CollectionValidator {
                 writer.close();
                 // validate the uncompressed GFF3 file
                 FeatureList featureList = GFF3Reader.read(TEMPFILE);
+                boolean invalidSeqnameFound = false;
                 for (FeatureI featureI : featureList) {
-                    if (!hasValidSeqname(featureI)) {
+                    if (!hasValidSeqname(featureI) && !invalidSeqnameFound) {
                         printError(file.getName()+" has an invalid seqname:");
                         printError(featureI.toString());
+                        invalidSeqnameFound = true;
                     }
                 }
             } catch (Exception ex) {
@@ -208,6 +219,11 @@ public class AnnotationCollectionValidator extends CollectionValidator {
             List<String> gfaProteins = new ArrayList<>();
             File file = getDataFile(GFAPREFIX+".gfa.tsv.gz");
             System.out.println(" - "+file.getName());
+            boolean invalidGeneIdFound = false;
+            boolean invalidProteinIdFound = false;
+            boolean invalidFamilyIdFound = false;
+            boolean missingGeneFound = false;
+            boolean missingProteinFound = false;
             BufferedReader br = GZIPBufferedReader.getReader(file);
             String line = null;
             while ((line=br.readLine())!=null) {
@@ -217,24 +233,29 @@ public class AnnotationCollectionValidator extends CollectionValidator {
                 String family = parts[1];
                 String proteinId = parts[2];
                 // syntax checks
-                if (!matchesCollection(geneId)) {
+                if (!matchesCollection(geneId) && !invalidGeneIdFound) {
                     printError("Gene ID "+geneId+" in "+file.getName()+" is not a valid LIS identifier:");
                     printError(line);
+                    invalidGeneIdFound = true;
                 }
-                if (!matchesCollection(proteinId)) {
+                if (!matchesCollection(proteinId) && !invalidProteinIdFound) {
                     printError("Protein ID "+proteinId+" in "+file.getName()+" is not a valid LIS identifier:");
                     printError(line);
+                    invalidProteinIdFound = true;
                 }
-                if (!family.startsWith("legfed")) {
+                if (!family.startsWith("legfed") && !invalidFamilyIdFound) {
                     printError("Gene family identifier "+family+" in "+file.getName()+" is not valid:");
                     printError(line);
+                    invalidFamilyIdFound = true;
                 }
                 // cross-check the gene and protein against the GFF and protein FASTA
-                if (!geneIDs.contains(geneId)) {
+                if (!geneIDs.contains(geneId) && !missingGeneFound) {
                     printError("GFA file contains gene ID "+geneId+" that is not present in the gene models GFF file.");
+                    missingGeneFound = true;
                 }
-                if (!fastaProteins.contains(proteinId)) {
+                if (!fastaProteins.contains(proteinId) && !missingProteinFound) {
                     printError("GFA file contains protein ID "+proteinId+" that is not present in the protein FASTA file(s).");
+                    missingProteinFound = true;
                 }
             }
         } catch (Exception ex) {
@@ -246,6 +267,7 @@ public class AnnotationCollectionValidator extends CollectionValidator {
             File file = getDataFile("pathway.tsv.gz");
             if (!file.exists()) file = getDataFile(GFAPREFIX+".pathway.tsv.gz");
             System.out.println(" - "+file.getName());
+            boolean invalidGeneIdFound = false;
             try {
                 BufferedReader br = GZIPBufferedReader.getReader(file);
                 String line = null;
@@ -256,9 +278,10 @@ public class AnnotationCollectionValidator extends CollectionValidator {
                         String pathwayId = parts[0];
                         String pathwayName = parts[1];
                         String geneId = parts[2];
-                        if (!matchesCollection(geneId)) {
+                        if (!matchesCollection(geneId) && !invalidGeneIdFound) {
                             printError("Gene ID "+geneId+" in "+file.getName()+" is not a valid LIS identifier:");
                             printError(line);
+                            invalidGeneIdFound = true;
                         }
                     } else {
                         printError("pathway file "+file.getName()+" contains data line with other than exactly 3 columns:");
@@ -276,6 +299,9 @@ public class AnnotationCollectionValidator extends CollectionValidator {
         if (dataFileExists("phytozome_10_2.HFNR.gfa.tsv.gz")) {
             File file = getDataFile("phytozome_10_2.HFNR.gfa.tsv.gz");
             System.out.println(" - "+file.getName());
+            boolean invalidGeneIdFound = false;
+            boolean invalidProteinIdFound = false;
+            boolean invalidFamilyIdFound = false;
             try {
                 BufferedReader br = GZIPBufferedReader.getReader(file);
                 String line = null;
@@ -285,17 +311,20 @@ public class AnnotationCollectionValidator extends CollectionValidator {
                     String geneId = parts[0];
                     String family = parts[1];
                     String proteinId = parts[2];
-                    if (!matchesCollection(geneId)) {
+                    if (!matchesCollection(geneId) && !invalidGeneIdFound) {
                         printError("Gene ID "+geneId+" in "+file.getName()+" is not a valid LIS identifier:");
                         printError(line);
+                        invalidGeneIdFound = true;
                     }
-                    if (!matchesCollection(proteinId)) {
+                    if (!matchesCollection(proteinId) && !invalidProteinIdFound) {
                         printError("Protein ID "+proteinId+" in "+file.getName()+" is not a valid LIS identifier:");
                         printError(line);
+                        invalidProteinIdFound = true;
                     }
-                    if (!family.startsWith("phytozome")) {
+                    if (!family.startsWith("phytozome") && !invalidFamilyIdFound) {
                         printError("Gene family identifier "+family+" in "+file.getName()+" is not valid:");
                         printError(line);
+                        invalidFamilyIdFound = true;
                     }
                 }
             } catch (Exception ex) {
