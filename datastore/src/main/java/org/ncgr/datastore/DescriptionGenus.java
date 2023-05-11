@@ -10,45 +10,39 @@ import com.fasterxml.jackson.dataformat.yaml.YAMLMapper;
 
 /**
  * Encapsulate an LIS Datastore description_Genus file, which is in YAML format:
+ * ---                                                                                                                                                                                                         
+ * taxid: 3883                                                                                                                                                                                                 
+ * genus: Phaseolus                                                                                                                                                                                            
+ * commonName: Bean                                                                                                                                                                                            
+ * description: "Phaseolus (bean, wild bean) is a genus of herbaceous to woody annual ...."                                                                                                                    
  *
- * ---
- * taxid: 3847
- * genus: Glycine 
- * commonName: soybean 
- * description: "The best-known species in Glycine is the cultivated soybean...."
+ * species:                                                                                                                                                                                                    
+ *   - lunatus                                                                                                                                                                                                 
+ *   - vulgaris                                                                                                                                                                                                
+ *   - acutifolius                                                                                                                                                                                             
  *
- * species:
- *   - max
- *   - soja
- *   - cyrtoloba
- *   - dolichocarpa
- *   - falcata
- *   - stenophita
- *   - syndetika
- *   - D3-tomentella  
- *
- * resources:
- *   - name: SoyMine
- *     URL: "https://mines.legumeinfo.org/soymine/begin.do"
- *     description: "InterMine interface for accessing genetic and genomic data for several species in Glycine."
- *   - name: ZZBrowse
- *     URL: "https://zzbrowse.legumeinfo.org/?tab=WhGen&datasets=Peanut..."
+ * resources:                                                                                                                                                                                                  
+ *   - name: PhaseolusMine                                                                                                                                                                                     
+ *     URL: "https://mines.legumeinfo.org/phaseolusmine/begin.do"                                                                                                                                              
+ *     description: "InterMine interface for accessing genetic and genomic data for several Phaseolus species."                                                                                                
+ *   - name: ZZBrowse                                                                                                                                                                                          
+ *     URL: "https://zzbrowse.legumeinfo.org/?tab=WhGen&datasets=Common%20Bean%20GWAS&chr=Chr01&selected=100000&..."                                                                                           
  *     description: "Association viewers (QTL, GWAS)"
  *
  * @author Sam Hokin
  */
 public class DescriptionGenus {
 
-    // species attributes
-    public String taxid;
+    // genus attributes
+    public int taxid;
     public String genus;
     public String commonName;
     public String description;
 
-    // species resources
+    // species
     public List<String> species;
-
-    // strains including their resources
+    
+    // genus resources
     public List<DescriptionResource> resources;
 
     /**
@@ -81,5 +75,11 @@ public class DescriptionGenus {
     public static void main(String[] args) throws IOException {
         String filename = args[0];
         DescriptionGenus genus = DescriptionGenus.parse(filename);
+        System.out.println(genus.taxid);
+        System.out.println(genus.genus);
+        System.out.println(genus.commonName);
+        System.out.println(genus.description);
+        System.out.println(genus.species);
+        System.out.println(genus.resources);
     }
 }

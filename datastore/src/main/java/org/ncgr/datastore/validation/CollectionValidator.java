@@ -70,10 +70,13 @@ public abstract class CollectionValidator {
             printHeader();
             printErrorAndExit("README file does not contain "+red("scientific_name_abbrev")+" entry.");
         }
-        // publication
-        if (readme.publication_doi==null || readme.publication_doi.trim().length()==0) {
-            printHeader();
-            printErrorAndExit("README file does not contain "+red("publication_doi")+" entry.");
+        // check that publication_doi looks legit if it's present
+        if (readme.publication_doi!=null) {
+            boolean looksLegit = readme.publication_doi.contains(".") && readme.publication_doi.contains("/");
+            if (!looksLegit) {
+                printHeader();
+                printErrorAndExit("README file contains invalide "+red("publication_doi")+" entry: " + readme.publication_doi);
+            }
         }
         // form the gensp.Strain.gnm prefix for LIS genomic feature identifiers.
         String[] fields = collection.split("\\.");
@@ -117,7 +120,11 @@ public abstract class CollectionValidator {
      * Return a data file, which starts with gensp.collection.
      */
     public File getDataFile(String fileType) {
-        return new File(dir, gensp+"."+collection+"."+fileType);
+        if (fileType.equals("clust.tsv.gz") || fileType.equals("hsh.tsv.gz")) {
+            return new File(dir, collection + "." + fileType);
+        } else {
+            return new File(dir, gensp + "." + collection + "." + fileType);
+        }
     }
 
     /**

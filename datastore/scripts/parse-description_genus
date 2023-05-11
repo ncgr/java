@@ -1,2 +1,2 @@
 #!/bin/sh
-java -cp "build/install/datastore/lib/*" org.ncgr.datastore.DescriptionGenus $1
+java -cp "build/install/ncgr-datastore/lib/*" org.ncgr.datastore.DescriptionGenus $1

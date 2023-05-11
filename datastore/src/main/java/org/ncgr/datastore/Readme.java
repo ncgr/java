@@ -48,7 +48,9 @@ public class Readme {
     public String geoseries;
     public String chromosome_prefix;
     public String supercontig_prefix;
-
+    public String[] annotations_main;
+    public String[] annotations_extra;
+    
     /**
      * Return a Readme parsed from a file given by a filename.
      */
