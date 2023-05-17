@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE eSearchResult PUBLIC "-//NLM//DTD esearch 20060628//EN" "https://eutils.ncbi.nlm.nih.gov/eutils/dtd/20060628/esearch.dtd">
+<eSearchResult>
+  <Count>4849449</Count>
+  <RetMax>3</RetMax>
+  <RetStart>0</RetStart>
+  <IdList>
+    <Id>37132451</Id>
+    <Id>37132450</Id>
+    <Id>37132439</Id>
+  </IdList>
+  <TranslationSet>
+    <Translation>
+      <From>cancer</From>
+      <To>"cancer's"[All Fields] OR "cancerated"[All Fields] OR "canceration"[All Fields] OR "cancerization"[All Fields] OR "cancerized"[All Fields] OR "cancerous"[All Fields] OR "neoplasms"[MeSH Terms] OR "neoplasms"[All Fields] OR "cancer"[All Fields] OR "cancers"[All Fields]</To>
+    </Translation>
+  </TranslationSet>
+  <QueryTranslation>"cancer s"[All Fields] OR "cancerated"[All Fields] OR "canceration"[All Fields] OR "cancerization"[All Fields] OR "cancerized"[All Fields] OR "cancerous"[All Fields] OR "neoplasms"[MeSH Terms] OR "neoplasms"[All Fields] OR "cancer"[All Fields] OR "cancers"[All Fields]</QueryTranslation>
+</eSearchResult>

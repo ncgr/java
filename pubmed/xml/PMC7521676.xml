@@ -1,0 +1,948 @@
+<?xml version="1.0" ?>
+<!DOCTYPE pmc-articleset PUBLIC "-//NLM//DTD ARTICLE SET 2.0//EN" "https://dtd.nlm.nih.gov/ncbi/pmc/articleset/nlm-articleset-2.0.dtd">
+<pmc-articleset><article xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:mml="http://www.w3.org/1998/Math/MathML" article-type="research-article">
+  <?properties open_access?>
+  <front>
+    <journal-meta>
+      <journal-id journal-id-type="nlm-ta">PLoS One</journal-id>
+      <journal-id journal-id-type="iso-abbrev">PLoS ONE</journal-id>
+      <journal-id journal-id-type="publisher-id">plos</journal-id>
+      <journal-id journal-id-type="pmc">plosone</journal-id>
+      <journal-title-group>
+        <journal-title>PLoS ONE</journal-title>
+      </journal-title-group>
+      <issn pub-type="epub">1932-6203</issn>
+      <publisher>
+        <publisher-name>Public Library of Science</publisher-name>
+        <publisher-loc>San Francisco, CA USA</publisher-loc>
+      </publisher>
+    </journal-meta>
+    <article-meta>
+      <article-id pub-id-type="pmid">32986776</article-id>
+      <article-id pub-id-type="pmc">7521676</article-id>
+      <article-id pub-id-type="doi">10.1371/journal.pone.0239998</article-id>
+      <article-id pub-id-type="publisher-id">PONE-D-20-24902</article-id>
+      <article-categories>
+        <subj-group subj-group-type="heading">
+          <subject>Research Article</subject>
+        </subj-group>
+        <subj-group subj-group-type="Discipline-v3">
+          <subject>Biology and Life Sciences</subject>
+          <subj-group>
+            <subject>Organisms</subject>
+            <subj-group>
+              <subject>Eukaryota</subject>
+              <subj-group>
+                <subject>Plants</subject>
+              </subj-group>
+            </subj-group>
+          </subj-group>
+        </subj-group>
+        <subj-group subj-group-type="Discipline-v3">
+          <subject>Biology and Life Sciences</subject>
+          <subj-group>
+            <subject>Organisms</subject>
+            <subj-group>
+              <subject>Eukaryota</subject>
+              <subj-group>
+                <subject>Plants</subject>
+                <subj-group>
+                  <subject>Legumes</subject>
+                  <subj-group>
+                    <subject>Beans</subject>
+                    <subj-group>
+                      <subject>Lima Beans</subject>
+                    </subj-group>
+                  </subj-group>
+                </subj-group>
+              </subj-group>
+            </subj-group>
+          </subj-group>
+        </subj-group>
+        <subj-group subj-group-type="Discipline-v3">
+          <subject>Biology and Life Sciences</subject>
+          <subj-group>
+            <subject>Microbiology</subject>
+            <subj-group>
+              <subject>Medical Microbiology</subject>
+              <subj-group>
+                <subject>Microbial Pathogens</subject>
+                <subj-group>
+                  <subject>Bacterial Pathogens</subject>
+                  <subj-group>
+                    <subject>Pseudomonas Syringae</subject>
+                  </subj-group>
+                </subj-group>
+              </subj-group>
+            </subj-group>
+          </subj-group>
+        </subj-group>
+        <subj-group subj-group-type="Discipline-v3">
+          <subject>Medicine and Health Sciences</subject>
+          <subj-group>
+            <subject>Pathology and Laboratory Medicine</subject>
+            <subj-group>
+              <subject>Pathogens</subject>
+              <subj-group>
+                <subject>Microbial Pathogens</subject>
+                <subj-group>
+                  <subject>Bacterial Pathogens</subject>
+                  <subj-group>
+                    <subject>Pseudomonas Syringae</subject>
+                  </subj-group>
+                </subj-group>
+              </subj-group>
+            </subj-group>
+          </subj-group>
+        </subj-group>
+        <subj-group subj-group-type="Discipline-v3">
+          <subject>Biology and Life Sciences</subject>
+          <subj-group>
+            <subject>Organisms</subject>
+            <subj-group>
+              <subject>Bacteria</subject>
+              <subj-group>
+                <subject>Pseudomonas</subject>
+                <subj-group>
+                  <subject>Pseudomonas Syringae</subject>
+                </subj-group>
+              </subj-group>
+            </subj-group>
+          </subj-group>
+        </subj-group>
+        <subj-group subj-group-type="Discipline-v3">
+          <subject>Biology and Life Sciences</subject>
+          <subj-group>
+            <subject>Plant Science</subject>
+            <subj-group>
+              <subject>Plant Anatomy</subject>
+              <subj-group>
+                <subject>Leaves</subject>
+                <subj-group>
+                  <subject>Apoplastic Space</subject>
+                </subj-group>
+              </subj-group>
+            </subj-group>
+          </subj-group>
+        </subj-group>
+        <subj-group subj-group-type="Discipline-v3">
+          <subject>Biology and Life Sciences</subject>
+          <subj-group>
+            <subject>Plant Science</subject>
+            <subj-group>
+              <subject>Plant Anatomy</subject>
+              <subj-group>
+                <subject>Leaves</subject>
+              </subj-group>
+            </subj-group>
+          </subj-group>
+        </subj-group>
+        <subj-group subj-group-type="Discipline-v3">
+          <subject>Biology and Life Sciences</subject>
+          <subj-group>
+            <subject>Plant Science</subject>
+            <subj-group>
+              <subject>Plant Pathology</subject>
+              <subj-group>
+                <subject>Plant Pathogens</subject>
+                <subj-group>
+                  <subject>Plant Bacterial Pathogens</subject>
+                </subj-group>
+              </subj-group>
+            </subj-group>
+          </subj-group>
+        </subj-group>
+        <subj-group subj-group-type="Discipline-v3">
+          <subject>Biology and Life Sciences</subject>
+          <subj-group>
+            <subject>Genetics</subject>
+            <subj-group>
+              <subject>Genetic Elements</subject>
+              <subj-group>
+                <subject>Mobile Genetic Elements</subject>
+                <subj-group>
+                  <subject>Transposable Elements</subject>
+                </subj-group>
+              </subj-group>
+            </subj-group>
+          </subj-group>
+        </subj-group>
+        <subj-group subj-group-type="Discipline-v3">
+          <subject>Biology and Life Sciences</subject>
+          <subj-group>
+            <subject>Genetics</subject>
+            <subj-group>
+              <subject>Genomics</subject>
+              <subj-group>
+                <subject>Mobile Genetic Elements</subject>
+                <subj-group>
+                  <subject>Transposable Elements</subject>
+                </subj-group>
+              </subj-group>
+            </subj-group>
+          </subj-group>
+        </subj-group>
+        <subj-group subj-group-type="Discipline-v3">
+          <subject>Biology and Life Sciences</subject>
+          <subj-group>
+            <subject>Toxicology</subject>
+            <subj-group>
+              <subject>Toxic Agents</subject>
+              <subj-group>
+                <subject>Toxins</subject>
+                <subj-group>
+                  <subject>Phytotoxins</subject>
+                </subj-group>
+              </subj-group>
+            </subj-group>
+          </subj-group>
+        </subj-group>
+        <subj-group subj-group-type="Discipline-v3">
+          <subject>Medicine and Health Sciences</subject>
+          <subj-group>
+            <subject>Pathology and Laboratory Medicine</subject>
+            <subj-group>
+              <subject>Toxicology</subject>
+              <subj-group>
+                <subject>Toxic Agents</subject>
+                <subj-group>
+                  <subject>Toxins</subject>
+                  <subj-group>
+                    <subject>Phytotoxins</subject>
+                  </subj-group>
+                </subj-group>
+              </subj-group>
+            </subj-group>
+          </subj-group>
+        </subj-group>
+      </article-categories>
+      <title-group>
+        <article-title>Distinctiveness of genes contributing to growth of <italic>Pseudomonas syringae</italic> in diverse host plant species</article-title>
+        <alt-title alt-title-type="running-head">Genes contributing to growth of <italic>Pseudomonas syringae</italic> in diverse host plant species</alt-title>
+      </title-group>
+      <contrib-group>
+        <contrib contrib-type="author">
+          <contrib-id authenticated="true" contrib-id-type="orcid">http://orcid.org/0000-0002-8431-6461</contrib-id>
+          <name>
+            <surname>Helmann</surname>
+            <given-names>Tyler C.</given-names>
+          </name>
+          <role content-type="https://casrai.org/credit/">Conceptualization</role>
+          <role content-type="https://casrai.org/credit/">Formal analysis</role>
+          <role content-type="https://casrai.org/credit/">Investigation</role>
+          <role content-type="https://casrai.org/credit/">Methodology</role>
+          <role content-type="https://casrai.org/credit/">Visualization</role>
+          <role content-type="https://casrai.org/credit/">Writing &#x2013; original draft</role>
+          <role content-type="https://casrai.org/credit/">Writing &#x2013; review &amp; editing</role>
+          <xref ref-type="aff" rid="aff001">
+            <sup>1</sup>
+          </xref>
+          <xref ref-type="author-notes" rid="currentaff001">
+            <sup>&#xA4;</sup>
+          </xref>
+        </contrib>
+        <contrib contrib-type="author">
+          <name>
+            <surname>Deutschbauer</surname>
+            <given-names>Adam M.</given-names>
+          </name>
+          <role content-type="https://casrai.org/credit/">Data curation</role>
+          <role content-type="https://casrai.org/credit/">Methodology</role>
+          <role content-type="https://casrai.org/credit/">Resources</role>
+          <role content-type="https://casrai.org/credit/">Software</role>
+          <role content-type="https://casrai.org/credit/">Writing &#x2013; review &amp; editing</role>
+          <xref ref-type="aff" rid="aff001">
+            <sup>1</sup>
+          </xref>
+          <xref ref-type="aff" rid="aff002">
+            <sup>2</sup>
+          </xref>
+        </contrib>
+        <contrib contrib-type="author">
+          <name>
+            <surname>Lindow</surname>
+            <given-names>Steven E.</given-names>
+          </name>
+          <role content-type="https://casrai.org/credit/">Conceptualization</role>
+          <role content-type="https://casrai.org/credit/">Funding acquisition</role>
+          <role content-type="https://casrai.org/credit/">Supervision</role>
+          <role content-type="https://casrai.org/credit/">Writing &#x2013; original draft</role>
+          <role content-type="https://casrai.org/credit/">Writing &#x2013; review &amp; editing</role>
+          <xref ref-type="aff" rid="aff001">
+            <sup>1</sup>
+          </xref>
+          <xref ref-type="corresp" rid="cor001">*</xref>
+        </contrib>
+      </contrib-group>
+      <aff id="aff001"><label>1</label>
+<addr-line>Department of Plant and Microbial Biology, University of California, Berkeley, California, United States of America</addr-line></aff>
+      <aff id="aff002"><label>2</label>
+<addr-line>Environmental Genomics and Systems Biology Division, Lawrence Berkeley National Laboratory, Berkeley, California, United States of America</addr-line></aff>
+      <contrib-group>
+        <contrib contrib-type="editor">
+          <name>
+            <surname>Wilson</surname>
+            <given-names>Richard A</given-names>
+          </name>
+          <role>Editor</role>
+          <xref ref-type="aff" rid="edit1"/>
+        </contrib>
+      </contrib-group>
+      <aff id="edit1">
+        <addr-line>University of Nebraska-Lincoln, UNITED STATES</addr-line>
+      </aff>
+      <author-notes>
+        <fn fn-type="COI-statement" id="coi001">
+          <p><bold>Competing Interests: </bold>The authors have declared that no competing interests exist.</p>
+        </fn>
+        <fn fn-type="current-aff" id="currentaff001">
+          <label>&#xA4;</label>
+          <p>Current address: Emerging Pests and Pathogens Research Unit, Robert W. Holley Center, Agricultural Research Service, United States Department of Agriculture, Ithaca, New York, United States of America</p>
+        </fn>
+        <corresp id="cor001">* E-mail: <email>icelab@berkeley.edu</email></corresp>
+      </author-notes>
+      <pub-date pub-type="epub">
+        <day>28</day>
+        <month>9</month>
+        <year>2020</year>
+      </pub-date>
+      <pub-date pub-type="collection">
+        <year>2020</year>
+      </pub-date>
+      <volume>15</volume>
+      <issue>9</issue>
+      <elocation-id>e0239998</elocation-id>
+      <history>
+        <date date-type="received">
+          <day>9</day>
+          <month>8</month>
+          <year>2020</year>
+        </date>
+        <date date-type="accepted">
+          <day>16</day>
+          <month>9</month>
+          <year>2020</year>
+        </date>
+      </history>
+      <permissions>
+        <license xlink:href="https://creativecommons.org/publicdomain/zero/1.0/">
+          <license-p>This is an open access article, free of all copyright, and may be freely reproduced, distributed, transmitted, modified, built upon, or otherwise used by anyone for any lawful purpose. The work is made available under the <ext-link ext-link-type="uri" xlink:href="https://creativecommons.org/publicdomain/zero/1.0/">Creative Commons CC0</ext-link> public domain dedication.</license-p>
+        </license>
+      </permissions>
+      <self-uri content-type="pdf" xlink:href="pone.0239998.pdf"/>
+      <abstract>
+        <p>A variety of traits are necessary for bacterial colonization of the interior of plant hosts, including well-studied virulence effectors as well as other phenotypes contributing to bacterial growth and survival within the apoplast. High-throughput methods such as transposon sequencing (TnSeq) are powerful tools to identify such genes in bacterial pathogens. However, there is little information as to the distinctiveness of traits required for bacterial colonization of different hosts. Here, we utilize randomly barcoded TnSeq (RB-TnSeq) to identify the genes that contribute to the ability of <italic>Pseudomonas syringae</italic> strain B728a to grow within common bean (<italic>Phaseolus vulgaris</italic>), lima bean (<italic>Phaseolus lunatus</italic>), and pepper (<italic>Capsicum annuum</italic>); species representing two different plant families. The magnitude of contribution of most genes to apoplastic fitness in each of the plant hosts was similar. However, 50 genes significantly differed in their fitness contributions to growth within these species. These genes encoded proteins in various functional categories including polysaccharide synthesis and transport, amino acid metabolism and transport, cofactor metabolism, and phytotoxin synthesis and transport. Six genes that encoded unannotated, hypothetical proteins also contributed differentially to growth in these hosts. The genetic repertoire of a relatively promiscuous pathogen such as <italic>P</italic>. <italic>syringae</italic> may thus be shaped, at least in part, by the conditional contribution of some fitness determinants.</p>
+      </abstract>
+      <funding-group>
+        <award-group id="award001">
+          <funding-source>
+            <institution-wrap>
+              <institution-id institution-id-type="funder-id">http://dx.doi.org/10.13039/100000009</institution-id>
+              <institution>Foundation for the National Institutes of Health</institution>
+            </institution-wrap>
+          </funding-source>
+          <award-id>S10 OD018174</award-id>
+        </award-group>
+        <funding-statement>The authors received no specific funding for this work.</funding-statement>
+      </funding-group>
+      <counts>
+        <fig-count count="6"/>
+        <table-count count="1"/>
+        <page-count count="17"/>
+      </counts>
+      <custom-meta-group>
+        <custom-meta id="data-availability">
+          <meta-name>Data Availability</meta-name>
+          <meta-value>Fitness data are available from the fitness database (<ext-link ext-link-type="uri" xlink:href="http://fit.genomics.lbl.gov">fit.genomics.lbl.gov</ext-link>). Specifically, see the P. syringae data page: <ext-link ext-link-type="uri" xlink:href="http://fit.genomics.lbl.gov/cgi-bin/org.cgi?orgId=SyringaeB728a">http://fit.genomics.lbl.gov/cgi-bin/org.cgi?orgId=SyringaeB728a</ext-link>.</meta-value>
+        </custom-meta>
+      </custom-meta-group>
+    </article-meta>
+    <notes>
+      <title>Data Availability</title>
+      <p>Fitness data are available from the fitness database (<ext-link ext-link-type="uri" xlink:href="http://fit.genomics.lbl.gov">fit.genomics.lbl.gov</ext-link>). Specifically, see the P. syringae data page: <ext-link ext-link-type="uri" xlink:href="http://fit.genomics.lbl.gov/cgi-bin/org.cgi?orgId=SyringaeB728a">http://fit.genomics.lbl.gov/cgi-bin/org.cgi?orgId=SyringaeB728a</ext-link>.</p>
+    </notes>
+  </front>
+  <body>
+    <sec sec-type="intro" id="sec001">
+      <title>Introduction</title>
+      <p><italic>Pseudomonas syringae</italic> is a ubiquitous species complex containing strains commonly found in association with a variety of both healthy and diseased plants. More than 60 pathovars have been identified in this species, where taxonomic placement is primarily associated with their host range on different groups of host plants [<xref rid="pone.0239998.ref001" ref-type="bibr">1</xref>]. The life cycle of <italic>P</italic>. <italic>syringae</italic> is typically considered to consist of two overlapping phases: an initial period of epiphytic growth on the surface of plants followed by subsequent invasion and growth in the intracellular spaces (apoplast) [<xref rid="pone.0239998.ref002" ref-type="bibr">2</xref>]. Under favorable environmental conditions, such as either high humidity or surface moisture and moderate temperatures, large epiphytic bacterial populations can establish on leaves, increasing the likelihood that at least some cells will invade the interior of the leaf [<xref rid="pone.0239998.ref003" ref-type="bibr">3</xref>]. After invasion of the leaf through stomata or openings caused by wounds, rapid bacterial multiplication can occur in plants that are susceptible to infection, resulting in the formation of visible leaf symptoms and eventually localized host cell death [<xref rid="pone.0239998.ref002" ref-type="bibr">2</xref>, <xref rid="pone.0239998.ref003" ref-type="bibr">3</xref>]. Most attention to traits involved in plant colonization has focused on those contributing to apoplastic growth. Several such traits including the type III secretion system and certain effector proteins, phytotoxins, siderophores, adhesins, and genes contributing to stress tolerance have been identified [<xref rid="pone.0239998.ref004" ref-type="bibr">4</xref>]. While many genes contribute to growth in particular environments, canonical virulence factors such as type III effectors that contribute to the suppression of the host immune system and establishment of an aqueous environment, as well as phytotoxins, are specifically important to growth in the apoplast [<xref rid="pone.0239998.ref005" ref-type="bibr">5</xref>, <xref rid="pone.0239998.ref006" ref-type="bibr">6</xref>].</p>
+      <p>Type III effectors in <italic>P</italic>. <italic>syringae</italic> and other bacterial pathogens are important determinants of host specificity since they are often involved in the suppression of plant defenses. Effectors may in turn be recognized by R proteins, resulting in the initiation of defense signaling and host resistance [<xref rid="pone.0239998.ref007" ref-type="bibr">7</xref>]. However, individual type III effector genes can be disrupted with little to no effect on virulence, apparently because most of the many effectors produced by a given bacterium have redundant functions [<xref rid="pone.0239998.ref008" ref-type="bibr">8</xref>]. The linkage between type III effector repertoires and host range however remains unclear [<xref rid="pone.0239998.ref009" ref-type="bibr">9</xref>]. On the other hand, toxins produced by <italic>P</italic>. <italic>syringae</italic> show little host specificity and typically contribute little to its multiplication in plants [<xref rid="pone.0239998.ref010" ref-type="bibr">10</xref>]. Such toxins instead incite characteristic symptoms that follow infection [<xref rid="pone.0239998.ref010" ref-type="bibr">10</xref>]. While the contribution of such traits to the colonization of a given host plant species has been widely documented, most such studies have been limited to a given pathosystem, and we lack an understanding to what extent such traits contribute to bacterial growth in a plant species-dependent manner.</p>
+      <p>While the identification of fitness factors of plant pathogenic bacteria by classical gene-by-gene disruption studies is a very laborious process, transposon sequencing (TnSeq), whereby a large mixture of insertional mutants is assayed simultaneously, can quantify the contribution of nearly all nonessential genes to growth in a given plant host. We currently lack an understanding of the extent to which genes that contribute to virulence in one such plant species would also contribute to virulence in other potential host plants. Given that many plant pathogenic bacteria such as <italic>P</italic>. <italic>syringae</italic> are relatively promiscuous, growing both on and within a variety of often unrelated plant species [<xref rid="pone.0239998.ref011" ref-type="bibr">11</xref>], they might have evolved and retained virulence genes that are selectively important only in a subset of the plants with which they interact. This important question in the ecology and epidemiology of such species can only be answered by determining the extent to which those traits needed for colonization are distinctive to a given host plant. The global assessment of the contribution of genes of a strain to its success in a myriad of different hosts or habitats was however, until recently, challenging.</p>
+      <p>Random barcoded TnSeq (RB-TnSeq) is a modification of TnSeq in which 20-nucleotide barcodes are associated with distinct individual transposon insertion sites [<xref rid="pone.0239998.ref012" ref-type="bibr">12</xref>], facilitating the repeated interrogation of the same large collection of random insertional mutants for their contribution to fitness in multiple experiments. Because the location of the transposons in the mutant population only needs to be mapped a single time using TnSeq, the composition of the individual members of the mutagenized community can be easily quantified in each of many subsequent experiments by enumeration of only the amplicon barcode regions (BarSeq) [<xref rid="pone.0239998.ref012" ref-type="bibr">12</xref>]. This technique has been used to identify <italic>P</italic>. <italic>simiae</italic> genes that enable colonization of <italic>Arabidopsis thaliana</italic> roots [<xref rid="pone.0239998.ref013" ref-type="bibr">13</xref>] as well as genes that contributed to competitive growth of <italic>P</italic>. <italic>syringae</italic> B728a on both the leaf surface and in the apoplast of common bean (<italic>Phaseolus vulgaris</italic>) [<xref rid="pone.0239998.ref014" ref-type="bibr">14</xref>]. Combined with <italic>in vitro</italic> profiling to determine the function of these genes, these high-throughput transposon mutant studies provided considerable insight into the various traits required for plant colonization. A variety of non-essential genes were important for growth in the bean apoplast, including those involved in phytotoxin biosynthesis, the type III secretion system, and alginate biosynthesis. In addition to common bean, strain B728a is capable of both multiplication and elicitation of disease symptoms in plant hosts including lima bean (<italic>P</italic>. <italic>lunatus</italic>) and pepper (<italic>Capsicum annuum</italic>) [<xref rid="pone.0239998.ref011" ref-type="bibr">11</xref>]. Since apoplastic colonization requires growth of the bacteria while in intimate contact with host mesophyll cells, we hypothesized that the genes required to colonize these phylogenetically distinct plant species would differ. Because of the distinct metabolites expected within these plants and the likelihood of differential chemical or physical responses to infection, we hypothesized that a non-overlapping set of genes in <italic>P</italic>. <italic>syringae</italic> would contribute to its success in these various hosts. Furthermore, we hypothesized that there would be a greater overlap among those genes that contribute most to growth in common bean and lima bean than to those in pepper due to the close phylogenetic relationship of these two <italic>Phaseolus</italic> species in the Fabaceae family compared to that of <italic>C</italic>. <italic>annuum</italic>, a member of the Solanaceae family, Here, we examine the differential contribution of non-essential genes in <italic>P</italic>. <italic>syringae</italic> strain B728a to its growth in the apoplast of these three plant species.</p>
+    </sec>
+    <sec sec-type="results" id="sec002">
+      <title>Results</title>
+      <sec id="sec003">
+        <title><italic>P</italic>. <italic>syringae</italic> B728a growth is supported in diverse plant hosts</title>
+        <p>Given that the sensitivity of gene fitness measurements of bacteria interacting with plants using methods such as TnSeq is proportional to the extent of multiplication of the bacteria in the plant [<xref rid="pone.0239998.ref014" ref-type="bibr">14</xref>], we measured the growth of <italic>P</italic>. <italic>syringae</italic> within several possible host plants to determine whether such a strategy could be employed. Population sizes increased approximately 1,000-fold within six days after inoculation in common bean, and over 10,000-fold in both lima bean and pepper (<xref ref-type="supplementary-material" rid="pone.0239998.s001">S1 Fig</xref>). Such increases indicated that, on average, each inoculated cell had undergone 10 generations of growth in common bean and 13 or more generations of growth in both lima bean and pepper. Lima bean appeared to be relatively more susceptible to infection with <italic>P</italic>. <italic>syringae</italic> than common bean since it enabled more extensive growth of the bacterium within its tissues. In all hosts, infiltration of leaves with bacterial suspensions of 10<sup>5</sup> cells/ml conferred sufficiently large initial populations of the pathogen (ca. 5 x 10<sup>3</sup> cells/cm<sup>2</sup> of leaf) to yield aggregate populations of ca. 10<sup>6</sup> cells in the collection of several hundred leaves from which cells were subsequently recovered, thus reducing any bottleneck effects. Such initial population sizes were, however, sufficiently low to enable extensive subsequent growth of the inoculated bacterial cells before their recovery from the apoplast.</p>
+      </sec>
+      <sec id="sec004">
+        <title>Inoculation of a barcoded transposon library in multiple plant hosts</title>
+        <p>A randomly-barcoded <italic>mariner</italic> transposon library of <italic>P</italic>. <italic>syringae</italic> B728a described previously [<xref rid="pone.0239998.ref014" ref-type="bibr">14</xref>, <xref rid="pone.0239998.ref015" ref-type="bibr">15</xref>] was inoculated by vacuum infiltration into the leaves of the three plant species to identify genes contributing to host colonization. This mutant library contains 281,417 total strains having insertions mapped in the B728a genome. A subset of 169,826 genic strains in which transposon insertions were in the center 10&#x2013;90% portion of a given gene, were used for calculating gene fitness values. Fitness contributions could be estimated for 4,296 (84%) of the 5,137 protein-coding genes of this strain. Since the mutant library was cultured in King&#x2019;s medium B (KB) from a frozen stock immediately prior to plant inoculations, any changes in the proportional representation of transposon mutants in a given gene during overnight growth in this condition were used as the control against which growth of the mutants <italic>in planta</italic> was compared.</p>
+        <p>Samples of the transposon library recovered from each plant host after growth in the plant for 6 days contained at least 68% the total unique barcodes that were present in the inoculum infiltrated into leaves (<xref ref-type="supplementary-material" rid="pone.0239998.s005">S1 Table</xref>). This further supports the results of population sizes after inoculation that indicated that a sufficiently large proportion of the transposon mutant population was successfully introduced into plants during inoculation into the apoplast to avoid a large bottleneck. A principle component analysis (PCA) of the fitness data revealed that the contributions of genes to fitness in plants were largely distinct from their contribution to growth in a rich culture medium (<xref ref-type="fig" rid="pone.0239998.g001">Fig 1</xref>). The first principle component (PC1) contributed 22.17% of the variance and clearly discriminated between the KB and <italic>in planta</italic> samples. PC2 described 15.07% of the variance and discriminated between pepper and bean. The PCA also indicated minimal differences between the replicates. Despite the differential overall growth in these hosts, fitness values ranged from approximately -5.5 to +1.0 in all replicate studies of these 3 host plants (<xref ref-type="supplementary-material" rid="pone.0239998.s002">S2 Fig</xref>). For each gene, fitness values for the two replicate growth experiments in KB and the three replicate apoplastic growth experiments performed in each plant host were averaged. While there was variation in the standard deviation of the fitness values estimated for a given gene in a particular host, very few genes exhibited high variation in estimated fitness values and the mean standard deviation did not differ between the three plant species tested here (<xref ref-type="supplementary-material" rid="pone.0239998.s003">S3 Fig</xref>). It is noteworthy that the standard deviation of estimated fitness values of genes that contributed most strongly to either positively or negatively affecting fitness were generally somewhat higher than those of genes that contributed little to fitness in a given host (<xref ref-type="supplementary-material" rid="pone.0239998.s004">S4 Fig</xref>), suggesting that the fitness contribution of the traits encoded by these genes was perhaps somewhat context&#x2013;dependent and thus influenced by idiosyncratic features of particular experiments.</p>
+        <fig id="pone.0239998.g001" orientation="portrait" position="float">
+          <object-id pub-id-type="doi">10.1371/journal.pone.0239998.g001</object-id>
+          <label>Fig 1</label>
+          <caption>
+            <title>Principle component analysis of <italic>Pseudomonas syringae</italic> B728a grown in King&#x2019;s B (KB), common bean (&#x201C;common&#x201D;), lima bean (&#x201C;lima&#x201D;), or pepper.</title>
+            <p>Plot generated using gene fitness values calculated for 4,296 genes. Replicate experiments are noted as the numbers 1 to 3.</p>
+          </caption>
+          <graphic xlink:href="pone.0239998.g001"/>
+        </fig>
+      </sec>
+      <sec id="sec005">
+        <title>Common genes for apoplastic fitness in diverse plant species</title>
+        <p>To determine the extent to which those genes that had been identified as contributing to apoplastic colonization in common bean [<xref rid="pone.0239998.ref014" ref-type="bibr">14</xref>] were also required for maximum fitness in both lima bean and pepper, we compared gene fitness values after inoculating the mutant library into the apoplast of two additional host plant species. Many of the genes of <italic>P</italic>. <italic>syringae</italic> that contributed to its fitness in a given host also contributed similarly to its fitness in the other two plant species tested. Pairwise comparisons of gene fitness values on a given plant species with that in other plant species revealed a high correlation between the fitness contribution of a given gene in the apoplast of common bean, lima bean, and pepper (<xref ref-type="fig" rid="pone.0239998.g002">Fig 2</xref>). Pearson correlation coefficients, comparing average fitness values from all genes, ranged from 0.725 (lima bean compared to pepper) to 0.796 (common bean compared to lima bean). While many genes differentially contribute to growth in the apoplast of various plant species, it is clear that nearly as many make similar contributions to fitness on all of the plant species. For both those genes contributing strongly to apoplastic fitness (fitness value &lt; -2) (<xref ref-type="fig" rid="pone.0239998.g003">Fig 3A</xref>) or contributing somewhat less to fitness (fitness value &lt; -1) (<xref ref-type="fig" rid="pone.0239998.g003">Fig 3B</xref>) approximately 1/3 contributed to competitive fitness in all three host plants tested. Genes with average fitness values below these two fitness thresholds are listed in <xref ref-type="supplementary-material" rid="pone.0239998.s006">S2 Table</xref>. Those genes with large fitness affects in all hosts are primarily involved in amino acid metabolism, as well as other functional categories including cofactor metabolism, the type III secretion system, and polysaccharide synthesis and regulation (<xref rid="pone.0239998.t001" ref-type="table">Table 1</xref>).</p>
+        <fig id="pone.0239998.g002" orientation="portrait" position="float">
+          <object-id pub-id-type="doi">10.1371/journal.pone.0239998.g002</object-id>
+          <label>Fig 2</label>
+          <caption>
+            <title>Pairwise comparisons of gene fitness values between plant hosts.</title>
+            <p>There is a high correlation between gene contributions to growth of <italic>Pseudomonas syringae</italic> in the apoplast of common bean, lima bean, and pepper.</p>
+          </caption>
+          <graphic xlink:href="pone.0239998.g002"/>
+        </fig>
+        <fig id="pone.0239998.g003" orientation="portrait" position="float">
+          <object-id pub-id-type="doi">10.1371/journal.pone.0239998.g003</object-id>
+          <label>Fig 3</label>
+          <caption>
+            <title>Genes with significant contributions to apoplastic fitness in host plant species.</title>
+            <p>Venn diagrams of the number of genes with average fitness values &lt; -2 (A) or the number of genes with average fitness values &lt; -1 (B).</p>
+          </caption>
+          <graphic xlink:href="pone.0239998.g003"/>
+        </fig>
+        <table-wrap id="pone.0239998.t001" orientation="portrait" position="float">
+          <object-id pub-id-type="doi">10.1371/journal.pone.0239998.t001</object-id>
+          <label>Table 1</label>
+          <caption>
+            <title>Number of genes within each functional category with significant contributions to apoplastic fitness in all three host plant species tested.</title>
+          </caption>
+          <alternatives>
+            <graphic id="pone.0239998.t001g" xlink:href="pone.0239998.t001"/>
+            <table frame="hsides" rules="groups">
+              <colgroup span="1">
+                <col align="left" valign="middle" span="1"/>
+                <col align="left" valign="middle" span="1"/>
+                <col align="left" valign="middle" span="1"/>
+              </colgroup>
+              <thead>
+                <tr>
+                  <th align="left" rowspan="1" colspan="1">Functional Category</th>
+                  <th align="left" rowspan="1" colspan="1">Fitness &lt; -1</th>
+                  <th align="left" rowspan="1" colspan="1">Fitness &lt; -2</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td align="left" rowspan="1" colspan="1">Amino acid metabolism and transport</td>
+                  <td align="left" rowspan="1" colspan="1">22</td>
+                  <td align="left" rowspan="1" colspan="1">15</td>
+                </tr>
+                <tr>
+                  <td align="left" rowspan="1" colspan="1">Unclassified</td>
+                  <td align="left" rowspan="1" colspan="1">14</td>
+                  <td align="left" rowspan="1" colspan="1">4</td>
+                </tr>
+                <tr>
+                  <td align="left" rowspan="1" colspan="1">Type III secretion system</td>
+                  <td align="left" rowspan="1" colspan="1">12</td>
+                  <td align="left" rowspan="1" colspan="1">1</td>
+                </tr>
+                <tr>
+                  <td align="left" rowspan="1" colspan="1">Cofactor metabolism</td>
+                  <td align="left" rowspan="1" colspan="1">11</td>
+                  <td align="left" rowspan="1" colspan="1">0</td>
+                </tr>
+                <tr>
+                  <td align="left" rowspan="1" colspan="1">Polysaccharide synthesis and regulation</td>
+                  <td align="left" rowspan="1" colspan="1">6</td>
+                  <td align="left" rowspan="1" colspan="1">2</td>
+                </tr>
+                <tr>
+                  <td align="left" rowspan="1" colspan="1">Nucleotide metabolism and transport</td>
+                  <td align="left" rowspan="1" colspan="1">4</td>
+                  <td align="left" rowspan="1" colspan="1">3</td>
+                </tr>
+                <tr>
+                  <td align="left" rowspan="1" colspan="1">Replication and DNA repair</td>
+                  <td align="left" rowspan="1" colspan="1">4</td>
+                  <td align="left" rowspan="1" colspan="1">0</td>
+                </tr>
+                <tr>
+                  <td align="left" rowspan="1" colspan="1">Hypothetical</td>
+                  <td align="left" rowspan="1" colspan="1">3</td>
+                  <td align="left" rowspan="1" colspan="1">2</td>
+                </tr>
+                <tr>
+                  <td align="left" rowspan="1" colspan="1">LPS synthesis and transport</td>
+                  <td align="left" rowspan="1" colspan="1">3</td>
+                  <td align="left" rowspan="1" colspan="1">2</td>
+                </tr>
+                <tr>
+                  <td align="left" rowspan="1" colspan="1">Carbohydrate metabolism and transport</td>
+                  <td align="left" rowspan="1" colspan="1">2</td>
+                  <td align="left" rowspan="1" colspan="1">1</td>
+                </tr>
+                <tr>
+                  <td align="left" rowspan="1" colspan="1">Cell division</td>
+                  <td align="left" rowspan="1" colspan="1">2</td>
+                  <td align="left" rowspan="1" colspan="1">1</td>
+                </tr>
+                <tr>
+                  <td align="left" rowspan="1" colspan="1">Peptidoglycan/cell wall polymers</td>
+                  <td align="left" rowspan="1" colspan="1">2</td>
+                  <td align="left" rowspan="1" colspan="1">1</td>
+                </tr>
+                <tr>
+                  <td align="left" rowspan="1" colspan="1">Proteases</td>
+                  <td align="left" rowspan="1" colspan="1">2</td>
+                  <td align="left" rowspan="1" colspan="1">1</td>
+                </tr>
+                <tr>
+                  <td align="left" rowspan="1" colspan="1">Phytotoxin synthesis and transport</td>
+                  <td align="left" rowspan="1" colspan="1">1</td>
+                  <td align="left" rowspan="1" colspan="1">0</td>
+                </tr>
+                <tr>
+                  <td align="left" rowspan="1" colspan="1">Transcription&#x2014;Sigma factor</td>
+                  <td align="left" rowspan="1" colspan="1">1</td>
+                  <td align="left" rowspan="1" colspan="1">1</td>
+                </tr>
+                <tr>
+                  <td align="left" rowspan="1" colspan="1">Transcriptional regulation</td>
+                  <td align="left" rowspan="1" colspan="1">1</td>
+                  <td align="left" rowspan="1" colspan="1">0</td>
+                </tr>
+                <tr>
+                  <td align="left" rowspan="1" colspan="1">Total</td>
+                  <td align="left" rowspan="1" colspan="1">90</td>
+                  <td align="left" rowspan="1" colspan="1">34</td>
+                </tr>
+              </tbody>
+            </table>
+          </alternatives>
+          <table-wrap-foot>
+            <fn id="t001fn001">
+              <p>Fitness cutoffs of &lt; -1 and &lt; -2 are both shown. Functional category annotations are primarily based on COG [<xref rid="pone.0239998.ref016" ref-type="bibr">16</xref>] and KEGG [<xref rid="pone.0239998.ref017" ref-type="bibr">17</xref>] annotations, with manual additions and corrections originally published by Yu et al. [<xref rid="pone.0239998.ref018" ref-type="bibr">18</xref>].</p>
+            </fn>
+          </table-wrap-foot>
+        </table-wrap>
+      </sec>
+      <sec id="sec006">
+        <title>Differential contributions of genes to apoplastic growth in various plant species</title>
+        <p>The magnitude of the contribution of 87 genes to apoplastic fitness differed significantly among these 3 plant species (Kruskal-Wallis, p &lt; 0.05). Fifty of those genes had relatively large effects on fitness, having average fitness values of either less than -0.5 or greater than +0.5 in at least one host (<xref ref-type="supplementary-material" rid="pone.0239998.s007">S3 Table</xref>). Those genes that had a differential impact on fitness in different hosts included eight that were annotated as being involved in polysaccharide synthesis and regulation, six in cofactor metabolism, five in phytotoxin synthesis and transport, and four in amino acid metabolism and transport. We also identified six genes that encoded hypothetical proteins that were differentially important in these hosts. The identity of the other 37 genes that contributed differentially to fitness on these hosts, but whose effect was small, having fitness values greater than -0.5 or less than +0.5 in all host plant species are described in <xref ref-type="supplementary-material" rid="pone.0239998.s008">S4 Table</xref>.</p>
+      </sec>
+      <sec id="sec007">
+        <title>Apparent variations in amino acid availability between plant species revealed by fitness of auxotrophic strains</title>
+        <p>Genes involved in the biosynthesis of several amino acids were generally required for competitive fitness in the apoplast of all plant species tested (<xref rid="pone.0239998.t001" ref-type="table">Table 1</xref>). However, auxotrophic strains in histidine and isoleucine/valine biosynthesis were less fit in common bean and pepper than in lima bean (<xref ref-type="fig" rid="pone.0239998.g004">Fig 4</xref>) suggesting that these amino acids were more abundant in lima bean than in the other two species. Within these pathways, average fitness values for <italic>hisD</italic>, <italic>hisH</italic>, and <italic>ilvHI</italic> differed significantly in at least one plant species (Kruskal-Wallis, p &lt; 0.05).</p>
+        <fig id="pone.0239998.g004" orientation="portrait" position="float">
+          <object-id pub-id-type="doi">10.1371/journal.pone.0239998.g004</object-id>
+          <label>Fig 4</label>
+          <caption>
+            <title>Apoplastic fitness contribution of histidine and isoleucine/valine biosynthetic genes.</title>
+            <p>Genes <italic>hisD</italic>, <italic>hisH</italic>, and <italic>ilvHI</italic> had significantly different fitness values in different plant species by a Kruskal-Wallis test (p &lt; 0.05).</p>
+          </caption>
+          <graphic xlink:href="pone.0239998.g004"/>
+        </fig>
+      </sec>
+      <sec id="sec008">
+        <title>Phytotoxin production appears to be a host-specific virulence trait</title>
+        <p>While the production of phytotoxins such as syringomycin contribute to competitive fitness in the apoplast of common bean [<xref rid="pone.0239998.ref014" ref-type="bibr">14</xref>], it is noteworthy that such genes contributed less to fitness in lima bean than in both common bean and pepper (<xref ref-type="fig" rid="pone.0239998.g005">Fig 5</xref>) suggesting that this host was less susceptible to the damage caused by phytotoxins such as syringomycin. The average fitness values of genes encoding the regulatory proteins SalA, SylA, and SyrP, as well as those encoding the secretion protein PseB and the amino acid adenylation protein SypA differed significantly among these three plant species (Kruskal-Wallis p &lt; 0.05).</p>
+        <fig id="pone.0239998.g005" orientation="portrait" position="float">
+          <object-id pub-id-type="doi">10.1371/journal.pone.0239998.g005</object-id>
+          <label>Fig 5</label>
+          <caption>
+            <title>Apoplastic fitness values for genes involved in phytotoxin biosynthesis.</title>
+            <p>Genes <italic>sylA</italic>, <italic>salA</italic>, <italic>syrP</italic>, <italic>sypA</italic>, and <italic>pseB</italic> had significantly different fitness values in these 3 plant species by a Kruskal-Wallis test (p &lt; 0.05).</p>
+          </caption>
+          <graphic xlink:href="pone.0239998.g005"/>
+        </fig>
+      </sec>
+      <sec id="sec009">
+        <title>Alginate production in <italic>P</italic>. <italic>syringae</italic> varies in importance among host plants</title>
+        <p>While polysaccharide biosynthesis and regulation is considered a broadly important plant colonization trait, the genes involved in the biosynthesis of alginate contributed differentially to apoplastic growth in the three plant species investigated (<xref ref-type="fig" rid="pone.0239998.g006">Fig 6</xref>). Specifically, the alginate biosynthesis genes <italic>alg44</italic>, <italic>alg8</italic>, <italic>algA-1</italic>, <italic>algF</italic>, <italic>algI</italic>, and <italic>algK</italic> were more important in the colonization of lima bean and common bean than in pepper (Kruskal-Wallis, p &lt; 0.05).</p>
+        <fig id="pone.0239998.g006" orientation="portrait" position="float">
+          <object-id pub-id-type="doi">10.1371/journal.pone.0239998.g006</object-id>
+          <label>Fig 6</label>
+          <caption>
+            <title>Apoplastic fitness values for alginate biosynthetic genes.</title>
+            <p>Genes <italic>alg44</italic>, <italic>alg8</italic>, <italic>algA-1</italic>, <italic>algF</italic>, <italic>algI</italic>, and <italic>algK</italic> had significantly different fitness values in the 3 plant species by a Kruskal-Wallis test (p &lt; 0.05).</p>
+          </caption>
+          <graphic xlink:href="pone.0239998.g006"/>
+        </fig>
+      </sec>
+    </sec>
+    <sec sec-type="conclusions" id="sec010">
+      <title>Discussion</title>
+      <p>RB-TnSeq is a powerful method that has been used in a variety of bacterial species to identify those genes that contribute to fitness in diverse <italic>in vitro</italic> conditions [<xref rid="pone.0239998.ref012" ref-type="bibr">12</xref>, <xref rid="pone.0239998.ref015" ref-type="bibr">15</xref>, <xref rid="pone.0239998.ref019" ref-type="bibr">19</xref>]. In one TnSeq study, about 100 genes were found to either increase or decrease the fitness of <italic>Dickeya dadantii</italic> in chicory [<xref rid="pone.0239998.ref020" ref-type="bibr">20</xref>], highlighting the importance of the biosynthetic pathways for leucine, cysteine, and lysine for bacterial growth within the plant. A similar study in <italic>Pantoea stewartii</italic> ssp. <italic>stewartii</italic> identified genes that were important for its growth within corn (<italic>Zea mays</italic>) xylem [<xref rid="pone.0239998.ref021" ref-type="bibr">21</xref>]. Typical of most studies, these reports focused on a single pathosystem. This limited use of this powerful technology is largely due to the cost and effort required to map genomic insertions in the mutagenized population at the start and end of each setting to which the mutagenized population is exposed. In contrast, after initially associating several uniquely tagged transposons with a given gene in RB-TnSeq the relative proportions of the different insertional mutants can be readily assessed by quantifying the amplified barcodes. In this study, interrogation of a mutant mixture after growth in three different host plants provided confident estimates of the differential contribution of each non-essential gene to fitness in these hosts. This proved to be a very powerful tool to generate hypotheses regarding host-specific virulence traits by identifying both common and host-specific genes that enable growth in the intercellular spaces of plants.</p>
+      <p>We hypothesized that at least a subset of the genes in <italic>P</italic>. <italic>syringae</italic> required for colonization of the apoplast of a given host plant would not be required in other plants, with the assumption that distinctive features of the niche in the interior of these plants would differ in resources and chemical defenses. A larger number of genes are required for colonization of the apoplast of common bean compared to the leaf surface [<xref rid="pone.0239998.ref014" ref-type="bibr">14</xref>], suggesting that the leaf interior provides a more complex chemical or physical habitat than the leaf surface. Through fitness profiling of amino acid auxotrophs, the importance of various amino acid biosynthetic pathways for growth both on the leaf surface and in the apoplast of common bean has been demonstrated. This suggested that some amino acids are less abundant than others in both of these environments, supporting direct measurements made by others [<xref rid="pone.0239998.ref022" ref-type="bibr">22</xref>]. We find here that the relative abundance of available amino acids in the apoplast seems to also vary between plant species. Specifically, the intercellular spaces of lima bean appears to contain more accessible histidine, isoleucine, and valine than in both common bean and pepper since genes for the production of these resources played a lesser role in <italic>P</italic>. <italic>syringae</italic> than in the other plant species (<xref ref-type="fig" rid="pone.0239998.g004">Fig 4</xref>). On the other hand, similar relative amounts of other amino acids are apparently present in the three plant species tested, as the genes in other amino acid biosynthetic pathways did not contribute to fitness differentially in plants examined here.</p>
+      <p>While they are not essential for growth <italic>in planta</italic>, <italic>P</italic>. <italic>syringae</italic> produces various phytotoxins that contribute to symptom development in plants [<xref rid="pone.0239998.ref023" ref-type="bibr">23</xref>, <xref rid="pone.0239998.ref024" ref-type="bibr">24</xref>]. Strain B728a produces the lipodesinonapeptides syringomycin and syringopeptin, as well as the peptide derivative syringolin A [<xref rid="pone.0239998.ref025" ref-type="bibr">25</xref>, <xref rid="pone.0239998.ref026" ref-type="bibr">26</xref>]. Syringolin A counteracts stomatal immunity through proteasome inhibition [<xref rid="pone.0239998.ref027" ref-type="bibr">27</xref>], and genes in this biosynthetic pathway did not contribute to apoplastic growth in any of the three plant studied here. Syringomycin and syringopeptin function as pore-forming cytotoxins, contributing to ion leakage [<xref rid="pone.0239998.ref028" ref-type="bibr">28</xref>]. It was interesting to note that the biosynthetic genes for these non-specific toxins contributed more to fitness in common bean and pepper than in lima bean (<xref ref-type="fig" rid="pone.0239998.g005">Fig 5</xref>). Curiously, while strain B728a grew to higher population sizes in pepper than in common bean (<xref ref-type="supplementary-material" rid="pone.0239998.s001">S1 Fig</xref>), symptom development is much less apparent on pepper than in either common or lima bean, without the appearance of any necrosis. While these three plant species were all susceptible to strain B728a, lima bean appeared much more susceptible than common bean because of the substantially higher apoplastic populations that were attained as well as an earlier onset and more extensive necrotic lesion formation that it supported (<xref ref-type="supplementary-material" rid="pone.0239998.s001">S1 Fig</xref>). Thus, while it appears that syringomycin is a general virulence trait required for maximum growth within plants, and not merely a factor contributing to necrotic lesion development, the mechanism by which it contributes to growth in plants remains unclear. It is possible that differences in the immune responses between these plant species might be modulated by syringomycin, thus contributing to the differential contribution of this trait to apoplastic growth.</p>
+      <p>Given that many genes contributed similarly to virulence in all three hosts, it remains unclear why <italic>P</italic>. <italic>syringae</italic> strain B728a multiplied to substantially different population sizes in these plants. Low water availability on both the leaf surface and in the apoplast limits bacterial growth [<xref rid="pone.0239998.ref029" ref-type="bibr">29</xref>]. In response, <italic>P</italic>. <italic>syringae</italic> apparently upregulates the production of the exopolysaccharide alginate, to help maintain available moisture for bacterial growth [<xref rid="pone.0239998.ref001" ref-type="bibr">1</xref>]. Alginate production is an important factor for both virulence and epiphytic fitness of <italic>P</italic>. <italic>syringae</italic> [<xref rid="pone.0239998.ref001" ref-type="bibr">1</xref>, <xref rid="pone.0239998.ref030" ref-type="bibr">30</xref>]. While alginate biosynthetic mutants were less fit than most other mutants in the apoplast of all three hosts tested in this study, alginate appears to be a more important virulence trait in lima bean relative to that in pepper. In <italic>P</italic>. <italic>syringae</italic> pv. <italic>tomato</italic> DC3000, alginate biosynthetic genes are expressed in both host and non-host plants [<xref rid="pone.0239998.ref031" ref-type="bibr">31</xref>]. While alginate production is apparently a generally important virulence trait, differences in its relative contribution to virulence in these plant species may indicate variation in the relative moisture content in the apoplastic space of lima bean and pepper. It is possible that the anatomical differences between these plants contribute to differences in water availability. For example, pepper leaves are thicker than that of either of the two bean species, and its water loss during the infection process may be somewhat less than in lima bean, thus enabling its leaves to better retain water that may be released by the plant to the apoplast during the infection process, diminishing a requirement for alginate production by <italic>P</italic>. <italic>syringae</italic> to maintain hydration [<xref rid="pone.0239998.ref006" ref-type="bibr">6</xref>].</p>
+      <p>Given that <italic>P</italic>. <italic>syringae</italic> strain B728a is capable of symptom formation in several additional plant species beyond those tested here [<xref rid="pone.0239998.ref011" ref-type="bibr">11</xref>], it should prove informative to interrogate the contribution of both the common and unique virulence genes identified here in a more disparate collection of plant species that presumably would provide yet more distinctive plant habitats that would require additional host-specific fitness traits than those revealed here. Further studies of interactions with the plant species examined here should also enable the identification of additional genes that play a quantitatively smaller, but ecologically important role in their colonization. The fitness values observed for many genes reflected 50% or less growth of the disruption mutants compared to the wild-type strain. Such a large effect of these genes on growth over the relatively few (10 to 13 generations) in these studies suggests that there is strong selection for these genes in plants, especially when considering the many generations that the species would undergo in a given year. Because of the limited number replications used in the study we did not use a multiple testing correction for the Kruskal-Wallis tests because the resulting p-value (10<sup>&#x2212;5</sup>) was deemed to be too conservative. This risks the identification of some genes as &#x201C;host-specific&#x201D; when they were not. However, it is important to note that all of the genes that contributed differentially to colonization of these three plant species (<xref ref-type="supplementary-material" rid="pone.0239998.s007">S3 Table</xref>) were found to be required for fitness in at least one of these plant species, having an average fitness value less than -0.5 in at least one host. There is less support for a few other genes for which differential contribution fitness was indicated (<xref ref-type="supplementary-material" rid="pone.0239998.s008">S4 Table</xref>). The contribution of such genes with lesser effects on virulence might be better quantified in further studies in which the mutant mixtures are recovered after infection events and used to re-inoculate additional plants, thereby increasing the number of generations of multiplication over which fitness values could be estimated.</p>
+      <p><italic>P</italic>. <italic>syringae</italic> is a commonly observed phyllosphere resident that is also found in other location in the global water cycle [<xref rid="pone.0239998.ref032" ref-type="bibr">32</xref>]. As such, it presumably interacts with a large number of different plants, both as a surface colonist and after entering into plants [<xref rid="pone.0239998.ref033" ref-type="bibr">33</xref>]. These various habitats presumably require very different genes to enable it to exploit these diverse settings. There is therefore much to learn about habitat-specific contributions of its many genes. The high-throughput analysis of insertional mutant mixtures used here not only reveals those traits important in a given setting, but also elucidates the limiting factors in those habitats. As such, further exploitation of RB-TnSeq enables functional genomics to be applied to <italic>P</italic>. <italic>syringae</italic> in its diverse natural habitats. While we considered here the contribution of genes to fitness in several of the many plants in which <italic>P</italic>. <italic>syringae</italic> might find itself, there are many other settings in which a subset of its genes may become particularly important to fitness. Clearly, <italic>P</italic>. <italic>syringae</italic> has maintained genes preferentially important in some hosts, and many other genes may play similar habitat-specific roles.</p>
+    </sec>
+    <sec sec-type="materials|methods" id="sec011">
+      <title>Materials and methods</title>
+      <sec id="sec012">
+        <title>Bacterial strains and growth media</title>
+        <p><italic>P</italic>. <italic>syringae</italic> pv. <italic>syringae</italic> B728a was originally isolated from a bean leaf (<italic>Phaseolus vulgaris</italic>) in Wisconsin [<xref rid="pone.0239998.ref034" ref-type="bibr">34</xref>]. The complete genome for B728a is available on NCBI GenBank as accession CP000075.1 [<xref rid="pone.0239998.ref025" ref-type="bibr">25</xref>]. B728a was grown on King&#x2019;s B (KB) agar or in KB broth [<xref rid="pone.0239998.ref035" ref-type="bibr">35</xref>], at 28&#x2DA;C. When appropriate, the following antibiotics were used at the indicated concentrations: 100 &#x3BC;g/ml rifampicin, 100 &#x3BC;g/ml kanamycin, and 21.6 &#x3BC;g/ml natamycin (an anti-fungal). Strains used in this study are listed in <xref ref-type="supplementary-material" rid="pone.0239998.s009">S5 Table</xref>.</p>
+      </sec>
+      <sec id="sec013">
+        <title>Plant growth conditions</title>
+        <p>Common bean (<italic>P</italic>. <italic>vulgaris</italic> var. Blue Lake Bush 274) and lima bean (<italic>P</italic>. <italic>lunatus</italic> var. Haskell) were grown in Super Soil (Scotts Miracle-Gro), at a density of five to seven plants per 10 cm diameter pot, in a greenhouse for two weeks before inoculation. Pepper (<italic>C</italic>. <italic>annuum</italic> var. Cal Wonder) were grown in 10 cm diameter pots (three to five plants per pot) containing Super Soil and grown in a greenhouse for ca. 6 weeks to a height of ca. 30 cm. Leaves were kept dry to minimize epiphytic bacterial populations. Metal halide lights (1000 W) were used to provide supplemental lighting for a 16-hour day length.</p>
+      </sec>
+      <sec id="sec014">
+        <title>Bacterial apoplastic growth measurements</title>
+        <p>Wild type strain B728a was grown overnight on KB with rifampicin, washed in 10 mM KPO<sub>4</sub> (pH 7.0), and adjusted to a cell concentration of 2x10<sup>5</sup> CFU/ml in 1 mM KPO<sub>4</sub>. Cells were inoculated into leaves using a blunt syringe. Leaf samples (3 discs per leaf) were excised using a 5 mm-diameter cork borer and placed into microfuge tubes containing 200 &#x3BC;l 10 mM KPO<sub>4</sub> and two 3 mm glass beads, and macerated by shaking for 30 seconds at 2400 rpm in a Mini-Beadbeater-96 (Biospec Products) before dilution plating of appropriate serial dilutions on KB containing rifampicin and natamycin. Colonies were enumerated following two days growth at 28&#x2DA;C.</p>
+      </sec>
+      <sec id="sec015">
+        <title>Library recovery and growth in KB</title>
+        <p>For each inoculation, a 1.25 ml aliquot of a glycerol stock containing the transposon library that had been stored at -80&#x2DA;C was placed in 25 ml fresh KB with kanamycin and grown for approximately 7 hours at 28&#x2DA;C with shaking until the culture reached mid-log phase (OD<sub>600</sub> 0.5&#x2013;0.7). Time0 samples enumerating the relative abundance of each mutant were collected from the inoculum; 1 ml aliquots were pelleted by centrifugation and the pellets frozen until DNA purification. The remaining cells were then washed twice in 10 mM KPO<sub>4</sub> prior to plant inoculation.</p>
+        <p>To determine the growth of the mutant library in KB, a 50 &#x3BC;l log phase cell culture (OD<sub>600</sub> 0.5) was inoculated into 950 &#x3BC;l KB with kanamycin in a 24-well plate. The plate was incubated at 28&#x2DA;C with shaking for 15 hours. Cells were collected by centrifugation, and frozen prior to DNA purification. Calculation of the fitness values from the KB control treatment is discussed in [<xref rid="pone.0239998.ref014" ref-type="bibr">14</xref>].</p>
+      </sec>
+      <sec id="sec016">
+        <title>Inoculations of the transposon library into plants</title>
+        <p>Washed cells were re-suspended to a concentration of 2x10<sup>5</sup> CFU/ml in 1 mM KPO<sub>4</sub>. The soil of potted plants was covered with cotton to hold the soil in place, and the foliage was inverted into open containers containing ca. 1.5 L of bacterial cell suspension in an open glass bell jar. A vacuum was then applied to the plants sealed within the bell jar for 1.25 minutes and then removed rapidly to force the inoculum into the evacuated apoplast. Ca. 100 pots of plants of a given species were inoculated for a given replicate experiment. Plants were allowed to dry overnight and then moved to the greenhouse for six days.</p>
+      </sec>
+      <sec id="sec017">
+        <title>Bacterial isolation from the apoplast</title>
+        <p>Leaves of each plant species were excised from the plants and then chopped in a blender to yield fragments with an average diameter of about 1 to 4 mm. The slurry of leaf fragments was then placed in a water-filled glass dish and placed in a sonication water bath (Branson 5510, output frequency 40 kHz) for 15 min to remove cells. The resulting slurry-containing cells that were dislodged from the leaf interior was filtered through a coffee filter to remove most plant debris. 10% of the ca. 5&#x2013;10 L of buffer containing the largely plant-free cell suspension was then subjected to sequential additional filtration steps of Whatman filters (20 &#x3BC;m, 10 &#x3BC;m, and 6 &#x3BC;m) to remove much of the remaining plant debris. Bacterial cells were then removed from suspension by centrifugation at 4696 x g for 10 minutes. The pellet was re-suspended in water, and aliquots of cell pellets were frozen prior to DNA purification.</p>
+      </sec>
+      <sec id="sec018">
+        <title>DNA isolation and library preparation</title>
+        <p>DNA from frozen pellets was isolated using the Qiagen DNeasy Blood &amp; Tissue Kit according to manufacturer&#x2019;s instructions. Cell lysis was done at 50&#x2DA;C for 10 minutes as per optional instructions. For those samples having excess residual plant material, lysed cells were centrifuged at 1,500 x g for 5 minutes before loading the supernatant onto purification columns. Purified genomic DNA was measured on a nanodrop device and 200 ng of total DNA was used as a template for DNA barcode amplification and adapter ligation as established previously [<xref rid="pone.0239998.ref012" ref-type="bibr">12</xref>]. For each time0 and plant experimental sample, two separately purified DNA samples were sequenced as technical replicates.</p>
+      </sec>
+      <sec id="sec019">
+        <title>Sequencing and fitness value estimation</title>
+        <p>Barcode sequencing, mapping, and analysis to calculate the relative abundance of barcodes was done using the RB-TnSeq methodology and computation pipeline developed by Wetmore <italic>et al</italic>. [<xref rid="pone.0239998.ref012" ref-type="bibr">12</xref>]; code available at <ext-link ext-link-type="uri" xlink:href="https://doi.org/bitbucket.org/berkeleylab/feba/">bitbucket.org/berkeleylab/feba/</ext-link>. Primers used for TnSeq and BarSeq are described in [<xref rid="pone.0239998.ref012" ref-type="bibr">12</xref>]. TnSeq was used to map the insertion sites and associate the DNA barcodes to these insertions, as described in [<xref rid="pone.0239998.ref014" ref-type="bibr">14</xref>]. Unique barcoded mutants were identified as those that both mapped to the genome and for which 3 or more reads were obtained during sequencing of the amplified barcodes in a given experiment. For each experiment, fitness values for each gene were calculated as the log<sub>2</sub> of the ratio of relative barcode abundance following library growth in a given condition divided by relative abundance in the time0 sample. Fitness values were normalized across the genome so the typical gene had a fitness value of 0. Fitness values from sequencing replicates were averaged for each experiment. All experiments passed previously described quality control metrics [<xref rid="pone.0239998.ref012" ref-type="bibr">12</xref>], with the exception of one technical replicate (<italic>P</italic>.<italic>vulgaris</italic>_2), which was removed from analysis. The requirements for a successful experiment included the detection of more than 50 median reads per gene and a consistency in the calculated fitness value estimated from mutants with insertions in the 5&#x2019; and 3&#x2019; distal halves of a given gene [<xref rid="pone.0239998.ref012" ref-type="bibr">12</xref>]. Experimental fitness values are publically available at fit.genomics.lbl.gov. Fitness values calculated for growth in common bean were previously generated [<xref rid="pone.0239998.ref014" ref-type="bibr">14</xref>].</p>
+      </sec>
+      <sec id="sec020">
+        <title>Genomic fitness data analysis</title>
+        <p>All analysis of gene fitness values and gene metadata was done in R [<xref rid="pone.0239998.ref036" ref-type="bibr">36</xref>]. A PCA plot of experiments was generated from the matrix of gene fitness values using the function prcomp. To better classify genes based on their genomic annotation, we assigned gene names, gene product descriptions, and broad functional categories based on the previously annotated genomic metadata [<xref rid="pone.0239998.ref018" ref-type="bibr">18</xref>]. For each gene, fitness values for experimental replicates were averaged to calculate an average gene fitness value for each plant species. A Kruskal-Wallis test was used to identify those genes in which the median fitness in at least one plant host was significantly different than that in other plant species (p &lt; 0.05). Fitness values in KB were not included in this analysis. From these results, genes were removed to a separate list if the absolute average fitness was less than 0.5 in all conditions. Graphs were plotted in R using the ggplot2 package, version 3.1.1 [<xref rid="pone.0239998.ref037" ref-type="bibr">37</xref>]. Heatmaps were plotted in R using the gplots package, version 3.0.1.1 [<xref rid="pone.0239998.ref038" ref-type="bibr">38</xref>].</p>
+      </sec>
+    </sec>
+    <sec sec-type="supplementary-material" id="sec021">
+      <title>Supporting information</title>
+      <supplementary-material content-type="local-data" id="pone.0239998.s001">
+        <label>S1 Fig</label>
+        <caption>
+          <title>Growth of <italic>P</italic>. <italic>syringae</italic> B728a in the apoplast of the susceptible hosts common bean (<italic>Phaseolus vulgaris</italic>), lima bean (<italic>P</italic>. <italic>lunatus</italic>), and pepper (<italic>Capsicum annuum</italic>).</title>
+          <p>The vertical bars represent the standard deviation of the mean.</p>
+          <p>(PDF)</p>
+        </caption>
+        <media xlink:href="pone.0239998.s001.pdf">
+          <caption>
+            <p>Click here for additional data file.</p>
+          </caption>
+        </media>
+      </supplementary-material>
+      <supplementary-material content-type="local-data" id="pone.0239998.s002">
+        <label>S2 Fig</label>
+        <caption>
+          <title>Rank ordered mean gene fitness values for each plant species and the KB control medium in which <italic>P</italic>. <italic>syringae</italic> was grown.</title>
+          <p>Fitness values for independent replicate experiments are shown in grey, while mean fitness values are shown in black. Gene fitness value is calculated as the log<sub>2</sub> of the ratio of the barcode counts following growth in a given setting compared to the barcode counts before inoculation. Black lines indicated at fitness values of -2 and +2 are used to reveal strong phenotypes; for example a value of -2 indicates that mutants are 25% as fit as the typical strain in the mutant library. In each dataset, fitness values &lt; -2 or &gt; +2 are more than three standard deviations from the mean (approximately 0).</p>
+          <p>(PDF)</p>
+        </caption>
+        <media xlink:href="pone.0239998.s002.pdf">
+          <caption>
+            <p>Click here for additional data file.</p>
+          </caption>
+        </media>
+      </supplementary-material>
+      <supplementary-material content-type="local-data" id="pone.0239998.s003">
+        <label>S3 Fig</label>
+        <caption>
+          <title>Distribution of standard deviation of gene fitness values for each gene calculated from three replicate <italic>in planta</italic> experiments.</title>
+          <p>These distributions are similar for the three plant species.</p>
+          <p>(PDF)</p>
+        </caption>
+        <media xlink:href="pone.0239998.s003.pdf">
+          <caption>
+            <p>Click here for additional data file.</p>
+          </caption>
+        </media>
+      </supplementary-material>
+      <supplementary-material content-type="local-data" id="pone.0239998.s004">
+        <label>S4 Fig</label>
+        <caption>
+          <title>The standard deviation for estimates of gene fitness values is highest at both high and low measures of gene fitness contribution.</title>
+          <p>For each host plant, the standard deviations of gene fitness values are ranked by average gene fitness, and are highest on average for genes with very low or high fitness value. A generalized additive model (GAM) was used to fit the regression lines.</p>
+          <p>(PDF)</p>
+        </caption>
+        <media xlink:href="pone.0239998.s004.pdf">
+          <caption>
+            <p>Click here for additional data file.</p>
+          </caption>
+        </media>
+      </supplementary-material>
+      <supplementary-material content-type="local-data" id="pone.0239998.s005">
+        <label>S1 Table</label>
+        <caption>
+          <title>Numbers of unique barcodes per sample and median reads per gene.</title>
+          <p>Values obtained from mid-log phase cultures following library outgrowth and before inoculation (time0) and from leaves pooled after growth in 100 pots of plants of a particular host (sample). Unique barcodes were calculated as the total that mapped to the genome and for which 3 or more reads were obtained in a given experiment. The total number of genome-mapped barcodes in the library was 281,417. Technical (sequencing) replicates are listed separately (&#x201C;a&#x201D; and &#x201C;b&#x201D;), and share the same time0 reference sample. For an experiment to pass quality control, the median reads per gene in the sample must be &#x2265; 50 [<xref rid="pone.0239998.ref012" ref-type="bibr">12</xref>].</p>
+          <p>(DOCX)</p>
+        </caption>
+        <media xlink:href="pone.0239998.s005.docx">
+          <caption>
+            <p>Click here for additional data file.</p>
+          </caption>
+        </media>
+      </supplementary-material>
+      <supplementary-material content-type="local-data" id="pone.0239998.s006">
+        <label>S2 Table</label>
+        <caption>
+          <title>Unique and shared gene loci among the three hosts tested having average fitness values less than -2 or -1.</title>
+          <p>The fitness value cutoff of &lt; -1 is inclusive of the cutoff &lt; -2, although individual genes may appear significant in different categories. These totals are shown as Venn diagrams in <xref ref-type="fig" rid="pone.0239998.g003">Fig 3</xref>.</p>
+          <p>(DOCX)</p>
+        </caption>
+        <media xlink:href="pone.0239998.s006.docx">
+          <caption>
+            <p>Click here for additional data file.</p>
+          </caption>
+        </media>
+      </supplementary-material>
+      <supplementary-material content-type="local-data" id="pone.0239998.s007">
+        <label>S3 Table</label>
+        <caption>
+          <title>Genes having a differential fitness contribution to growth in three plant species by a Kruskal-Wallis rank sum test (p &lt; 0.05).</title>
+          <p>Fitness values in KB are included for comparison. This table does not include 37 genes whose average fitness values differed between plant species but whose effect was small, having fitness values greater than -0.5 and less than +0.5 in all host plant species.</p>
+          <p>(DOCX)</p>
+        </caption>
+        <media xlink:href="pone.0239998.s007.docx">
+          <caption>
+            <p>Click here for additional data file.</p>
+          </caption>
+        </media>
+      </supplementary-material>
+      <supplementary-material content-type="local-data" id="pone.0239998.s008">
+        <label>S4 Table</label>
+        <caption>
+          <title>Genes having a differential fitness contribution to growth in three plant species by a Kruskal-Wallis rank sum test (p &lt; 0.05), but whose effect was small, having fitness values greater than -0.5 and less than +0.5 in all host plant species.</title>
+          <p>Fitness values in KB are included for comparison.</p>
+          <p>(DOCX)</p>
+        </caption>
+        <media xlink:href="pone.0239998.s008.docx">
+          <caption>
+            <p>Click here for additional data file.</p>
+          </caption>
+        </media>
+      </supplementary-material>
+      <supplementary-material content-type="local-data" id="pone.0239998.s009">
+        <label>S5 Table</label>
+        <caption>
+          <title>Strains used in this study.</title>
+          <p>(DOCX)</p>
+        </caption>
+        <media xlink:href="pone.0239998.s009.docx">
+          <caption>
+            <p>Click here for additional data file.</p>
+          </caption>
+        </media>
+      </supplementary-material>
+    </sec>
+  </body>
+  <back>
+    <ack>
+      <p>We thank Morgan Price for assistance with RB-TnSeq sequence analysis. Plants were grown and maintained with the assistance of the UC Berkeley greenhouse staff, led by Tina Wistrom. Mention of trade names or commercial products in this publication is solely for the purpose of providing specific information and does not imply recommendation or endorsement by the U.S. Department of Agriculture. USDA is an equal opportunity provider and employer.</p>
+    </ack>
+    <ref-list>
+      <title>References</title>
+      <ref id="pone.0239998.ref001">
+        <label>1</label>
+        <mixed-citation publication-type="journal"><name><surname>Xin</surname><given-names>XF</given-names></name>, <name><surname>Kvitko</surname><given-names>BH</given-names></name>, <name><surname>He</surname><given-names>SY</given-names></name>. <article-title><italic>Pseudomonas syringae</italic>: what it takes to be a pathogen</article-title>. <source>Nat Rev Microbiol</source>. <year>2018</year>;<volume>16</volume>: <fpage>316</fpage>&#x2013;<lpage>328</lpage>. <pub-id pub-id-type="doi">10.1038/nrmicro.2018.17</pub-id>
+<pub-id pub-id-type="pmid">29479077</pub-id></mixed-citation>
+      </ref>
+      <ref id="pone.0239998.ref002">
+        <label>2</label>
+        <mixed-citation publication-type="journal"><name><surname>Melotto</surname><given-names>M</given-names></name>, <name><surname>Underwood</surname><given-names>W</given-names></name>, <name><surname>He</surname><given-names>SY</given-names></name>. <article-title>Role of stomata in plant innate immunity and foliar bacterial diseases</article-title>. <source>Annu Rev Phytopathol</source>. <year>2008</year>;<volume>46</volume>: <fpage>101</fpage>&#x2013;<lpage>122</lpage>. <pub-id pub-id-type="doi">10.1146/annurev.phyto.121107.104959</pub-id>
+<pub-id pub-id-type="pmid">18422426</pub-id></mixed-citation>
+      </ref>
+      <ref id="pone.0239998.ref003">
+        <label>3</label>
+        <mixed-citation publication-type="journal"><name><surname>Hirano</surname><given-names>SS</given-names></name>, <name><surname>Upper</surname><given-names>CD</given-names></name>. <article-title>Bacteria in the leaf ecosystem with emphasis on <italic>Pseudomonas syringae</italic>&#x2014;a pathogen, ice nucleus, and epiphyte</article-title>. <source>Microbiol Mol Biol Rev</source>. <year>2000</year>;<volume>64</volume>: <fpage>624</fpage>&#x2013;<lpage>653</lpage>. <pub-id pub-id-type="doi">10.1128/mmbr.64.3.624-653.2000</pub-id>
+<pub-id pub-id-type="pmid">10974129</pub-id></mixed-citation>
+      </ref>
+      <ref id="pone.0239998.ref004">
+        <label>4</label>
+        <mixed-citation publication-type="journal"><name><surname>Lindeberg</surname><given-names>M</given-names></name>, <name><surname>Myers</surname><given-names>CR</given-names></name>, <name><surname>Collmer</surname><given-names>A</given-names></name>, <name><surname>Schneider</surname><given-names>DJ</given-names></name>. <article-title>Roadmap to new virulence determinants in <italic>Pseudomonas syringae</italic>: insights from comparative genomics and genome organization</article-title>. <source>Mol Plant-Microbe Interact</source>. <year>2008</year>;<volume>21</volume>: <fpage>685</fpage>&#x2013;<lpage>700</lpage>. <pub-id pub-id-type="doi">10.1094/MPMI-21-6-0685</pub-id>
+<pub-id pub-id-type="pmid">18624633</pub-id></mixed-citation>
+      </ref>
+      <ref id="pone.0239998.ref005">
+        <label>5</label>
+        <mixed-citation publication-type="journal"><name><surname>Nomura</surname><given-names>K</given-names></name>, <name><surname>Melotto</surname><given-names>M</given-names></name>, <name><surname>He</surname><given-names>SY</given-names></name>. <article-title>Suppression of host defense in compatible plant-<italic>Pseudomonas syringae</italic> interactions</article-title>. <source>Curr Opin Plant Biol</source>. <year>2005</year>;<volume>8</volume>: <fpage>361</fpage>&#x2013;<lpage>368</lpage>. <pub-id pub-id-type="doi">10.1016/j.pbi.2005.05.005</pub-id>
+<pub-id pub-id-type="pmid">15936244</pub-id></mixed-citation>
+      </ref>
+      <ref id="pone.0239998.ref006">
+        <label>6</label>
+        <mixed-citation publication-type="journal"><name><surname>Xin</surname><given-names>XF</given-names></name>, <name><surname>Nomura</surname><given-names>K</given-names></name>, <name><surname>Aung</surname><given-names>K</given-names></name>, <name><surname>Vel&#xE1;squez</surname><given-names>AC</given-names></name>, <name><surname>Yao</surname><given-names>J</given-names></name>, <name><surname>Boutrot</surname><given-names>F</given-names></name>, <etal>et al</etal>
+<article-title>Bacteria establish an aqueous living space in plants crucial for virulence</article-title>. <source>Nature</source>. <year>2016</year>;<volume>539</volume>: <fpage>524</fpage>&#x2013;<lpage>529</lpage>. <pub-id pub-id-type="doi">10.1038/nature20166</pub-id>
+<pub-id pub-id-type="pmid">27882964</pub-id></mixed-citation>
+      </ref>
+      <ref id="pone.0239998.ref007">
+        <label>7</label>
+        <mixed-citation publication-type="journal"><name><surname>Chisholm</surname><given-names>ST</given-names></name>, <name><surname>Coaker</surname><given-names>GL</given-names></name>, <name><surname>Day</surname><given-names>B</given-names></name>, <name><surname>Staskawicz</surname><given-names>BJ</given-names></name>. <article-title>Host-microbe interactions: Shaping the evolution of the plant immune response</article-title>. <source>Cell</source>. <year>2006</year>;<volume>124</volume>: <fpage>803</fpage>&#x2013;<lpage>814</lpage>. <pub-id pub-id-type="doi">10.1016/j.cell.2006.02.008</pub-id>
+<pub-id pub-id-type="pmid">16497589</pub-id></mixed-citation>
+      </ref>
+      <ref id="pone.0239998.ref008">
+        <label>8</label>
+        <mixed-citation publication-type="journal"><name><surname>Cunnac</surname><given-names>S</given-names></name>, <name><surname>Lindeberg</surname><given-names>M</given-names></name>, <name><surname>Collmer</surname><given-names>A</given-names></name>. <article-title><italic>Pseudomonas syringae</italic> type III secretion system effectors: repertoires in search of functions</article-title>. <source>Curr Opin Microbiol</source>. <year>2009</year>;<volume>12</volume>: <fpage>53</fpage>&#x2013;<lpage>60</lpage>. <pub-id pub-id-type="doi">10.1016/j.mib.2008.12.003</pub-id>
+<pub-id pub-id-type="pmid">19168384</pub-id></mixed-citation>
+      </ref>
+      <ref id="pone.0239998.ref009">
+        <label>9</label>
+        <mixed-citation publication-type="journal"><name><surname>Alfano</surname><given-names>JR</given-names></name>, <name><surname>Collmer</surname><given-names>A</given-names></name>. <article-title>Type III secretion system effector proteins: double agents in bacterial disease and plant defense</article-title>. <source>Annu Rev Phytopathol</source>. <year>2004</year>;<volume>42</volume>: <fpage>385</fpage>&#x2013;<lpage>414</lpage>. <pub-id pub-id-type="doi">10.1146/annurev.phyto.42.040103.110731</pub-id>
+<pub-id pub-id-type="pmid">15283671</pub-id></mixed-citation>
+      </ref>
+      <ref id="pone.0239998.ref010">
+        <label>10</label>
+        <mixed-citation publication-type="journal"><name><surname>Alfano</surname><given-names>JR</given-names></name>, <name><surname>Collmer</surname><given-names>A</given-names></name>. <article-title>Bacterial pathogens in plants: Life up against the wall</article-title>. <source>Plant Cell</source>. <year>1996</year>;<volume>8</volume>: <fpage>1683</fpage>&#x2013;<lpage>1698</lpage>. <pub-id pub-id-type="doi">10.1105/tpc.8.10.1683</pub-id>
+<pub-id pub-id-type="pmid">12239358</pub-id></mixed-citation>
+      </ref>
+      <ref id="pone.0239998.ref011">
+        <label>11</label>
+        <mixed-citation publication-type="journal"><name><surname>Morris</surname><given-names>CE</given-names></name>, <name><surname>Lamichhane</surname><given-names>JR</given-names></name>, <name><surname>Nikoli&#x107;</surname><given-names>I</given-names></name>, <name><surname>Stankovi&#x107;</surname><given-names>S</given-names></name>, <name><surname>Moury</surname><given-names>B</given-names></name>. <article-title>The overlapping continuum of host range among strains in the <italic>Pseudomonas syringae</italic> complex</article-title>. <source>Phytopathol Res</source>. <year>2019</year>;<volume>1</volume>: <fpage>1</fpage>&#x2013;<lpage>16</lpage>. <pub-id pub-id-type="doi">10.1186/s42483-018-0010-6</pub-id></mixed-citation>
+      </ref>
+      <ref id="pone.0239998.ref012">
+        <label>12</label>
+        <mixed-citation publication-type="journal"><name><surname>Wetmore</surname><given-names>KM</given-names></name>, <name><surname>Price</surname><given-names>MN</given-names></name>, <name><surname>Waters</surname><given-names>RJ</given-names></name>, <name><surname>Lamson</surname><given-names>JS</given-names></name>, <name><surname>He</surname><given-names>J</given-names></name>, <name><surname>Hoover</surname><given-names>CA</given-names></name>, <etal>et al</etal>
+<article-title>Rapid quantification of mutant fitness in diverse bacteria by sequencing randomly bar-coded transposons</article-title>. <source>MBio</source>. <year>2015</year>;<volume>6</volume>: <fpage>1</fpage>&#x2013;<lpage>15</lpage>. <pub-id pub-id-type="doi">10.1128/mBio.00306-15</pub-id>
+<pub-id pub-id-type="pmid">25968644</pub-id></mixed-citation>
+      </ref>
+      <ref id="pone.0239998.ref013">
+        <label>13</label>
+        <mixed-citation publication-type="journal"><name><surname>Cole</surname><given-names>BJ</given-names></name>, <name><surname>Feltcher</surname><given-names>ME</given-names></name>, <name><surname>Waters</surname><given-names>RJ</given-names></name>, <name><surname>Wetmore</surname><given-names>KM</given-names></name>, <name><surname>Mucyn</surname><given-names>TS</given-names></name>, <name><surname>Ryan</surname><given-names>EM</given-names></name>, <etal>et al</etal>
+<article-title>Genome-wide identification of bacterial plant colonization genes</article-title>. <source>PLoS Biol</source>. <year>2017</year>;<volume>15</volume>: <fpage>1</fpage>&#x2013;<lpage>24</lpage>. <pub-id pub-id-type="doi">10.1371/journal.pbio.2002860</pub-id>
+<pub-id pub-id-type="pmid">28938018</pub-id></mixed-citation>
+      </ref>
+      <ref id="pone.0239998.ref014">
+        <label>14</label>
+        <mixed-citation publication-type="journal"><name><surname>Helmann</surname><given-names>TC</given-names></name>, <name><surname>Deutschbauer</surname><given-names>AM</given-names></name>, <name><surname>Lindow</surname><given-names>SE</given-names></name>. <article-title>Genome-wide identification of <italic>Pseudomonas syringae</italic> genes required for fitness during colonization of the leaf surface and apoplast</article-title>. <source>Proc Natl Acad Sci</source>. <year>2019</year>;<volume>116</volume>: <fpage>18900</fpage>&#x2013;<lpage>18910</lpage>. <pub-id pub-id-type="doi">10.1073/pnas.1908858116</pub-id>
+<pub-id pub-id-type="pmid">31484768</pub-id></mixed-citation>
+      </ref>
+      <ref id="pone.0239998.ref015">
+        <label>15</label>
+        <mixed-citation publication-type="journal"><name><surname>Helmann</surname><given-names>TC</given-names></name>, <name><surname>Ongsarte</surname><given-names>CL</given-names></name>, <name><surname>Lam</surname><given-names>J</given-names></name>, <name><surname>Deutschbauer</surname><given-names>AM</given-names></name>, <name><surname>Lindow</surname><given-names>SE</given-names></name>. <article-title>Genome-wide transposon screen of a <italic>Pseudomonas syringae mexB</italic> mutant reveals the substrates of efflux transporters</article-title>. <source>MBio</source>. <year>2019</year>;<volume>10</volume>: <fpage>e02614</fpage>&#x2013;<lpage>19</lpage>. <pub-id pub-id-type="doi">10.1128/mBio.02614-19</pub-id>
+<pub-id pub-id-type="pmid">31662463</pub-id></mixed-citation>
+      </ref>
+      <ref id="pone.0239998.ref016">
+        <label>16</label>
+        <mixed-citation publication-type="journal"><name><surname>Chen</surname><given-names>IMA</given-names></name>, <name><surname>Chu</surname><given-names>K</given-names></name>, <name><surname>Palaniappan</surname><given-names>K</given-names></name>, <name><surname>Pillay</surname><given-names>M</given-names></name>, <name><surname>Ratner</surname><given-names>A</given-names></name>, <name><surname>Huang</surname><given-names>J</given-names></name>, <etal>et al</etal>
+<article-title>IMG/M v.5.0: an integrated data management and comparative analysis system for microbial genomes and microbiomes</article-title>. <source>Nucleic Acids Res</source>. <year>2019</year>;<volume>47</volume>: <fpage>D666</fpage>&#x2013;<lpage>D677</lpage>. <pub-id pub-id-type="doi">10.1093/nar/gky901</pub-id>
+<pub-id pub-id-type="pmid">30289528</pub-id></mixed-citation>
+      </ref>
+      <ref id="pone.0239998.ref017">
+        <label>17</label>
+        <mixed-citation publication-type="journal"><name><surname>Kanehisa</surname><given-names>M</given-names></name>, <name><surname>Goto</surname><given-names>S</given-names></name>. <article-title>KEGG: Kyoto Encyclopedia of Genes and Genomes</article-title>. <source>Nucleic Acids Res</source>. <year>2000</year>;<volume>28</volume>: <fpage>27</fpage>&#x2013;<lpage>30</lpage>. <pub-id pub-id-type="doi">10.1093/nar/28.1.27</pub-id>
+<pub-id pub-id-type="pmid">10592173</pub-id></mixed-citation>
+      </ref>
+      <ref id="pone.0239998.ref018">
+        <label>18</label>
+        <mixed-citation publication-type="journal"><name><surname>Yu</surname><given-names>X</given-names></name>, <name><surname>Lund</surname><given-names>SP</given-names></name>, <name><surname>Scott</surname><given-names>RA</given-names></name>, <name><surname>Greenwald</surname><given-names>JW</given-names></name>, <name><surname>Records</surname><given-names>AH</given-names></name>, <name><surname>Nettleton</surname><given-names>D</given-names></name>, <etal>et al</etal>
+<article-title>Transcriptional responses of <italic>Pseudomonas syringae</italic> to growth in epiphytic versus apoplastic leaf sites</article-title>. <source>Proc Natl Acad Sci</source>. <year>2013</year>;<volume>110</volume>: <fpage>E425</fpage>&#x2013;<lpage>E434</lpage>. <pub-id pub-id-type="doi">10.1073/pnas.1221892110</pub-id>
+<pub-id pub-id-type="pmid">23319638</pub-id></mixed-citation>
+      </ref>
+      <ref id="pone.0239998.ref019">
+        <label>19</label>
+        <mixed-citation publication-type="journal"><name><surname>Price</surname><given-names>MN</given-names></name>, <name><surname>Wetmore</surname><given-names>KM</given-names></name>, <name><surname>Waters</surname><given-names>RJ</given-names></name>, <name><surname>Callaghan</surname><given-names>M</given-names></name>, <name><surname>Ray</surname><given-names>J</given-names></name>, <name><surname>Liu</surname><given-names>H</given-names></name>, <etal>et al</etal>
+<article-title>Mutant phenotypes for thousands of bacterial genes of unknown function</article-title>. <source>Nature</source>. <year>2018</year>;<volume>557</volume>: <fpage>503</fpage>&#x2013;<lpage>509</lpage>. <pub-id pub-id-type="doi">10.1038/s41586-018-0124-0</pub-id>
+<pub-id pub-id-type="pmid">29769716</pub-id></mixed-citation>
+      </ref>
+      <ref id="pone.0239998.ref020">
+        <label>20</label>
+        <mixed-citation publication-type="journal"><name><surname>Royet</surname><given-names>K</given-names></name>, <name><surname>Parisot</surname><given-names>N</given-names></name>, <name><surname>Rodrigue</surname><given-names>A</given-names></name>, <name><surname>Gueguen</surname><given-names>E</given-names></name>, <name><surname>Condemine</surname><given-names>G</given-names></name>. <article-title>Identification by Tn-seq of <italic>Dickeya dadantii</italic> genes required for survival in chicory plants</article-title>. <source>Mol Plant Pathol</source>. <year>2019</year>;<volume>20</volume>: <fpage>287</fpage>&#x2013;<lpage>306</lpage>. <pub-id pub-id-type="doi">10.1111/mpp.12754</pub-id>
+<pub-id pub-id-type="pmid">30267562</pub-id></mixed-citation>
+      </ref>
+      <ref id="pone.0239998.ref021">
+        <label>21</label>
+        <mixed-citation publication-type="journal"><name><surname>Duong</surname><given-names>DA</given-names></name>, <name><surname>Jensen R</surname><given-names>V</given-names></name>., <article-title>Stevens AM. Discovery of <italic>Pantoea stewartii</italic> ssp. <italic>stewartii</italic> genes important for survival in corn xylem through a Tn-Seq analysis</article-title>. <source>Mol Plant Pathol</source>. <year>2018</year>;<volume>19</volume>: <fpage>1929</fpage>&#x2013;<lpage>1941</lpage>. <pub-id pub-id-type="doi">10.1111/mpp.12669</pub-id>
+<pub-id pub-id-type="pmid">29480976</pub-id></mixed-citation>
+      </ref>
+      <ref id="pone.0239998.ref022">
+        <label>22</label>
+        <mixed-citation publication-type="journal"><name><surname>O&#x2019;Leary</surname><given-names>BM</given-names></name>, <name><surname>Neale</surname><given-names>HC</given-names></name>, <name><surname>Geilfus</surname><given-names>CM</given-names></name>, <name><surname>Jackson</surname><given-names>RW</given-names></name>, <name><surname>Arnold</surname><given-names>DL</given-names></name>, <name><surname>Preston</surname><given-names>GM</given-names></name>. <article-title>Early changes in apoplast composition associated with defence and disease in interactions between <italic>Phaseolus vulgaris</italic> and the halo blight pathogen <italic>Pseudomonas syringae</italic> pv. <italic>phaseolicola</italic></article-title>. <source>Plant Cell Environ</source>. <year>2016</year>;<volume>39</volume>: <fpage>2172</fpage>&#x2013;<lpage>2184</lpage>. <pub-id pub-id-type="doi">10.1111/pce.12770</pub-id>
+<pub-id pub-id-type="pmid">27239727</pub-id></mixed-citation>
+      </ref>
+      <ref id="pone.0239998.ref023">
+        <label>23</label>
+        <mixed-citation publication-type="journal"><name><surname>Bender</surname><given-names>CL</given-names></name>, <name><surname>Alarcon-Chaidez</surname><given-names>F</given-names></name>, <name><surname>Gross</surname><given-names>DC</given-names></name>. <article-title><italic>Pseudomonas syringae</italic> phytotoxins: mode of action, regulation, and biosynthesis by peptide and polyketide synthetases</article-title>. <source>Microbiol Mol Biol Rev</source>. <year>1999</year>;<volume>63</volume>: <fpage>266</fpage>&#x2013;<lpage>292</lpage>. <pub-id pub-id-type="doi">10.1117/1.OE.55.11.115102</pub-id>
+<pub-id pub-id-type="pmid">10357851</pub-id></mixed-citation>
+      </ref>
+      <ref id="pone.0239998.ref024">
+        <label>24</label>
+        <mixed-citation publication-type="journal"><name><surname>Xu</surname><given-names>GW</given-names></name>, <name><surname>Gross</surname><given-names>DC</given-names></name>. <article-title>Evaluation of the role of syringomycin in plant pathogenesis by using Tn5 mutants of <italic>Pseudomonas syringae</italic> pv. <italic>syringae</italic> defective in syringomycin production</article-title>. <source>Appl Environ Microbiol</source>. <year>1988</year>;<volume>54</volume>: <fpage>1345</fpage>&#x2013;<lpage>1353</lpage>. <pub-id pub-id-type="doi">10.1128/AEM.54.6.1345-1353.1988</pub-id>
+<pub-id pub-id-type="pmid">16347644</pub-id></mixed-citation>
+      </ref>
+      <ref id="pone.0239998.ref025">
+        <label>25</label>
+        <mixed-citation publication-type="journal"><name><surname>Feil</surname><given-names>H</given-names></name>, <name><surname>Feil</surname><given-names>WS</given-names></name>, <name><surname>Chain</surname><given-names>P</given-names></name>, <name><surname>Larimer</surname><given-names>F</given-names></name>, <name><surname>DiBartolo</surname><given-names>G</given-names></name>, <name><surname>Copeland</surname><given-names>A</given-names></name>, <etal>et al</etal>
+<article-title>Comparison of the complete genome sequences of <italic>Pseudomonas syringae</italic> pv. <italic>syringae</italic> B728a and pv. <italic>tomato</italic> DC3000</article-title>. <source>Proc Natl Acad Sci USA</source>. <year>2005</year>;<volume>102</volume>: <fpage>11064</fpage>&#x2013;<lpage>11069</lpage>. <pub-id pub-id-type="doi">10.1073/pnas.0504930102</pub-id>
+<pub-id pub-id-type="pmid">16043691</pub-id></mixed-citation>
+      </ref>
+      <ref id="pone.0239998.ref026">
+        <label>26</label>
+        <mixed-citation publication-type="journal"><name><surname>Grgurina</surname><given-names>I</given-names></name>, <name><surname>Mariotti</surname><given-names>F</given-names></name>, <name><surname>Fogliano</surname><given-names>V</given-names></name>, <name><surname>Gallo</surname><given-names>M</given-names></name>, <name><surname>Scaloni</surname><given-names>A</given-names></name>, <name><surname>Iacobellis</surname><given-names>NS</given-names></name>, <etal>et al</etal>
+<article-title>A new syringopeptin produced by bean strains of <italic>Pseudomonas syringae</italic> pv. <italic>syringae</italic></article-title>. <source>Biochim Biophys Acta&#x2014;Protein Struct Mol Enzymol</source>. <year>2002</year>;<volume>1597</volume>: <fpage>81</fpage>&#x2013;<lpage>89</lpage>. <pub-id pub-id-type="doi">10.1016/S0167-4838(02)00283-2</pub-id></mixed-citation>
+      </ref>
+      <ref id="pone.0239998.ref027">
+        <label>27</label>
+        <mixed-citation publication-type="journal"><name><surname>Schellenberg</surname><given-names>B</given-names></name>, <name><surname>Ramel</surname><given-names>C</given-names></name>, <name><surname>Dudler</surname><given-names>R</given-names></name>. <article-title><italic>Pseudomonas syringae</italic> virulence factor syringolin A counteracts stomatal immunity by proteasome inhibition</article-title>. <source>Mol Plant Microbe Interact</source>. <year>2010</year>;<volume>23</volume>: <fpage>1287</fpage>&#x2013;<lpage>1293</lpage>. <pub-id pub-id-type="doi">10.1094/MPMI-04-10-0094</pub-id>
+<pub-id pub-id-type="pmid">20831408</pub-id></mixed-citation>
+      </ref>
+      <ref id="pone.0239998.ref028">
+        <label>28</label>
+        <mixed-citation publication-type="journal"><name><surname>Hutchison</surname><given-names>ML</given-names></name>, <name><surname>Gross</surname><given-names>DC</given-names></name>. <article-title>Lipopeptide phytotoxins produced by <italic>Pseudomonas syringae</italic> pv. <italic>syringae</italic>: comparison of the biosurfactant and ion channel-forming activities of syringopeptin and syringomycin</article-title>. <source>Mol Plant-Microbe Interact</source>. <year>1997</year>;<volume>10</volume>: <fpage>347</fpage>&#x2013;<lpage>354</lpage>. <pub-id pub-id-type="doi">10.1094/MPMI.1997.10.3.347</pub-id>
+<pub-id pub-id-type="pmid">9100379</pub-id></mixed-citation>
+      </ref>
+      <ref id="pone.0239998.ref029">
+        <label>29</label>
+        <mixed-citation publication-type="journal"><name><surname>Beattie</surname><given-names>GA</given-names></name>. <article-title>Water relations in the interaction of foliar bacterial pathogens with plants</article-title>. <source>Annu Rev Phytopathol</source>. <year>2011</year>;<volume>49</volume>: <fpage>533</fpage>&#x2013;<lpage>555</lpage>. <pub-id pub-id-type="doi">10.1146/annurev-phyto-073009-114436</pub-id>
+<pub-id pub-id-type="pmid">21438680</pub-id></mixed-citation>
+      </ref>
+      <ref id="pone.0239998.ref030">
+        <label>30</label>
+        <mixed-citation publication-type="journal"><name><surname>Yu</surname><given-names>J</given-names></name>, <name><surname>Penaloza-V&#xE1;zquez</surname><given-names>A</given-names></name>, <name><surname>Chakrabarty</surname><given-names>AM</given-names></name>, <name><surname>Bender</surname><given-names>CL</given-names></name>. <article-title>Involvement of the exopolysaccharide alginate in the virulence and epiphytic fitness of <italic>Pseudomonas syringae</italic> pv. <italic>syringae</italic></article-title>. <source>Mol Microbiol</source>. <year>1999</year>;<volume>33</volume>: <fpage>712</fpage>&#x2013;<lpage>720</lpage>. <pub-id pub-id-type="doi">10.1046/j.1365-2958.1999.01516.x</pub-id>
+<pub-id pub-id-type="pmid">10447881</pub-id></mixed-citation>
+      </ref>
+      <ref id="pone.0239998.ref031">
+        <label>31</label>
+        <mixed-citation publication-type="journal"><name><surname>Keith</surname><given-names>RC</given-names></name>, <name><surname>Keith</surname><given-names>LMW</given-names></name>, <name><surname>Hern&#xE1;ndez-Guzm&#xE1;n</surname><given-names>G</given-names></name>, <name><surname>Uppalapati</surname><given-names>SR</given-names></name>, <name><surname>Bender</surname><given-names>CL</given-names></name>. <article-title>Alginate gene expression by <italic>Pseudomonas syringae</italic> pv. <italic>tomato</italic> DC3000 in host and non-host plants</article-title>. <source>Microbiology</source>. <year>2003</year>;<volume>149</volume>: <fpage>1127</fpage>&#x2013;<lpage>1138</lpage>. <pub-id pub-id-type="doi">10.1099/mic.0.26109-0</pub-id>
+<pub-id pub-id-type="pmid">12724374</pub-id></mixed-citation>
+      </ref>
+      <ref id="pone.0239998.ref032">
+        <label>32</label>
+        <mixed-citation publication-type="journal"><name><surname>Morris</surname><given-names>CE</given-names></name>, <name><surname>Monteil</surname><given-names>CL</given-names></name>, <name><surname>Berge</surname><given-names>O</given-names></name>. <article-title>The life history of <italic>Pseudomonas syringae</italic>: Linking agriculture to Earth system processes</article-title>. <source>Annu Rev Phytopathol</source>. <year>2013</year>;<volume>51</volume>: <fpage>85</fpage>&#x2013;<lpage>104</lpage>. <pub-id pub-id-type="doi">10.1146/annurev-phyto-082712-102402</pub-id>
+<pub-id pub-id-type="pmid">23663005</pub-id></mixed-citation>
+      </ref>
+      <ref id="pone.0239998.ref033">
+        <label>33</label>
+        <mixed-citation publication-type="journal"><name><surname>Wilson</surname><given-names>M</given-names></name>, <name><surname>Hirano</surname><given-names>SS</given-names></name>, <name><surname>Lindow</surname><given-names>SE</given-names></name>. <article-title>Location and survival of leaf-associated bacteria in relation to pathogenicity and potential for growth within the leaf</article-title>. <source>Appl Environ Microbiol</source>. <year>1999</year>;<volume>65</volume>: <fpage>1435</fpage>&#x2013;<lpage>1443</lpage>. <pub-id pub-id-type="doi">10.1128/AEM.65.4.1435-1443.1999</pub-id>
+<pub-id pub-id-type="pmid">10103233</pub-id></mixed-citation>
+      </ref>
+      <ref id="pone.0239998.ref034">
+        <label>34</label>
+        <mixed-citation publication-type="journal"><name><surname>Loper</surname><given-names>JE</given-names></name>, <name><surname>Lindow</surname><given-names>SE</given-names></name>. <article-title>Lack of evidence for <italic>in situ</italic> fluorescent pigment production by <italic>Pseudomonas syringae</italic> pv. <italic>syringae</italic> on bean leaf surfaces</article-title>. <source>Phytopathology</source>. <year>1987</year>;<volume>77</volume>: <fpage>1449</fpage>&#x2013;<lpage>1454</lpage>. <pub-id pub-id-type="doi">10.1094/Phyto-77-1449</pub-id></mixed-citation>
+      </ref>
+      <ref id="pone.0239998.ref035">
+        <label>35</label>
+        <mixed-citation publication-type="journal"><name><surname>King</surname><given-names>EO</given-names></name>, <name><surname>Ward</surname><given-names>MK</given-names></name>, <name><surname>Raney</surname><given-names>DE</given-names></name>. <article-title>Two simple media for the demonstration of pyocyanin and fluorescin</article-title>. <source>J Lab Clin Med</source>. <year>1954</year>;<volume>44</volume>: <fpage>301</fpage>&#x2013;<lpage>307</lpage>. <pub-id pub-id-type="doi">10.5555/uri:pii:002221435490222X</pub-id>
+<pub-id pub-id-type="pmid">13184240</pub-id></mixed-citation>
+      </ref>
+      <ref id="pone.0239998.ref036">
+        <label>36</label>
+        <mixed-citation publication-type="book"><collab>R Core Team</collab>. <source>R: A language and environment for statistical computing</source>. <publisher-loc>Vienna, Austria</publisher-loc>: <publisher-name>R Foundation for Statistical Computing</publisher-name>; <year>2017</year>
+<pub-id pub-id-type="doi">10.1007/978-3-540-74686-7</pub-id></mixed-citation>
+      </ref>
+      <ref id="pone.0239998.ref037">
+        <label>37</label>
+        <mixed-citation publication-type="book"><name><surname>Wickham</surname><given-names>H.</given-names></name>
+<source>ggplot2: Elegant Graphics for Data Analysis</source>. <publisher-name>Springer-Verlag</publisher-name>
+<publisher-loc>New York</publisher-loc>; <year>2016</year> Available: <ext-link ext-link-type="uri" xlink:href="https://ggplot2.tidyverse.org">https://ggplot2.tidyverse.org</ext-link></mixed-citation>
+      </ref>
+      <ref id="pone.0239998.ref038">
+        <label>38</label>
+        <mixed-citation publication-type="journal"><name><surname>Warnes</surname><given-names>GR</given-names></name>, <name><surname>Bolker</surname><given-names>B</given-names></name>, <name><surname>Bonebakker</surname><given-names>L</given-names></name>, <name><surname>Gentleman</surname><given-names>R</given-names></name>, <name><surname>Huber</surname><given-names>W</given-names></name>, <name><surname>Liaw</surname><given-names>A</given-names></name>, <etal>et al</etal> gplots: <source>Various R Programming Tools for Plotting Data</source>. <year>2019</year> Available: <ext-link ext-link-type="uri" xlink:href="https://cran.r-project.org/package=gplots">https://cran.r-project.org/package=gplots</ext-link></mixed-citation>
+      </ref>
+    </ref-list>
+  </back>
+</article>
+</pmc-articleset>

@@ -1,2 +1,0 @@
-#!/bin/sh
-java -cp "build/install/ncgr-pubmed/lib/*" org.ncgr.pubmed.PubMedSummary --title="$1"

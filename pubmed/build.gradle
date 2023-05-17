@@ -21,22 +21,35 @@ run {
 dependencies {
 
     // https://mvnrepository.com/artifact/org.apache.commons/commons-text
-    compile group: 'org.apache.commons', name: 'commons-text', version: '1.4'
-
+    implementation group: 'org.apache.commons', name: 'commons-text', version: '1.4'
     // https://mvnrepository.com/artifact/org.apache.commons/commons-lang3
-    compile group: 'org.apache.commons', name: 'commons-lang3', version: '3.8'
+    implementation group: 'org.apache.commons', name: 'commons-lang3', version: '3.8'
+    // https://mvnrepository.com/artifact/org.apache.logging.log4j/log4j-core
+    implementation group: 'org.apache.logging.log4j', name: 'log4j-core', version: '2.20.0'
+    // https://mvnrepository.com/artifact/org.apache.xmlbeans/xmlbeans
+    implementation group: 'org.apache.xmlbeans', name: 'xmlbeans', version: '5.1.1'
 
     // https://mvnrepository.com/artifact/com.thoughtworks.xstream/xstream
-    compile group: 'com.thoughtworks.xstream', name: 'xstream', version: '1.4.10'
+    implementation group: 'com.thoughtworks.xstream', name: 'xstream', version: '1.4.10'
 
     // https://mvnrepository.com/artifact/org.ogce/xpp3
-    compile group: 'org.ogce', name: 'xpp3', version: '1.1.6'
+    implementation group: 'org.ogce', name: 'xpp3', version: '1.1.6'
 
     // https://mvnrepository.com/artifact/commons-cli/commons-cli
     implementation group: 'commons-cli', name: 'commons-cli', version: '1.4'
 
+    // https://mvnrepository.com/artifact/com.sun.xml.bind/jaxb-core
+    implementation group: 'com.sun.xml.bind', name: 'jaxb-core', version: '2.3.0.1'
     // https://mvnrepository.com/artifact/javax.xml.bind/jaxb-api
     implementation group: 'javax.xml.bind', name: 'jaxb-api', version: '2.3.1'
+    // https://mvnrepository.com/artifact/com.sun.xml.bind/jaxb-impl
+    implementation group: 'com.sun.xml.bind', name: 'jaxb-impl', version: '2.3.1'
+
+    // https://mvnrepository.com/artifact/org.javassist/javassist
+    implementation group: 'org.javassist', name: 'javassist', version: '3.25.0-GA'
+
+    // local jars
+    implementation fileTree(dir: 'libs', include: '*.jar')
 }
 
 // In this section you declare where to find the dependencies of your project
@@ -44,4 +57,10 @@ repositories {
     // Use jcenter for resolving your dependencies.
     // You can declare any Maven/Ivy/file repository here.
     jcenter()
+}
+
+compileJava {
+    options.warnings = false
+    options.deprecation = false
+    // options.compilerArgs += ["-Xdoclint:none", "-Xlint:none", "-nowarn"]
 }
