@@ -3,7 +3,7 @@ package org.ncgr.chatbot;
 import org.ncgr.pubmed.Abstract;
 import org.ncgr.pubmed.Pubmed;
 
-import org.ncgr.ai.pinecone.Pinecone;
+import org.ncgr.chatbot.pinecone.Pinecone;
 
 import java.io.IOException;
 
