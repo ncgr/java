@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified">
+    <xs:element name="response">
+        <xs:complexType>
+            <xs:choice maxOccurs="unbounded">
+                <xs:element ref="lst"/>
+                <xs:element ref="result"/>
+            </xs:choice>
+        </xs:complexType>
+    </xs:element>
+    <xs:element name="result">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element maxOccurs="unbounded" ref="doc"/>
+            </xs:sequence>
+            <xs:attribute name="name" use="required" type="xs:NCName"/>
+            <xs:attribute name="numFound" use="required" type="xs:integer"/>
+            <xs:attribute name="numFoundExact" use="required" type="xs:boolean"/>
+            <xs:attribute name="start" use="required" type="xs:integer"/>
+        </xs:complexType>
+    </xs:element>
+    <xs:element name="doc">
+        <xs:complexType>
+            <xs:choice maxOccurs="unbounded">
+                <xs:element ref="arr"/>
+                <xs:element ref="bool"/>
+                <xs:element ref="str"/>
+                <xs:element ref="date"/>
+            </xs:choice>
+        </xs:complexType>
+    </xs:element>
+    <xs:element name="date">
+        <xs:complexType>
+            <xs:simpleContent>
+                <xs:extension base="xs:NMTOKEN">
+                    <xs:attribute name="name" use="required" type="xs:NCName"/>
+                </xs:extension>
+            </xs:simpleContent>
+        </xs:complexType>
+    </xs:element>
+    <xs:element name="lst">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element minOccurs="0" ref="bool"/>
+                <xs:element minOccurs="0" maxOccurs="unbounded" ref="int"/>
+                <xs:element minOccurs="0" ref="lst"/>
+                <xs:choice>
+                    <xs:element ref="arr"/>
+                    <xs:element minOccurs="0" maxOccurs="unbounded" ref="str"/>
+                </xs:choice>
+            </xs:sequence>
+            <xs:attribute name="name" use="required" type="xs:NMTOKEN"/>
+        </xs:complexType>
+    </xs:element>
+    <xs:element name="int">
+        <xs:complexType>
+            <xs:simpleContent>
+                <xs:extension base="xs:integer">
+                    <xs:attribute name="name" use="required" type="xs:NCName"/>
+                </xs:extension>
+            </xs:simpleContent>
+        </xs:complexType>
+    </xs:element>
+    <xs:element name="str">
+        <xs:complexType mixed="true">
+            <xs:attribute name="name" type="xs:NCName"/>
+        </xs:complexType>
+    </xs:element>
+    <xs:element name="arr">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element maxOccurs="unbounded" ref="str"/>
+            </xs:sequence>
+            <xs:attribute name="name" use="required" type="xs:NCName"/>
+        </xs:complexType>
+    </xs:element>
+    <xs:element name="bool">
+        <xs:complexType>
+            <xs:simpleContent>
+                <xs:extension base="xs:boolean">
+                    <xs:attribute name="name" use="required" type="xs:NCName"/>
+                </xs:extension>
+            </xs:simpleContent>
+        </xs:complexType>
+    </xs:element>
+</xs:schema>

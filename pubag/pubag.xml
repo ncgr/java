@@ -1,0 +1,211 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<response>
+
+<lst name="responseHeader">
+  <bool name="zkConnected">true</bool>
+  <int name="status">0</int>
+  <int name="QTime">8</int>
+  <lst name="params">
+    <str name="q">title:Glycine max</str>
+    <str name="fl">id,abstract,aris,author,author_lastname,author_primary,chorus_url,chorusOpen,dataset,dataset_availability,date,doi,doi_url,endpage,format,handle_url,issn,issue,journal_name,language,last_modified_date,mesh_ss,nalt_all,page,pmcid_url,pmid_url,publication_year,publisher,startpage,subject,text_availability,title,url,usda_authored_publication,usda_funded_publication,volume</str>
+    <str name="start">0</str>
+    <str name="sort">id asc</str>
+    <str name="rows">2</str>
+    <str name="wt">javabin</str>
+    <str name="version">2</str>
+  </lst>
+</lst>
+<result name="response" numFound="2244" start="0" numFoundExact="true">
+  <doc>
+    <str name="date">0000</str>
+    <arr name="nalt_all">
+      <str>Glycine max</str>
+      <str>Glycine soja</str>
+      <str>antioxidant activity</str>
+      <str>cultivars</str>
+      <str>daidzin</str>
+      <str>drought</str>
+      <str>drought tolerance</str>
+      <str>genistin</str>
+      <str>photosynthesis</str>
+      <str>physiological regulation</str>
+      <str>seed germination</str>
+      <str>seed treatment</str>
+      <str>seedlings</str>
+      <str>soaking</str>
+      <str>soybeans</str>
+      <str>thiobarbituric acid-reactive substances</str>
+      <str>water stress</str>
+    </arr>
+    <arr name="subject">
+      <str>Glycine max</str>
+      <str>Glycine soja</str>
+      <str>antioxidant activity</str>
+      <str>cultivars</str>
+      <str>daidzin</str>
+      <str>drought</str>
+      <str>drought tolerance</str>
+      <str>genistin</str>
+      <str>photosynthesis</str>
+      <str>physiological regulation</str>
+      <str>seed germination</str>
+      <str>seed treatment</str>
+      <str>seedlings</str>
+      <str>soaking</str>
+      <str>soybeans</str>
+      <str>thiobarbituric acid-reactive substances</str>
+      <str>water stress</str>
+    </arr>
+    <arr name="author_lastname">
+      <str>Tian</str>
+      <str>Jia</str>
+      <str>Yu</str>
+    </arr>
+    <date name="last_modified_date">2015-01-29T05:19:07.460Z</date>
+    <arr name="language">
+      <str>English</str>
+    </arr>
+    <str name="title">Physiological regulation of seed soaking with soybean isoflavones on drought tolerance of Glycine max and Glycine soja</str>
+    <str name="startpage">229</str>
+    <bool name="usda_authored_publication">false</bool>
+    <str name="id">1009646</str>
+    <str name="text_availability">Citation in PubAg</str>
+    <str name="doi_url">https://doi.org/10.1007/s10725-014-9914-z</str>
+    <str name="issue">no. 3 </str>
+    <arr name="author">
+      <str>Fang Tian</str>
+      <str>Tengjiao Jia</str>
+      <str>Bingjun Yu</str>
+    </arr>
+    <str name="format">text</str>
+    <str name="endpage">237</str>
+    <str name="journal_name">Plant growth regulation</str>
+    <str name="abstract">In this study, the Glycine max Jackson cultivar (the relatively drought-sensitive) and the Glycine soja BB52 accession (the drought-tolerant one) were used as the experimental materials. Effects of seed soaking with exogenous soybean isoflavones (daidzin or genistin) on seed germination, and seedlings photosynthesis, relative electrolytic leakage, content of thiobarbituric acid reactive substances , and anti-oxidative activities were investigated under drought stress conditions. The results showed that, treatments of seed soaking with daidzin or genistin could improve seed germination, and alleviate cell damage, enhance anti-oxidative activities and photosynthesis in drought-stressed seedlings, therefore displayed mitigated effects on soybean drought injury, especially for the drought-sensitive G. max Jackson cultivar. Thus seed soaking with exogenous soybean isoflavones may be a usable approach to enhance drought tolerance of cultivated soybean in practice.</str>
+    <str name="pmid_url">https://www.ncbi.nlm.nih.gov/pubmed/?term=</str>
+    <str name="url">http://dx.doi.org/10.1007/s10725-014-9914-z</str>
+    <str name="volume">v. 74 </str>
+    <str name="publication_year">2014</str>
+    <bool name="usda_funded_publication">false</bool>
+    <str name="issn">0167-6903</str>
+    <str name="page">pp. 229-237</str>
+    <str name="author_primary">Fang Tian</str>
+    <str name="doi">10.1007/s10725-014-9914-z</str></doc>
+  <doc>
+    <str name="date">0000</str>
+    <arr name="nalt_all">
+      <str>Glycine max</str>
+      <str>biomass</str>
+      <str>bromine</str>
+      <str>carbon dioxide</str>
+      <str>cobalt</str>
+      <str>copper</str>
+      <str>crops</str>
+      <str>fly ash</str>
+      <str>food consumption</str>
+      <str>food safety</str>
+      <str>heavy metals</str>
+      <str>human health</str>
+      <str>humans</str>
+      <str>iron</str>
+      <str>lead</str>
+      <str>manganese</str>
+      <str>maturity stage</str>
+      <str>nickel</str>
+      <str>risk</str>
+      <str>roots</str>
+      <str>seeds</str>
+      <str>soil</str>
+      <str>soil amendments</str>
+      <str>soybeans</str>
+      <str>stems</str>
+      <str>zinc</str>
+    </arr>
+    <arr name="subject">
+      <str>Glycine max</str>
+      <str>biomass</str>
+      <str>bromine</str>
+      <str>carbon dioxide</str>
+      <str>cobalt</str>
+      <str>copper</str>
+      <str>crops</str>
+      <str>fly ash</str>
+      <str>food consumption</str>
+      <str>food safety</str>
+      <str>heavy metals</str>
+      <str>human health</str>
+      <str>humans</str>
+      <str>iron</str>
+      <str>lead</str>
+      <str>manganese</str>
+      <str>maturity stage</str>
+      <str>nickel</str>
+      <str>risk</str>
+      <str>roots</str>
+      <str>seeds</str>
+      <str>soil</str>
+      <str>soil amendments</str>
+      <str>soybeans</str>
+      <str>stems</str>
+      <str>zinc</str>
+    </arr>
+    <arr name="author_lastname">
+      <str>Rodriguez</str>
+      <str>Klumpp</str>
+      <str>Fangmeier</str>
+      <str>Pignata</str>
+    </arr>
+    <date name="last_modified_date">2015-06-17T01:59:42.573Z</date>
+    <arr name="language">
+      <str>English</str>
+    </arr>
+    <str name="title">Effects of elevated CO₂ concentrations and fly ash amended soils on trace element accumulation and translocation among roots, stems and seeds of Glycine max (L.) Merr.</str>
+    <str name="startpage">58</str>
+    <bool name="usda_authored_publication">false</bool>
+    <str name="id">1013244</str>
+    <str name="text_availability">Citation in PubAg</str>
+    <str name="doi_url">https://doi.org/10.1016/j.jhazmat.2010.11.068</str>
+    <str name="issue">no. 1-3 </str>
+    <arr name="author">
+      <str>J.H. Rodriguez</str>
+      <str>A. Klumpp</str>
+      <str>A. Fangmeier</str>
+      <str>M.L. Pignata</str>
+    </arr>
+    <str name="format">text</str>
+    <str name="endpage">66</str>
+    <str name="journal_name">Journal of hazardous materials</str>
+    <str name="abstract">The carbon dioxide (CO₂) levels of the global atmosphere and the emissions of heavy metals have risen in recent decades, and these increases are expected to produce an impact on crops and thereby affect yield and food safety. In this study, the effects of elevated CO₂ and fly ash amended soils on trace element accumulation and translocation in the root, stem and seed compartments in soybean [Glycine max (L.) Merr.] were evaluated. Soybean plants grown in fly ash (FA) amended soil (0, 1, 10, 15, and 25% FA) at two CO₂ regimes (400 and 600ppm) in controlled environmental chambers were analyzed at the maturity stage for their trace element contents. The concentrations of Br, Co, Cu, Fe, Mn, Ni, Pb and Zn in roots, stems and seeds in soybeans were investigated and their potential risk to the health of consumers was estimated. The results showed that high levels of CO₂ and lower concentrations of FA in soils were associated with an increase in biomass. For all the elements analyzed except Pb, their accumulation in soybean plants was higher at elevated CO₂ than at ambient concentrations. In most treatments, the highest concentrations of Br, Co, Cu, Fe, Mn, and Pb were found in the roots, with a strong combined effect of elevated CO₂ and 1% of FA amended soils on Pb accumulation (above maximum permitted levels) and translocation to seeds being observed. In relation to non-carcinogenic risks, target hazard quotients (TQHs) were significant in a Chinese individual for Mn, Fe and Pb. Also, the increased health risk due to the added effects of the trace elements studied was significant for Chinese consumers. According to these results, soybean plants grown for human consumption under future conditions of elevated CO₂ and FA amended soils may represent a toxicological hazard. Therefore, more research should be carried out with respect to food consumption (plants and animals) under these conditions and their consequences for human health.</str>
+    <str name="pmid_url">https://www.ncbi.nlm.nih.gov/pubmed/?term=</str>
+    <str name="url">http://dx.doi.org/10.1016/j.jhazmat.2010.11.068</str>
+    <str name="volume">v. 187 </str>
+    <str name="publication_year">2011</str>
+    <bool name="usda_funded_publication">false</bool>
+    <str name="issn">0304-3894</str>
+    <str name="page">pp. 58-66</str>
+    <str name="author_primary">J.H. Rodriguez</str>
+    <str name="doi">10.1016/j.jhazmat.2010.11.068</str></doc>
+</result>
+<lst name="highlighting">
+  <lst name="1009646">
+    <arr name="subject">
+      <str>Glycine &lt;b&gt;max&lt;/b&gt;</str>
+    </arr>
+    <arr name="title">
+      <str>Physiological regulation of seed soaking with soybean isoflavones on drought tolerance of &lt;b&gt;Glycine&lt;/b&gt; &lt;b&gt;max&lt;/b&gt; and &lt;b&gt;Glycine&lt;/b&gt; soja</str>
+    </arr>
+  </lst>
+  <lst name="1013244">
+    <arr name="subject">
+      <str>Glycine &lt;b&gt;max&lt;/b&gt;</str>
+    </arr>
+    <arr name="title">
+      <str>Effects of elevated CO₂ concentrations and fly ash amended soils on trace element accumulation and translocation among roots, stems and seeds of &lt;b&gt;Glycine&lt;/b&gt; &lt;b&gt;max&lt;/b&gt; (L.) Merr.</str>
+    </arr>
+  </lst>
+</lst>
+<lst name="spellcheck">
+  <lst name="suggestions"/>
+  <bool name="correctlySpelled">true</bool>
+  <lst name="collations"/>
+</lst>
+</response>
