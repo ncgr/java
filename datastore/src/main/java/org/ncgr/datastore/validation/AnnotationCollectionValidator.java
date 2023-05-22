@@ -88,6 +88,9 @@ public class AnnotationCollectionValidator extends CollectionValidator {
             boolean invalidSeqnameFound = false;
             boolean invalidGenomicIDFound = false;
             boolean invalidParentFound = false;
+            boolean hasGenes = false;
+            boolean genesHaveNotes = false;
+            boolean notesHaveGOTerms = false;
             // validate the uncompressed GFF3 file
             FeatureList featureList = GFF3Reader.read(TEMPFILE);
             for (FeatureI featureI : featureList) {
@@ -121,6 +124,26 @@ public class AnnotationCollectionValidator extends CollectionValidator {
                     set.add(getAttribute(featureI, "ID"));
                     featureTypeIDs.put(type, set);
                 }
+                // set flags for presence of genes and Note attribute and GO terms in Note attribute
+                if (type.equals("gene")) {
+                    hasGenes = true;
+                    String note = getAttribute(featureI, "Note");
+                    if (note != null) {
+                        genesHaveNotes = true;
+                        if (note.contains("GO:")) {
+                            notesHaveGOTerms = true;
+                        }
+                    }
+                }
+            }
+            if (!hasGenes) {
+                printError(file.getName() + " does not contain any gene records.");
+            }
+            if (!genesHaveNotes) {
+                printError(file.getName() + " gene records do not contain the Note attribute.");
+            }
+            if (!notesHaveGOTerms) {
+                printError(file.getName() + " gene record Note attributes do not contain GO terms.");
             }
         } catch (Exception ex) {
             printError(ex.getMessage());
