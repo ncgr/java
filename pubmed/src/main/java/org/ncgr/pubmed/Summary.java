@@ -160,5 +160,28 @@ public class Summary {
         }
         return sb.toString();
     }
+
+    // getters
+    public String getPMID() { return pmid; }
+    public String getPubDate() { return pubDate; }
+    public String getEPubDate() { return ePubDate; }
+    public String getSource() { return source; }
+    public String getLastAuthor() { return lastAuthor; }
+    public String getTitle() { return title; }
+    public String getVolume() { return volume; }
+    public String getIssue() { return issue; }
+    public String getPages() { return pages; }
+    public String getNlmUniqueId() { return nlmUniqueId; }
+    public String getISSN() { return issn; }
+    public String getESSN() { return essn; }
+    public String getRecordStatus() { return recordStatus; }
+    public String getPubStatus() { return pubStatus; }
+    public String getDOI() { return doi; }
+    public boolean hasAbstract() { return hasAbstract; }
+    public int getPMCRefCount() { return pmcRefCount; }
+    public String getFullJournalName() { return fullJournalName; }
+    public String getELocationId() { return eLocationId; }
+    public String getSO() { return so; }
+    
 }
 
