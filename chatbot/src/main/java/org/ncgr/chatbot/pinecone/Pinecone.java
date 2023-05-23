@@ -59,6 +59,30 @@ public class Pinecone {
     }
 
     /**
+     * Utility to get metadat from a Vector in the form of a Map.
+     */
+    public static Map<String,String> getMetadata(Vector vector) {
+	Map<String,String> metadataMap = new HashMap<>();
+        Map<String,Value> fieldsMap = vector.getMetadata().getFieldsMap();
+	for (String key : fieldsMap.keySet()) {
+	    metadataMap.put(key, fieldsMap.get(key).getStringValue());
+        }
+	return metadataMap;
+    }
+
+    /**
+     * Utility to get metadat from a ScoredVector in the form of a Map.
+     */
+    public static Map<String,String> getMetadata(ScoredVector vector) {
+	Map<String,String> metadataMap = new HashMap<>();
+        Map<String,Value> fieldsMap = vector.getMetadata().getFieldsMap();
+	for (String key : fieldsMap.keySet()) {
+	    metadataMap.put(key, fieldsMap.get(key).getStringValue());
+        }
+	return metadataMap;
+    }
+
+    /**
      * Utility to get a metadata value for a given key from a Vector, null if it doesn't exist.
      */
     public static String getMetadataValue(Vector vector, String key) {

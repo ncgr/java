@@ -26,15 +26,15 @@ import io.pinecone.proto.Vector;
 
 /**
  * Provides methods to upsert abstracts with title and DOI from a text file to a Pincone index, generating the embeddings with OpenAI.
- * The format of the text file is:
+ * The format of entries in the text file is:
  *
  * TITLE: Evidence for two gene pools of the Lima bean,Phaseolus lunatus L., in the Americas
- * ABSTRACT:
- * The lima bean, Phaseolus lunatus L., is a bean species with a broad distribution in the Americas that rivals...
+ * ABSTRACT: The lima bean, Phaseolus lunatus L., is a bean species with a broad distribution in the Americas that rivals...
  * ID: BF02310680
  * DOI: 10.1002/star.200500398
+ * {blank line}
  *
- * Entries are separated by a blank line. D
+ * Note: Entries are terminated by a blank line.
  */
 public class TextEmbeddingsUpserter {
 
@@ -60,50 +60,48 @@ public class TextEmbeddingsUpserter {
         
         List<TextAbstract> abstracts = new ArrayList<>();
         String title = null;
-        String text = null;
+        String abstr = null;
         String id = null;
         String doi = null;
         BufferedReader in = new BufferedReader(new FileReader(filename));
         String line;
         while ((line = in.readLine()) != null) {
             if (line.startsWith("TITLE:")) {
-                title = line.split("TITLE: ")[1];
+		title = getValue(line);
             } else if (line.startsWith("ABSTRACT:")) {
-                text = "";
+                abstr = getValue(line);
             } else if (line.startsWith("ID:")) {
-                id = line.split("ID: ")[1];
+                id = getValue(line);
             } else if (line.startsWith("DOI:")) {
-                doi = line.split("DOI: ")[1];
-            } else if (line.trim().length()==0) {
+                doi = getValue(line);
+            } else if (line.trim().length() == 0) {
                 // store entry
                 TextAbstract a = new TextEmbeddingsUpserter.TextAbstract();
                 a.title = title;
-                a.text = text;
+                a.abstr = abstr;
                 a.id = id;
                 if (doi!=null) a.doi = doi;
                 abstracts.add(a);
                 title = null;
-                text = null;
+                abstr = null;
                 id = null;
                 doi = null;
             } else {
-                // append line to text
-                text += " " + line;
+                // append line to abstr
+                abstr += " " + line;
             }
         }
-
-        // for (TextAbstract a : abstracts) {
-        //     System.out.println("- TITLE");
-        //     System.out.println(a.title);
-        //     System.out.println("--- ABSTRACT");
-        //     System.out.println(a.text);
-        //     System.out.println("--- ID");
-        //     System.out.println(a.id);
-        //     System.out.println("--- DOI");
-        //     System.out.println(a.doi);
-        // }
-        
+	// show what we've parsed
+	for (TextAbstract a : abstracts) {
+	    System.out.println("id: " + a.id);
+	    System.out.println("title: " + a.title);
+	    System.out.println("abstract: " + a.abstr);
+	    System.out.println("DOI: " + a.doi);
+	    System.out.println("");
+	}
+	// upsert our abstracts to Pinecone
         upsertVectors(openaiService, pinecone, abstracts);
+        System.out.println("Upserted " + abstracts.size() + " embedding vectors into Pinecone index " + pineconeIndexName + ".");
     }
 
     /**
@@ -112,14 +110,10 @@ public class TextEmbeddingsUpserter {
      */
     static void upsertVectors(OpenAiService openaiService, Pinecone pinecone, List<TextAbstract> abstracts) {
         List<Vector> vectors = new ArrayList<>();
-        // get the contexts
+        // get the contexts, which contain only the abstract
         List<String> contexts = new ArrayList<>();
         for (TextAbstract a : abstracts) {
-            String context = "Abstract:\n" + a.text;
-            // append title, PMID and DOI to abstract text
-            context += "\nTitle: " + a.title;
-            if (a.doi!=null) context += "\nDOI: " + a.doi;
-            contexts.add(context);
+            contexts.add(a.abstr);
         }
         // get the embeddings for these contexts
         EmbeddingRequest embeddingRequest = EmbeddingRequest.builder()
@@ -128,17 +122,14 @@ public class TextEmbeddingsUpserter {
             .build();
         // OpenAI embedding call
         List<Embedding> embeddings = openaiService.createEmbeddings(embeddingRequest).getData();
-        // form Vectors with metadata
+        // form Pinecone vectors with metadata
         for (Embedding embedding : embeddings) {
             int index = embedding.getIndex();
             TextAbstract a = abstracts.get(index);
-            Struct.Builder metadataBuilder = Struct
-                .newBuilder()
-                .putFields("title", Value.newBuilder().setStringValue(a.title).build())
-                .putFields("text", Value.newBuilder().setStringValue(a.text).build());
-            if (a.doi != null) {
-                metadataBuilder.putFields("DOI", Value.newBuilder().setStringValue(a.doi).build());
-            }
+            Struct.Builder metadataBuilder = Struct.newBuilder();
+	    metadataBuilder.putFields("title", Value.newBuilder().setStringValue(a.title).build());
+	    metadataBuilder.putFields("abstract", Value.newBuilder().setStringValue(a.abstr).build());
+            if (a.doi != null) metadataBuilder.putFields("DOI", Value.newBuilder().setStringValue(a.doi).build());
             Struct metadata = metadataBuilder.build();
             // annoyance: Pinecone Vector wants Float embeddings, OpenAI provides Double embeddings!
             List<Float> floatEmbedding = new ArrayList<>();
@@ -153,7 +144,6 @@ public class TextEmbeddingsUpserter {
         }
         // upsert the vectors to Pinecone
         pinecone.upsertVectors(vectors);
-        System.out.println("Upserted "+vectors.size()+" embedding vectors into Pinecone index.");
     }
 
     /**
@@ -161,8 +151,22 @@ public class TextEmbeddingsUpserter {
      */
     static class TextAbstract {
         String title;
-        String text;
+        String abstr;
         String id;
         String doi;
+    }
+
+    /**
+     * Get the value of an entry that follows ": ", null if ": " doesn't occur.
+     */
+    static String getValue(String line) {
+	String[] parts = line.split(": ");
+	if (parts.length == 1) return null;
+	// assemble the pieces since ": " may be in the value.
+	String value = parts[1];
+	for (int i=2; i<parts.length; i++) {
+	    value += ": " + parts[i];
+	}
+	return value;
     }
 }

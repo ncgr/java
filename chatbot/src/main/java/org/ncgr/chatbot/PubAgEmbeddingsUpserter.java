@@ -3,6 +3,7 @@ package org.ncgr.chatbot;
 import org.ncgr.pubag.Abstract;
 import org.ncgr.pubag.Pubag;
 
+import org.ncgr.chatbot.openai.OpenAi;
 import org.ncgr.chatbot.pinecone.Pinecone;
 
 import java.io.IOException;
@@ -24,8 +25,8 @@ import com.google.protobuf.Value;
 import com.theokanning.openai.embedding.Embedding;
 import com.theokanning.openai.embedding.EmbeddingRequest;
 import com.theokanning.openai.embedding.EmbeddingResult;
-import com.theokanning.openai.service.OpenAiService;
 
+import io.pinecone.proto.ScoredVector;
 import io.pinecone.proto.Vector;
 
 import org.apache.commons.cli.CommandLine;
@@ -43,6 +44,7 @@ import org.xml.sax.SAXException;
 /**
  * Provides methods to query PubAg for abstracts, generate embeddings from them with OpenAI, and upsert them to a Pinecone index.
  * Also can load abstracts from text files dumped from Abstract.toString().
+ * Note: if a DOI or title is already present in the index, the article will NOT be uploaded.
  */
 public class PubAgEmbeddingsUpserter {
 
@@ -109,42 +111,27 @@ public class PubAgEmbeddingsUpserter {
         String pineconeApiKey = System.getenv().get("PINECONE_API_KEY");
         String pineconeEnvironment = System.getenv().get("PINECONE_ENVIRONMENT");
 
-        OpenAiService openaiService = new OpenAiService(openaiApiKey);
-        Pinecone pinecone = new Pinecone(pineconeProjectName, pineconeApiKey, pineconeEnvironment, pineconeIndexName, Pinecone.SERVER_SIDE_TIMEOUT_SEC);
-
+	// retrieve abstracts
+	List<Abstract> abstracts = new ArrayList<>();
         if (cmd.hasOption("file")) {
             String filename = cmd.getOptionValue("file");
-            List<Abstract> abstracts = withoutPmid(Abstract.load(filename));
-            if (abstracts.size()>0) {
-                upsertVectors(openaiService, pinecone, abstracts);
-            } else {
-                System.out.println("No abstracts to upsert.");
-            }
+            abstracts = Abstract.load(filename);
+        } else if (cmd.hasOption("term")) {
+            String term = cmd.getOptionValue("term");
+            abstracts = Pubag.searchAbstractOrTitleText(term, page, perpage, apikey);
         }
 
-        if (cmd.hasOption("term")) {
-            String term = cmd.getOptionValue("term");
-            List<Abstract> abstracts = withoutPmid(Pubag.searchAbstractOrTitleText(term, page, perpage, apikey));
-            if (abstracts.size()>0) {
-                upsertVectors(openaiService, pinecone, abstracts);
-            } else {
-                System.out.println("No abstracts to upsert.");
-            }
-            return;
-        }
+	// upsert our abstracts
+	if (abstracts!=null && abstracts.size()>0) {
+	    System.out.println("Found " + abstracts.size() + " total abstracts...");
+	    OpenAi openai = new OpenAi(openaiApiKey, OpenAi.TIMEOUT_SECONDS);
+	    Pinecone pinecone = new Pinecone(pineconeProjectName, pineconeApiKey, pineconeEnvironment, pineconeIndexName, Pinecone.SERVER_SIDE_TIMEOUT_SEC);
+	    upsertVectors(openai, pinecone, abstracts);
+	} else {
+	    System.out.println("No abstracts found.");
+	}
     }
     
-    /**
-     * Return abstracts that lack PMID.
-     */
-    static List<Abstract> withoutPmid(List<Abstract> abstracts) {
-        List<Abstract> without = new ArrayList<>();
-        for (Abstract a : abstracts) {
-            if (a.getPMID() == null) without.add(a);
-        }
-        return without;
-    }
-
     /**
      * Get String contexts from Abstract text for embedding.
      */
@@ -157,17 +144,6 @@ public class PubAgEmbeddingsUpserter {
     }
 
     /**
-     * Get embeddings from OpenAI for a List of contexts.
-     */
-    static List<Embedding> getEmbeddings(OpenAiService service, List<String> contexts) {
-        EmbeddingRequest embeddingRequest = EmbeddingRequest.builder()
-            .model(EMBED_MODEL)
-            .input(contexts)
-            .build();
-        return service.createEmbeddings(embeddingRequest).getData();
-    }
-
-    /**
      * Get embedding vectors for Pinecone with metadata from Abstract.
      */
     static List<Vector> getVectors(List<Embedding> embeddings, List<Abstract> abstracts) {
@@ -175,8 +151,6 @@ public class PubAgEmbeddingsUpserter {
         for (Embedding embedding : embeddings) {
             int index = embedding.getIndex();
             Abstract a = abstracts.get(index);
-            // prepend ID in case it overlaps with a PMID
-            String id = "PubAg:" + a.getId();
             // form metadata; title and abstract should never be null
             Struct.Builder metadataBuilder = Struct
                 .newBuilder()
@@ -186,6 +160,9 @@ public class PubAgEmbeddingsUpserter {
             if (a.getDOI() != null) {
                 metadataBuilder.putFields("DOI", Value.newBuilder().setStringValue(a.getDOI()).build());
             }
+	    if (a.getPMID() != null) {
+                metadataBuilder.putFields("PMID", Value.newBuilder().setStringValue(a.getPMID()).build());
+	    }
             if (a.getKeywords().size() > 0) {
                 metadataBuilder.putFields("keywords", Value.newBuilder().setStringValue(a.getKeywords().toString()).build());
             }
@@ -195,6 +172,8 @@ public class PubAgEmbeddingsUpserter {
             for (Double d : embedding.getEmbedding()) {
                 floatEmbedding.add(d.floatValue());
             }
+            // add the vector with an ID of the form PubAg-{id}
+            String id = "PubAg-" + a.getId();
             vectors.add(Vector.newBuilder()
                         .setId(id)
                         .setMetadata(metadata)
@@ -208,26 +187,61 @@ public class PubAgEmbeddingsUpserter {
      * Get embeddings from OpenAI, form Vectors, and upsert them to Pinecone.
      * Metadata is added to the Vectors from the abstracts.
      * We limit to 100 abstracts per call to stay under limits.
+     * NOTE: we check that the DOI/title isn't already present in the index and only upload new DOIs or titles.
      */
-    static void upsertVectors(OpenAiService openaiService, Pinecone pinecone, List<Abstract> abstracts) {
-        int start = 0;
-        int end = Math.min(100, abstracts.size());
-        boolean hasMore = true;
-        while (hasMore) {
-            List<Abstract> subList = abstracts.subList(start, end);
-            // get the contexts
-            List<String> contexts = getContexts(subList);
-            // get the embeddings for these contexts
-            List<Embedding> embeddings = getEmbeddings(openaiService, contexts);
-            // form Vectors with metadata from these contexts and embeddings
-            List<Vector> vectors = getVectors(embeddings, subList);
-            // upsert the vectors to Pinecone
-            pinecone.upsertVectors(vectors);
-            System.out.println("Upserted "+vectors.size()+" embedding vectors into Pinecone index.");
-            // increment sub-list indexes
-            start = Math.min(start + 100, abstracts.size());
-            end = Math.min(end + 100, abstracts.size());
-            hasMore = start < abstracts.size();
+    static void upsertVectors(OpenAi openai, Pinecone pinecone, List<Abstract> allAbstracts) {
+	// reject abstracts that have DOI/title already present in index
+	List<Float> encodedQuery = OpenAi.getTheEmbeddingAsFloats(); // "the" should cover most abstracts!
+	List<Abstract> abstracts = new ArrayList<>();
+	int rejectCount = 0;
+	for (Abstract a : allAbstracts) {
+	    String doi = a.getDOI();
+	    String title = a.getTitle();
+	    // DOI check
+	    boolean doiFound = false;
+	    if (doi != null) {
+		Struct filter = Pinecone.makeEqFilter("DOI", doi);
+		List<ScoredVector> scoredVectors = pinecone.getScoredVectorsWithFilter(encodedQuery, filter, 10, false, false);
+		doiFound = scoredVectors.size() > 0;
+	    }
+	    // title check
+	    boolean titleFound = false;
+	    if (title != null) {
+		Struct filter = Pinecone.makeEqFilter("title", title);
+		List<ScoredVector> scoredVectors = pinecone.getScoredVectorsWithFilter(encodedQuery, filter, 10, false, false);
+		titleFound = scoredVectors.size() > 0;
+	    }
+	    if (!doiFound && !titleFound) {
+		    abstracts.add(a);
+	    } else {
+		rejectCount++;
+	    }
+	}
+	if (rejectCount > 0) {
+	    System.out.println("Rejected " + rejectCount + " abstracts which are already present in index.");
+	}
+	if (abstracts.size() > 0) {
+	    // now upsert the new abstracts
+	    int start = 0;
+	    int end = Math.min(100, abstracts.size());
+	    boolean hasMore = true;
+	    while (hasMore) {
+		List<Abstract> subList = abstracts.subList(start, end);
+		// get the contexts
+		List<String> contexts = getContexts(subList);
+		// get the embeddings for these contexts
+		List<Embedding> embeddings = openai.getEmbeddings(contexts);
+		// form Vectors with metadata from these contexts and embeddings
+		List<Vector> vectors = getVectors(embeddings, subList);
+		// upsert the vectors to Pinecone
+		pinecone.upsertVectors(vectors);
+		System.out.println("Upserted "+vectors.size()+" abstract embedding vectors into Pinecone index.");
+		// increment sub-list indexes
+		start = Math.min(start + 100, abstracts.size());
+		end = Math.min(end + 100, abstracts.size());
+		hasMore = start < abstracts.size();
+	    }
+	    System.out.println("Upserted " + abstracts.size() + " abstracts to Pinecone index.");
         }
     }
 }

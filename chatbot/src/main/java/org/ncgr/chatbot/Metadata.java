@@ -120,7 +120,7 @@ public class Metadata {
             System.err.println("topk must be 10000 or less.");
             System.exit(1);
         }
-        String term = "the"; // matches any English abstract
+        String term = null;
         if (cmd.hasOption("term")) term = cmd.getOptionValue("term");
         
         boolean addFilter = cmd.hasOption("filter");
@@ -172,7 +172,12 @@ public class Metadata {
             List<ScoredVector> vectors;
             // create an OpenAI object and get encoded query from it
             OpenAi openAi = new OpenAi(openaiApiKey, OpenAi.TIMEOUT_SECONDS);
-            List<Float> encodedQuery = openAi.getEncodedQuery(term);
+            List<Float> encodedQuery;
+	    if (term == null) {
+		encodedQuery = OpenAi.getTheEmbeddingAsFloats();
+	    } else {
+		encodedQuery = openAi.getEncodedQuery(term);
+	    }
             // create the Pinecone object and get the ScoredVectors with metadata
             boolean includeValues = false;
             boolean includeMetadata = true;

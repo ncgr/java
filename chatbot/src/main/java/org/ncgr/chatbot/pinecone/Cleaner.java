@@ -1,4 +1,4 @@
-package org.ncgr.chatbot;
+package org.ncgr.chatbot.pinecone;
 
 import org.ncgr.chatbot.openai.OpenAi;
 import org.ncgr.chatbot.pinecone.Pinecone;
@@ -27,7 +27,7 @@ import org.apache.commons.cli.ParseException;
 
 /**
  * For lack of a better word, this class provides a command-line utility to "clean" Vector metadata: remove a specified key-value pair.
- * If an id is provided, then that Vector will have the given key removed, otherwise a query is performed with an optional filter
+ * If a list of ids is provided, then those Vectors will have the given key removed, otherwise a query on "the" is performed with an optional filter
  * on a particular value of the key.
  */
 public class Cleaner {
@@ -73,12 +73,11 @@ public class Cleaner {
         }
         
         // get API keys and other environment parameters
-        String openaiApiKey = System.getenv().get("OPENAI_API_KEY");
         String pineconeProjectName = System.getenv().get("PINECONE_PROJECT_NAME");
         String pineconeApiKey = System.getenv().get("PINECONE_API_KEY");
         String pineconeEnvironment = System.getenv().get("PINECONE_ENVIRONMENT");
-        if (openaiApiKey==null || pineconeProjectName==null || pineconeApiKey==null || pineconeEnvironment==null) {
-            System.err.println("You must set the environment variables: OPENAI_API_KEY, PINECONE_PROJECT_NAME, PINECONE_API_KEY, PINECONE_ENVIRONMENT");
+        if (pineconeProjectName==null || pineconeApiKey==null || pineconeEnvironment==null) {
+            System.err.println("You must set the environment variables: PINECONE_PROJECT_NAME, PINECONE_API_KEY, PINECONE_ENVIRONMENT");
             System.exit(1);
         }
 
@@ -115,10 +114,8 @@ public class Cleaner {
         List<Vector> vectors = new ArrayList();
         
         if (ids == null) {
-            // create an OpenAI object
-            OpenAi openAi = new OpenAi(openaiApiKey, OpenAi.TIMEOUT_SECONDS);
-            // get encoded query from OpenAI using the search term "the" (which hopefully covers all Vectors)
-            List<Float> encodedQuery = openAi.getEncodedQuery("the");
+            // use the static embedding for "the" stored in OpenAI.the
+	    List<Float> encodedQuery = OpenAi.getTheEmbeddingAsFloats();
             // query ScoredVectors including both values and metadata
             if (value != null) {
                 // add a filter on key:value

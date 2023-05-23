@@ -6,7 +6,4 @@
 #  -p,--page <arg>      page number for search [1]
 #  -t,--term <arg>      search term for abstract and title search
 
-INDEX_NAME=$1
-FILE=$2
-
-java -cp "build/install/ncgr-chatbot/lib/*" org.ncgr.chatbot.PubAgEmbeddingsUpserter -a $PUBAG_API_KEY -i $INDEX_NAME -f $FILE
+java -cp "build/install/ncgr-chatbot/lib/*" org.ncgr.chatbot.PubAgEmbeddingsUpserter -a $PUBAG_API_KEY "$1" "$2" "$3" "$4" "$5" "$6" "$7"
