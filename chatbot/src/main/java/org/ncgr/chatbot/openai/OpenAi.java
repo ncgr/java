@@ -195,6 +195,24 @@ public class OpenAi {
     }
 
     /**
+     * Get a single embedding for a single context.
+     * Requires: EMBED_MODEL
+     *
+     * @param context a string context to form embeddings
+     * @return an Embedding
+     */
+    public Embedding getEmbedding(String context) throws OpenAiHttpException {
+        List<String> contexts = new ArrayList<>();
+        contexts.add(context);
+        EmbeddingRequest embeddingRequest = EmbeddingRequest.builder()
+            .model(EMBED_MODEL)
+            .input(contexts)
+            .build();
+        List<Embedding> embeddings = service.createEmbeddings(embeddingRequest).getData();
+	return embeddings.get(0);
+    }
+    
+    /**
      * Command-line utility.
      */
     public static void main(String[] args) {

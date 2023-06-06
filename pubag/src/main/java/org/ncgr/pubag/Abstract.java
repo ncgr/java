@@ -72,6 +72,15 @@ public class Abstract {
     }
 
     /**
+     * Two Abstracts are equal if they have the same id.
+     */
+    @Override
+    public boolean equals(Object o) {
+        Abstract that = (Abstract) o;
+        return this.getId().equals(that.getId());
+    }
+
+    /**
      * Return true if this Abstract is complete, i.e. has required fields populated.
      */
     public boolean isComplete() {

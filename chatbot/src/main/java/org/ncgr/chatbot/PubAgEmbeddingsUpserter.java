@@ -22,6 +22,7 @@ import javax.xml.stream.XMLStreamException;
 import com.google.protobuf.Struct;
 import com.google.protobuf.Value;
 
+import com.theokanning.openai.OpenAiHttpException;
 import com.theokanning.openai.embedding.Embedding;
 import com.theokanning.openai.embedding.EmbeddingRequest;
 import com.theokanning.openai.embedding.EmbeddingResult;
@@ -69,17 +70,13 @@ public class PubAgEmbeddingsUpserter {
         termOption.setRequired(false);
         options.addOption(termOption);
         
-        Option pageOption = new Option("p", "page", true, "page number for search [1]");
-        pageOption.setRequired(false);
-        options.addOption(pageOption);
-
-        Option perpageOption = new Option("n", "perpage", true, "per page number for search [20]");
-        perpageOption.setRequired(false);
-        options.addOption(perpageOption);
-
         Option fileOption = new Option("f", "file", true, "file containing Abstract.toString() data");
         fileOption.setRequired(false);
         options.addOption(fileOption);
+
+        Option updateOption = new Option("u", "update", false, "update mode: only upsert new abstracts");
+        updateOption.setRequired(false);
+        options.addOption(updateOption);
 
         try {
             cmd = parser.parse(options, args);
@@ -99,17 +96,13 @@ public class PubAgEmbeddingsUpserter {
         String pineconeIndexName = cmd.getOptionValue("index");
         String apikey = cmd.getOptionValue("apikey");
         
-        // optional parameters
-        int page = 1;
-        if (cmd.hasOption("page")) page = Integer.parseInt(cmd.getOptionValue("page"));
-        int perpage = 20;
-        if (cmd.hasOption("perpage")) perpage = Integer.parseInt(cmd.getOptionValue("perpage"));
-        
         // other stuff from environment variables
         String openaiApiKey = System.getenv().get("OPENAI_API_KEY");
         String pineconeProjectName = System.getenv().get("PINECONE_PROJECT_NAME");
         String pineconeApiKey = System.getenv().get("PINECONE_API_KEY");
         String pineconeEnvironment = System.getenv().get("PINECONE_ENVIRONMENT");
+
+        Pinecone pinecone = new Pinecone(pineconeProjectName, pineconeApiKey, pineconeEnvironment, pineconeIndexName, Pinecone.SERVER_SIDE_TIMEOUT_SEC);
 
 	// retrieve abstracts
 	List<Abstract> abstracts = new ArrayList<>();
@@ -118,17 +111,59 @@ public class PubAgEmbeddingsUpserter {
             abstracts = Abstract.load(filename);
         } else if (cmd.hasOption("term")) {
             String term = cmd.getOptionValue("term");
-            abstracts = Pubag.searchAbstractOrTitleText(term, page, perpage, apikey);
+            // cycle through pages until no more found
+            boolean haveMore = true;
+            int page = 1;
+            System.out.print("## Page ");
+            while (haveMore) {
+                List<Abstract> pageAbstracts = Pubag.searchAbstractOrTitleText(term, page, 100, apikey);
+                if (pageAbstracts.size() > 0) {
+                    System.out.print(page + ":" + pageAbstracts.size() + " ");
+                    abstracts.addAll(pageAbstracts);
+                } else {
+                    System.out.println("done.");
+                    haveMore = false;
+                }
+                page++;
+            }
+        }
+        System.out.println("## Found " + abstracts.size() + " total abstracts.");
+
+        if (cmd.hasOption("update") && abstracts.size() > 0) {
+            Map<String,Abstract> abstractMap = new HashMap<>(); // keyed by Pinecone ID
+            List<String> ids = new ArrayList<>();
+            for (Abstract a : abstracts) {
+                String id = formPineconeId(a.getId());
+                abstractMap.put(id, a);
+                ids.add(id);
+            }
+            Map<String,Vector> existingVectors = pinecone.fetchVectors(ids);
+            // remove existing abstracts from map
+            for (String id : existingVectors.keySet()) {
+                if (abstractMap.containsKey(id)) abstractMap.remove(id);
+            }
+            // load abstracts with remaining ones in map
+            abstracts = new ArrayList<>();
+            for (Abstract a : abstractMap.values()) {
+                abstracts.add(a);
+            }
+            System.out.println("## Found " + abstracts.size() + " new abstracts.");
+        }
+
+        // remove abstracts that lack text
+        List<Abstract> all = new ArrayList<>(abstracts); // avoid concurrent mod
+        for (Abstract a : all) {
+            if ((a.getText() == null) || (a.getText().length() == 0)) {
+                abstracts.remove(a);
+            }
         }
 
 	// upsert our abstracts
 	if (abstracts!=null && abstracts.size()>0) {
-	    System.out.println("Found " + abstracts.size() + " total abstracts...");
 	    OpenAi openai = new OpenAi(openaiApiKey, OpenAi.TIMEOUT_SECONDS);
-	    Pinecone pinecone = new Pinecone(pineconeProjectName, pineconeApiKey, pineconeEnvironment, pineconeIndexName, Pinecone.SERVER_SIDE_TIMEOUT_SEC);
 	    upsertVectors(openai, pinecone, abstracts);
 	} else {
-	    System.out.println("No abstracts found.");
+	    System.out.println("## No abstracts were upserted.");
 	}
     }
     
@@ -173,75 +208,41 @@ public class PubAgEmbeddingsUpserter {
                 floatEmbedding.add(d.floatValue());
             }
             // add the vector with an ID of the form PubAg-{id}
-            String id = "PubAg-" + a.getId();
             vectors.add(Vector.newBuilder()
-                        .setId(id)
+                        .setId(formPineconeId(a.getId()))
                         .setMetadata(metadata)
                         .addAllValues(floatEmbedding)
                         .build());
         }
         return vectors;
     }
-        
+
+    /**
+     * Form the Pinecone id for a PubAg article
+     */
+    static String formPineconeId(String id) {
+        return "PubAg-" + id;
+    }
+
     /**
      * Get embeddings from OpenAI, form Vectors, and upsert them to Pinecone.
      * Metadata is added to the Vectors from the abstracts.
-     * We limit to 100 abstracts per call to stay under limits.
-     * NOTE: we check that the DOI/title isn't already present in the index and only upload new DOIs or titles.
      */
-    static void upsertVectors(OpenAi openai, Pinecone pinecone, List<Abstract> allAbstracts) {
-	// reject abstracts that have DOI/title already present in index
-	List<Float> encodedQuery = OpenAi.getTheEmbeddingAsFloats(); // "the" should cover most abstracts!
-	List<Abstract> abstracts = new ArrayList<>();
-	int rejectCount = 0;
-	for (Abstract a : allAbstracts) {
-	    String doi = a.getDOI();
-	    String title = a.getTitle();
-	    // DOI check
-	    boolean doiFound = false;
-	    if (doi != null) {
-		Struct filter = Pinecone.makeEqFilter("DOI", doi);
-		List<ScoredVector> scoredVectors = pinecone.getScoredVectorsWithFilter(encodedQuery, filter, 10, false, false);
-		doiFound = scoredVectors.size() > 0;
-	    }
-	    // title check
-	    boolean titleFound = false;
-	    if (title != null) {
-		Struct filter = Pinecone.makeEqFilter("title", title);
-		List<ScoredVector> scoredVectors = pinecone.getScoredVectorsWithFilter(encodedQuery, filter, 10, false, false);
-		titleFound = scoredVectors.size() > 0;
-	    }
-	    if (!doiFound && !titleFound) {
-		    abstracts.add(a);
-	    } else {
-		rejectCount++;
-	    }
-	}
-	if (rejectCount > 0) {
-	    System.out.println("Rejected " + rejectCount + " abstracts which are already present in index.");
-	}
-	if (abstracts.size() > 0) {
-	    // now upsert the new abstracts
-	    int start = 0;
-	    int end = Math.min(100, abstracts.size());
-	    boolean hasMore = true;
-	    while (hasMore) {
-		List<Abstract> subList = abstracts.subList(start, end);
-		// get the contexts
-		List<String> contexts = getContexts(subList);
-		// get the embeddings for these contexts
-		List<Embedding> embeddings = openai.getEmbeddings(contexts);
-		// form Vectors with metadata from these contexts and embeddings
-		List<Vector> vectors = getVectors(embeddings, subList);
-		// upsert the vectors to Pinecone
-		pinecone.upsertVectors(vectors);
-		System.out.println("Upserted "+vectors.size()+" abstract embedding vectors into Pinecone index.");
-		// increment sub-list indexes
-		start = Math.min(start + 100, abstracts.size());
-		end = Math.min(end + 100, abstracts.size());
-		hasMore = start < abstracts.size();
-	    }
-	    System.out.println("Upserted " + abstracts.size() + " abstracts to Pinecone index.");
+    static void upsertVectors(OpenAi openai, Pinecone pinecone, List<Abstract> abstracts) {
+        List<String> contexts = getContexts(abstracts);
+        if (contexts.size() > 0) {
+            try {
+                List<Embedding> embeddings = openai.getEmbeddings(contexts);
+                // form Vectors with embeddings plus metadata from the abstracts
+                List<Vector> vectors = getVectors(embeddings, abstracts);
+                // upsert the vectors to Pinecone
+                pinecone.upsertVectors(vectors);
+                System.out.println("Upserted "+vectors.size()+" embedding vectors into Pinecone index.");
+            } catch (OpenAiHttpException ex) {
+                System.err.println(ex);
+                System.exit(1);
+            }
         }
     }
+    
 }
