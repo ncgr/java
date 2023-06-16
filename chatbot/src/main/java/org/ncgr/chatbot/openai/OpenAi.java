@@ -29,7 +29,7 @@ public class OpenAi {
 
     // default parameters
     public static String EMBED_MODEL = "text-embedding-ada-002";
-    public static String MODEL = "gpt-3.5-turbo-0301";
+    public static String MODEL = "gpt-3.5-turbo-0613";
     public static int TIMEOUT_SECONDS = 120;
     public static double TEMPERATURE = 0.0;
     public static double FREQUENCY_PENALTY = 0.0;
@@ -76,7 +76,7 @@ public class OpenAi {
      * Parameters set with defaults of this class:
      *
      * String model;
-     * ID of the model to use. Currently, only gpt-3.5-turbo and gpt-3.5-turbo-0301 are supported.
+     * ID of the model to use.
      *
      * String user;
      * A unique identifier representing your end-user, which will help OpenAI to monitor and detect abuse.
