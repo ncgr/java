@@ -135,7 +135,6 @@ public class Abstract {
     @Override
     public String toString() {
         StringBuffer sb = new StringBuffer();
-        sb.append("---\n");
         if (title.startsWith("Title: ")) {
             sb.append(title + "\n");
         } else {
@@ -158,7 +157,7 @@ public class Abstract {
 
     /**
      * Load a List of Abstracts from a text file, given by name, containing data in the format of toString() output.
-     * Abstracts start with "---" and end with "PMID:".
+     * Abstracts start with "Title:" and end with "PMID:".
      */
     public static List<Abstract> load(String filename) throws FileNotFoundException, IOException {
         List<Abstract> abstracts = new ArrayList<>();
@@ -166,17 +165,15 @@ public class Abstract {
         Abstract currentAbstract = new Abstract();
         String line;
         while ((line = reader.readLine()) != null) {
-            if (line.equals("---")) {
+            if (line.startsWith("Title: ")) {
                 // start new Abstract
                 currentAbstract = new Abstract();
+                String[] parts = line.split("Title: ");
+                currentAbstract.setTitle(parts[1]);
             }
             if (line.startsWith("Abstract: ")) {
                 String[] parts = line.split("Abstract: ");
                 currentAbstract.setText(parts[1]);
-            }
-            if (line.startsWith("Title: ")) {
-                String[] parts = line.split("Title: ");
-                currentAbstract.setTitle(parts[1]);
             }
             if (line.startsWith("Keywords: ")) {
                 String[] parts = line.split("Keywords: ");

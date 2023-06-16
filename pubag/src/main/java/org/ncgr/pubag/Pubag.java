@@ -42,6 +42,7 @@ public class Pubag {
         try {
             return (Response) context.createUnmarshaller().unmarshal(new StreamSource(uri));
         } catch (javax.xml.bind.UnmarshalException ex) {
+            // assume we just ran out of content for this URI
             return null;
         }
     }

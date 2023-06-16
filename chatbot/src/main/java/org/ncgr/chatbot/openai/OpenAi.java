@@ -29,7 +29,7 @@ public class OpenAi {
 
     // default parameters
     public static String EMBED_MODEL = "text-embedding-ada-002";
-    public static String MODEL = "gpt-3.5-turbo-0613";
+    static String MODEL = "gpt-3.5-turbo-0613";
     public static int TIMEOUT_SECONDS = 120;
     public static double TEMPERATURE = 0.0;
     public static double FREQUENCY_PENALTY = 0.0;
@@ -194,6 +194,24 @@ public class OpenAi {
 	return service.createEmbeddings(embeddingRequest).getData();
     }
 
+    /**
+     * Get a single embedding for a single context.
+     * Requires: EMBED_MODEL
+     *
+     * @param context a string context to form embeddings
+     * @return an Embedding
+     */
+    public Embedding getEmbedding(String context) throws OpenAiHttpException {
+        List<String> contexts = new ArrayList<>();
+        contexts.add(context);
+        EmbeddingRequest embeddingRequest = EmbeddingRequest.builder()
+            .model(EMBED_MODEL)
+            .input(contexts)
+            .build();
+        List<Embedding> embeddings = service.createEmbeddings(embeddingRequest).getData();
+	return embeddings.get(0);
+    }
+    
     /**
      * Command-line utility.
      */
