@@ -29,7 +29,7 @@ public class OpenAi {
 
     // default parameters
     public static String EMBED_MODEL = "text-embedding-ada-002";
-    static String MODEL = "gpt-3.5-turbo-0613";
+    static String MODEL = "gpt-3.5-turbo-16k-0613";
     public static int TIMEOUT_SECONDS = 120;
     public static double TEMPERATURE = 0.0;
     public static double FREQUENCY_PENALTY = 0.0;

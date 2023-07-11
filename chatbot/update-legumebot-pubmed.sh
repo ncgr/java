@@ -25,29 +25,29 @@ for species in "Aeschynomene evenia" \
                    "Glycine max" \
                    "Glycine soja" \
                    "Glycine stenophita" \
-                   "Glycine syndetika"
-               # "Lens culinaris" \
-                   # "Lens ervoides" \
-                   # "Lotus japonicus" \
-                   # "Lupinus albus" \
-                   # "Lupinus angustifolius" \
-                   # "Medicago polymorpha" \
-                   # "Medicago ruthenica" \
-                   # "Medicago sativa" \
-                   # "Medicago truncatula" \
-                   # "Phaseolus acutifolius" \
-                   # "Phaseolus coccineus" \
-                   # "Phaseolus debouckii" \
-                   # "Phaseolus dumosus" \
-                   # "Phaseolus lunatus" \
-                   # "Phaseolus vulgaris" \
-                   # "Pisum sativum" \
-                   # "Trifolium pratense" \
-                   # "Trifolium subterraneum" \
-                   # "Vicia faba" \
-                   # "Vigna angularis" \
-                   # "Vigna radiata" \
-                   # "Vigna unguiculata"
+                   "Glycine syndetika" \
+		   "Lens culinaris" \
+                   "Lens ervoides" \
+                   "Lotus japonicus" \
+                   "Lupinus albus" \
+                   "Lupinus angustifolius" \
+                   "Medicago polymorpha" \
+                   "Medicago ruthenica" \
+                   "Medicago sativa" \
+                   "Medicago truncatula" \
+                   "Phaseolus acutifolius" \
+                   "Phaseolus coccineus" \
+                   "Phaseolus debouckii" \
+                   "Phaseolus dumosus" \
+                   "Phaseolus lunatus" \
+                   "Phaseolus vulgaris" \
+                   "Pisum sativum" \
+                   "Trifolium pratense" \
+                   "Trifolium subterraneum" \
+                   "Vicia faba" \
+                   "Vigna angularis" \
+                   "Vigna radiata" \
+                   "Vigna unguiculata"
 do
     echo $species
     scripts/pubmed-embeddings-upserter.sh -u -i legumebot -r 10000 -t "$species"
