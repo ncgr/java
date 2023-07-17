@@ -135,8 +135,9 @@ public class PubMedEmbeddingsUpserter {
                         if (!existingVectors.containsKey(id)) pmidsToUpsert.add(pmid);
                     }
                     if (pmidsToUpsert.size() > 0) {
-                        System.out.println("## Found " + pmidsToUpsert.size() + " new abstracts.");
+                        System.out.println("## " + pmidsToUpsert.size() + " are new PMIDs.");
                         abstracts = Pubmed.getAbstracts(pmidsToUpsert, apikey);
+                        System.out.println("## " + abstracts.size() + " new abstracts were fetched.");
                     }
                 }
             } else {
@@ -162,12 +163,15 @@ public class PubMedEmbeddingsUpserter {
         }
 
         // remove abstracts that lack text
+	int emptyCount = 0;
         List<Abstract> all = new ArrayList<>(abstracts); // avoid concurrent mod
         for (Abstract a : all) {
             if ((a.getText() == null) || (a.getText().length() == 0)) {
                 abstracts.remove(a);
+		emptyCount++;
             }
         }
+	System.out.println("## Removed " + emptyCount + " empty abstracts.");
 
 	// upsert the abstracts (only new ones if --update given)
 	if (abstracts!=null && abstracts.size()>0) {

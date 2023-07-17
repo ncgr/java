@@ -135,12 +135,12 @@ public class Abstract {
     @Override
     public String toString() {
         StringBuffer sb = new StringBuffer();
-        if (title.startsWith("Title: ")) {
+        if (title!=null && title.startsWith("Title: ")) {
             sb.append(title + "\n");
         } else {
             sb.append("Title: " + title + "\n");
         }
-        if (text.startsWith("Abstract: ")) {
+        if (text!=null && text.startsWith("Abstract: ")) {
             sb.append(text + "\n");
         } else {
             sb.append("Abstract: " + text + "\n");

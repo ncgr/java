@@ -151,12 +151,15 @@ public class PubAgEmbeddingsUpserter {
         }
 
         // remove abstracts that lack text
+	int emptyCount = 0;
         List<Abstract> all = new ArrayList<>(abstracts); // avoid concurrent mod
         for (Abstract a : all) {
             if ((a.getText() == null) || (a.getText().length() == 0)) {
                 abstracts.remove(a);
+		emptyCount++;
             }
         }
+	System.out.println("## Removed " + emptyCount + " empty abstracts.");
 
 	// upsert our abstracts
 	if (abstracts!=null && abstracts.size()>0) {
