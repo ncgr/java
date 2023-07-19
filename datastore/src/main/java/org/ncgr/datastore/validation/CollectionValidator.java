@@ -75,7 +75,7 @@ public abstract class CollectionValidator {
             boolean looksLegit = readme.publication_doi.contains(".") && readme.publication_doi.contains("/");
             if (!looksLegit) {
                 printHeader();
-                printErrorAndExit("README file contains invalide "+red("publication_doi")+" entry: " + readme.publication_doi);
+                printErrorAndExit("README file contains invalid "+red("publication_doi")+" entry: " + readme.publication_doi);
             }
         }
         // form the gensp.Strain.gnm prefix for LIS genomic feature identifiers.

@@ -105,13 +105,17 @@ public class AnnotationCollectionValidator extends CollectionValidator {
                     invalidSeqnameFound = true;
                 }
                 if (!hasValidGenomicID(featureI) && !invalidGenomicIDFound) {
+                    Map<String,String> attributeMap = featureI.getAttributes();
                     printError(file.getName()+" record ID attribute is missing or invalid:");
                     printError(featureI.toString());
+                    printError(attributeMap.toString());
                     invalidGenomicIDFound = true;
                 }
                 if (!hasValidParent(featureI) && !invalidParentFound) {
+                    Map<String,String> attributeMap = featureI.getAttributes();
                     printError(file.getName()+" record parent attribute is invalid; does the file need sorting?");
                     printError(featureI.toString());
+                    printError(attributeMap.toString());
                     invalidParentFound = true;
                 }
                 // store ID in featureIDs and featureTypeIDs for future checks
