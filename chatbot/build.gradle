@@ -53,16 +53,7 @@ dependencies {
     implementation group: 'org.eclipse', name: 'yasson', version: '1.0.11'
 
     // https://mvnrepository.com/artifact/io.pinecone/pinecone-client
-    // implementation group: 'io.pinecone', name: 'pinecone-client', version: '0.2.3'
-
-    // https://mvnrepository.com/artifact/com.google.protobuf/protobuf-java
-    implementation group: 'com.google.protobuf', name: 'protobuf-java', version: '3.23.3'
-    // https://mvnrepository.com/artifact/io.grpc/grpc-protobuf
-    implementation group: 'io.grpc', name: 'grpc-protobuf', version: '1.53.0'
-    implementation group: 'io.grpc', name: 'grpc-stub', version: '1.53.0'
-    implementation group: 'io.grpc', name: 'grpc-netty', version: '1.53.0'
-
-
+    implementation group: 'io.pinecone', name: 'pinecone-client', version: '0.2.3'
 
     // https://mvnrepository.com/artifact/org.projectlombok/lombok
     compileOnly group: 'org.projectlombok', name: 'lombok', version: '1.18.26'

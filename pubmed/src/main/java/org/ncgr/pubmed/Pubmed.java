@@ -54,6 +54,8 @@ import org.xml.sax.SAXException;
  */
 public class Pubmed {
 
+    final static boolean DEBUG = false;
+
     /**
      * Unmarshal an ESearchResult from a given esearch URI.
      *
@@ -119,13 +121,24 @@ public class Pubmed {
      * @return a list of Abstract objects
      */
     static List<Abstract> getAbstracts(PubmedArticleSetDocument articleSetDocument) {
+	int rejectedCount = 0;
         List<Abstract> abstractList = new ArrayList<>();
         for (PubmedArticleType pubmedArticleType : articleSetDocument.getPubmedArticleSet().getPubmedArticleArray()) {
             Abstract a = new Abstract(pubmedArticleType);
             if (a.getTitle()!=null && a.getPMID()!=null) {
                 abstractList.add(a);
-            }
+            } else {
+		rejectedCount++;
+		if (DEBUG) {
+		    System.out.println("## Pubmed.getAbstracts: rejected abstract:");
+		    System.out.println(a);
+		}
+	    }
         }
+	if (DEBUG) {
+	    System.out.println("## Pubmed.getAbstracts: " + rejectedCount + " abstracts lacked title or PMID.");
+	    System.out.println("## Pubmed.getAbstracts: " + abstractList.size() + " abstracts were returned.");
+	}
         return abstractList;
     }
     
