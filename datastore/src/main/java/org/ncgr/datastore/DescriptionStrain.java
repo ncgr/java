@@ -8,6 +8,7 @@ import java.util.List;
  *   - identifier: Wm82
  *     accession: PI 518671
  *     name: Williams 82
+ *     accession_group: Reference - Williams 82
  *     origin: Northern United States
  *     description: "Williams 82, the soybean cultivar used to produce the reference genome sequence..."
  *     resources:
@@ -23,12 +24,11 @@ import java.util.List;
  *
  */
 public class DescriptionStrain {
-
     public String identifier;
     public String accession;
     public String name;
     public String origin;
     public String description;
+    public String accession_group;
     public List<DescriptionResource> resources;
-
 }

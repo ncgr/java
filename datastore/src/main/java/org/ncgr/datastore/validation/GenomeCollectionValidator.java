@@ -58,7 +58,7 @@ public class GenomeCollectionValidator extends CollectionValidator {
         if (readme.synopsis==null) printError("README.synopsis is missing.");
         if (readme.description==null) printError("README.description is missing.");
         if (readme.scientific_name_abbrev==null) printError("README.scientific_name_abbrev is missing.");
-        if (readme.chromosome_prefix==null && readme.supercontig_prefix==null) printError("README.chromsome_prefix and README.supercontig_prefix are BOTH missing.");
+        if (readme.chromosome_prefix==null && readme.supercontig_prefix==null) printError("README.chromosome_prefix and README.supercontig_prefix are BOTH missing.");
 
         // genome_main.fna.gz
         try {
