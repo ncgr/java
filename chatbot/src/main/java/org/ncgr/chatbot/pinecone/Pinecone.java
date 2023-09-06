@@ -235,7 +235,21 @@ public class Pinecone {
         SingleQueryResults results = queryResponse.getResults(0);
         return results.getMatchesList();
     }
-    
+
+    /**
+     * Upsert a single Vector.
+     * Requires an instantiated instance connection.
+     */
+    public void upsertVector(Vector vector) throws PineconeException {
+	List<Vector> vectors = new ArrayList<>();
+	vectors.add(vector);
+	UpsertRequest upsertRequest = UpsertRequest
+	    .newBuilder()
+	    .addAllVectors(vectors)
+	    .build();
+	UpsertResponse response = connection.getBlockingStub().upsert(upsertRequest);
+    }
+	
     /**
      * Upsert a List of Vectors.
      * Requires an instantiated instance connection.

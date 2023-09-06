@@ -27,8 +27,10 @@ import com.theokanning.openai.completion.chat.ChatMessage;
  */
 public class OpenAi {
 
-    // default parameters
+    // default embedding parameters
     public static String EMBED_MODEL = "text-embedding-ada-002";
+
+    // default GPT parameters
     static String MODEL = "gpt-3.5-turbo-16k-0613";
     public static int TIMEOUT_SECONDS = 120;
     public static double TEMPERATURE = 0.0;

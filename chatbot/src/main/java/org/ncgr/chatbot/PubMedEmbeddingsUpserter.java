@@ -188,19 +188,16 @@ public class PubMedEmbeddingsUpserter {
     static List<String> getContexts(List<Abstract> abstracts) {
         List<String> contexts = new ArrayList<>();
         for (Abstract a : abstracts) {
-            contexts.add(a.getText());
-        }
+	    contexts.add(a.getText());
+	}
         return contexts;
     }
 
     /**
-     * Get embedding vectors for Pinecone from embeddings, adding metadata from abstract.
+     * Return an  embedding vector from Pinecone from embedding, adding metadata from abstract.
      */
-    static List<Vector> getVectors(List<Embedding> embeddings, List<Abstract> abstracts) {
-        List<Vector> vectors = new ArrayList<>();
-        for (Embedding embedding : embeddings) {
+    static Vector getVector(Embedding embedding, Abstract a) {
             int index = embedding.getIndex();
-            Abstract a = abstracts.get(index);
             // form metadata; title, abstract and PMID should definitely not be null!
             Struct.Builder metadataBuilder = Struct
                 .newBuilder()
@@ -223,12 +220,23 @@ public class PubMedEmbeddingsUpserter {
             for (Double d : embedding.getEmbedding()) {
                 floatEmbedding.add(d.floatValue());
             }
-            // Add this Vector using PubMed-PMID as id
-            vectors.add(Vector.newBuilder()
-                        .setId(formPineconeId(a.getPMID()))
-                        .setMetadata(metadata)
-                        .addAllValues(floatEmbedding)
-                        .build());
+            // return this Vector using PubMed-PMID as id
+	    return Vector.newBuilder()
+		.setId(formPineconeId(a.getPMID()))
+		.setMetadata(metadata)
+		.addAllValues(floatEmbedding)
+		.build();
+    }
+
+    /**
+     * Get embedding vectors for Pinecone.
+     */
+    static List<Vector> getVectors(List<Embedding> embeddings, List<Abstract> abstracts) {
+        List<Vector> vectors = new ArrayList<>();
+        for (Embedding embedding : embeddings) {
+            int index = embedding.getIndex();
+            Abstract a = abstracts.get(index);
+	    vectors.add(getVector(embedding, a));
         }
         return vectors;
     }
@@ -243,19 +251,23 @@ public class PubMedEmbeddingsUpserter {
      * Metadata is added to the Vectors from the abstracts.
      */
     static void upsertVectors(OpenAi openai, Pinecone pinecone, List<Abstract> abstracts) {
-        List<String> contexts = getContexts(abstracts);
-        if (contexts.size() > 0) {
-            try {
-                List<Embedding> embeddings = openai.getEmbeddings(contexts);
-                // form Vectors with embeddings plus metadata from the abstracts
-                List<Vector> vectors = getVectors(embeddings, abstracts);
-                // upsert the vectors to Pinecone
-                pinecone.upsertVectors(vectors);
-                System.out.println("Upserted "+vectors.size()+" embedding vectors into Pinecone index.");
-            } catch (OpenAiHttpException ex) {
-                System.err.println(ex);
-                System.exit(1);
-            }
-        }
+	for (Abstract a : abstracts) {
+	    String context = a.getText();
+	    try {
+		Embedding embedding = openai.getEmbedding(context);
+		Vector vector = getVector(embedding, a);
+		pinecone.upsertVector(vector);
+	    } catch (OpenAiHttpException ex) {
+		System.err.println(ex);
+		System.err.println(context);
+	    }
+	}
+	//
+	// List<Embedding> embeddings = openai.getEmbeddings(contexts);
+	// // form Vectors with embeddings plus metadata from the abstracts
+	// List<Vector> vectors = getVectors(embeddings, abstracts);
+	// // upsert the vectors to Pinecone
+	// pinecone.upsertVectors(vectors);
+	// System.out.println("Upserted "+vectors.size()+" embedding vectors into Pinecone index.");
     }
 }
