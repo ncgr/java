@@ -50,5 +50,6 @@ for species in "Aeschynomene evenia" \
                    "Vigna unguiculata"
 do
     echo $species
+    echo "--------------------------------"
     scripts/pubag-embeddings-upserter.sh -i legumebot-index -u -t "$species"
 done

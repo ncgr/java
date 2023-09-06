@@ -109,6 +109,7 @@ public class PubAgEmbeddingsUpserter {
         if (cmd.hasOption("file")) {
             String filename = cmd.getOptionValue("file");
             abstracts = Abstract.load(filename);
+	    System.out.println("## Found " + abstracts.size() + " total abstracts in file: " + filename + ".");
         } else if (cmd.hasOption("term")) {
             String term = cmd.getOptionValue("term");
             // cycle through pages until no more found
@@ -126,8 +127,8 @@ public class PubAgEmbeddingsUpserter {
                 }
                 page++;
             }
+	    System.out.println("## Found " + abstracts.size() + " total abstracts matching term: " + term + ".");
         }
-        System.out.println("## Found " + abstracts.size() + " total abstracts.");
 
         if (cmd.hasOption("update") && abstracts.size() > 0) {
             Map<String,Abstract> abstractMap = new HashMap<>(); // keyed by Pinecone ID
