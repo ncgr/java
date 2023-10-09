@@ -89,8 +89,8 @@ public class AnnotationCollectionValidator extends CollectionValidator {
             boolean invalidGenomicIDFound = false;
             boolean invalidParentFound = false;
             boolean hasGenes = false;
-            boolean genesHaveNotes = false;
-            boolean notesHaveGOTerms = false;
+            int genesWithoutNotes = 0;
+            int notesWithoutGOTerms = 0;
             // validate the uncompressed GFF3 file
             FeatureList featureList = GFF3Reader.read(TEMPFILE);
             for (FeatureI featureI : featureList) {
@@ -132,22 +132,21 @@ public class AnnotationCollectionValidator extends CollectionValidator {
                 if (type.equals("gene")) {
                     hasGenes = true;
                     String note = getAttribute(featureI, "Note");
-                    if (note != null) {
-                        genesHaveNotes = true;
-                        if (note.contains("GO:")) {
-                            notesHaveGOTerms = true;
-                        }
-                    }
+                    if (note == null) {
+                        genesWithoutNotes++;
+                    } else if (!note.contains("GO:")) {
+                        notesWithoutGOTerms++;
+                    } 
                 }
             }
             if (!hasGenes) {
                 printError(file.getName() + " does not contain any gene records.");
             }
-            if (!genesHaveNotes) {
-                printError(file.getName() + " gene records do not contain the Note attribute.");
+            if (genesWithoutNotes > 0) {
+                printError(file.getName() + " " + genesWithoutNotes + " gene records are missing the Note attribute.");
             }
-            if (!notesHaveGOTerms) {
-                printError(file.getName() + " gene record Note attributes do not contain GO terms.");
+            if (notesWithoutGOTerms > 0) {
+                printWarning(file.getName() + " " + notesWithoutGOTerms + " gene record Note attributes are missing GO terms.");
             }
         } catch (Exception ex) {
             printError(ex.getMessage());
@@ -287,39 +286,6 @@ public class AnnotationCollectionValidator extends CollectionValidator {
             }
         } catch (Exception ex) {
             printErrorAndExit(ex.getMessage());
-        }
-
-        // pathway.tsv.gz OR GFAPREFIX.pathway.tsv.gz (optional)
-        if (dataFileExists("pathway.tsv.gz") || dataFileExists(GFAPREFIX+".pathway.tsv.gz")) {
-            File file = getDataFile("pathway.tsv.gz");
-            if (!file.exists()) file = getDataFile(GFAPREFIX+".pathway.tsv.gz");
-            System.out.println(" - "+file.getName());
-            boolean invalidGeneIdFound = false;
-            try {
-                BufferedReader br = GZIPBufferedReader.getReader(file);
-                String line = null;
-                while ((line=br.readLine())!=null) {
-                    if (line.startsWith("#") || line.startsWith("URL") || line.startsWith("SourceSpecies") || line.trim().length()==0) continue; // comment or blank
-                    String[] parts = line.split("\t");
-                    if (parts.length==3) {
-                        String pathwayId = parts[0];
-                        String pathwayName = parts[1];
-                        String geneId = parts[2];
-                        if (!matchesCollection(geneId) && !invalidGeneIdFound) {
-                            printError("Gene ID "+geneId+" in "+file.getName()+" is not a valid LIS identifier:");
-                            printError(line);
-                            invalidGeneIdFound = true;
-                        }
-                    } else {
-                        printError("pathway file "+file.getName()+" contains data line with other than exactly 3 columns:");
-                        printError(line);
-                    }                        
-                }
-            } catch (Exception ex) {
-                printErrorAndExit(ex.getMessage());
-            }
-        } else {
-            printWarning("optional pathway.tsv.gz file is not present.");
         }
 
         // phytozome_10_2.HFNR.gfa.tsv.gz (optional)
