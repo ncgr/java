@@ -62,7 +62,7 @@ public class AnnotationCollectionValidator extends CollectionValidator {
         try {
             checkRequiredFiles();
         } catch (ValidationException ex) {
-            printErrorAndExit(ex.getMessage());
+            printError(ex.getMessage());
         }
         
         // store some identifiers for cross-checks
@@ -142,8 +142,10 @@ public class AnnotationCollectionValidator extends CollectionValidator {
             if (!hasGenes) {
                 printError(file.getName() + " does not contain any gene records.");
             }
-            if (genesWithoutNotes > 0) {
+            if (genesWithoutNotes > 100) {
                 printError(file.getName() + " " + genesWithoutNotes + " gene records are missing the Note attribute.");
+            } else if (genesWithoutNotes > 0) {
+                printWarning(file.getName() + " " + genesWithoutNotes + " gene records are missing the Note attribute.");
             }
             if (notesWithoutGOTerms > 0) {
                 printWarning(file.getName() + " " + notesWithoutGOTerms + " gene record Note attributes are missing GO terms.");
