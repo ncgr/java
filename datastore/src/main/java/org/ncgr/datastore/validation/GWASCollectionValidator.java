@@ -5,11 +5,9 @@ import org.ncgr.zip.GZIPBufferedReader;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileWriter;
 import java.util.Arrays;
 import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
+import java.util.Set;
 
 /**
  * Methods to validate an LIS Datastore /gwas/ collection.
@@ -53,19 +51,23 @@ public class GWASCollectionValidator extends CollectionValidator {
         // obo.tsv.gz OPTIONAL
         // #trait_name     obo_term     [obo_term_description]
         // Seed length to width ratio      SOY:0001979
-        if (dataFileExists("obo.tsv.gz")) {
+        Set<String> oboTraitNames = new HashSet<>(); // use to verify that obo and results files have same traits
+        boolean hasOboFile = dataFileExists("obo.tsv.gz");
+        if (hasOboFile) {
             try {
                 File file = getDataFile("obo.tsv.gz");
                 System.out.println(" - "+file.getName());
                 BufferedReader br = GZIPBufferedReader.getReader(file);
                 String line = null;
-                while ((line=br.readLine())!=null) {
+                while ((line = br.readLine()) != null) {
                     if (line.startsWith("#") || line.trim().length()==0) continue; // comment or blank
                     String[] parts = line.split("\t");
                     if (parts.length<2) {
                         printError("File does have at least two values (trait_name,obo_term) in this line:");
                         printError(line);
                         break;
+                    } else {
+                        oboTraitNames.add(parts[0]);
                     }
                 }
             } catch (Exception ex) {
@@ -76,6 +78,7 @@ public class GWASCollectionValidator extends CollectionValidator {
         // result.tsv.gz REQUIRED
         // #trait_name     marker  pvalue
         // SDS root retention      ss107929748     2.0E-5
+        Set<String> resultTraitNames = new HashSet<>();
         if (!dataFileExists("result.tsv.gz")) {
             printErrorAndExit("(Correctly named) result.tsv.gz file is not present in collection.");
         }
@@ -87,10 +90,12 @@ public class GWASCollectionValidator extends CollectionValidator {
             while ((line=br.readLine())!=null) {
                 if (line.startsWith("#") || line.trim().length()==0) continue; // comment or blank
                 String[] parts = line.split("\t");
-                if (parts.length<3) {
+                if (parts.length < 3) {
                     printError("File does not have at least three values (trait_name,marker,pvalue) in this line:");
                     printError(line);
                     break;
+                } else {
+                    resultTraitNames.add(parts[0]);
                 }
             }
         } catch (Exception ex) {
@@ -100,7 +105,9 @@ public class GWASCollectionValidator extends CollectionValidator {
         // trait.tsv.gz OPTIONAL
         // #trait_name          description
         // SDS root retention   roots were removed and sent to the Students for a Democratic Society
-        if (dataFileExists("trait.tsv.gz")) {
+        Set<String> traitTraitNames = new HashSet<>();
+        boolean hasTraitFile = dataFileExists("trait.tsv.gz");
+        if (hasTraitFile) {
             try {
                 File file = getDataFile("trait.tsv.gz");
                 System.out.println(" - "+file.getName());
@@ -109,14 +116,30 @@ public class GWASCollectionValidator extends CollectionValidator {
                 while ((line=br.readLine())!=null) {
                     if (line.startsWith("#") || line.trim().length()==0) continue; // comment or blank
                     String[] parts = line.split("\t");
-                    if (parts.length!=2) {
+                    if (parts.length != 2) {
                         printError("File does not have two values (trait_name,description) in this line:");
                         printError(line);
                         break;
+                    } else {
+                        traitTraitNames.add(parts[0]);
                     }
                 }
             } catch (Exception ex) {
                 printErrorAndExit(ex.getMessage());
+            }
+        }
+
+        // check for traits in obo file that are missing from result file
+        for (String name : oboTraitNames) {
+            if (!resultTraitNames.contains(name)) {
+                printError("OBO file " + getDataFile("obo.tsv.gz").getName() + " contains trait " + name + " that is not present in result file.");
+            }
+        }
+
+        // check for traits in trait file that are missing from result file
+        for (String name : traitTraitNames) {
+            if (!resultTraitNames.contains(name)) {
+                printError("Trait file " + getDataFile("trait.tsv.gz").getName() + " contains trait " + name + " that is not present in result file.");
             }
         }
     }
