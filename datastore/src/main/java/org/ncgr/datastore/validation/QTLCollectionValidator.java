@@ -5,11 +5,9 @@ import org.ncgr.zip.GZIPBufferedReader;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileWriter;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 /**
@@ -54,7 +52,7 @@ public class QTLCollectionValidator extends CollectionValidator {
             printError("README file is missing genotype key:value.");
         }
 
-        // qtl.tsv.gz OPTIONAL
+        // qtl.tsv.gz REQUIRED
         // #qtl_identifier   trait_name    genetic_map      linkage_group start   end     [peak favored_allele_source lod likelihood_ratio  marker_r2 total_r2  additivity]
         // First flower 1-1  First flower  GmComposite2003  C2            104.4   106.4   105.4
         // Store the distinct trait names to check that they match the obo file.
@@ -165,6 +163,7 @@ public class QTLCollectionValidator extends CollectionValidator {
         // trait.tsv.gz OPTIONAL
         // #trait_name          description
         // SDS root retention   roots were removed and sent to the Students for a Democratic Society
+        Set<String> traitTraitNames = new HashSet<>();
         if (dataFileExists("trait.tsv.gz")) {
             try {
                 File file = getDataFile("trait.tsv.gz");
@@ -179,21 +178,24 @@ public class QTLCollectionValidator extends CollectionValidator {
                         printError(line);
                         break;
                     }
+                    traitTraitNames.add(parts[0]);
                 }
             } catch (Exception ex) {
                 printErrorAndExit(ex.getMessage());
             }
         }
 
-        // check that OBO trait names match qtl or qtlmrk file.
-        if (oboTraitNames.size()>0) {
-            for (String oboTraitName : oboTraitNames) {
-                if (!qtlTraitNames.contains(oboTraitName)) {
-                    printError("OBO file contains a trait that is missing in qtl.tsv.gz file: "+oboTraitName);
-                }
-                if (qtlmrkExists && !qtlmrkTraitNames.contains(oboTraitName)) {
-                    printError("OBO file contains a trait that is missing in qtlmrk.tsv.gz file: "+oboTraitName);
-                }
+        // check that obo trait names match qtl file
+        for (String name : oboTraitNames) {
+            if (!qtlTraitNames.contains(name)) {
+                printError("obo file " + getDataFile("qtl.tsv.gz").getName() + " contains a trait " + name + " that is missing in qtl file.");
+            }
+        }
+
+        // check that qtlmrk trait names match qtl file
+        for (String name : qtlmrkTraitNames) {
+            if (!qtlTraitNames.contains(name)) {
+                printError("qtlmrk file " + getDataFile("qtlmrk.tsv.gz").getName() + " contains a trait " + name + " that is missing in qtl file.");
             }
         }
     }
