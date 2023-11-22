@@ -1,0 +1,3 @@
+#!/bin/sh
+
+java -cp "./build/install/ncgr-intermine/lib/*" org.ncgr.intermine.PathQueryToXML
