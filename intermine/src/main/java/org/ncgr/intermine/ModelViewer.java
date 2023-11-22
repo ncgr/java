@@ -9,8 +9,9 @@ import org.intermine.metadata.ClassDescriptor;
 import org.intermine.metadata.CollectionDescriptor;
 import org.intermine.metadata.ReferenceDescriptor;
 import org.intermine.metadata.Model;
-import org.intermine.webservice.client.core.ServiceFactory;
-import org.intermine.webservice.client.services.QueryService;
+
+import org.intermine.client.services.QueryService;
+import org.intermine.client.core.ServiceFactory;
 
 /**
  * Query and view an InterMine model. Enter the IM service URL as a parameter.

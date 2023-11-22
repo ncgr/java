@@ -9,8 +9,9 @@ import org.intermine.metadata.Model;
 import org.intermine.pathquery.Constraints;
 import org.intermine.pathquery.OrderDirection;
 import org.intermine.pathquery.PathQuery;
-import org.intermine.webservice.client.core.ServiceFactory;
-import org.intermine.webservice.client.services.QueryService;
+
+import org.intermine.client.services.QueryService;
+import org.intermine.client.core.ServiceFactory;
 
 /**
  * Print out the FASTA for a gene with the given symbol.
