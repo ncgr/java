@@ -105,6 +105,8 @@ public class SyntenyCollectionValidator extends CollectionValidator {
                     }
                 } catch (Exception ex) {
                     printError(ex.getMessage());
+                } finally {
+                    tempfile.delete();
                 }
             }
         }

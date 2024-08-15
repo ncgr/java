@@ -152,6 +152,8 @@ public class AnnotationCollectionValidator extends CollectionValidator {
             }
         } catch (Exception ex) {
             printError(ex.getMessage());
+        } finally {
+            tempfile.delete();
         }
         
         // protein.faa.gz (required) and protein_primary.faa.gz (optional)
