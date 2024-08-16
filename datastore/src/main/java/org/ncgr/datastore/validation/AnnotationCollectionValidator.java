@@ -150,10 +150,9 @@ public class AnnotationCollectionValidator extends CollectionValidator {
             if (notesWithoutGOTerms > 0) {
                 printWarning(file.getName() + " " + notesWithoutGOTerms + " gene record Note attributes are missing GO terms.");
             }
+            tempfile.delete();
         } catch (Exception ex) {
             printError(ex.getMessage());
-        } finally {
-            tempfile.delete();
         }
         
         // protein.faa.gz (required) and protein_primary.faa.gz (optional)
