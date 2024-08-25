@@ -27,6 +27,7 @@ import org.biojava.nbio.genome.parsers.gff.GFF3Reader;
 public class AnnotationCollectionValidator extends CollectionValidator {
     private static final String TEMPFILE = "/tmp/temp.gff3";
     private static final String GFAPREFIX = "legfed_v1_0.M65K";
+    private static final int DEFAULT_MAX_GENES_WITHOUT_NOTES = 100;
 
     HashSet<String> featureIDs = new HashSet<>();
     Map<String,HashSet<String>> featureTypeIDs = new HashMap<>();
@@ -142,7 +143,10 @@ public class AnnotationCollectionValidator extends CollectionValidator {
             if (!hasGenes) {
                 printError(file.getName() + " does not contain any gene records.");
             }
-            if (genesWithoutNotes > 100) {
+            // check whether to override the default maxGenesWithoutNotes (a negative value means no limit)
+            String mgwn = System.getProperty("maxGenesWithoutNotes");
+            int maxGenesWithoutNotes = (mgwn == null ? DEFAULT_MAX_GENES_WITHOUT_NOTES : Integer.parseInt(mgwn));
+            if (maxGenesWithoutNotes >= 0 && genesWithoutNotes > maxGenesWithoutNotes) {
                 printError(file.getName() + " " + genesWithoutNotes + " gene records are missing the Note attribute.");
             } else if (genesWithoutNotes > 0) {
                 printWarning(file.getName() + " " + genesWithoutNotes + " gene records are missing the Note attribute.");
